@@ -6,73 +6,156 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>프로덕션 허브</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-      background: #f4f5f7; color: #1a1a1a;
-      padding: 28px 18px; -webkit-font-smoothing: antialiased;
+    *{box-sizing:border-box; margin:0; padding:0}
+    :root{
+      --bg:#f4f5f7; --card:#ffffff; --ink:#1a1a1a; --sub:#6b7280; --faint:#9ca3af;
+      --line:#e5e7eb; --line2:#eef0f3;
+      --team:#1e6b3a; --team-bg:#e9f8ee; --team-line:#bfe6cd;
+      --adm:#8a5a12; --adm-bg:#fdf3e3; --adm-line:#f0dcae;
     }
-    .wrap { max-width: 520px; margin: 0 auto; }
-    h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-    .sub { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
-    a.card {
-      display: block; text-decoration: none; color: inherit;
-      background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
-      padding: 18px 18px; margin-bottom: 12px;
-      transition: transform .08s ease, box-shadow .12s ease, border-color .12s ease;
+    @media (prefers-color-scheme:dark){
+      :root{
+        --bg:#0f1420; --card:#171d2b; --ink:#e8ecf4; --sub:#a2acbe; --faint:#6b7688;
+        --line:#28303f; --line2:#212838;
+        --team:#8fd6a6; --team-bg:#12271a; --team-line:#2f6b45;
+        --adm:#e9c877; --adm-bg:#2c2413; --adm-line:#7a5f22;
+      }
     }
-    a.card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.08); border-color: #c7cbd1; }
-    a.card:active { transform: translateY(0); }
-    .row { display: flex; align-items: center; gap: 14px; }
-    .icon { font-size: 30px; width: 42px; text-align: center; flex-shrink: 0; }
-    .body { flex: 1; min-width: 0; }
-    .title { font-size: 17px; font-weight: 600; }
-    .desc { font-size: 13px; color: #4b5563; margin-top: 2px; line-height: 1.45; }
-    .note { font-size: 11px; color: #9ca3af; margin-top: 5px; }
-    .arrow { font-size: 20px; color: #c0c4cc; flex-shrink: 0; }
-    .foot { font-size: 11px; color: #b0b4bb; text-align: center; margin-top: 22px; line-height: 1.6; }
+    body{
+      font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+      background:var(--bg); color:var(--ink);
+      padding:26px 16px 40px; -webkit-font-smoothing:antialiased; line-height:1.5;
+    }
+    .wrap{max-width:540px; margin:0 auto}
+    h1{font-size:23px; font-weight:800; letter-spacing:-.3px}
+    .sub{font-size:13px; color:var(--sub); margin:4px 0 22px}
+
+    .group{margin-bottom:26px}
+    .ghead{display:flex; align-items:center; gap:8px; margin:0 2px 11px}
+    .ghead .dot{width:10px; height:10px; border-radius:50%}
+    .ghead .gt{font-size:14px; font-weight:800; letter-spacing:.2px}
+    .ghead .gd{font-size:12px; color:var(--faint)}
+    .group.team .dot{background:var(--team)}
+    .group.team .gt{color:var(--team)}
+    .group.adm  .dot{background:var(--adm)}
+    .group.adm  .gt{color:var(--adm)}
+
+    a.card{
+      display:block; text-decoration:none; color:inherit;
+      background:var(--card); border:1px solid var(--line); border-radius:14px;
+      padding:15px 16px; margin-bottom:10px;
+      transition:transform .08s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    a.card:hover{transform:translateY(-1px); box-shadow:0 5px 16px rgba(0,0,0,.09)}
+    a.card:active{transform:translateY(0)}
+    .group.team a.card{border-left:4px solid var(--team-line)}
+    .group.adm  a.card{border-left:4px solid var(--adm-line)}
+    .row{display:flex; align-items:center; gap:14px}
+    .icon{font-size:27px; width:40px; text-align:center; flex-shrink:0}
+    .body{flex:1; min-width:0}
+    .title{font-size:16.5px; font-weight:700}
+    .desc{font-size:12.5px; color:var(--sub); margin-top:2px; line-height:1.45}
+    .note{display:inline-block; font-size:11px; color:var(--faint); margin-top:5px}
+    .badge{display:inline-block; font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px; margin-top:6px}
+    .badge.soon{background:var(--adm-bg); color:var(--adm); border:1px solid var(--adm-line)}
+    .badge.key{background:var(--adm-bg); color:var(--adm); border:1px solid var(--adm-line)}
+    .arrow{font-size:20px; color:var(--faint); flex-shrink:0}
+    a.card.disabled{opacity:.62; pointer-events:none}
+
+    .foot{font-size:11px; color:var(--faint); text-align:center; margin-top:8px; line-height:1.7}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>프로덕션 허브</h1>
+    <h1>🎬 프로덕션 허브</h1>
     <p class="sub">필요한 앱을 눌러 들어가세요. 이 페이지 하나만 북마크하면 됩니다.</p>
 
-    <a class="card" href="https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec" target="_blank" rel="noopener">
-      <div class="row">
-        <div class="icon">🎬</div>
-        <div class="body">
-          <div class="title">현장 장비 앱</div>
-          <div class="desc">현장 스태프 — 장비 준비 / 랩업 / 반납 체크 (폰)</div>
-          <div class="note">구글 로그인 필요</div>
-        </div>
-        <div class="arrow">›</div>
+    <!-- ============ 팀 ============ -->
+    <div class="group team">
+      <div class="ghead">
+        <span class="dot"></span>
+        <span class="gt">팀 · 현장 스태프 · 프리랜서</span>
+        <span class="gd">내 것만 보고 입력</span>
       </div>
-    </a>
 
-    <a class="card" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec" target="_blank" rel="noopener">
-      <div class="row">
-        <div class="icon">💰</div>
-        <div class="body">
-          <div class="title">프리랜서 정산 앱</div>
-          <div class="desc">프리랜서 — 본인 청구 / 정산 확인</div>
-          <div class="note">프리랜서는 개인 토큰 링크로 접속 (이 버튼은 관리자용)</div>
+      <a class="card" href="https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🎬</div>
+          <div class="body">
+            <div class="title">현장 장비앱</div>
+            <div class="desc">장비 준비 / 랩업 / 반납 체크 (폰)</div>
+            <div class="note">구글 로그인 필요</div>
+          </div>
+          <div class="arrow">›</div>
         </div>
-        <div class="arrow">›</div>
-      </div>
-    </a>
+      </a>
 
-    <a class="card" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec?page=lifecycle" target="_blank" rel="noopener">
-      <div class="row">
-        <div class="icon">📋</div>
-        <div class="body">
-          <div class="title">프로젝트 생애주기 입력</div>
-          <div class="desc">내부 — 새 프로젝트 시작 시 노션에 정보 등록</div>
-          <div class="note">내부용</div>
+      <a class="card" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">💰</div>
+          <div class="body">
+            <div class="title">정산앱 — 팀버전</div>
+            <div class="desc">청구하기 · 내 정산 확인 (본인 것만)</div>
+            <div class="note">프리랜서는 개인 링크로 접속</div>
+          </div>
+          <div class="arrow">›</div>
         </div>
-        <div class="arrow">›</div>
+      </a>
+    </div>
+
+    <!-- ============ 관리자 ============ -->
+    <div class="group adm">
+      <div class="ghead">
+        <span class="dot"></span>
+        <span class="gt">관리자 · 대표 · 명진</span>
+        <span class="gd">확정 · 지급 · 전체 관리</span>
       </div>
-    </a>
+
+      <a class="card" href="https://docs.google.com/spreadsheets/d/1-0EpnQ0sLw1nSj6hWAT1XaTO2zR_FfYYLScvAwhq5Ho/edit" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">📊</div>
+          <div class="body">
+            <div class="title">장비 관리 — 마스터시트</div>
+            <div class="desc">장비 DB · 단가 · 렌탈/반납 · 수리 전체 관리</div>
+            <div class="note">대표 · 명진 전용</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+
+      <a class="card" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">💼</div>
+          <div class="body">
+            <div class="title">정산앱 — 관리자버전</div>
+            <div class="desc">승인 · 계산서 확인(1일) · 지급(15일) · 시간 대조</div>
+            <span class="badge key">관리자 키 필요</span>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- ============ 내부 공통 ============ -->
+    <div class="group adm">
+      <div class="ghead">
+        <span class="dot" style="background:var(--sub)"></span>
+        <span class="gt" style="color:var(--sub)">내부 공통</span>
+        <span class="gd">새 프로젝트 시작할 때</span>
+      </div>
+
+      <a class="card" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec?page=lifecycle" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">📋</div>
+          <div class="body">
+            <div class="title">프로젝트 생애주기 입력</div>
+            <div class="desc">새 프로젝트 시작 시 노션에 정보 등록</div>
+            <div class="note">거래처·인력 연결 · 드라이브 폴더 생성</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+    </div>
 
     <p class="foot">각 앱은 서로 독립적으로 작동합니다.<br>앱 링크가 바뀌면 이 페이지(index.html)만 갱신하면 됩니다.</p>
   </div>
