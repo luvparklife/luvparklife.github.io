@@ -12,6 +12,7 @@
       --line:#e5e7eb; --line2:#eef0f3;
       --team:#1e6b3a; --team-bg:#e9f8ee; --team-line:#bfe6cd;
       --adm:#8a5a12; --adm-bg:#fdf3e3; --adm-line:#f0dcae;
+      --daily:#2f5fd0; --daily-line:#c3d2ff;
     }
     @media (prefers-color-scheme:dark){
       :root{
@@ -19,6 +20,7 @@
         --line:#28303f; --line2:#212838;
         --team:#8fd6a6; --team-bg:#12271a; --team-line:#2f6b45;
         --adm:#e9c877; --adm-bg:#2c2413; --adm-line:#7a5f22;
+        --daily:#7aa2ff; --daily-line:#2a3a63;
       }
     }
     body{
@@ -39,6 +41,9 @@
     .group.team .gt{color:var(--team)}
     .group.adm  .dot{background:var(--adm)}
     .group.adm  .gt{color:var(--adm)}
+    .group.daily .dot{background:var(--daily)}
+    .group.daily .gt{color:var(--daily)}
+    .group.daily a.card{border-left:4px solid var(--daily-line)}
 
     a.card{
       display:block; text-decoration:none; color:inherit;
@@ -69,6 +74,39 @@
   <div class="wrap">
     <h1>🎬 프로덕션 허브</h1>
     <p class="sub">필요한 앱을 눌러 들어가세요. 이 페이지 하나만 북마크하면 됩니다.</p>
+
+    <!-- ============ 대표 매일 ============ -->
+    <div class="group daily">
+      <div class="ghead">
+        <span class="dot"></span>
+        <span class="gt">대표 · 매일</span>
+        <span class="gd">아침에 이것부터</span>
+      </div>
+
+      <a class="card" href="https://app.notion.com/p/6e5d3d6d46004ee990a7aa9a17a7c9c3" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">☀️</div>
+          <div class="body">
+            <div class="title">오늘 아침 보고서</div>
+            <div class="desc">오늘의 원씽 · 매출 행동 · 실행 순서 · 묵은 것 정리</div>
+            <div class="note">매일 밤 23시 자동 생성 · 맨 위가 오늘 것</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+
+      <a class="card" href="https://claude.ai/code/routines" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🔄</div>
+          <div class="body">
+            <div class="title">보고서 다시 돌리기 · 상태 보기</div>
+            <div class="desc">안 생겼거나 이상할 때 여기서 바로 다시 실행</div>
+            <div class="note">실행 기록 · 오류도 여기서 확인</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+    </div>
 
     <!-- ============ 팀 ============ -->
     <div class="group team">
