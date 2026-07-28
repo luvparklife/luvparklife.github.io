@@ -79,29 +79,32 @@
     <div class="group daily">
       <div class="ghead">
         <span class="dot"></span>
-        <span class="gt">대표 · 매일</span>
-        <span class="gd">아침에 이것부터</span>
+        <span class="gt">대표 전용</span>
+        <span class="gd">내 맥에서만 열립니다</span>
       </div>
 
-      <a class="card" href="https://app.notion.com/p/6e5d3d6d46004ee990a7aa9a17a7c9c3" target="_blank" rel="noopener">
+      <!-- pa-claude:// 는 대표 맥에 설치된 앱(~/Applications/PA 도구/클로드.app)을 여는 전용 주소.
+           다른 사람 컴퓨터에서는 아무 일도 일어나지 않는다(그래서 안전).
+           보고서 보기는 노션에서, 일정 보기는 캘린더 앱에서 — 그래서 카드를 안 둔다. -->
+      <a class="card" href="pa-claude://run">
         <div class="row">
-          <div class="icon">☀️</div>
+          <div class="icon">🅰️</div>
           <div class="body">
-            <div class="title">오늘 아침 보고서</div>
-            <div class="desc">오늘의 원씽 · 매출 행동 · 실행 순서 · 묵은 것 정리</div>
-            <div class="note">매일 밤 23시 자동 생성 · 맨 위가 오늘 것</div>
+            <div class="title">업무 / 일정 관리</div>
+            <div class="desc">보고서 다시 만들기 · 문서 수정 · 아이디어 정리</div>
+            <div class="note">터미널에서 대화창이 열립니다 · 말로 시키면 됩니다</div>
           </div>
           <div class="arrow">›</div>
         </div>
       </a>
 
-      <a class="card" href="https://claude.ai/code/routines" target="_blank" rel="noopener">
+      <a class="card" href="pa-sync://run">
         <div class="row">
           <div class="icon">🔄</div>
           <div class="body">
-            <div class="title">보고서 다시 돌리기 · 상태 보기</div>
-            <div class="desc">안 생겼거나 이상할 때 여기서 바로 다시 실행</div>
-            <div class="note">실행 기록 · 오류도 여기서 확인</div>
+            <div class="title">일정 새로고침</div>
+            <div class="desc">캘린더 ↔ 노션 맞추고, 보고서 일정 칸까지 갱신</div>
+            <div class="note">밤 22:30 자동으로도 돕니다 · 낮에 일정 바뀌었을 때만 누르세요</div>
           </div>
           <div class="arrow">›</div>
         </div>
