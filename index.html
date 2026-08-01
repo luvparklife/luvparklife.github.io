@@ -99,15 +99,19 @@
 
     <!-- ============ 프로필 · 구글 로그인 상태 ============
          디폴트는 「로그아웃」이다. 구글이 자동으로 로그인시키지 않도록 auto_select를 끄고
-         One Tap(자동 팝업)도 띄우지 않는다. 로그인하면 그날 자정까지만 유지되고
-         자정이 지나면 다시 로그아웃 상태로 돌아간다.
+         One Tap(자동 팝업)도 띄우지 않는다.
+         유지 기간이 둘이라 헷갈리지 말 것 —
+           · 허브 로그인   : 대표 30일 / 나머지 그날 자정까지 (카드를 보여줄지 판단)
+           · 앱 통행증(cred): 구글이 1시간짜리로만 준다 (정산앱에 「누구인지」 넘길 때)
+         통행증이 먼저 죽으면 「허브는 로그인인데 앱은 손님」이 되므로,
+         그때는 로그인 버튼을 다시 띄운다(credLive 참고).
          로그인 정보는 이 브라우저(localStorage)에만 있고 서버로 보내지 않는다. -->
     <div class="pf off" id="pf">
       <div class="prow">
         <div class="av" id="pfAv">👤</div>
         <div class="who">
           <div class="nm" id="pfNm">로그인 안 됨</div>
-          <div class="em" id="pfEm">앱을 열려면 구글 로그인이 필요합니다</div>
+          <div class="em" id="pfEm">로그인하면 내 것만 보입니다 · 안 해도 둘러볼 수 있어요</div>
           <div class="st" id="pfSt"><span class="sdot"></span>손님</div>
         </div>
         <div id="gbtn"></div>
@@ -180,8 +184,8 @@
           <div class="icon">💰</div>
           <div class="body">
             <div class="title">정산앱 — 팀버전</div>
-            <div class="desc">청구하기 · 내 정산 확인 (본인 것만)</div>
-            <div class="note">프리랜서는 개인 링크로 접속</div>
+            <div class="desc">청구하기 · 내 정산 확인 (로그인하면 본인 것만)</div>
+            <div class="note">로그인 없이도 청구서 양식을 볼 수 있습니다 · 넣으려면 위에서 로그인</div>
           </div>
           <div class="arrow">›</div>
         </div>
@@ -215,7 +219,7 @@
           <div class="body">
             <div class="title">정산앱 — 관리자버전</div>
             <div class="desc">승인 · 계산서 확인(1일) · 지급(15일) · 시간 대조</div>
-            <span class="badge key">관리자 키 필요</span>
+            <span class="badge key">대표 · 명진 로그인 필요</span>
           </div>
           <div class="arrow">›</div>
         </div>
@@ -291,6 +295,14 @@
   }
 
   /* 화면 그리기 */
+  /* 앱 통행증이 아직 살아 있나.
+     구글이 신분증을 1시간짜리로만 준다. 허브 로그인은 30일이라 시간이 어긋난다
+     → 통행증이 죽으면 「허브는 로그인, 앱은 손님」이 되어 대표가 혼란스러워진다.
+     그래서 통행증이 죽으면 로그인 버튼을 다시 띄워 한 번 더 누르게 한다. */
+  function credLive(u){
+    return !!(u && u.cred && u.credExp && Date.now() < u.credExp - 120000);
+  }
+
   function paint(u){
     var role = roleOf(u);
     applyRole(role);
@@ -299,18 +311,25 @@
       $('pfAv').innerHTML = u.picture ? '<img src="'+u.picture+'" alt="" referrerpolicy="no-referrer">' : '🙂';
       $('pfNm').textContent = u.name || '로그인됨';
       $('pfEm').textContent = u.email || '';
-      $('pfSt').innerHTML = '<span class="sdot"></span>' + (
-        role === 'owner' ? '대표 · 30일간 로그인 유지' :
-        role === 'admin' ? '관리자 · 오늘 자정에 자동 로그아웃' :
-                           '로그인됨 · 오늘 자정에 자동 로그아웃'
-      );
-      $('gbtn').hidden = true;
+      if(!credLive(u)){
+        $('pfSt').innerHTML = '<span class="sdot" style="background:#e0a020"></span>'
+          + '앱에 들어가려면 다시 로그인해주세요 <span style="color:var(--faint)">(구글 통행증이 1시간마다 만료됩니다)</span>';
+        $('gbtn').hidden = false;
+        showButton();
+      }else{
+        $('pfSt').innerHTML = '<span class="sdot"></span>' + (
+          role === 'owner' ? '대표 · 30일간 로그인 유지' :
+          role === 'admin' ? '관리자 · 오늘 자정에 자동 로그아웃' :
+                             '로그인됨 · 오늘 자정에 자동 로그아웃'
+        );
+        $('gbtn').hidden = true;
+      }
       $('pfOut').hidden = false;
     }else{
       $('pf').className = 'pf off';
       $('pfAv').innerHTML = '👤';
       $('pfNm').textContent = '로그인 안 됨';
-      $('pfEm').textContent = '앱을 열려면 구글 로그인이 필요합니다';
+      $('pfEm').textContent = '로그인하면 내 것만 보입니다 · 안 해도 둘러볼 수 있어요';
       $('pfSt').innerHTML = '<span class="sdot"></span>손님';
       $('gbtn').hidden = false;
       $('pfOut').hidden = true;
@@ -370,7 +389,9 @@
       say('⚙️ 구글 로그인 설정이 아직 안 끝났습니다 — 출입증(클라이언트 ID)을 받아 넣어야 켜집니다.');
       return;
     }
-    if(loadUser()) return;                       /* 이미 로그인 중이면 버튼 필요 없음 */
+    /* 통행증이 살아 있을 때만 버튼을 숨긴다.
+       로그인은 돼 있는데 통행증만 죽은 경우엔 버튼을 다시 보여줘야 한다(credLive 참고). */
+    if(credLive(loadUser())) return;
     if(!(window.google && google.accounts && google.accounts.id)) return;
     try{
       $('gbtn').innerHTML = '';
@@ -393,11 +414,23 @@
     var a = ev.target.closest ? ev.target.closest('a[data-token]') : null;
     if(!a) return;
     var u = loadUser();
-    if(!u || !u.cred || !u.credExp || Date.now() > u.credExp - 120000) return;  /* 그냥 열림 = 손님 화면 */
+    if(!u) return;                    /* 로그인 안 함 → 그냥 열림 = 앱의 손님 화면 */
+
+    /* 로그인은 돼 있는데 통행증만 죽은 경우 —
+       그냥 열면 「분명 로그인했는데 손님 화면」이 떠서 고장난 것처럼 보인다. 여기서 잡아준다. */
+    if(!credLive(u)){
+      ev.preventDefault();
+      paint(u);                       /* 로그인 버튼 다시 띄우기 */
+      $('pf').scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+
     ev.preventDefault();
     var base = a.getAttribute('href');
     var url  = base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(u.cred);
-    window.open(url, a.getAttribute('target') || '_blank', 'noopener');
+    /* 세 번째 값(windowFeatures)을 주면 브라우저에 따라 탭이 아니라 팝업 창으로 뜬다 → 안 준다. */
+    var w = window.open(url, a.getAttribute('target') || '_blank');
+    if(w) { try { w.opener = null; } catch(e){} }
   });
 
   /* 페이지 열 때: 오늘 로그인한 게 있으면 유지, 없으면 로그아웃 상태(디폴트) */
