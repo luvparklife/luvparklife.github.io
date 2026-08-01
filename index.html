@@ -68,6 +68,28 @@
     a.card.disabled{opacity:.62; pointer-events:none}
 
     .foot{font-size:11px; color:var(--faint); text-align:center; margin-top:8px; line-height:1.7}
+
+    /* ===== 프로필 · 구글 로그인 상태 ===== */
+    .pf{background:var(--card); border:1px solid var(--line); border-radius:14px;
+        padding:13px 14px; margin-bottom:24px}
+    .pf .prow{display:flex; align-items:center; gap:12px}
+    .pf .av{width:38px; height:38px; border-radius:50%; flex-shrink:0; overflow:hidden;
+            background:var(--line2); display:flex; align-items:center; justify-content:center; font-size:21px}
+    .pf .av img{width:100%; height:100%; object-fit:cover; display:block}
+    .pf .who{flex:1; min-width:0}
+    .pf .nm{font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .pf .em{font-size:11.5px; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px}
+    .pf .st{font-size:11px; color:var(--faint); margin-top:4px}
+    .pf .sdot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px}
+    .pf.on  .sdot{background:#22a15b}
+    .pf.off .sdot{background:var(--faint)}
+    .pf button.out{font:inherit; font-size:12.5px; font-weight:600; color:var(--sub);
+        background:transparent; border:1px solid var(--line); border-radius:9px;
+        padding:7px 12px; cursor:pointer; flex-shrink:0}
+    .pf button.out:hover{color:var(--ink); border-color:var(--sub)}
+    .pf .setup{font-size:11.5px; color:var(--adm); background:var(--adm-bg);
+        border:1px solid var(--adm-line); border-radius:9px; padding:8px 10px; margin-top:10px; line-height:1.6}
+    #gbtn{flex-shrink:0}
   </style>
 </head>
 <body>
@@ -75,8 +97,30 @@
     <h1>🎬 프로덕션 허브</h1>
     <p class="sub">필요한 앱을 눌러 들어가세요. 이 페이지 하나만 북마크하면 됩니다.</p>
 
-    <!-- ============ 대표 매일 ============ -->
-    <div class="group daily">
+    <!-- ============ 프로필 · 구글 로그인 상태 ============
+         디폴트는 「로그아웃」이다. 구글이 자동으로 로그인시키지 않도록 auto_select를 끄고
+         One Tap(자동 팝업)도 띄우지 않는다. 로그인하면 그날 자정까지만 유지되고
+         자정이 지나면 다시 로그아웃 상태로 돌아간다.
+         로그인 정보는 이 브라우저(localStorage)에만 있고 서버로 보내지 않는다. -->
+    <div class="pf off" id="pf">
+      <div class="prow">
+        <div class="av" id="pfAv">👤</div>
+        <div class="who">
+          <div class="nm" id="pfNm">로그인 안 됨</div>
+          <div class="em" id="pfEm">앱을 열려면 구글 로그인이 필요합니다</div>
+          <div class="st" id="pfSt"><span class="sdot"></span>손님</div>
+        </div>
+        <div id="gbtn"></div>
+        <button class="out" id="pfOut" hidden>로그아웃</button>
+      </div>
+      <div class="setup" id="pfSetup" hidden></div>
+    </div>
+
+    <!-- ============ 대표 매일 ============
+         data-see="owner" = 대표로 로그인했을 때만 보인다. 기본은 hidden(손님에겐 없음).
+         ⚠️ 감추는 것이지 잠그는 것이 아니다 — 소스 보기를 하면 주소는 보인다.
+         진짜 자물쇠는 각 앱이 건다(구글 권한·관리자 키·내 맥에만 있는 앱). -->
+    <div class="group daily" data-see="owner" hidden>
       <div class="ghead">
         <span class="dot"></span>
         <span class="gt">대표 전용</span>
@@ -131,7 +175,7 @@
         </div>
       </a>
 
-      <a class="card" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec" target="_blank" rel="noopener">
+      <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec" target="_blank" rel="noopener">
         <div class="row">
           <div class="icon">💰</div>
           <div class="body">
@@ -144,8 +188,9 @@
       </a>
     </div>
 
-    <!-- ============ 관리자 ============ -->
-    <div class="group adm">
+    <!-- ============ 관리자 ============
+         data-see="admin" = 대표 또는 관리자(명진)로 로그인했을 때만 보인다. -->
+    <div class="group adm" data-see="admin" hidden>
       <div class="ghead">
         <span class="dot"></span>
         <span class="gt">관리자 · 대표 · 명진</span>
@@ -164,7 +209,7 @@
         </div>
       </a>
 
-      <a class="card" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec" target="_blank" rel="noopener">
+      <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec" target="_blank" rel="noopener">
         <div class="row">
           <div class="icon">💼</div>
           <div class="body">
@@ -175,17 +220,9 @@
           <div class="arrow">›</div>
         </div>
       </a>
-    </div>
 
-    <!-- ============ 내부 공통 ============ -->
-    <div class="group adm">
-      <div class="ghead">
-        <span class="dot" style="background:var(--sub)"></span>
-        <span class="gt" style="color:var(--sub)">내부 공통</span>
-        <span class="gd">새 프로젝트 시작할 때</span>
-      </div>
-
-      <a class="card" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec?page=lifecycle" target="_blank" rel="noopener">
+      <!-- 2026-07-30 대표 지시로 「내부 공통」 그룹에서 이리로 옮김 -->
+      <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec?page=lifecycle" target="_blank" rel="noopener">
         <div class="row">
           <div class="icon">📋</div>
           <div class="body">
@@ -200,5 +237,204 @@
 
     <p class="foot">각 앱은 서로 독립적으로 작동합니다.<br>앱 링크가 바뀌면 이 페이지(index.html)만 갱신하면 됩니다.</p>
   </div>
+
+  <script>
+  /* ─────────────────────────────────────────────────────────────
+     🔧 여기 한 줄만 바꾸면 로그인이 켜집니다.
+     구글 클라우드 콘솔에서 발급받은 "OAuth 클라이언트 ID"를 따옴표 안에 붙여넣기.
+     (…apps.googleusercontent.com 으로 끝나는 긴 글자)
+     비워두면 버튼 대신 "설정 준비 중" 안내가 뜹니다.
+     ───────────────────────────────────────────────────────────── */
+  var GOOGLE_CLIENT_ID = "724029471636-lhf2gugr6rksl6hdu10huf7ojk2tq59u.apps.googleusercontent.com";
+
+  /* ── 누가 무엇을 보나 ────────────────────────────────────────
+     대표   = 전부 보임 · 로그인 30일 유지 (매일 쓰는 도구라 매일 로그인은 마찰)
+     관리자 = 「관리자」 그룹만 보임 · 자정에 자동 로그아웃
+     그 외·손님 = 「팀」 그룹만
+     ⚠️ 명진님 이메일을 아직 안 넣었습니다. 넣기 전까진 명진님도 팀 화면만 보입니다. */
+  var OWNER_EMAILS = ['parklife992@gmail.com'];
+  var ADMIN_EMAILS = [];          /* 예: ['myungjin@example.com'] */
+  var OWNER_DAYS   = 30;
+  /* ──────────────────────────────────────────────────────── */
+
+  var KEY = 'paHubUser';
+  function $(id){ return document.getElementById(id); }
+
+  /* 오늘 밤 12시(자정) 시각 — 보통 로그인은 여기까지만 유효하다 */
+  function midnight(){ var d = new Date(); d.setHours(24,0,0,0); return d.getTime(); }
+
+  /* 이메일로 역할을 정한다 */
+  function roleOf(u){
+    if(!u || !u.email) return 'guest';
+    var e = String(u.email).toLowerCase();
+    if(OWNER_EMAILS.indexOf(e) >= 0) return 'owner';
+    if(ADMIN_EMAILS.indexOf(e) >= 0) return 'admin';
+    return 'team';
+  }
+
+  /* 역할에 맞는 그룹만 보여준다 */
+  function applyRole(role){
+    var els = document.querySelectorAll('[data-see]');
+    for(var i = 0; i < els.length; i++){
+      var need = els[i].getAttribute('data-see');
+      els[i].hidden = !( role === 'owner' || (role === 'admin' && need === 'admin') );
+    }
+  }
+
+  /* 저장된 로그인 읽기. 자정이 지났으면 지우고 없는 것으로 취급한다 */
+  function loadUser(){
+    try{
+      var u = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if(!u || !u.exp || Date.now() >= u.exp){ localStorage.removeItem(KEY); return null; }
+      return u;
+    }catch(e){ localStorage.removeItem(KEY); return null; }
+  }
+
+  /* 화면 그리기 */
+  function paint(u){
+    var role = roleOf(u);
+    applyRole(role);
+    if(u){
+      $('pf').className = 'pf on';
+      $('pfAv').innerHTML = u.picture ? '<img src="'+u.picture+'" alt="" referrerpolicy="no-referrer">' : '🙂';
+      $('pfNm').textContent = u.name || '로그인됨';
+      $('pfEm').textContent = u.email || '';
+      $('pfSt').innerHTML = '<span class="sdot"></span>' + (
+        role === 'owner' ? '대표 · 30일간 로그인 유지' :
+        role === 'admin' ? '관리자 · 오늘 자정에 자동 로그아웃' :
+                           '로그인됨 · 오늘 자정에 자동 로그아웃'
+      );
+      $('gbtn').hidden = true;
+      $('pfOut').hidden = false;
+    }else{
+      $('pf').className = 'pf off';
+      $('pfAv').innerHTML = '👤';
+      $('pfNm').textContent = '로그인 안 됨';
+      $('pfEm').textContent = '앱을 열려면 구글 로그인이 필요합니다';
+      $('pfSt').innerHTML = '<span class="sdot"></span>손님';
+      $('gbtn').hidden = false;
+      $('pfOut').hidden = true;
+    }
+  }
+
+  function logout(){
+    localStorage.removeItem(KEY);
+    if(window.google && google.accounts && google.accounts.id){
+      google.accounts.id.disableAutoSelect();
+    }
+    paint(null);
+    showButton();
+  }
+
+  /* 자정이 되면 페이지를 열어둔 채로도 로그아웃되게 예약 */
+  function scheduleExpire(exp){
+    var ms = exp - Date.now();
+    if(ms > 0 && ms < 2147483647) setTimeout(logout, ms);
+  }
+
+  /* 구글이 준 신분증(JWT)에서 이름·이메일·사진만 꺼낸다 */
+  function decodeJwt(t){
+    var p = t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    var s = decodeURIComponent(atob(p).split('').map(function(c){
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(s);
+  }
+
+  function onGoogle(res){
+    var p = decodeJwt(res.credential);
+    /* cred = 구글이 서명한 신분증. 정산앱처럼 「누군지 알아야 하는 앱」에 들려 보낸다.
+       구글이 1시간짜리로만 발급하므로 credExp 가 지나면 다시 로그인해야 한다. */
+    var u = { name:p.name, email:p.email, picture:p.picture, exp:0,
+              cred:res.credential, credExp:Number(p.exp || 0) * 1000 };
+    /* 대표는 30일 유지, 나머지는 오늘 자정까지 */
+    u.exp = (roleOf(u) === 'owner')
+      ? Date.now() + OWNER_DAYS * 24 * 60 * 60 * 1000
+      : midnight();
+    localStorage.setItem(KEY, JSON.stringify(u));
+    paint(u);
+    scheduleExpire(u.exp);
+  }
+
+  /* 왜 버튼이 안 보이는지 대표가 알 수 있게 노란 칸에 이유를 적는다.
+     조용히 실패하면 원인을 못 찾으므로 반드시 화면에 남긴다. */
+  function say(msg){
+    var s = $('pfSetup');
+    s.hidden = false;
+    s.innerHTML = msg;
+  }
+
+  function showButton(){
+    if(!GOOGLE_CLIENT_ID){
+      $('gbtn').hidden = true;
+      say('⚙️ 구글 로그인 설정이 아직 안 끝났습니다 — 출입증(클라이언트 ID)을 받아 넣어야 켜집니다.');
+      return;
+    }
+    if(loadUser()) return;                       /* 이미 로그인 중이면 버튼 필요 없음 */
+    if(!(window.google && google.accounts && google.accounts.id)) return;
+    try{
+      $('gbtn').innerHTML = '';
+      google.accounts.id.renderButton($('gbtn'),
+        { type:'standard', theme:'outline', size:'medium', text:'signin', shape:'pill' });
+      $('pfSetup').hidden = true;                /* 성공하면 안내 칸을 감춘다 */
+    }catch(e){
+      say('⚠️ 로그인 버튼을 그리지 못했습니다 — ' + (e && e.message ? e.message : e));
+    }
+  }
+
+  $('pfOut').addEventListener('click', logout);
+
+  /* ── 신분증을 들려 보내야 하는 카드 (data-token="1") ──
+     정산앱은 「누가 왔는지」를 알아야 본인 것만 보여줄 수 있는데,
+     구글이 그 앱에는 접속자를 안 알려준다(개인 계정 제약). 그래서 허브가 로그인할 때 받은
+     구글 신분증을 주소에 실어 넘긴다. 앱이 구글에 되물어 진짜인지 확인한 뒤 본인 화면을 연다.
+     신분증이 없거나 만료됐으면 그냥 열어서 「양식만 보이는 화면」이 뜬다. */
+  document.addEventListener('click', function(ev){
+    var a = ev.target.closest ? ev.target.closest('a[data-token]') : null;
+    if(!a) return;
+    var u = loadUser();
+    if(!u || !u.cred || !u.credExp || Date.now() > u.credExp - 120000) return;  /* 그냥 열림 = 손님 화면 */
+    ev.preventDefault();
+    var base = a.getAttribute('href');
+    var url  = base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(u.cred);
+    window.open(url, a.getAttribute('target') || '_blank', 'noopener');
+  });
+
+  /* 페이지 열 때: 오늘 로그인한 게 있으면 유지, 없으면 로그아웃 상태(디폴트) */
+  var me = loadUser();
+  paint(me);
+  if(me) scheduleExpire(me.exp);
+
+  /* 구글 스크립트는 늦게 도착할 수 있다. 준비되면 그때 버튼을 그린다. */
+  var gsiTries = 0;
+  function startGoogle(){
+    if(!GOOGLE_CLIENT_ID){ showButton(); return; }
+    if(window.google && google.accounts && google.accounts.id){
+      try{
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: onGoogle,
+          auto_select: false,        /* 디폴트=로그아웃. 자동으로 로그인시키지 않는다 */
+          cancel_on_tap_outside: true
+        });
+        showButton();
+      }catch(e){
+        say('⚠️ 구글 로그인 준비 중 오류 — ' + (e && e.message ? e.message : e));
+      }
+      return;
+    }
+    /* 아직 안 왔으면 0.3초마다 다시 본다 (최대 10초) */
+    if(++gsiTries > 33){
+      say('⚠️ 구글 로그인 프로그램을 못 불러왔습니다.<br>' +
+          '· 인터넷 연결 확인<br>' +
+          '· 광고차단/보안 확장프로그램이 <b>accounts.google.com</b>을 막고 있을 수 있습니다<br>' +
+          '· VS Code 미리보기 창에서는 구글이 로그인을 막습니다 → <b>크롬에서 열어주세요</b>');
+      return;
+    }
+    setTimeout(startGoogle, 300);
+  }
+  startGoogle();
+  </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
 </html>
