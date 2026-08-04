@@ -115,7 +115,8 @@
           <div class="st" id="pfSt"><span class="sdot"></span>손님</div>
         </div>
         <div id="gbtn"></div>
-        <button class="out" id="pfOut" hidden>로그아웃</button>
+        <button class="out" id="pfOut" hidden
+          title="구글 계정에서 완전히 로그아웃합니다.&#10;장비앱·정산앱은 물론 지메일·드라이브도 함께 로그아웃됩니다.">로그아웃</button>
       </div>
       <div class="setup" id="pfSetup" hidden></div>
     </div>
@@ -340,7 +341,9 @@
     }
   }
 
-  function logout(){
+  /* ask=true 일 때만 「구글 계정도 로그아웃?」을 묻는다.
+     자정 자동 로그아웃(scheduleExpire)에서는 사람이 없으므로 묻지 않는다. */
+  function logout(ask){
     localStorage.removeItem(KEY);
     PENDING_LINK = null;
     REFRESHING   = false;
@@ -351,12 +354,22 @@
     }
     paint(null);
     showButton();
+
+    /* ── 🔴 2026-08-04 대표 지시: 허브와 앱들의 로그인을 일치시킨다 ──
+       여기까지는 「이 사이트에서만 나감」이라 브라우저의 구글 세션이 그대로 남는다.
+       그러면 장비앱(접속자 권한으로 실행)에 들어갔을 때 여전히 로그인 상태로 보인다.
+       앱들까지 함께 로그아웃시키는 방법은 「구글 계정 로그아웃」 하나뿐이다.
+       🔴 대표 지시로 묻지 않고 항상 완전 로그아웃한다 (지메일·드라이브도 같이 나간다).
+       단, 자정 자동 로그아웃(ask=false)에서는 하지 않는다 —
+       사람이 없는데 구글 로그아웃 페이지로 넘어가 있으면 다음날 아침에 혼란스럽다. */
+    if(ask !== true) return;
+    location.href = 'https://accounts.google.com/Logout';
   }
 
   /* 자정이 되면 페이지를 열어둔 채로도 로그아웃되게 예약 */
   function scheduleExpire(exp){
     var ms = exp - Date.now();
-    if(ms > 0 && ms < 2147483647) setTimeout(logout, ms);
+    if(ms > 0 && ms < 2147483647) setTimeout(function(){ logout(false); }, ms);
   }
 
   /* 구글이 준 신분증(JWT)에서 이름·이메일·사진만 꺼낸다 */
@@ -459,7 +472,7 @@
     }
   }
 
-  $('pfOut').addEventListener('click', logout);
+  $('pfOut').addEventListener('click', function(){ logout(true); });
 
   /* ── 신분증을 들려 보내야 하는 카드 (data-token="1") ──
      정산앱은 「누가 왔는지」를 알아야 본인 것만 보여줄 수 있는데,
