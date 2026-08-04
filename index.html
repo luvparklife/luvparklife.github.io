@@ -269,6 +269,17 @@
   /* ──────────────────────────────────────────────────────── */
 
   var KEY = 'paHubUser';
+
+  /* ── 🔴 2026-08-04: 앱에서 「로그아웃」을 눌러 보낸 경우 (?logout=1) ──
+     구글 계정에서 나가도 허브가 자기 저장소에 적어둔 로그인 기록은 안 지워진다.
+     그래서 「앱에서 로그아웃했는데 허브는 로그인 상태」가 됐다.
+     앱이 이 주소로 열어주면, 여기서 기록을 지우고 구글 로그아웃까지 이어서 한다.
+     → 어느 쪽에서 눌러도 양쪽이 함께 로그아웃된다. */
+  if (location.search.indexOf('logout=1') >= 0) {
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    location.replace('https://accounts.google.com/Logout');
+  }
+
   function $(id){ return document.getElementById(id); }
 
   /* 오늘 밤 12시(자정) 시각 — 보통 로그인은 여기까지만 유효하다 */
