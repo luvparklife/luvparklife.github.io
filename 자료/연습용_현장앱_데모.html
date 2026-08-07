@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>현장시트</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#F0F2F5;color:#212121}
+.app{display:flex;flex-direction:column;min-height:100vh}
+
+/* ── topbar ── */
+.topbar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#263238;color:#fff;flex-wrap:wrap;flex-shrink:0}
+.logo{font-size:15px;font-weight:600;white-space:nowrap}
+/* ── 허브로 돌아가기 (2026-08-04) ── */
+.hub-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:5px;
+  background:rgba(255,255,255,.14);color:#fff;text-decoration:none;font-size:15px;line-height:1;flex-shrink:0}
+.hub-btn:hover{background:rgba(255,255,255,.3)}
+.proj-sel{flex:1;min-width:150px;height:34px;padding:0 8px;border:none;border-radius:5px;font-size:13px;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;outline:none}
+.proj-sel option{background:#263238}
+/* ── 접속자 표시 — 「누구로 기록되는지」가 항상 보이게 (2026-08-04) ── */
+.whobox{display:flex;align-items:center;gap:5px;font-size:12.5px;background:rgba(255,255,255,.12);border-radius:5px;padding:5px 9px;white-space:nowrap}
+#who{cursor:pointer;border-bottom:1px dotted rgba(255,255,255,.55)}
+#who:hover{border-bottom-color:#fff}
+.view-tog{display:flex;border-radius:5px;overflow:hidden;flex-shrink:0}
+.vbtn{padding:6px 12px;font-size:12px;font-weight:500;border:none;cursor:pointer}
+.vbtn.on{background:#1565C0;color:#fff}
+.vbtn:not(.on){background:rgba(255,255,255,.14);color:rgba(255,255,255,.75)}
+
+/* ── phase bar ── */
+/* ── 날짜별 보기 (2026-08-04 대표 지시) ── */
+.date-bar{display:flex;gap:6px;padding:8px 12px;background:#fff;border-bottom:1px solid #E0E0E0;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;flex-shrink:0;align-items:center}
+.dlbl{font-size:11px;color:#90A4AE;white-space:nowrap;flex-shrink:0;margin-right:2px}
+.dchip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:1.5px solid #CFD8DC;
+  border-radius:16px;font-size:12px;white-space:nowrap;cursor:pointer;background:#fff;color:#546E7A;
+  user-select:none;-webkit-user-select:none;flex-shrink:0}
+.dchip.on{border-color:#1565C0;background:#E3F2FD;color:#0D47A1;font-weight:600}
+.dchip.all{border-color:#00695C;color:#00695C}
+.dchip.all.on{background:#E0F2F1;border-color:#00695C;color:#004D40}
+.dchip input{margin:0;cursor:pointer;width:14px;height:14px;accent-color:#1565C0}
+.phase-bar{display:flex;align-items:center;gap:8px;padding:9px 14px 7px;background:#fff;border-bottom:1px solid #E0E0E0;flex-shrink:0}
+.pbtn{padding:5px 18px;font-size:13px;border:1.5px solid #BDBDBD;border-radius:20px;background:none;cursor:pointer;color:#757575;transition:.1s}
+.pbtn.on{border-color:#00695C;background:#00695C;color:#fff;font-weight:500}
+
+/* ── wrap summary bar ── */
+.sum-bar{display:none;padding:8px 14px;border-bottom:1px solid #E0E0E0;flex-shrink:0;align-items:center;gap:10px}
+.sum-bar.show{display:flex}
+.sum-status{font-size:13px;font-weight:600;flex:1}
+.sum-count{font-size:11px;color:#757575}
+.sum-ok{color:#2E7D32}
+.sum-check{color:#E65100}
+.sum-todo{color:#9E9E9E}
+
+/* ── status bar ── */
+.st-bar{padding:5px 14px;font-size:12px;display:none;flex-shrink:0}
+.st-bar.show{display:block}
+
+/* ── content ── */
+.content{flex:1;padding:10px 10px 76px}
+.empty-msg{padding:40px 20px;text-align:center;color:#9E9E9E;font-size:13px}
+
+/* ── group card ── */
+.gcard{margin-bottom:12px;background:#fff;border-radius:6px;border:1px solid #E0E0E0;overflow:hidden}
+.ghead{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#FAFAFA;border-bottom:1px solid #EEEEEE}
+.gname{font-size:13px;font-weight:600;color:#263238}
+.gbadge{font-size:10px;padding:2px 8px;background:#ECEFF1;border-radius:10px;color:#546E7A}
+
+/* ── table ── */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%}
+th{background:#ECEFF1;font-size:10px;font-weight:600;color:#546E7A;padding:5px 7px;border-bottom:1px solid #E0E0E0;white-space:nowrap;text-align:left}
+td{padding:4px 6px;border-bottom:1px solid #F5F5F5;font-size:12px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.col-name{position:sticky;left:0;z-index:2;background:#fff;min-width:100px;max-width:160px;font-weight:500;word-break:break-all}
+th.col-name{background:#ECEFF1;z-index:3}
+.col-qty{text-align:center;white-space:nowrap;color:#757575;min-width:32px}
+.col-ro{color:#546E7A;font-size:11px}      /* read-only cells */
+
+/* ── staff checkbox cell ── */
+.staff-cell{min-width:110px;white-space:nowrap}
+.staff-chk-lbl{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.staff-chk{width:16px;height:16px;cursor:pointer;accent-color:#1565C0;flex-shrink:0}
+.staff-name{font-size:11px;color:#37474F;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.staff-name.me{color:#1565C0;font-weight:600}
+.staff-name.empty{color:#BDBDBD}
+
+/* ── 업체(조달) 통일 표시 ── */
+.col-vendor{min-width:150px}
+.st-sel{width:100%;min-width:104px;height:26px;padding:0 4px;border-radius:5px;font-size:11.5px;font-weight:700;border:1.5px solid #CFD8DC;background:#fff;color:#546E7A;cursor:pointer;outline:none}
+.st-sel.st-ok{border-color:#66BB6A;background:#E8F5E9;color:#1B5E20}
+.st-sel.st-chk{border-color:#FFA726;background:#FFF3E0;color:#E65100}
+.st-sel.st-todo{border-color:#CFD8DC;background:#fff;color:#90A4AE}
+.chip2{display:inline-block;background:#E8EAF6;border:1px solid #C5CAE9;border-radius:4px;padding:1px 6px;margin:1px 3px 1px 0;font-size:10.5px;color:#283593;white-space:nowrap;line-height:1.5}
+.vpill{display:inline-block;background:#EEF2F6;border:1px solid #DCE3EA;border-radius:11px;padding:1px 8px;margin:1px 2px 1px 0;font-size:11px;color:#37474F;white-space:nowrap}
+.vpill b{color:#1565C0;font-weight:700}
+
+/* ── 접이식 상세: 구성품 · 연관장비 (평소엔 접힘 — "서브 백업" 정보) ── */
+.dtl-btn{margin-left:5px;width:17px;height:17px;line-height:1;padding:0;border:1px solid #CFD8DC;border-radius:4px;
+  background:#F5F7F9;color:#78909C;font-size:11px;font-weight:700;cursor:pointer;vertical-align:middle}
+.dtl-btn:hover{background:#E3F2FD;border-color:#90CAF9;color:#1565C0}
+tr.dtl-row td{background:#FAFBFC;border-bottom:1px solid #ECEFF1;padding:7px 10px 8px 14px}
+tr.dtl-row .col-name{position:static}
+.dtl{display:grid;grid-template-columns:64px 1fr;gap:4px 10px;align-items:start}
+.dtl-l{font-size:10.5px;color:#90A4AE;font-weight:700;padding-top:2px}
+.dtl-v{font-size:11px;color:#37474F}
+
+/* ── 업체별 보기 안의 카테고리 구분줄 (2026-08-04) ── */
+tr.cat-row td{background:#EEF2F6;color:#37474F;font-size:11px;font-weight:800;letter-spacing:.2px;
+  padding:5px 10px;border-top:1px solid #DCE3EA;border-bottom:1px solid #DCE3EA}
+
+/* ── 랩업 확인필요 요약 박스 (반납 탭 맨 위) ── */
+.wrapalert{background:#FFF8E1;border:1.5px solid #FFCC80;border-radius:9px;padding:10px 12px;margin-bottom:12px}
+.wa-h{font-size:12.5px;font-weight:800;color:#E65100;margin-bottom:6px}
+.wa-i{font-size:12px;padding:6px 0;border-top:1px solid #FFE0B2;cursor:pointer}
+.wa-i:first-of-type{border-top:none}
+.wa-i:active{opacity:.6}
+.wa-i b{color:#37474F}
+.wa-q{color:#8D6E63;font-size:11px}
+.wa-w{font-size:11px;color:#A1887F}
+.wa-n{font-size:11.5px;color:#6D4C41;margin-top:2px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.wchk-btn{margin-left:5px;padding:0 4px;height:19px;line-height:1;border:1.5px solid #FFB74D;border-radius:5px;
+  background:#FFF3E0;font-size:11px;cursor:pointer;vertical-align:middle}
+.wchk-btn:hover{background:#FFE0B2}
+.dtl-l.wchk{color:#E65100}
+.dtl-v.wchk{color:#5D4037}
+.wchk-note{margin-top:3px;background:#FFF8E1;border-left:3px solid #FFB74D;border-radius:4px;
+  padding:5px 8px;font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+tr.flash td{animation:flashbg 1.6s ease-out}
+@keyframes flashbg{0%{background:#FFE0B2}100%{background:transparent}}
+
+.wa-prep{background:#E8F1FB;border-color:#9FC4EA}
+.wa-prep .wa-h{color:#1565C0}
+.wa-prep .wa-i{border-top-color:#CBDFF5}
+.wa-prep .wa-n{color:#37474F}
+
+.wa-body{max-height:230px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.wa-t{display:inline-block;font-size:9.5px;font-weight:800;padding:0 4px;border-radius:3px;
+  background:rgba(0,0,0,.07);margin-right:5px;vertical-align:1px}
+.wa-note{background:#F1F8E9;border-color:#C5E1A5}
+.wa-note .wa-h{color:#33691E}
+.wa-note .wa-i{border-top-color:#DCEDC8}
+.wa-note .wa-n{color:#33691E}
+
+/* 목록에서 눈여겨볼 줄 — 품목명 왼쪽 색 띠 */
+td.col-name.mk-note{box-shadow:inset 3px 0 0 #7CB342}
+td.col-name.mk-prep{box-shadow:inset 3px 0 0 #1565C0}
+td.col-name.mk-wrap{box-shadow:inset 3px 0 0 #FB8C00}
+.wchk-btn.mk-note{border-color:#AED581;background:#F1F8E9}
+.wchk-btn.mk-prep{border-color:#90CAF9;background:#E3F2FD}
+.dtl-l.pchk{color:#1565C0}
+.dtl-v.pchk{color:#0D47A1}
+.pchk-note{margin-top:3px;background:#E8F1FB;border-left:3px solid #90CAF9;border-radius:4px;
+  padding:5px 8px;font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+
+.chip2.rel-in{background:#E8F5E9;border-color:#A5D6A7;color:#1B5E20;font-weight:700}
+.chip2.rel-out{background:#FFF3E0;border-color:#FFCC80;color:#E65100;font-weight:700}
+
+/* ── 상태 배지 ── */
+.stbadge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.b-ok{background:#E8F5E9;color:#2E7D32}
+.b-chk{background:#FFF3E0;color:#E65100}
+.b-todo{background:#F0F0F0;color:#9E9E9E}
+
+/* ── text inputs ── */
+.ci{height:30px;border:1px solid transparent;border-radius:4px;padding:0 7px;font-size:12px;width:100%;min-width:80px;background:transparent;color:#212121;outline:none;-webkit-appearance:none}
+.ci:focus{border-color:#1565C0;background:#E3F2FD}
+.ci.ta{min-height:32px;line-height:1.45;padding:6px 7px;resize:vertical;overflow:hidden;
+  font-family:inherit;display:block;white-space:pre-wrap;word-break:break-word}
+.ci.ta:focus{background:#E3F2FD;border-color:#1565C0}
+.qty-in{min-width:44px;max-width:56px;text-align:center;border-color:#E0E0E0}
+.qty-in:focus{border-color:#E65100;background:#FFF3E0}
+
+/* ── status dropdown ── */
+.st-sel{height:28px;border:1px solid #E0E0E0;border-radius:14px;padding:0 8px;font-size:11px;font-weight:500;background:#FAFAFA;color:#9E9E9E;cursor:pointer;outline:none;min-width:90px;-webkit-appearance:none;appearance:none;text-align:center}
+.st-sel.ok{border-color:#43A047;background:#E8F5E9;color:#2E7D32}
+.st-sel.chk{border-color:#FB8C00;background:#FFF3E0;color:#E65100}
+.st-sel.repair{border-color:#1565C0;background:#E3F2FD;color:#1565C0}
+.st-sel.lost{border-color:#B71C1C;background:#FFEBEE;color:#B71C1C}
+/* row highlight */
+tr.row-ok td{background:#F9FFF9}
+tr.row-ok td.col-name{background:#F9FFF9;color:#2E7D32}
+tr.row-chk td{background:#FFFAF4}
+tr.row-chk td.col-name{background:#FFFAF4;color:#E65100}
+tr.row-repair td{background:#EEF4FF}
+tr.row-repair td.col-name{background:#EEF4FF;color:#1565C0}
+tr.row-lost td{background:#FFF0F0}
+tr.row-lost td.col-name{background:#FFF0F0;color:#B71C1C}
+
+/* ── save bar ── */
+.save-bar{position:fixed;bottom:0;left:0;right:0;padding:9px 14px;background:#fff;border-top:1px solid #E0E0E0;display:flex;align-items:center;gap:10px;z-index:20;box-shadow:0 -1px 4px rgba(0,0,0,.06)}
+.save-dot{width:8px;height:8px;border-radius:50%;background:#F4511E;display:none;flex-shrink:0}
+.save-dot.show{display:inline-block}
+.btn-save{flex:1;max-width:180px;height:40px;border:none;border-radius:6px;background:#1565C0;color:#fff;font-size:14px;font-weight:500;cursor:pointer}
+.btn-save:disabled{background:#BDBDBD;cursor:not-allowed}
+.save-hint{font-size:11px;color:#9E9E9E;flex:1}
+.sheet-link{flex-shrink:0;font-size:12px;font-weight:500;color:#37474F;background:#ECEFF1;border:1px solid #DCE3EA;border-radius:14px;padding:6px 12px;text-decoration:none;white-space:nowrap}
+.sheet-link:active{background:#DCE3EA}
+
+/* ── loading ── */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;color:#9E9E9E;gap:12px}
+.spinner{width:26px;height:26px;border:3px solid #E0E0E0;border-top-color:#1565C0;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:500px){
+  .topbar{padding:8px 10px}
+  .content{padding:8px 6px 76px}
+  td,th{padding:4px 4px}
+  .btn-save{max-width:none}
+}
+</style>
+</head>
+<body>
+<div id="demo-flag">🧪 연습용 데모 — 여기서 무엇을 눌러도 <b>실제 시트에는 저장되지 않습니다</b>. 마음껏 연습하세요.</div>
+<style>
+#demo-flag{position:fixed;left:0;right:0;bottom:0;z-index:9998;background:#4A148C;color:#fff;
+  font-size:12px;text-align:center;padding:5px 10px;letter-spacing:-.2px}
+.save-bar{bottom:26px !important}
+</style>
+<script>
+/* ══ 연습용 가짜 서버 ══════════════════════════════════════════
+   진짜 앱은 google.script.run 으로 구글 시트를 읽고 씁니다.
+   이 파일은 그 자리에 아래 가짜 데이터를 물려서, 시트를 안 건드리고도
+   화면이 똑같이 돌아가게 한 것입니다. */
+var DEMO_PROJECTS = [
+  {name:'260812_연습용_촬영', label:'260812_연습용_촬영'},
+  {name:'260722_연습용_지난촬영', label:'260722_연습용_지난촬영'}
+];
+var DEMO_ME = { email:'yeonseub@pa.co.kr', name:'김연습', role:'입력' };
+var V = ['PA','HK렌탈','조명','프로렌탈'];
+function mk(row, cat, item, qty, v, o) {
+  var it = { sourceRow:row, lineId:'L' + ('000'+row).slice(-4), status:'confirm', cat:cat,
+    item:item, qty:qty, eqNote:'', comp:'', relEquip:'', prepStaff:'', prepNote:'', prepSt:'',
+    innerNote:'', wrapNote:'', wrapSt:'', wrapStaff:'', returnStaff:'', returnNote:'',
+    repairQty:0, lostQty:0, outDate:'2026-08-12', retDate:'2026-08-13', vendorQtys:{} };
+  V.forEach(function(k){ it.vendorQtys[k] = 0; });
+  it.vendorQtys[v[0]] = v[1];
+  for (var k in (o||{})) it[k] = o[k];
+  it.retnSt = (it.repairQty>0||it.lostQty>0) ? 'chk' : (it.returnStaff ? 'ok' : '');
+  return it;
+}
+var DEMO_ITEMS = [
+  mk(4,'1.CAMERA','PHASE ONE XF IQ4 150MP',1,['PA',1],
+     {eqNote:'센서 먼지 있음 — 출고 전 청소 필수', comp:'바디, 배터리 2개, 충전기, 스트랩',
+      relEquip:'CF EXPRESS 512GB, 카메라 삼각대'}),
+  mk(5,'1.CAMERA','SONY A7R5',1,['PA',1], {comp:'바디, 배터리 3개, 충전기'}),
+  mk(6,'1.CAMERA','CF EXPRESS 512GB',4,['PA',4]),
+  mk(7,'2.LENS','PHASE ONE 80mm LS',1,['HK렌탈',1],
+     {innerNote:'HK 픽업 — 12일 오전 10시 이후 수령'}),
+  mk(8,'2.LENS','PHASE ONE 120mm MACRO',1,['HK렌탈',1]),
+  mk(9,'3.LIGHT(STROBE)','PROFOTO PRO-11',2,['조명',2],
+     {eqNote:'1번 헤드 팬 소음 있음', comp:'제네레이터, 싱크케이블, 파워케이블'}),
+  mk(10,'3.LIGHT(STROBE)','PROFOTO PRO-11 HEAD',3,['조명',3]),
+  mk(11,'4.MODIFIER(STROBE)','OCTA 5ft',1,['조명',1], {relEquip:'스피드링, 그리드 5ft'}),
+  mk(12,'4.MODIFIER(STROBE)','스피드링',1,['조명',1]),
+  mk(13,'5.STAND','C-STAND',6,['PA',6]),
+  mk(14,'5.STAND','매니프로토 삼각대',2,['프로렌탈',2],
+     {outDate:'2026-08-13', retDate:'2026-08-13'}),
+  mk(15,'6.GRIP','샌드백 10kg',8,['PA',8]),
+  mk(16,'7.DIGITAL','24" MONITOR(EIZO CG2420)',1,['PA',1],
+     {eqNote:'캘리브레이션 8/1 완료', comp:'모니터, 전원케이블, HDMI'}),
+  mk(17,'7.DIGITAL','I-PAD Pro 12.9"',1,['PA',1], {outDate:'', retDate:''}),
+  mk(18,'8.POWER','발전기 2.8kW',1,['프로렌탈',1],
+     {innerNote:'주유 상태 확인하고 받을 것'})
+];
+/* 연습 편의 — 준비 단계에서 이미 몇 개 처리해 둔 모습으로 시작 */
+DEMO_ITEMS[1].prepSt='ok';  DEMO_ITEMS[1].prepStaff='김연습';
+DEMO_ITEMS[2].prepSt='ok';  DEMO_ITEMS[2].prepStaff='김연습';
+DEMO_ITEMS[6].prepSt='chk'; DEMO_ITEMS[6].prepStaff='박선배'; DEMO_ITEMS[6].prepNote='3개 중 1개 헤드 결선 불량 — 조명팀에 교체 요청함';
+DEMO_ITEMS[8].wrapSt='chk'; DEMO_ITEMS[8].wrapStaff='박선배'; DEMO_ITEMS[8].wrapNote='스피드링 나사 하나 안 보임 — 반납 때 다시 확인';
+
+function DEMO_DATA() {
+  return { items: JSON.parse(JSON.stringify(DEMO_ITEMS)), vendorCols: V.slice(), staffList: ['김연습','박선배'] };
+}
+
+function _chain() {
+  var C = { _s:function(){}, _f:function(){} };
+  function later(fn){ setTimeout(fn, 150); }
+  C.withSuccessHandler = function(f){ C._s = f || C._s; return C; };
+  C.withFailureHandler = function(f){ C._f = f || C._f; return C; };
+  C.fieldGetProjects   = function(){ later(function(){ C._s(DEMO_PROJECTS); }); };
+  C.fieldGetMe         = function(){ later(function(){ C._s(DEMO_ME); }); };
+  C.fieldGetSheetUrl   = function(){ later(function(){ C._s('#'); }); };
+  C.fieldGetData       = function(){ later(function(){ C._s(DEMO_DATA()); }); };
+  C.fieldSaveData      = function(p, upd){ later(function(){
+      C._s({ ok:true, saved:(upd||[]).length });   /* 저장한 척만 한다 */
+  }); };
+  return C;
+}
+var google = { script: { run: {
+  withSuccessHandler: function(f){ return _chain().withSuccessHandler(f); },
+  withFailureHandler: function(f){ return _chain().withFailureHandler(f); }
+} } };
+</script>
+
+<div class="app">
+
+  <div class="topbar">
+    <!-- 🔴 target="_top" 필수 — 이 앱은 구글이 만든 액자(iframe) 안에서 돈다.
+         이게 없으면 허브가 액자 안에서 열려 로그인이 풀린 것처럼 보인다. -->
+    <a class="hub-btn" href="https://luvparklife.github.io" target="_top"
+       title="프로덕션 허브로 돌아가기">🏠</a>
+    <span class="logo">현장시트</span>
+    <select class="proj-sel" id="proj-sel" onchange="onProjChange()">
+      <option value="">— 프로젝트 선택 —</option>
+    </select>
+    <div class="view-tog">
+      <button class="vbtn on" id="vcat" onclick="setView('cat')">카테고리별</button>
+      <button class="vbtn"    id="vven" onclick="setView('ven')">업체별</button>
+    </div>
+    <div class="whobox" title="이 이름으로 준비·랩업·반납 담당이 기록됩니다">
+      <span>👤</span>
+      <span id="who" onclick="whoMenu()">확인 중…</span>
+    </div>
+  </div>
+
+  <div class="date-bar" id="date-bar" hidden></div>
+
+  <div class="phase-bar">
+    <button class="pbtn on" id="ph-prep" onclick="setPhase('prep')">준비</button>
+    <button class="pbtn"    id="ph-wrap" onclick="setPhase('wrap')">랩업</button>
+    <button class="pbtn"    id="ph-retn" onclick="setPhase('retn')">반납</button>
+  </div>
+
+  <!-- wrap summary (only visible in wrap tab) -->
+  <div class="sum-bar" id="sum-bar">
+    <span class="sum-status" id="sum-status">—</span>
+    <span class="sum-count"  id="sum-count"></span>
+  </div>
+
+  <div class="st-bar" id="st-bar"></div>
+
+  <div id="alert-zone"></div>
+
+  <div class="content" id="content">
+    <div class="empty-msg">위에서 프로젝트를 선택하세요.</div>
+  </div>
+
+  <div class="save-bar">
+    <span class="save-dot" id="save-dot"></span>
+    <button class="btn-save" id="save-btn" onclick="saveAll()" disabled>저장</button>
+    <span class="save-hint" id="save-hint">프로젝트를 선택하세요</span>
+    <a class="sheet-link" id="sheet-link" href="#" target="_blank" rel="noopener">📊 시트</a>
+  </div>
+</div>
+
+<script>
+var DATA    = null;
+var VIEW    = 'cat';
+var PHASE   = 'prep';
+var DIRTY   = false;
+/* 허브(luvparklife.github.io)가 실어 보낸 신분증. 없으면 「보기 전용」이 된다. */
+var MY_TOKEN  = 'DEMO';
+/* 시트 메뉴로 열었을 때 붙는 5분짜리 티켓. 허브를 안 거쳐도 본인 확인이 된다. */
+var MY_TICKET = 'DEMO';
+var CAN_EDIT = false;          /* 로그인 확인돼야 true → 저장 가능 */
+var MY_ROLE  = '';             /* 직원명단 「권한」 열: 보기 / 입력 / 관리 */
+var MY_EMAIL = '';
+var MY_NAME  = '';   // 직원명단 기반 표시 이름 (없으면 이메일앞부분)
+var MY_SHORT = '';   // = MY_NAME (호환용 별칭)
+// WRAPST[row]     = 'ok'|'chk'              — 랩업 상태
+// WRAP_STAFF[row] = email                    — 랩업 담당
+// RETNST[row]     = 'ok'|'repair'|'lost'    — 반납 상태
+var PREPST      = {};   // sourceRow → '' | 'ok' | 'chk'  (준비상태)
+var WRAPST      = {};
+var WRAP_STAFF  = {};
+var RETNST      = {};
+var ROW2LID     = {};   // sourceRow → 라인ID (저장 시 불변키로 보내기 위함)
+
+// ── 부팅 에러를 화면에 띄운다 ───────────────────────────────────
+// (2026-07-14: 예전엔 withFailureHandler(function(){}) 로 에러를 통째로 삼켜서,
+//  다른 사람이 열면 "빈 화면"만 보이고 왜 안 되는지 알 수가 없었다 — 대표: "명진한테서 안 열린다")
+function bootError(where, err) {
+  var msg = (err && (err.message || err)) || '알 수 없는 오류';
+  var box = document.getElementById('boot-err');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'boot-err';
+    box.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9999;background:#B71C1C;color:#fff;' +
+      'padding:12px 16px;font-size:13px;line-height:1.6;box-shadow:0 2px 10px rgba(0,0,0,.3)';
+    document.body.appendChild(box);
+  }
+  box.innerHTML += '<div><b>⚠ ' + where + ' 실패</b> — ' + String(msg) +
+    '<br><span style="opacity:.85;font-size:12px">이 화면을 캡처해서 대표에게 보내주세요.</span></div>';
+}
+
+// ── init ─────────────────────────────────────────────────────
+window.onload = function() {
+  // load projects
+  google.script.run
+    .withSuccessHandler(function(projs) {
+      var sel = document.getElementById('proj-sel');
+      if (!projs || !projs.length) {
+        bootError('프로젝트 목록', '프로젝트가 0개입니다. (프로젝트목록 탭이 비었거나 전부 "완료" 상태)');
+        return;
+      }
+      projs.forEach(function(p) {
+        var o = document.createElement('option');
+        o.value = p.name || p;
+        o.textContent = p.label || p.name || p;   // 서버가 촬영일 최신순으로 정렬해 보냄
+        sel.appendChild(o);
+      });
+    })
+    .withFailureHandler(function(err){ bootError('프로젝트 목록 불러오기', err); })
+    .fieldGetProjects();
+
+  // load current user (email + 표시이름)
+  google.script.run
+    .withSuccessHandler(function(me) {
+      MY_EMAIL = (me && me.email) || '';
+      MY_NAME  = (me && me.name)  || (MY_EMAIL ? MY_EMAIL.split('@')[0] : '');
+      MY_SHORT = MY_NAME;
+      if (MY_EMAIL) {
+        MY_ROLE  = (me && me.role) || '입력';
+        CAN_EDIT = (MY_ROLE !== '보기');      // 「보기」 등급은 저장 못 한다
+        if (CAN_EDIT) showWho(MY_NAME + (MY_ROLE === '관리' ? ' ★' : ''));
+        else showReadOnlyRole(MY_NAME);
+        applyEditLock();
+      } else {
+        CAN_EDIT = false;
+        showViewOnly();
+        applyEditLock();
+      }
+    })
+    .withFailureHandler(function(err){
+      CAN_EDIT = false;
+      showViewOnly();
+      bootError('접속자 확인', err);
+    })
+    .fieldGetMe(MY_TOKEN, MY_TICKET);
+
+  // 시트 바로가기 링크 (하단 저장바에 항상 표시)
+  google.script.run
+    .withSuccessHandler(function(url) {
+      if (url) document.getElementById('sheet-link').href = url;
+    })
+    .withFailureHandler(function(){})   // 시트 권한이 없는 사람은 못 열어도 앱은 돌아간다
+    .fieldGetSheetUrl();
+};
+
+// ── 접속자 표시 (2026-08-04) ──────────────────────────────────
+// 이 앱은 「접속자 권한」으로 실행된다 (appsscript.json 의 executeAs=USER_ACCESSING).
+// 그래서 구글이 접속자 이메일을 알려주고, 그 이메일로 시트 「직원명단」에서 이름을 찾아 띄운다.
+// 🔴 시트를 공유받지 않은 사람은 구글이 앱 자체를 안 열어준다 → 「공유 목록 = 권한 목록」.
+//    그래서 명단에 따로 권한 열을 두지 않는다 (같은 정보가 두 곳에 있으면 반드시 어긋난다).
+
+function showWho(name) {
+  var who = document.getElementById('who');
+  if (!who) return;
+  who.textContent = name || '이름 없음';
+  who.style.color = '#B9F6CA';
+  who.title = (MY_EMAIL || '') + '\n클릭하면 로그아웃할 수 있습니다.';
+}
+
+function showWhoError(msg, tip) {
+  var who = document.getElementById('who');
+  if (!who) return;
+  who.textContent = msg;
+  who.style.color = '#FFCDD2';
+  who.title = tip || '';
+}
+
+/* 로그인 안 된 상태 — 볼 수는 있고 입력만 막힌다.
+   🔴 저장 차단의 진짜 자물쇠는 서버(fieldSaveData)에 있다. 여기는 안내일 뿐이다. */
+function showViewOnly() {
+  showWhoError('👁 보기 전용 · 로그인하기',
+    '허브에서 로그인하면 입력할 수 있습니다.\n클릭하면 허브로 갑니다.');
+  var b = document.getElementById('save-btn');
+  if (b) { b.disabled = true; b.textContent = '보기 전용'; }
+  var h = document.getElementById('save-hint');
+  if (h) h.textContent = '입력하려면 허브에서 로그인한 뒤 「현장 장비앱」으로 들어오세요.';
+}
+
+/* 「보기」 등급 — 로그인은 했지만 저장 권한이 없는 사람 */
+function showReadOnlyRole(name) {
+  var who = document.getElementById('who');
+  if (who) {
+    who.textContent = (name || '이름 없음') + ' · 보기 전용';
+    who.style.color = '#FFE082';
+    who.title = '저장 권한이 없는 계정입니다.\n입력이 필요하면 대표에게 요청하세요.\n클릭하면 로그아웃합니다.';
+  }
+  var b = document.getElementById('save-btn');
+  if (b) { b.disabled = true; b.textContent = '보기 전용'; }
+  var h = document.getElementById('save-hint');
+  if (h) h.textContent = '저장 권한이 없는 계정입니다. 대표에게 「직원명단」 권한을 요청하세요.';
+}
+
+/* 이름(또는 「보기 전용」)을 클릭했을 때 */
+function whoMenu() {
+  var HUB = 'https://luvparklife.github.io';
+  if (!MY_EMAIL) {                 // 로그인 안 됨 → 허브로 보낸다
+    try { window.top.location.href = HUB; } catch (e) { window.open(HUB, '_blank'); }
+    return;
+  }
+  if (!confirm('로그아웃하시겠습니까?\n\n' +
+               '지금 계정: ' + MY_EMAIL + '\n\n' +
+               '⚠️ 구글 계정 전체에서 로그아웃됩니다.\n' +
+               '(지메일·드라이브도 함께)')) return;
+  /* 🔴 허브를 거쳐 로그아웃한다 (2026-08-04).
+     구글 계정만 로그아웃하면 허브가 자기 저장소에 적어둔 로그인 기록이 남아
+     「앱은 로그아웃인데 허브는 로그인」이 된다. 허브에 ?logout=1 로 들어가면
+     허브가 자기 기록을 지우고 구글 로그아웃까지 이어서 해준다.
+     새 탭으로 여는 이유 — 지금 보던 이 화면을 잃지 않기 위해서다.
+     (구글은 로그아웃 뒤 외부 사이트로 돌려보내는 걸 막아둬서 「원래 페이지로 복귀」는 만들 수 없다) */
+  window.open(HUB + '?logout=1', '_blank');
+  /* 🔴 이 화면의 입력 권한을 즉시 끈다 (2026-08-04 교차검증에서 잡힌 누락).
+     구글 신분증은 1시간짜리라 로그아웃해도 만료 전까지는 살아 있다.
+     끄지 않으면 로그아웃한 사람이 이 탭에서 계속 저장할 수 있다.
+     🔴 서버(fieldSaveData)도 매번 다시 확인하므로, 여기는 즉시 반영용이다. */
+  MY_TOKEN = ''; MY_TICKET = ''; MY_EMAIL = ''; MY_NAME = ''; MY_SHORT = ''; CAN_EDIT = false;
+  showViewOnly();
+}
+
+// ── view / phase ─────────────────────────────────────────────
+function setView(v) {
+  VIEW = v;
+  document.getElementById('vcat').className = 'vbtn' + (v === 'cat' ? ' on' : '');
+  document.getElementById('vven').className = 'vbtn' + (v === 'ven' ? ' on' : '');
+  if (DATA) render();
+}
+function setPhase(p) {
+  PHASE = p;
+  document.getElementById('ph-prep').className = 'pbtn' + (p === 'prep' ? ' on' : '');
+  document.getElementById('ph-wrap').className = 'pbtn' + (p === 'wrap' ? ' on' : '');
+  document.getElementById('ph-retn').className = 'pbtn' + (p === 'retn' ? ' on' : '');
+  // 준비 탭에도 상태(준비완료/확인필요)가 생겨서 3탭 모두 요약바를 띄운다 (2026-07-13)
+  document.getElementById('sum-bar').className = 'sum-bar show';
+  if (DATA) { render(); updateSummary(); }
+}
+
+// ── project load ─────────────────────────────────────────────
+function onProjChange() {
+  var proj = document.getElementById('proj-sel').value;
+  if (!proj) {
+    DATA = null; PREPST = {}; WRAPST = {}; TOUCHED = {};
+    setContent('<div class="empty-msg">프로젝트를 선택하면 장비 목록이 로드됩니다.</div>');
+    var db = document.getElementById('date-bar'); if (db) db.hidden = true;
+    var az = document.getElementById('alert-zone'); if (az) az.innerHTML = '';
+    setDirty(false);
+    document.getElementById('save-btn').disabled = true;
+    hint('프로젝트를 선택하세요');
+    hideSummary();
+    return;
+  }
+  setContent('<div class="loading"><div class="spinner"></div><span>소싱시트에서 불러오는 중...</span></div>');
+  document.getElementById('save-btn').disabled = true;
+  showSt('load', '로드 중...');
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      DATA = res; PREPST = {}; WRAPST = {}; WRAP_STAFF = {}; RETNST = {}; ROW2LID = {}; TOUCHED = {};
+      DATE_ALL = true; DATE_SEL = {}; NAMESET = null;
+      DATA.items.forEach(function(it) {
+        var rk = String(it.sourceRow);
+        ROW2LID[rk] = it.lineId || '';
+        if (it.prepSt)    PREPST[rk]     = it.prepSt;
+        if (it.wrapSt)    WRAPST[rk]     = it.wrapSt;
+        if (it.wrapStaff) WRAP_STAFF[rk] = it.wrapStaff;
+        if (it.retnSt)    RETNST[rk]     = it.retnSt;
+      });
+      setDirty(false);
+      document.getElementById('save-btn').disabled = !CAN_EDIT;
+      showSt('ok', '✓ ' + DATA.items.length + '건 로드');
+      buildDateBar();          /* 출고~반납 날짜를 모아 체크박스 줄을 만든다 */
+      render();
+      updateSummary();
+    })
+    .withFailureHandler(function(err) {
+      showSt('err', '⚠ 로드 실패: ' + (err.message || err));
+      setContent('<div class="empty-msg">로드 실패. 새로고침 후 다시 시도하세요.</div>');
+    })
+    .fieldGetData(proj);
+}
+
+// ── render ───────────────────────────────────────────────────
+function byName(a, b) {
+  return String(a.item || '').localeCompare(String(b.item || ''), 'ko');
+}
+
+/* ═══ 날짜별 보기 (2026-08-04 대표 지시) ═══════════════════════
+   출고일~반납일 사이의 날짜를 하루씩 펼쳐 체크박스로 고른다.
+   여러 날을 체크하면 합쳐서 보이고, 「전체」를 켜면 다 보인다.
+   🔴 날짜가 비어 있는 장비는 「날짜없음」 칸으로 따로 뺀다 —
+      안 그러면 날짜를 고르는 순간 조용히 사라져서 놓치게 된다. */
+var DATES    = [];      /* ['2026-08-05', …] */
+var DATE_SEL = {};      /* 체크된 날짜 */
+var DATE_ALL = true;    /* 전체 보기 */
+var HAS_NODATE = false;
+var NOKEY = '(날짜없음)';
+
+function ymdLocal_(d) {
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+/* a~b 사이 날짜를 하루씩 (최대 400일 — 잘못된 날짜로 무한루프 안 되게) */
+function eachDay_(a, b, fn) {
+  if (!a) return;
+  var s = new Date(a + 'T00:00:00'), e = new Date((b || a) + 'T00:00:00');
+  if (isNaN(s.getTime())) return;
+  if (isNaN(e.getTime()) || e < s) e = new Date(s.getTime());
+  var g = 0;
+  for (var d = new Date(s.getTime()); d <= e && g < 400; d.setDate(d.getDate() + 1), g++) fn(ymdLocal_(d));
+}
+function dLabel_(ymd) {
+  var d = new Date(ymd + 'T00:00:00');
+  if (isNaN(d.getTime())) return ymd;
+  var w = ['일','월','화','수','목','금','토'][d.getDay()];
+  return (d.getMonth() + 1) + '/' + d.getDate() + '(' + w + ')';
+}
+
+function buildDateBar() {
+  var bar = document.getElementById('date-bar');
+  if (!bar) return;
+  if (!DATA || !DATA.items) { bar.hidden = true; return; }
+
+  var set = {};
+  HAS_NODATE = false;
+  DATA.items.forEach(function(it) {
+    if (!it.outDate) { HAS_NODATE = true; return; }
+    eachDay_(it.outDate, it.retDate, function(d) { set[d] = true; });
+  });
+  DATES = Object.keys(set).sort();
+
+  /* 날짜가 하나뿐이고 날짜없음도 없으면 굳이 안 띄운다 */
+  if (DATES.length <= 1 && !HAS_NODATE) { bar.hidden = true; DATE_ALL = true; return; }
+
+  var h = '<span class="dlbl">날짜</span>';
+  h += '<label class="dchip all' + (DATE_ALL ? ' on' : '') + '">' +
+       '<input type="checkbox" ' + (DATE_ALL ? 'checked' : '') + ' onchange="toggleAllDates(this.checked)">전체</label>';
+  DATES.forEach(function(d) {
+    var on = !DATE_ALL && !!DATE_SEL[d];
+    h += '<label class="dchip' + (on ? ' on' : '') + '">' +
+         '<input type="checkbox" ' + (on ? 'checked' : '') +
+         ' onchange="toggleDate(\'' + d + '\', this.checked)">' + dLabel_(d) + '</label>';
+  });
+  if (HAS_NODATE) {
+    var on2 = !DATE_ALL && !!DATE_SEL[NOKEY];
+    h += '<label class="dchip' + (on2 ? ' on' : '') + '">' +
+         '<input type="checkbox" ' + (on2 ? 'checked' : '') +
+         ' onchange="toggleDate(\'' + NOKEY + '\', this.checked)">날짜없음</label>';
+  }
+  bar.innerHTML = h;
+  bar.hidden = false;
+}
+
+function toggleAllDates(on) {
+  DATE_ALL = on;
+  if (on) DATE_SEL = {};
+  buildDateBar(); render(); updateSummary();
+}
+function toggleDate(key, on) {
+  if (DATE_ALL) { DATE_ALL = false; DATE_SEL = {}; }   /* 전체에서 처음 하나를 고르는 순간 */
+  if (on) DATE_SEL[key] = true; else delete DATE_SEL[key];
+  var any = false;
+  for (var k in DATE_SEL) { if (DATE_SEL[k]) { any = true; break; } }
+  if (!any) DATE_ALL = true;      /* 다 끄면 전체로 되돌린다 (빈 화면 방지) */
+  buildDateBar(); render(); updateSummary();
+}
+
+/* 지금 골라둔 날짜에 걸치는 장비만 */
+function itemInDates_(it) {
+  if (DATE_ALL) return true;
+  if (!it.outDate) return !!DATE_SEL[NOKEY];
+  var hit = false;
+  eachDay_(it.outDate, it.retDate, function(d) { if (DATE_SEL[d]) hit = true; });
+  return hit;
+}
+function visibleItems_() {
+  if (!DATA || !DATA.items) return [];
+  return DATE_ALL ? DATA.items : DATA.items.filter(itemInDates_);
+}
+
+/* 업체별 보기에서도 카테고리 순으로 (2026-08-04 대표 지시) */
+function byCatName(a, b) {
+  var ca = a.cat || '기타', cb = b.cat || '기타';
+  if (ca !== cb) {
+    if (ca === '기타') return 1;
+    if (cb === '기타') return -1;
+    return ca.localeCompare(cb, 'ko');
+  }
+  return byName(a, b);
+}
+
+function render() {
+  if (!DATA) return;
+  syncInputsToData();
+  var VIS = visibleItems_();   // ★ 다시 그리기 전에 화면의 미저장 입력값을 먼저 챙긴다 (카테고리↔업체 토글에서 값 날아가던 문제)
+  var groups = {}, order = [];
+
+  if (VIEW === 'ven') {
+    // 업체별: 업체 "하나씩" 묶는다. 한 장비를 PA 1개 + HK 1개로 나눠 조달했으면 두 그룹에 각각 나온다.
+    // (예전엔 조달처 문자열 "PA, HK" 를 통째로 그룹키로 써서 'PA', 'PA,HK', 'PA,조명' 이 각각 딴 그룹이 됐음)
+    (DATA.vendorCols || []).forEach(function(vc) {
+      var picked = VIS.filter(function(it) {
+        return (it.vendorQtys && (it.vendorQtys[vc] || 0) > 0);
+      });
+      if (picked.length) { groups[vc] = picked.sort(byCatName); order.push(vc); }
+    });
+    var none = VIS.filter(function(it) {
+      var sum = 0;
+      (DATA.vendorCols || []).forEach(function(vc) { sum += (it.vendorQtys && it.vendorQtys[vc]) || 0; });
+      return sum === 0;
+    });
+    if (none.length) { groups['미지정'] = none.sort(byCatName); order.push('미지정'); }
+
+  } else {
+    // 카테고리별: 카테고리 이름순 → 그룹 안에서 품목명 이름순
+    VIS.forEach(function(it) {
+      var k = it.cat || '기타';
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(it);
+    });
+    order = Object.keys(groups).sort(function(a, b) {
+      if (a === '기타') return 1;
+      if (b === '기타') return -1;
+      return a.localeCompare(b, 'ko');
+    });
+    order.forEach(function(k) { groups[k].sort(byName); });
+  }
+
+  if (!order.length) {
+    setContent('<div class="empty-msg">' + (DATE_ALL ? '이 프로젝트에 장비가 없습니다.' : '고른 날짜에 해당하는 장비가 없습니다.') + '</div>');
+    refreshAlerts();
+    return;
+  }
+  var html = '';
+  order.forEach(function(gk) { html += buildGroup(gk, groups[gk], VIEW === 'ven' ? gk : null); });
+  setContent(html);
+  refreshAlerts();
+}
+
+/* ═══ 반납 탭에서 「랩업 확인필요」 보여주기 (2026-08-07 대표 확정: D+B) ═══
+   랩업 단계에서 「확인필요」로 잡아둔 장비를, 반납할 때 왜 잡혔는지 같이 본다.
+   🔴 상태 칸은 건드리지 않는다 — 거기는 「반납상태」 자리다.
+      섞으면 같은 「확인필요」 글자가 두 뜻이 되어 무엇 때문인지 알 수 없다(대표 지적).
+   · 맨 위  : 몇 건인지 + 노트를 한 번에 (시작할 때 놓치지 않게)
+   · 표 안  : 품목명 옆 🔶 단추 → 누르면 그 줄 아래에 펼침 (표가 길어지지 않게) */
+function wrapNeedsCheck(it) {
+  var rk = String(it.sourceRow);
+  return (WRAPST[rk] || '') === 'chk';
+}
+
+function prepNeedsCheck(it) {
+  return (PREPST[String(it.sourceRow)] || '') === 'chk';
+}
+
+/* 준비·랩업 두 단계를 같은 모양으로 요약한다 */
+function hasAnyNote(it) {
+  return !!(String(it.eqNote || '').trim() || String(it.innerNote || '').trim());
+}
+
+var ALERT_DEF = {
+  prep: { pick: prepNeedsCheck, notes: [['prepNote','']], who: 'prepStaff', word: '준비', cls: 'wa-prep', ic: '🔶' },
+  wrap: { pick: wrapNeedsCheck, notes: [['wrapNote','']], who: 'wrapStaff', word: '랩업', cls: 'wa-wrap', ic: '🔶' },
+  /* 준비 탭 — 「상태」가 아니라 「노트가 적혀 있는 것」을 모은다 (2026-08-07 대표 지시).
+     준비하기 전에 읽어야 할 당부가 여기 적혀 있다. */
+  note: { pick: hasAnyNote, notes: [['eqNote','EQ'],['innerNote','내부']], who: '', word: '노트', cls: 'wa-note', ic: '📝' }
+};
+
+function alertBox(items, kind, titleOverride) {
+  var d = ALERT_DEF[kind];
+  if (!d) return '';
+  var bad = (items || []).filter(d.pick);
+  if (!bad.length) return '';        /* 0건이면 아예 안 띄운다 — 평소 화면은 그대로 */
+  var title = titleOverride || (d.word + '에서 확인필요로 잡힌 것');
+  var h = '<div class="wrapalert ' + d.cls + '"><div class="wa-h">' + (d.ic || '🔶') + ' ' + title + ' — ' + bad.length + '건</div><div class="wa-body">';
+  bad.forEach(function(it) {
+    var rk = String(it.sourceRow);
+    var who = d.who ? String(it[d.who] || '').trim() : '';
+    var body = '', any = false;
+    d.notes.forEach(function(pair) {
+      var v = String(it[pair[0]] || '').trim();
+      if (!v) return;
+      any = true;
+      body += '<div class="wa-n">' + (pair[1] ? '<span class="wa-t">' + pair[1] + '</span>' : '') + esc(v) + '</div>';
+    });
+    if (!any) body = '<div class="wa-n"><i>' + d.word + '노트가 비어 있습니다 — ' + d.word + ' 담당에게 확인하세요</i></div>';
+    h += '<div class="wa-i" onclick="jumpTo(\'' + rk + '\')">' +
+         '<b>' + esc(it.item) + '</b>' + (it.qty ? ' <span class="wa-q">×' + it.qty + '</span>' : '') +
+         (who ? ' <span class="wa-w">' + esc(who) + '</span>' : '') +
+         body + '</div>';
+  });
+  return h + '</div></div>';
+}
+
+/* 지금 탭에 맞는 박스들을 만든다.
+   · 랩업 탭 : 「준비에서 잡힌 것」 + 「지금 랩업에서 잡은 것」  (2026-08-07 대표: 둘 다)
+   · 반납 탭 : 「랩업에서 잡힌 것」 */
+function refreshAlerts() {
+  var zone = document.getElementById('alert-zone');
+  if (!zone) return;
+  if (!DATA) { zone.innerHTML = ''; return; }
+  syncInputsToData();                 /* 방금 적은 노트도 박스에 바로 비치게 */
+  var VIS = visibleItems_();
+  var h = '';
+  if (PHASE === 'prep') {
+    h += alertBox(VIS, 'note', '준비 전에 읽을 것 (EQ NOTE · 내부노트)');
+  } else if (PHASE === 'wrap') {
+    h += alertBox(VIS, 'prep');
+    h += alertBox(VIS, 'wrap', '지금 랩업에서 확인필요로 잡은 것');
+  } else if (PHASE === 'retn') {
+    h += alertBox(VIS, 'wrap');
+  }
+  zone.innerHTML = h;
+}
+
+/* 위 박스에서 누르면 표의 그 줄로 데려가고 잠깐 깜빡인다 */
+function jumpTo(rk) {
+  var tr = document.querySelector('[data-tr="' + PHASE + '-' + rk + '"]');
+  if (!tr) return;
+  tr.scrollIntoView({behavior:'smooth', block:'center'});
+  tr.classList.add('flash');
+  setTimeout(function(){ tr.classList.remove('flash'); }, 1600);
+}
+
+function buildGroup(gk, items, vendorKey) {
+  var qty = '';
+  if (vendorKey) {   // 업체별 뷰: 그 업체에서 몇 개 조달하는지 합계
+    var sum = 0;
+    items.forEach(function(it) { sum += (it.vendorQtys && it.vendorQtys[vendorKey]) || 0; });
+    qty = '<span class="gbadge">' + sum + '개</span>';
+  }
+  return '<div class="gcard">' +
+    '<div class="ghead"><span class="gname">' + esc(gk) + '</span>' + qty +
+    '<span class="gbadge">' + items.length + '건</span></div>' +
+    '<div class="tbl-wrap">' +
+    (PHASE === 'prep' ? buildPrepTable(items) : PHASE === 'wrap' ? buildWrapTable(items) : buildReturnTable(items)) +
+    '</div></div>';
+}
+
+// 쉼표로 붙어있는 값을 읽기 쉬운 블럭(칩)으로. 없으면 —
+function chips(str) {
+  var parts = String(str || '').split(/[,·]/)
+    .map(function(x) { return x.trim(); })
+    .filter(function(x) { return x; });
+  if (!parts.length) return '';
+  return parts.map(function(x) { return '<span class="chip2">' + esc(x) + '</span>'; }).join('');
+}
+
+/* 이름 맞추기용 정규화 — 「I VISOR LAPTOP CASE+TRIPOD」와 「Ivisor LAPTOP CASE+TRIPOD」를
+   같은 것으로 본다. 공백·대소문자·괄호 안 모델명 차이를 무시한다. */
+function normName_(s) {
+  return String(s || '')
+    .replace(/\[EQ-[^\]]*\]/g, '')     /* [EQ-0003] 꼬리표 제거 */
+    .replace(/\s+/g, '')
+    .replace(/[·,._\-]/g, '')
+    .toLowerCase();
+}
+
+/* 이 프로젝트 목록에 있는 품목명 모음 (한 번 만들어 두고 다시 쓴다) */
+var NAMESET = null;
+function buildNameSet() {
+  NAMESET = {};
+  if (!DATA || !DATA.items) return;
+  DATA.items.forEach(function(it) {
+    var k = normName_(it.item);
+    if (k) NAMESET[k] = it.item;      /* 값 = 목록에 적힌 원래 이름 */
+  });
+}
+
+/* 연관장비 칩 — 목록에 이미 있으면 ✓ 초록, 없으면 「추가 필요」 주황.
+   (2026-08-07 대표 지시: 연관장비 칸만 봐도 더 챙길지 알 수 있게) */
+function relChips(str) {
+  var parts = String(str || '').split(/[,·]/)
+    .map(function(x) { return x.trim(); })
+    .filter(function(x) { return x; });
+  if (!parts.length) return '';
+  if (!NAMESET) buildNameSet();
+  return parts.map(function(x) {
+    var hit = NAMESET[normName_(x)];
+    return hit
+      ? '<span class="chip2 rel-in" title="이 프로젝트에 이미 있습니다 — 따로 안 챙겨도 됩니다&#10;목록 이름: ' + esc(hit) + '">✓ ' + esc(x) + '</span>'
+      : '<span class="chip2 rel-out" title="이 프로젝트 목록에 없습니다 — 필요하면 챙기세요">＋ ' + esc(x) + '</span>';
+  }).join('');
+}
+
+// ⚠️ 업체별 뷰에서는 "PA 1개 + HK 1개"로 나눠 조달한 장비가 두 그룹에 각각 나온다 = 같은 줄이 화면에 두 번 그려진다.
+//    그래서 화면 갱신을 id로 하면 안 된다(id 중복 → 한쪽만 갱신되고, 저장할 때 다른 쪽의 옛 값이 덮어쓴다).
+//    → 아래는 전부 data-row(=소싱시트 줄 번호)로 찾아서 **쌍둥이 줄을 같이** 갱신한다. (2026-07-13)
+function $all(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
+function cells(rk, field) { return $all('[data-row="' + rk + '"][data-field="' + field + '"]'); }
+function numOf(rk, field) {
+  var el = cells(rk, field)[0];
+  return el ? (parseFloat(el.value) || 0) : 0;
+}
+// 글자 입력 — 쌍둥이 줄에도 같은 값을 흘려보낸다
+function onCellInput(el) {
+  var rk = el.getAttribute('data-row'), f = el.getAttribute('data-field');
+  autoGrow(el);
+  cells(rk, f).forEach(function(o) { if (o !== el) { o.value = el.value; autoGrow(o); } });
+  markDirty(rk);
+}
+/* 🔴 2026-08-04 — 노트를 한 줄 input 으로 두니 긴 문장이 잘려 안 보였다(대표 지적).
+   여러 줄이 되는 textarea 로 바꾸고, 적은 만큼 칸이 저절로 늘어나게 한다.
+   value 로 읽고 쓰는 건 input 과 같아서 저장 코드는 그대로 쓴다. */
+function textCell(it, rk, field, ph) {
+  return '<td><textarea class="ci ta" rows="1"' +
+    ' data-row="' + rk + '" data-field="' + field + '"' +
+    ' oninput="onCellInput(this)" placeholder="' + ph + '">' + esc(it[field] || '') + '</textarea></td>';
+}
+
+/* 내용 높이에 맞춰 칸을 키운다 (스크롤바 대신 통째로 보이게) */
+function autoGrow(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = (el.scrollHeight + 2) + 'px';
+}
+function growAll() {
+  var els = document.querySelectorAll('textarea.ta');
+  for (var i = 0; i < els.length; i++) autoGrow(els[i]);
+}
+
+// 준비/랩업 공용 상태 선택기 (미완료 / 완료 / 확인필요) — 예외 처리용.
+// 보통은 담당 체크박스만 누르면 '완료'가 자동으로 찍힌다.
+function stateSelect(rk, field, cur, okLabel) {
+  return '<select class="st-sel st-' + (cur || 'todo') + '"' +
+    ' data-row="' + rk + '" data-field="' + field + '" onchange="onStateChange(this)">' +
+    '<option value=""'    + (cur === ''    || !cur ? ' selected' : '') + '>— 미완료</option>' +
+    '<option value="ok"'  + (cur === 'ok'  ? ' selected' : '') + '>✓ ' + okLabel + '</option>' +
+    '<option value="chk"' + (cur === 'chk' ? ' selected' : '') + '>⚠ 확인필요</option>' +
+    '</select>';
+}
+
+// ── 담당 = 체크박스 (준비·랩업·반납 전부 동일) ────────────────
+// 체크 한 번 = ① 담당에 내 이름 ② 상태가 비어 있으면 '완료'로 자동 전환.  (2026-07-13 — 대표: "일을 덜 하게")
+// field: 'prepStaff' | 'wrapStaff' | 'returnStaff'
+function staffCheck(rk, field, staff) {
+  var isMe = !!staff && (staff === MY_NAME || staff === MY_EMAIL);
+  var on   = !!staff;   // 남이 체크했어도 체크 상태로 보이게(이름은 그 사람 이름)
+  var cls  = isMe ? 'me' : (staff ? '' : 'empty');
+  var lbl  = isMe ? (MY_SHORT || '나') : (staff || '—');
+  // data-orig = 원래 시트에 있던 담당자. 내가 안 건드렸으면 그 사람 이름을 그대로 돌려보낸다(남의 이름 덮어쓰기 방지).
+  return '<td class="staff-cell"><label class="staff-chk-lbl">' +
+    '<input type="checkbox" class="staff-chk"' + (on ? ' checked' : '') +
+    ' data-row="' + rk + '" data-field="' + field + '" data-orig="' + esc(staff || '') + '"' +
+    ' onchange="onStaffCheck(this)">' +
+    '<span class="staff-name ' + cls + '" data-sn="' + rk + '-' + field + '">' + esc(lbl) + '</span>' +
+    '</label></td>';
+}
+
+function onStaffCheck(chk) {
+  var rk    = chk.getAttribute('data-row');
+  var field = chk.getAttribute('data-field');
+  var on    = chk.checked;
+
+  cells(rk, field).forEach(function(o) { o.checked = on; });   // 쌍둥이 줄도 같이
+  $all('[data-sn="' + rk + '-' + field + '"]').forEach(function(span) {
+    if (on) { span.textContent = (MY_SHORT || '나'); span.className = 'staff-name me'; }
+    else    { span.textContent = '—';                span.className = 'staff-name empty'; }
+  });
+
+  if (field === 'returnStaff') { recalcRetn(rk); return; }   // 반납은 파손/분실까지 같이 계산
+
+  // 준비·랩업: 체크 → 상태 비어 있으면 '완료'.  해제 → 상태가 '완료'였으면 비움('확인필요'는 남긴다)
+  var isPrep = (field === 'prepStaff');
+  var store  = isPrep ? PREPST : WRAPST;
+  var cur    = store[rk] || '';
+  var next   = cur;
+  if (on  && !cur)          next = 'ok';
+  if (!on && cur === 'ok')  next = '';
+
+  if (next) store[rk] = next; else delete store[rk];
+  if (!isPrep) { if (on) WRAP_STAFF[rk] = (MY_NAME || MY_SHORT); else delete WRAP_STAFF[rk]; }
+
+  paintState(rk, isPrep ? 'prep' : 'wrap', next);
+  updateSummary();
+  refreshAlerts();
+  markDirty(rk);
+}
+
+// 상태 선택기 + 줄 색을 한꺼번에 (쌍둥이 줄 포함)
+function paintState(rk, phase, v) {
+  cells(rk, phase === 'prep' ? 'prepSt' : 'wrapSt').forEach(function(sel) {
+    sel.value = v; sel.className = 'st-sel st-' + (v || 'todo');
+  });
+  $all('[data-tr="' + phase + '-' + rk + '"]').forEach(function(tr) {
+    tr.className = v === 'ok' ? 'row-ok' : (v === 'chk' ? 'row-chk' : '');
+  });
+}
+
+// ── 품목명 셀 + 접이식 상세(구성품·연관장비) ──────────────────
+// 대표: "구성품, 연관장비는 항상 보는 게 아니라 서브 백업" → 표에서 빼고 품목명 아래 접어둔다.
+/* 지금 탭에서 이 장비가 「눈여겨봐야 할 것」인지 — 목록에서 바로 알아보게 한다.
+   (2026-08-07 대표 지시: 박스뿐 아니라 리스트 자체에서도 직관적으로) */
+function markOf(it) {
+  if (PHASE === 'prep' && hasAnyNote(it))      return { cls:'mk-note', ic:'📝', tip:'EQ NOTE·내부노트가 적혀 있습니다' };
+  if (PHASE === 'wrap' && prepNeedsCheck(it))  return { cls:'mk-prep', ic:'🔷', tip:'준비에서 확인필요로 잡힌 장비입니다 — 눌러서 준비노트 보기' };
+  if (PHASE === 'retn' && wrapNeedsCheck(it))  return { cls:'mk-wrap', ic:'🔶', tip:'랩업에서 확인필요로 잡힌 장비입니다 — 눌러서 랩업노트 보기' };
+  return null;
+}
+
+function nameCell(it, rk) {
+  var has = String(it.comp || '').trim() || String(it.relEquip || '').trim();
+  var btn = has ? '<button class="dtl-btn" data-db="' + rk + '" onclick="toggleDtl(\'' + rk + '\')">＋</button>' : '';
+  var mk = markOf(it);
+  var mb = mk ? '<button class="wchk-btn ' + mk.cls + '" title="' + mk.tip + '" onclick="toggleDtl(\'' + rk + '\')">' + mk.ic + '</button>' : '';
+  var cls = 'col-name' + (mk ? ' ' + mk.cls : '');
+  return '<td class="' + cls + '">' + esc(it.item) + stBadge(it.status) + btn + mb + '</td>';
+}
+function detailRow(it, rk, cols) {
+  var comp = String(it.comp || '').trim();
+  var rel  = String(it.relEquip || '').trim();
+  /* 반납 탭 + 랩업 확인필요면 랩업 내용도 이 접이식 줄에 같이 담는다 (열을 안 늘리려고) */
+  var wchk = (PHASE === 'retn' && wrapNeedsCheck(it));   /* 반납 탭 → 랩업 내용 */
+  var pchk = (PHASE === 'wrap' && prepNeedsCheck(it));   /* 랩업 탭 → 준비 내용 */
+  if (!comp && !rel && !wchk && !pchk) return '';
+  var inner = '';
+  if (pchk) {
+    var pn = String(it.prepNote || '').trim();
+    var pw = String(it.prepStaff || '').trim();
+    inner += '<div class="dtl-l pchk">준비</div><div class="dtl-v pchk">🔷 확인필요' +
+             (pw ? ' · ' + esc(pw) : '') +
+             '<div class="pchk-note">' + (pn ? esc(pn) : '<i>준비노트가 비어 있습니다 — 준비 담당에게 확인하세요</i>') + '</div></div>';
+  }
+  if (wchk) {
+    var wn = String(it.wrapNote || '').trim();
+    var ww = String(it.wrapStaff || '').trim();
+    inner += '<div class="dtl-l wchk">랩업</div><div class="dtl-v wchk">🔶 확인필요' +
+             (ww ? ' · ' + esc(ww) : '') +
+             '<div class="wchk-note">' + (wn ? esc(wn) : '<i>랩업노트가 비어 있습니다 — 랩업 담당에게 확인하세요</i>') + '</div></div>';
+  }
+  if (comp) inner += '<div class="dtl-l">구성품</div><div class="dtl-v">' + chips(comp) + '</div>';
+  if (rel)  inner += '<div class="dtl-l">연관장비</div><div class="dtl-v">' + relChips(rel) + '</div>';
+  return '<tr class="dtl-row" data-dtr="' + rk + '" style="display:none">' +
+    '<td colspan="' + cols + '"><div class="dtl">' + inner + '</div></td></tr>';
+}
+function toggleDtl(rk) {
+  var rows = $all('[data-dtr="' + rk + '"]');
+  if (!rows.length) return;
+  var open = rows[0].style.display !== 'none';
+  rows.forEach(function(tr) { tr.style.display = open ? 'none' : ''; });
+  $all('[data-db="' + rk + '"]').forEach(function(b) { b.textContent = open ? '＋' : '－'; });
+}
+
+// 공통 노트 칸 — EQ NOTE(장비 상시메모) · 내부노트(PA 전용). 3탭 모두 같은 자리에 둔다.
+function noteCells(it, rk) {
+  return textCell(it, rk, 'eqNote', '장비 상시메모') +
+         textCell(it, rk, 'innerNote', '내부 노트(PA 전용)');
+}
+
+// 표 머리 — 항상 보는 순: 품목명 · 수량 · EQ NOTE · 내부노트 · 상태 · 담당 (2026-07-13 대표 지정)
+function headCommon() {
+  return '<th class="col-name">품목명</th>' +
+    '<th class="col-qty">수량</th>' +
+    '<th style="min-width:210px">EQ NOTE</th>' +
+    '<th style="min-width:210px">내부노트</th>' +
+    '<th style="min-width:110px">상태</th>' +
+    '<th style="min-width:62px">담당</th>';
+}
+
+// ── PREP TABLE ───────────────────────────────────────────────
+/* 업체별 보기에서 「지금부터 이 카테고리」를 알려주는 줄.
+   카테고리별 보기에서는 이미 그룹 제목이 카테고리라 넣지 않는다. */
+function catDivider(cat, cols) {
+  return '<tr class="cat-row"><td colspan="' + cols + '">' + esc(cat || '기타') + '</td></tr>';
+}
+
+function buildPrepTable(items) {
+  var COLS = 8;
+  var h = '<table><thead><tr>' + headCommon() +
+    '<th style="min-width:210px">준비노트</th>' +
+    '<th class="col-vendor">조달(업체)</th>' +
+    '</tr></thead><tbody>';
+
+  var lastCat = null;
+  items.forEach(function(it) {
+    var _c = it.cat || '기타';
+    if (VIEW === 'ven' && _c !== lastCat) { h += catDivider(_c, COLS); lastCat = _c; }
+    var rk  = String(it.sourceRow);
+    var pst = PREPST[rk] || '';
+    var rowClass = pst === 'ok' ? 'row-ok' : (pst === 'chk' ? 'row-chk' : '');
+
+    h += '<tr class="' + rowClass + '" data-tr="prep-' + rk + '">';
+    h += nameCell(it, rk);
+    h += '<td class="col-qty">' + (it.qty || '') + '</td>';
+    h += noteCells(it, rk);
+    h += '<td>' + stateSelect(rk, 'prepSt', pst, '준비완료') + '</td>';
+    h += staffCheck(rk, 'prepStaff', it.prepStaff || '');
+    h += textCell(it, rk, 'prepNote', '준비 노트');
+    h += '<td class="col-vendor">' + vendorBreakdown(it) + '</td>';
+    h += '</tr>';
+    h += detailRow(it, rk, COLS);
+  });
+
+  return h + '</tbody></table>';
+}
+
+// ── WRAP TABLE ───────────────────────────────────────────────
+function buildWrapTable(items) {
+  var COLS = 8;
+  var h = '<table><thead><tr>' + headCommon() +
+    '<th style="min-width:210px">랩업노트</th>' +
+    '<th class="col-vendor">조달(업체)</th>' +
+    '</tr></thead><tbody>';
+
+  var lastCat = null;
+  items.forEach(function(it) {
+    var _c = it.cat || '기타';
+    if (VIEW === 'ven' && _c !== lastCat) { h += catDivider(_c, COLS); lastCat = _c; }
+    var rk  = String(it.sourceRow);
+    var wst = WRAPST[rk] || '';
+    var wname = WRAP_STAFF[rk] || '';
+    var rowClass = wst === 'ok' ? 'row-ok' : (wst === 'chk' ? 'row-chk' : '');
+
+    h += '<tr class="' + rowClass + '" data-tr="wrap-' + rk + '">';
+    h += nameCell(it, rk);
+    h += '<td class="col-qty">' + (it.qty || '') + '</td>';
+    h += noteCells(it, rk);
+    h += '<td>' + stateSelect(rk, 'wrapSt', wst, '랩업완료') + '</td>';
+    h += staffCheck(rk, 'wrapStaff', wname);
+    h += textCell(it, rk, 'wrapNote', '랩업 노트');
+    h += '<td class="col-vendor">' + vendorBreakdown(it) + '</td>';
+    h += '</tr>';
+    h += detailRow(it, rk, COLS);
+  });
+
+  return h + '</tbody></table>';
+}
+
+// ── RETURN TABLE ─────────────────────────────────────────────
+// 반납 상태는 고르는 게 아니라 계산된다: 파손/분실 있으면 '확인필요', 없고 담당 체크되면 '정상'.
+function buildReturnTable(items) {
+  var COLS = 10;
+  var h = '<table><thead><tr>' +
+    '<th class="col-name">품목명</th>' +
+    '<th class="col-qty">수량</th>' +
+    '<th style="min-width:210px">EQ NOTE</th>' +
+    '<th style="min-width:210px">내부노트</th>' +
+    '<th style="min-width:96px">상태</th>' +
+    '<th style="min-width:62px">담당</th>' +
+    '<th style="min-width:56px">파손</th>' +
+    '<th style="min-width:56px">분실</th>' +
+    '<th style="min-width:210px">반납노트</th>' +
+    '<th class="col-vendor">조달(업체)</th>' +
+    '</tr></thead><tbody>';
+
+  var lastCat = null;
+  items.forEach(function(it) {
+    var _c = it.cat || '기타';
+    if (VIEW === 'ven' && _c !== lastCat) { h += catDivider(_c, COLS); lastCat = _c; }
+    var rk  = String(it.sourceRow);
+    var rst = RETNST[rk] || '';
+    var rowClass = rst === 'ok' ? 'row-ok' : rst === 'chk' ? 'row-chk' : '';
+
+    h += '<tr class="' + rowClass + '" data-tr="retn-' + rk + '">';
+    h += nameCell(it, rk);
+    h += '<td class="col-qty">' + (it.qty || '') + '</td>';
+    h += noteCells(it, rk);
+    h += '<td data-rst="' + rk + '">' + retnStatusBadge(rst) + '</td>';
+    h += staffCheck(rk, 'returnStaff', it.returnStaff || '');
+    h += '<td><input class="ci qty-in" type="number" min="0" step="1" value="' + (it.repairQty || '') + '"' +
+      ' data-row="' + rk + '" data-field="repairQty"' +
+      ' oninput="onDamageInput(this)" placeholder="0"></td>';
+    h += '<td><input class="ci qty-in" type="number" min="0" step="1" value="' + (it.lostQty || '') + '"' +
+      ' data-row="' + rk + '" data-field="lostQty"' +
+      ' oninput="onDamageInput(this)" placeholder="0"></td>';
+    h += textCell(it, rk, 'returnNote', '반납 노트');
+    h += '<td class="col-vendor">' + vendorBreakdown(it) + '</td>';
+    h += '</tr>';
+    h += detailRow(it, rk, COLS);
+  });
+
+  return h + '</tbody></table>';
+}
+function retnStatusBadge(st) {
+  if (st === 'ok')  return '<span class="stbadge b-ok">✓ 정상</span>';
+  if (st === 'chk') return '<span class="stbadge b-chk">⚠ 확인필요</span>';
+  return '<span class="stbadge b-todo">— 미완료</span>';
+}
+// 반납상태 재계산 — 파손/분실이 있으면 '확인필요', 없고 담당이 체크됐으면 '정상', 아니면 '미완료'
+// (2026-07-13 버그수정: 예전엔 파손/분실을 건드릴 때만 계산해서, 반납담당만 체크하면 상태가 안 바뀌었다)
+function recalcRetn(rk) {
+  var rq = numOf(rk, 'repairQty');
+  var lq = numOf(rk, 'lostQty');
+  var chkEl = cells(rk, 'returnStaff')[0];
+  var hasStaff = !!(chkEl && chkEl.checked);
+
+  var next = (rq > 0 || lq > 0) ? 'chk' : (hasStaff ? 'ok' : '');
+  if (next) RETNST[rk] = next; else delete RETNST[rk];
+
+  $all('[data-rst="' + rk + '"]').forEach(function(td) { td.innerHTML = retnStatusBadge(next); });
+  $all('[data-tr="retn-' + rk + '"]').forEach(function(tr) {
+    tr.className = next === 'chk' ? 'row-chk' : (next === 'ok' ? 'row-ok' : '');
+  });
+  updateSummary();
+  markDirty(rk);
+}
+function onDamageInput(el) {
+  onCellInput(el);                        // 쌍둥이 줄에 같은 숫자
+  recalcRetn(el.getAttribute('data-row'));
+}
+
+// ── summary bar ──────────────────────────────────────────────
+function updateSummary() {
+  if (!DATA) return;
+  var total = DATA.items.length;
+  var statusEl = document.getElementById('sum-status');
+  var countEl  = document.getElementById('sum-count');
+
+  if (PHASE === 'prep') {
+    var okP = 0, chkP = 0;
+    DATA.items.forEach(function(it) {
+      var st = PREPST[String(it.sourceRow)];
+      if (st === 'ok') okP++; else if (st === 'chk') chkP++;
+    });
+    var todoP = total - okP - chkP;
+    var pp = [];
+    if (okP)   pp.push('<span class="sum-ok">준비완료 ' + okP + '건</span>');
+    if (chkP)  pp.push('<span class="sum-check">확인필요 ' + chkP + '건</span>');
+    if (todoP) pp.push('<span class="sum-todo">미완료 ' + todoP + '건</span>');
+    countEl.innerHTML = pp.join(' · ') || '—';
+    if (!todoP && !chkP && okP === total && total > 0)
+      statusEl.innerHTML = '<span class="sum-ok">✓ 전체 준비 완료</span>';
+    else if (!todoP && chkP)
+      statusEl.innerHTML = '<span class="sum-check">⚠ 확인필요 ' + chkP + '건</span>';
+    else
+      statusEl.innerHTML = '<span class="sum-todo">⏳ 준비 중 (' + okP + '/' + total + ')</span>';
+    document.getElementById('sum-bar').className = 'sum-bar show';
+    return;
+  }
+
+  if (PHASE === 'wrap') {
+    var ok = 0, chk = 0;
+    DATA.items.forEach(function(it) {
+      var st = WRAPST[String(it.sourceRow)];
+      if (st === 'ok') ok++; else if (st === 'chk') chk++;
+    });
+    var todo = total - ok - chk;
+    var parts = [];
+    if (ok)   parts.push('<span class="sum-ok">정상 ' + ok + '건</span>');
+    if (chk)  parts.push('<span class="sum-check">확인필요 ' + chk + '건</span>');
+    if (todo) parts.push('<span class="sum-todo">미완료 ' + todo + '건</span>');
+    countEl.innerHTML = parts.join(' · ') || '—';
+    if (!todo && !chk && ok === total && total > 0)
+      statusEl.innerHTML = '<span class="sum-ok">✓ 전체 랩업 완료</span>';
+    else if (!todo && chk > 0)
+      statusEl.innerHTML = '<span class="sum-check">⚠ 확인필요 ' + chk + '건</span>';
+    else
+      statusEl.innerHTML = '<span class="sum-todo">⏳ 랩업 진행 중 (' + ok + '/' + total + ')</span>';
+
+  } else if (PHASE === 'retn') {
+    var ok2 = 0, chk2 = 0, repairSum = 0, lostSum = 0;
+    DATA.items.forEach(function(it) {
+      var rk = String(it.sourceRow);
+      var rqEl = cells(rk, 'repairQty')[0], lqEl = cells(rk, 'lostQty')[0];
+      repairSum += rqEl ? (parseFloat(rqEl.value) || 0) : (it.repairQty || 0);
+      lostSum   += lqEl ? (parseFloat(lqEl.value) || 0) : (it.lostQty   || 0);
+      var st = RETNST[rk];
+      if (st === 'chk') chk2++; else if (st === 'ok' || it.returnStaff) ok2++;
+    });
+    var todo2 = total - ok2 - chk2;
+    var parts2 = [];
+    if (ok2)  parts2.push('<span class="sum-ok">정상 ' + ok2 + '건</span>');
+    if (chk2) parts2.push('<span class="sum-check">확인필요 ' + chk2 + '건</span>');
+    if (repairSum) parts2.push('<span style="color:#1565C0">파손 ' + repairSum + '개</span>');
+    if (lostSum)   parts2.push('<span style="color:#B71C1C">분실 ' + lostSum + '개</span>');
+    if (todo2) parts2.push('<span class="sum-todo">미완료 ' + todo2 + '건</span>');
+    countEl.innerHTML = parts2.join(' · ') || '—';
+    if (!todo2 && !chk2 && ok2 === total && total > 0)
+      statusEl.innerHTML = '<span class="sum-ok">✓ 전체 정상 반납</span>';
+    else if (!todo2 && chk2)
+      statusEl.innerHTML = '<span class="sum-check">⚠ 확인필요 ' + chk2 + '건</span>';
+    else
+      statusEl.innerHTML = '<span class="sum-todo">⏳ 반납 진행 중 (' + ok2 + '/' + total + ')</span>';
+  }
+}
+
+function hideSummary() { document.getElementById('sum-bar').className = 'sum-bar'; }
+
+// ── dirty / save ─────────────────────────────────────────────
+/* 🔴 2026-08-04 — 사람이 실제로 만진 행만 기억한다.
+   전에는 저장할 때 화면의 모든 행을 다시 써서, 그 사이 누가 시트에서 고친 것을
+   앱이 본 옛 값으로 덮어썼다(마지막에 저장한 사람이 이김).
+   이제 안 만진 행은 서버로 아예 보내지 않는다 → 남의 수정이 안 지워진다. */
+var TOUCHED = {};
+function markDirty(rk) {
+  if (rk !== undefined && rk !== null && rk !== '') TOUCHED[String(rk)] = true;
+  setDirty(true);
+}
+/* 🔴 2026-08-04 — 저장 안 하고 새로고침·창닫기를 하면 막아 세운다 (대표 지시).
+   현장에서 새로고침을 자주 하는데, 그때마다 적은 게 조용히 날아갔다.
+   브라우저가 「이 페이지를 나가시겠습니까?」를 대신 띄워준다(문구는 브라우저가 정한다). */
+window.addEventListener('beforeunload', function(e) {
+  if (!DIRTY) return;
+  e.preventDefault();
+  e.returnValue = '';
+  return '';
+});
+
+function setDirty(d) {
+  DIRTY = d;
+  document.getElementById('save-dot').className = 'save-dot' + (d ? ' show' : '');
+  hint(d ? '저장되지 않은 변경사항' : '최신 상태');
+}
+
+function saveAll() {
+  if (!DATA) return;
+  var proj    = document.getElementById('proj-sel').value;
+  var updates = collectUpdates();
+  document.getElementById('save-btn').disabled = true;
+  showSt('load', '저장 중...');
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.ok) { TOUCHED = {}; setDirty(false); showSt('ok', '✓ 저장 완료 (' + res.saved + '건)'); }
+      else         { showSt('err', '⚠ 저장 실패: ' + (res.error || '')); }
+      document.getElementById('save-btn').disabled = !CAN_EDIT;
+    })
+    .withFailureHandler(function(err) {
+      showSt('err', '⚠ 오류: ' + (err.message || err));
+      document.getElementById('save-btn').disabled = !CAN_EDIT;
+    })
+    .fieldSaveData(proj, updates, WRAPST, WRAP_STAFF, RETNST, MY_TOKEN, MY_TICKET);
+}
+
+function collectUpdates() {
+  var map = {};
+  var els = document.querySelectorAll('[data-row][data-field]');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i], row = el.getAttribute('data-row'), field = el.getAttribute('data-field');
+    if (!TOUCHED[row]) continue;              /* 🔴 손대지 않은 행은 건드리지 않는다 */
+    if (!map[row]) map[row] = { sourceRow: parseInt(row), lineId: ROW2LID[row] || '' };
+
+    if (el.type === 'checkbox') {
+      // 담당 체크박스 — 원래 담당자가 있고 체크가 그대로면 그 이름을 유지한다(남의 이름 안 덮어씀).
+      var orig = el.getAttribute('data-orig') || '';
+      map[row][field] = el.checked ? (orig || MY_NAME || MY_SHORT) : '';
+    } else {
+      map[row][field] = el.value;   // input · select(prepSt/wrapSt) 모두 값 그대로
+    }
+  }
+  var arr = [];
+  for (var k in map) { if (map.hasOwnProperty(k)) arr.push(map[k]); }
+  return arr;
+}
+
+// 탭(준비/랩업/반납)을 바꾸면 표를 새로 그리는데, 그때 아직 저장 안 한 입력값이 날아간다.
+// → 다시 그리기 전에 화면의 값을 DATA에 먼저 흡수시킨다.
+function syncInputsToData() {
+  if (!DATA) return;
+  var byRow = {};
+  DATA.items.forEach(function(it) { byRow[String(it.sourceRow)] = it; });
+  var els = document.querySelectorAll('[data-row][data-field]');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i], it = byRow[el.getAttribute('data-row')];
+    if (!it) continue;
+    var f = el.getAttribute('data-field');
+    if (el.type === 'checkbox') {
+      var orig = el.getAttribute('data-orig') || '';
+      it[f] = el.checked ? (orig || MY_NAME || MY_SHORT) : '';
+    } else if (el.tagName !== 'SELECT') {
+      it[f] = el.value;
+    }
+  }
+}
+
+// ── helpers ──────────────────────────────────────────────────
+function stBadge(st) {
+  var colors = { confirm:'#2E7D32', alt:'#E65100', short:'#B71C1C', 'n/a':'#9E9E9E' };
+  var c = st && colors[st.toLowerCase()];
+  return c ? '<span style="font-size:9px;margin-left:4px;color:' + c + ';font-weight:600">' + st + '</span>' : '';
+}
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// 업체별 수량을 한 열에 통일 표시 (프로젝트마다 열이 안 바뀜): "HK렌탈 ×2 · PA ×1"
+function vendorBreakdown(it) {
+  var parts = [];
+  (DATA.vendorCols || []).forEach(function(vc) {
+    var q = it.vendorQtys ? (it.vendorQtys[vc] || 0) : 0;
+    if (q > 0) parts.push('<span class="vpill">' + esc(vc) + ' <b>×' + q + '</b></span>');
+  });
+  return parts.length ? parts.join(' ') : '<span class="col-ro">—</span>';
+}
+// 준비/랩업 상태 선택기 — 예외 상황(확인필요)을 직접 고를 때만 쓴다.
+// 담당은 여기서 안 건드린다 (담당은 체크박스가 담당). 2026-07-13
+function onStateChange(sel) {
+  var rk     = sel.getAttribute('data-row');
+  var field  = sel.getAttribute('data-field');   // 'prepSt' | 'wrapSt'
+  var v      = sel.value;                        // '' | 'ok' | 'chk'
+  var isPrep = (field === 'prepSt');
+
+  if (isPrep) { if (v) PREPST[rk] = v; else delete PREPST[rk]; }
+  else        { if (v) WRAPST[rk] = v; else delete WRAPST[rk]; }
+
+  paintState(rk, isPrep ? 'prep' : 'wrap', v);
+  updateSummary();
+  refreshAlerts();
+  markDirty(rk);
+}
+function setContent(html) {
+  document.getElementById('content').innerHTML = html;
+  applyEditLock();
+  growAll();          /* 노트 칸을 내용 높이에 맞춘다 */     /* 🔴 그릴 때마다 다시 건다 — innerHTML 로 갈아끼우면 잠금이 사라진다 */
+}
+
+/* 🔴 2026-08-04 — 로그인 안 한 사람은 「보기만」 되게 입력 요소를 전부 잠근다.
+   전에는 저장 버튼만 잠갔는데, 체크박스·입력칸은 그대로 눌려서
+   대표에게 「로그인 안 해도 입력된다」로 보였다.
+   ⚠️ 이건 눈에 보이게 하는 장치일 뿐이고, 진짜 자물쇠는 서버(fieldSaveData)에 있다. */
+function applyEditLock() {
+  var box = document.getElementById('content');
+  if (!box) return;
+  var els = box.querySelectorAll('input, select, textarea, button');
+  for (var i = 0; i < els.length; i++) els[i].disabled = !CAN_EDIT;
+  var b = document.getElementById('save-btn');
+  if (b) b.disabled = !CAN_EDIT;
+}
+function hint(msg) { document.getElementById('save-hint').textContent = msg; }
+function showSt(type, msg) {
+  var bar = document.getElementById('st-bar');
+  bar.textContent = msg;
+  var s = { load:['#E3F2FD','#1565C0'], ok:['#E8F5E9','#2E7D32'], err:['#FFEBEE','#B71C1C'] }[type] || ['#E3F2FD','#1565C0'];
+  bar.style.background = s[0]; bar.style.color = s[1];
+  bar.className = 'st-bar show';
+  if (type !== 'load') setTimeout(function() { bar.className = 'st-bar'; }, 3000);
+}
+</script>
+</body>
+</html>
