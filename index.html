@@ -450,6 +450,9 @@
     if(!u || !u.cred) return;
     var base = a.getAttribute('href');
     var url  = base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(u.cred);
+    /* 처리할 게 남아 있으면 그 화면으로 바로 연다 */
+    var goTo = a.getAttribute('data-go');
+    if(goTo) url += '&go=' + encodeURIComponent(goTo);
     /* 세 번째 값(windowFeatures)을 주면 브라우저에 따라 탭이 아니라 팝업 창으로 뜬다 → 안 준다. */
     var w = window.open(url, a.getAttribute('target') || '_blank');
     if(w) { try { w.opener = null; } catch(e){} }
@@ -539,7 +542,10 @@
     var row = a.querySelector('.row');
     if(!row) return;
     var old = row.querySelector('.cbadge');
-    if(!(n > 0)){ if(old) old.parentNode.removeChild(old); return; }
+    if(!(n > 0)){ if(old) old.parentNode.removeChild(old); a.removeAttribute('data-go'); return; }
+    /* 🔴 2026-08-19 — 숫자를 누르면 앱의 그 화면으로 바로 가야 한다(대표 지시).
+       카드에 「어느 화면인지」를 적어두고, 열 때 주소에 실어 보낸다. */
+    a.setAttribute('data-go', kind === 'reject' ? 'my' : 'pay');
     var el = old || document.createElement('span');
     el.className = 'cbadge' + (kind === 'reject' ? '' : ' calm');
     el.textContent = n > 99 ? '99+' : String(n);
