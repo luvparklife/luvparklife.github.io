@@ -453,6 +453,12 @@
     /* 처리할 게 남아 있으면 그 화면으로 바로 연다 */
     var goTo = a.getAttribute('data-go');
     if(goTo) url += '&go=' + encodeURIComponent(goTo);
+
+    /* 🔴 2026-08-19 — 대표 지적 "새로고침이 안되는데".
+       앱스스크립트 화면은 브라우저가 붙잡고 있어서, 앱을 새로 배포해도 옛 화면이 그대로 떴다.
+       주소 뒤에 「지금 시각(분 단위)」을 붙이면 브라우저가 다른 주소로 보고 새로 받아온다.
+       분 단위인 이유 = 초 단위면 뒤로가기·재클릭 때마다 매번 새로 받아 느려진다. */
+    url += '&_=' + Math.floor(Date.now() / 60000);
     /* 세 번째 값(windowFeatures)을 주면 브라우저에 따라 탭이 아니라 팝업 창으로 뜬다 → 안 준다. */
     var w = window.open(url, a.getAttribute('target') || '_blank');
     if(w) { try { w.opener = null; } catch(e){} }
