@@ -61,6 +61,12 @@
     .title{font-size:16.5px; font-weight:700}
     .desc{font-size:12.5px; color:var(--sub); margin-top:2px; line-height:1.45}
     .note{display:inline-block; font-size:11px; color:var(--faint); margin-top:5px}
+    /* 🔔 카드에 붙는 「확인할 것 N건」 방울 (2026-08-19 신설)
+       🔴 겹쳐 띄우지(absolute) 않고 줄 안에 끼워 넣는다 — 폰에서 화살표에 가리지 않게. */
+    .cbadge{flex:0 0 auto; min-width:24px; height:24px; padding:0 7px; border-radius:999px;
+      background:#e5484d; color:#fff; font-size:13px; font-weight:800; line-height:24px;
+      text-align:center; margin-right:6px; font-variant-numeric:tabular-nums}
+    .cbadge.calm{background:#e0a020}
     .badge{display:inline-block; font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px; margin-top:6px}
     .badge.soon{background:var(--adm-bg); color:var(--adm); border:1px solid var(--adm-line)}
     .badge.key{background:var(--adm-bg); color:var(--adm); border:1px solid var(--adm-line)}
@@ -197,7 +203,11 @@
         </div>
       </a>
 
-      <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec" target="_blank" rel="noopener">
+      <!-- data-badge = 이 주소에 「몇 건 남았나」를 물어본다. 대표·명진은 대기 청구 수,
+           팀원은 본인 반송 수가 뜬다. 실패하면 아무것도 안 뜬다(허브는 멀쩡히 돈다). -->
+      <a class="card" data-token="1"
+         data-badge="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec"
+         href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec" target="_blank" rel="noopener">
         <div class="row">
           <div class="icon">💰</div>
           <div class="body">
@@ -350,7 +360,13 @@
         $('gbtn').hidden = true;
       }
       $('pfOut').hidden = false;
+      /* 🔔 2026-08-19 — 로그인이 살아 있으면 카드에 「몇 건 남았나」를 물어본다.
+         여기서 안 부르면 새로고침해야만 숫자가 보인다. force=true 로 30초 제한을 건너뛴다. */
+      if(credLive(u) && typeof loadCounts === 'function') loadCounts(true);
     }else{
+      /* 로그아웃하면 남아 있던 숫자를 지운다 — 남의 건수가 화면에 남으면 안 된다 */
+      var stale = document.querySelectorAll('.cbadge');
+      for(var si = 0; si < stale.length; si++) stale[si].parentNode.removeChild(stale[si]);
       $('pf').className = 'pf off';
       $('pfAv').innerHTML = '👤';
       $('pfNm').textContent = '로그인 안 됨';
@@ -490,6 +506,68 @@
   }
 
   $('pfOut').addEventListener('click', function(){ logout(true); });
+
+  /* ===== 🔔 카드에 「몇 건 남았나」 띄우기 (2026-08-19 신설) =====
+     대표 요청: "업무일지 작성되면 통합허브에 갯수별로 알람 → 앱 들어가면 확인"
+
+     🔴 왜 <script> 태그로 물어보나 — 허브는 서버가 없는 정적 페이지라 앱에 물어봐야 하는데,
+        보통 쓰는 fetch() 는 막힌다. 앱이 구글 로그인을 요구해서(access: ANYONE),
+        fetch 로는 개수 대신 「구글 로그인 화면」이 돌아온다(실측: 302 → accounts.google.com).
+        <script> 태그는 로그인 쿠키가 실려 가고 CORS 도 안 걸린다. 그래서 이 길뿐이다.
+     🔴 실패는 조용히 넘어간다 — 숫자가 안 뜰 뿐 허브는 그대로 쓸 수 있어야 한다. */
+  var BADGE_LAST = 0;
+
+  function askCount(url, done){
+    var name = 'pab_' + Math.random().toString(36).slice(2);
+    var sc = document.createElement('script');
+    var fin = false;
+    var timer = setTimeout(function(){ end(null); }, 9000);
+    function end(data){
+      if(fin) return; fin = true;
+      clearTimeout(timer);
+      try { delete window[name]; } catch(e) { window[name] = undefined; }
+      if(sc.parentNode) sc.parentNode.removeChild(sc);
+      done(data);
+    }
+    window[name] = function(d){ end(d); };
+    sc.onerror = function(){ end(null); };
+    sc.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=badge&cb=' + name;
+    document.head.appendChild(sc);
+  }
+
+  function paintCount(a, n, kind){
+    var row = a.querySelector('.row');
+    if(!row) return;
+    var old = row.querySelector('.cbadge');
+    if(!(n > 0)){ if(old) old.parentNode.removeChild(old); return; }
+    var el = old || document.createElement('span');
+    el.className = 'cbadge' + (kind === 'reject' ? '' : ' calm');
+    el.textContent = n > 99 ? '99+' : String(n);
+    el.title = (kind === 'reject' ? '보완해야 할 것 ' : '확인할 청구 ') + n + '건';
+    if(!old){
+      var arrow = row.querySelector('.arrow');
+      if(arrow) row.insertBefore(el, arrow); else row.appendChild(el);
+    }
+  }
+
+  function loadCounts(force){
+    var u = loadUser();
+    if(!u || !credLive(u)) return;                 /* 로그인 안 했으면 안 물어본다 */
+    if(!force && Date.now() - BADGE_LAST < 30000) return;   /* 30초에 한 번까지만 */
+    BADGE_LAST = Date.now();
+    var cards = document.querySelectorAll('a[data-badge]');
+    for(var i = 0; i < cards.length; i++){
+      (function(a){
+        askCount(a.getAttribute('data-badge') + '?t=' + encodeURIComponent(u.cred), function(d){
+          paintCount(a, (d && d.ok) ? d.n : 0, d && d.kind);
+        });
+      })(cards[i]);
+    }
+  }
+
+  /* 화면에 돌아오면 다시 센다 — 앱에서 처리하고 돌아왔을 때 숫자가 남아 있으면 안 된다 */
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) loadCounts(false); });
+  window.addEventListener('focus', function(){ loadCounts(false); });
 
   /* ── 신분증을 들려 보내야 하는 카드 (data-token="1") ──
      정산앱은 「누가 왔는지」를 알아야 본인 것만 보여줄 수 있는데,
