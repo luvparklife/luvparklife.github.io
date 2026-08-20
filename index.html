@@ -451,7 +451,10 @@
     /* 🔴 2026-08-20 — 신분증이 없어도 <u>연다.</u> 전에는 여기서도 return 해서
        두 겹으로 막혀 있었다. 신분증은 「있으면 들려 보내는 것」이지 「입장 조건」이 아니다. */
     var url  = base;
-    if(u && u.cred) url += (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(u.cred);
+    /* 🔴 2026-08-20 교차검증 지적 — <u>살아 있는</u> 신분증만 붙인다.
+       죽은 신분증을 붙이면 ①주소·기록에 쓸데없이 남고 ②앱이 그걸 확인하느라
+       구글에 헛물음을 한 번 더 한다. 앱은 자기 통행증으로 알아서 들어간다. */
+    if(u && u.cred && credLive(u)) url += (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(u.cred);
     /* 처리할 게 남아 있으면 그 화면으로 바로 연다 */
     var goTo = a.getAttribute('data-go');
     if(goTo) url += (url.indexOf('?') >= 0 ? '&' : '?') + 'go=' + encodeURIComponent(goTo);
