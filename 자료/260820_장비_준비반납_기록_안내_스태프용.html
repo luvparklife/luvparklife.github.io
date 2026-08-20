@@ -3,388 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>준비·반납 기록 안내</title>
+<title>장비 준비·반납 기록</title>
 <style>
-  :root{
-    --bg:#f7f8fa; --card:#ffffff; --ink:#1c2330; --sub:#5b6472;
-    --line:#e5e8ee; --accent:#3b6cff; --accent-soft:#eaf0ff;
-    --warn-bg:#fff6e6; --warn-line:#f2c56b; --warn-ink:#7a5200;
-    --ok-bg:#e9f8ee; --ok-line:#8fd6a6; --ok-ink:#1e6b3a;
-    --chip:#eef1f6; --code:#f0f2f7;
-  }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#0f1420; --card:#171d2b; --ink:#e8ecf4; --sub:#a2acbe;
-      --line:#28303f; --accent:#7aa2ff; --accent-soft:#1b2540;
-      --warn-bg:#2c2413; --warn-line:#7a5f22; --warn-ink:#e9c877;
-      --ok-bg:#12271a; --ok-line:#2f6b45; --ok-ink:#8fd6a6;
-      --chip:#232b3a; --code:#1d2433;
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#0f1420; --card:#171d2b; --ink:#e8ecf4; --sub:#a2acbe;
-    --line:#28303f; --accent:#7aa2ff; --accent-soft:#1b2540;
-    --warn-bg:#2c2413; --warn-line:#7a5f22; --warn-ink:#e9c877;
-    --ok-bg:#12271a; --ok-line:#2f6b45; --ok-ink:#8fd6a6;
-    --chip:#232b3a; --code:#1d2433;
-  }
-  :root[data-theme="light"]{
-    --bg:#f7f8fa; --card:#ffffff; --ink:#1c2330; --sub:#5b6472;
-    --line:#e5e8ee; --accent:#3b6cff; --accent-soft:#eaf0ff;
-    --warn-bg:#fff6e6; --warn-line:#f2c56b; --warn-ink:#7a5200;
-    --ok-bg:#e9f8ee; --ok-line:#8fd6a6; --ok-ink:#1e6b3a;
-    --chip:#eef1f6; --code:#f0f2f7;
-  }
+  :root{--bg:#f7f8fa;--card:#fff;--ink:#1c2330;--sub:#5b6472;--line:#e5e8ee;--accent:#3b6cff;--accent-soft:#eaf0ff}
+  @media (prefers-color-scheme:dark){:root{--bg:#0f1420;--card:#171d2b;--ink:#e8ecf4;--sub:#a2acbe;--line:#28303f;--accent:#7aa2ff;--accent-soft:#1b2540}}
   *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Malgun Gothic",sans-serif;
-    line-height:1.75; font-size:17px;
-  }
-  .wrap{max-width:1080px; margin:0 auto; padding:0 20px}
-  header.hero{
-    padding:44px 20px 30px; text-align:center;
-    background:linear-gradient(180deg,var(--accent-soft),transparent);
-    border-bottom:1px solid var(--line);
-  }
-  header.hero h1{font-size:30px; margin:0 0 8px; letter-spacing:-.5px; text-wrap:balance}
-  header.hero p{margin:0; color:var(--sub); font-size:16px}
-  .layout{display:flex; gap:28px; align-items:flex-start; padding:28px 20px 60px}
-  nav.toc{
-    position:sticky; top:16px; flex:0 0 232px; background:var(--card);
-    border:1px solid var(--line); border-radius:14px; padding:16px 14px;
-  }
-  nav.toc b{display:block; font-size:13px; color:var(--sub); margin:0 0 10px 6px}
-  nav.toc a{display:block; padding:8px 10px; border-radius:9px; text-decoration:none; color:var(--ink); font-size:14.5px; margin-bottom:2px}
-  nav.toc a:hover{background:var(--accent-soft)}
-  nav.toc a .n{display:inline-block; width:22px; color:var(--accent); font-weight:700}
-  main{flex:1 1 auto; min-width:0}
-  section{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px 28px; margin-bottom:22px}
-  section h2{font-size:22px; margin:0 0 6px; display:flex; align-items:center; gap:12px; letter-spacing:-.3px}
-  .num{
-    flex:0 0 34px; height:34px; border-radius:50%; background:var(--accent); color:#fff;
-    display:inline-flex; align-items:center; justify-content:center; font-size:17px; font-weight:700;
-  }
-  .lead{color:var(--sub); margin:2px 0 16px 46px; font-size:15.5px}
-  section h3{font-size:16.5px; margin:20px 0 6px}
-  p,li{color:var(--ink)}
-  ul,ol{padding-left:22px}
-  li{margin:5px 0}
-  code{background:var(--code); padding:2px 7px; border-radius:6px; font-size:14.5px}
-  .box{border-radius:12px; padding:14px 16px; margin:14px 0; font-size:15.5px}
-  .warn{background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--warn-ink)}
-  .ok{background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--ok-ink)}
-  .warn b,.ok b{color:inherit}
-  .quote{border-left:4px solid var(--accent); background:var(--accent-soft); padding:14px 18px; border-radius:0 12px 12px 0; margin:16px 0; font-size:16px}
-  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:15px}
-  .tblwrap{overflow-x:auto; margin:14px 0}
-  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left; vertical-align:top}
-  th{background:var(--accent-soft); font-weight:700; white-space:nowrap}
-  .steps{list-style:none; padding:0; counter-reset:s}
-  .steps>li{
-    position:relative; padding:12px 14px 12px 52px; margin:10px 0;
-    background:var(--bg); border:1px solid var(--line); border-radius:12px; counter-increment:s;
-  }
-  .steps>li::before{
-    content:counter(s); position:absolute; left:14px; top:12px;
-    width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
-    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;
-  }
-  a.x{color:var(--accent); font-weight:700; text-decoration:none; border-bottom:2px solid var(--accent-soft)}
-  a.x::after{content:" ↗"; font-size:.85em; opacity:.75}
-
-  /* 폰 화면 그림 */
-  .ph{border:2px solid var(--line);border-radius:15px;padding:14px;background:var(--bg);max-width:330px;margin:14px 0}
-  .ph .cap{font-size:11.5px;color:var(--sub);font-weight:700;margin-bottom:9px}
-  .lbl{font-size:12.5px;color:var(--sub);font-weight:700;margin:8px 0 2px}
-  .fld{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin:4px 0;font-size:14.5px}
-  .fld.on{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
-  .row2{display:flex;gap:8px}.row2>div{flex:1}
-  .rz{display:inline-block;border:1px solid var(--line);background:var(--card);border-radius:999px;
-    padding:6px 12px;margin:3px 3px 0 0;font-size:13.5px;font-weight:700}
-  .rz.on{border-color:var(--accent);background:var(--accent-soft);color:#1f5fa8}
-  .bar{height:11px;border-radius:6px;background:var(--accent);display:inline-block;vertical-align:middle}
-  .card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0}
-
-  footer{color:var(--sub); text-align:center; font-size:13.5px; padding:10px 20px 50px}
-  @media (max-width:820px){
-    .layout{flex-direction:column; padding-top:18px}
-    nav.toc{position:static; width:100%; flex-basis:auto}
-    section{padding:20px 16px}
-    header.hero h1{font-size:25px}
-    .lead{margin-left:0}
-  }
-
-  /* ===== 피드백 칸 — 건드리지 말 것 ===== */
-  body{padding-bottom:76px}
-  .fb{margin-top:20px; border-top:1px dashed var(--line); padding-top:14px}
-  .fb label{display:block; font-size:12.5px; font-weight:700; color:var(--sub); margin-bottom:6px}
-  .fb textarea{width:100%; min-height:62px; resize:vertical; background:var(--bg);
-    border:1px solid var(--line); border-radius:10px; padding:10px 13px; font-size:14.5px;
-    color:var(--ink); font-family:inherit; line-height:1.6}
-  .fb textarea:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent)}
-  .fb textarea.has{border-color:var(--accent); background:var(--accent-soft)}
-  .fbbar{position:fixed; left:0; right:0; bottom:0; z-index:60; background:var(--card);
-    border-top:1px solid var(--line); padding:10px 18px; display:flex; gap:9px;
-    align-items:center; justify-content:center; flex-wrap:wrap; box-shadow:0 -6px 20px rgba(0,0,0,.06)}
-  .fbbar .cnt{font-size:13.5px; color:var(--sub); margin-right:6px}
-  .fbbar .cnt b{color:var(--accent)}
-  .fbbar button{font:inherit; font-size:14px; font-weight:700; cursor:pointer; border-radius:9px;
-    padding:8px 16px; border:1px solid var(--line); background:var(--bg); color:var(--ink)}
-  .fbbar button.save{background:var(--accent); color:#fff; border-color:var(--accent)}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.75;font-size:17px;
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;
+    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:32px 26px;max-width:460px;width:100%;text-align:center}
+  h1{font-size:23px;margin:0 0 10px;letter-spacing:-.4px}
+  p{color:var(--sub);font-size:15.5px;margin:0 0 6px}
+  .big{display:block;background:var(--accent);color:#fff;text-decoration:none;font-weight:800;
+    font-size:18px;padding:16px;border-radius:13px;margin:22px 0 10px}
+  .big span{display:block;font-size:13px;font-weight:600;opacity:.9;margin-top:4px}
+  .how{text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-top:18px;font-size:14.5px;line-height:1.85}
+  .how b{color:var(--ink)}
+  .foot{font-size:12.5px;color:var(--sub);margin-top:18px}
 </style>
 </head>
 <body>
+<div class="box">
+  <div style="font-size:44px;line-height:1">📋</div>
+  <h1>장비 준비·반납 기록</h1>
+  <p>이 안내는 <b>앱 안으로 옮겼습니다.</b><br>앱에서 <b>「❓ 사용법」</b> 를 누르면 언제든 볼 수 있습니다.</p>
 
-<header class="hero">
-  <h1>📋 준비·반납 기록</h1>
-  <p>현장 장비앱에 칸 세 개가 늘었습니다 · 2026-08-20</p>
-</header>
+  <a class="big" href="https://luvparklife.github.io" target="_top">
+    허브 열기 →<span>구글 로그인 → 「현장 장비앱」 카드</span></a>
 
-<div class="layout wrap">
-  <nav class="toc">
-    <b>목차</b>
-    <a href="#s1"><span class="n">1</span>뭐가 달라지나</a>
-    <a href="#s2"><span class="n">2</span>준비할 때</a>
-    <a href="#s3"><span class="n">3</span>특이사항</a>
-    <a href="#s4"><span class="n">4</span>왜 적나</a>
-    <a href="#s5"><span class="n">5</span>정리</a>
-  </nav>
+  <div class="how">
+    <b>왜 옮겼나</b><br>
+    문서를 따로 두면 앱을 고칠 때마다 안내가 뒤처집니다.
+    앱 안에 두면 <b>고치는 자리가 한 곳</b>이라 어긋날 수가 없습니다.
+    <br><br>
+    <b>앱에서 보는 법</b><br>
+    허브에서 <b>「🎬 현장 장비앱」</b> 카드를 누르고, 화면 오른쪽 위 <b>「❓ 사용법」</b> 을 누르세요.
+  </div>
 
-  <main>
-
-  <section id="s1">
-    <h2><span class="num">1</span>뭐가 달라지나</h2>
-    <p class="lead">한 줄로 먼저.</p>
-
-    <div class="quote"><b>준비 탭과 반납 탭 맨 위에 <u>칸 세 개</u>가 생겼습니다. 날짜 하나, 시작·끝 시각 두 개.</b></div>
-
-    <p>그게 전부입니다. <b>장비 체크는 지금 하시던 그대로</b>이고, 랩업 탭은 하나도 안 바뀌었습니다.</p>
-
-    <div class="box ok"><b>✅ 나중에 몰아서 적으셔도 됩니다.</b>
-      「시작 버튼」 같은 걸 그때그때 눌러야 하는 방식이 <b>아닙니다.</b>
-      일 끝나고 한 번에 적으셔도 값만 맞으면 됩니다.</div>
-  </section>
-
-  <section id="s2">
-    <h2><span class="num">2</span>준비할 때 — 칸 세 개</h2>
-    <p class="lead">앱 열고, 프로젝트 고르고, 준비 탭. 맨 위에 있습니다.</p>
-
-    <div class="ph">
-      <div class="cap">📱 현장 장비앱 · 준비 탭 맨 위</div>
-      <div style="font-size:14px;font-weight:800;margin-bottom:6px">📋 준비 기록</div>
-      <div class="lbl">준비한 날</div>
-      <div class="fld on">2026-08-16</div>
-      <div class="row2">
-        <div><div class="lbl">시작</div><div class="fld on">14:00</div></div>
-        <div><div class="lbl">끝</div><div class="fld on">18:30</div></div>
-      </div>
-    </div>
-
-    <div class="tblwrap">
-    <table>
-      <tr><th>칸</th><th>어떻게</th></tr>
-      <tr><td><b>준비한 날</b></td><td>오늘 날짜가 <b>미리 채워져</b> 있습니다. 맞으면 그냥 두세요</td></tr>
-      <tr><td><b>시작</b></td><td>준비를 <b>시작한</b> 시각. 눌러서 고르거나 직접 치셔도 됩니다</td></tr>
-      <tr><td><b>끝</b></td><td>준비를 <b>끝낸</b> 시각</td></tr>
-    </table>
-    </div>
-
-    <div class="box ok"><b>✅ 정산앱 콜·랩 시간과 같은 방식입니다.</b> 30분 단위로 고르되, 직접 치셔도 됩니다(예: <code>14:20</code>).</div>
-
-    <p><b>반납도 똑같습니다.</b> 반납 탭 맨 위에 같은 칸 세 개 — 반납한 날 · 시작 · 끝.</p>
-  </section>
-
-  <section id="s3">
-    <h2><span class="num">3</span>특이사항 — 있으면 하나만</h2>
-    <p class="lead">버튼 7개가 늘 보입니다. 없으면 안 눌러도 됩니다.</p>
-
-    <p>준비하다 보면 <b>준비 말고 다른 일</b>이 끼어들 때가 있습니다. 그럴 때만 하나 눌러주시면 됩니다.</p>
-
-    <div class="ph">
-      <div class="cap">📱 준비 탭</div>
-      <div style="font-size:13.5px;font-weight:800;margin-bottom:6px">특이사항
-        <span style="font-size:12px;font-weight:600;color:var(--sub);margin-left:6px">있으면 눌러주세요 · 없으면 안 눌러도 됩니다</span></div>
-      <div>
-        <span class="rz on">정비·수리</span><span class="rz">장비 못 찾음</span>
-        <span class="rz">빠진 장비 뒤늦게 발견</span><span class="rz">렌탈 입고 지연</span>
-        <span class="rz">추가 요청 들어옴</span><span class="rz">인원 부족</span><span class="rz">기타</span>
-      </div>
-    </div>
-
-    <div class="tblwrap">
-    <table>
-      <tr><th>보기</th><th>이런 때</th></tr>
-      <tr><td><b>정비·수리</b></td><td>니스 칠, 클리닝, 고장 손보기 — <b>준비 아닌 일이 끼어든 것</b></td></tr>
-      <tr><td><b>장비 못 찾음</b></td><td>어디 있는지 몰라 찾느라 시간이 감</td></tr>
-      <tr><td><b>빠진 장비 발견</b></td><td>리스트에 없던 게 필요해서 추가로 챙김</td></tr>
-      <tr><td><b>렌탈 입고 지연</b></td><td>빌린 장비가 늦게 옴</td></tr>
-      <tr><td><b>추가 요청</b></td><td>클라이언트·감독이 뒤늦게 더 요청</td></tr>
-      <tr><td><b>인원 부족</b></td><td>혼자 하느라 오래 걸림</td></tr>
-      <tr><td><b>기타</b></td><td>위에 없음 — 누르면 <b>한 줄 적는 칸</b>이 나옵니다</td></tr>
-    </table>
-    </div>
-
-    <div class="box ok"><b>✅ 같은 걸 다시 누르면 해제됩니다.</b> 잘못 눌러도 괜찮습니다.<br>
-      <b>아무 일 없었으면 아무것도 안 누르시면 됩니다.</b></div>
-  </section>
-
-  <section id="s4">
-    <h2><span class="num">4</span>왜 적나 — 이건 꼭 읽어주세요</h2>
-    <p class="lead">오해가 생기기 쉬운 부분이라 분명히 적습니다.</p>
-
-    <div class="box warn" style="font-size:16.5px">
-      <b>🔴 누가 잘못했는지 보려는 게 아닙니다.</b><br><br>
-      <b>「무엇 때문에」 준비가 매번 빡빡한지</b>를 찾으려는 것입니다.
-      그래서 항목이 <b>사람 이름이 아니라 「정비·수리」 같은 일의 종류</b>입니다.
-    </div>
-
-    <p>지금은 준비하다 정비를 하게 돼도 <b>「그날 좀 바빴다」로 끝나고 사라집니다.</b>
-      다음 달에 같은 일이 또 나도 그게 <b>반복인지 아무도 모릅니다.</b></p>
-
-    <p>석 달쯤 쌓이면 이런 게 보입니다:</p>
-
-    <div class="card">
-      <b style="display:block;margin-bottom:8px">석 달간 적힌 특이사항 12건</b>
-      <div style="font-size:15px;line-height:2.1">
-        정비·수리 <span class="bar" style="width:52%"></span> <b>7번</b><br>
-        장비 못 찾음 <span class="bar" style="width:15%"></span> 2번<br>
-        렌탈 입고 지연 <span class="bar" style="width:15%"></span> 2번<br>
-        추가 요청 <span class="bar" style="width:7%"></span> 1번
-      </div>
-    </div>
-
-    <div class="quote"><b>그러면 회사가 할 일이 정해집니다 — 「정비를 촬영 전날 말고 할 자리를 만든다」.</b></div>
-
-    <p><b>즉 이 기록은 일을 더 시키려는 게 아니라, 일이 몰리는 자리를 없애려고 모으는 것입니다.</b>
-      「인원 부족」이 자꾸 찍히면 그것도 그대로 보입니다.</p>
-  </section>
-
-  <section id="s5">
-    <h2><span class="num">5</span>정리 — 하실 일</h2>
-    <p class="lead">평소엔 30초면 끝납니다.</p>
-
-    <ol class="steps">
-      <li><b>준비 끝나면</b> — 준비 탭 맨 위에 <b>날짜 · 시작 · 끝</b></li>
-      <li><b>특이사항이 있었으면</b> — 버튼 <b>하나</b> (없으면 넘어가세요)</li>
-      <li><b>반납도 똑같이</b> — 반납 탭 맨 위에 같은 세 칸</li>
-    </ol>
-
-    <div class="box ok"><b>✅ 저장은 알아서 됩니다.</b> 적으면 <b>자동으로 저장</b>됩니다(지금 장비 체크와 같습니다).</div>
-
-    <div class="box warn"><b>⚠️ 프로젝트당 한 번입니다.</b>
-      2일 촬영이라 준비를 두 번 하셨어도 <b>한 줄로</b> 적어주세요 —
-      <b>시작</b>은 첫 준비를 시작한 시각, <b>끝</b>은 마지막 준비를 끝낸 시각.</div>
-
-    <p><b>막히거나 이상하면 그냥 말씀해 주세요.</b> 처음 쓰는 것이라 안 되는 게 있는 게 정상입니다.
-      화면 사진 찍어서 보내주시면 바로 봐드립니다.</p>
-  </section>
-
-  </main>
+  <div class="foot">촬영 프로덕션 PA · 2026-08-20</div>
 </div>
-
-<footer>
-  촬영 프로덕션 PA · 준비·반납 기록 안내 (현장 스태프용) · 2026-08-20
-</footer>
-
-<script>
-(function(){
-  var DOC = (document.title || '문서').trim();
-  var KEY = 'fb::' + DOC;
-  var store = {};
-  try { store = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { store = {}; }
-  function slug(t){ var h = 5381; for (var i=0;i<t.length;i++){ h = ((h*33) ^ t.charCodeAt(i)) >>> 0; } return 'fb_' + h.toString(36); }
-  var live = {};
-  Array.prototype.slice.call(document.querySelectorAll('section')).forEach(function(s, i){
-    var h = s.querySelector('h2');
-    var title = h ? h.textContent.replace(/^\s*\d+\s*/, '').trim() : ('섹션 ' + (i+1));
-    var id = slug(title);
-    live[id] = 1;
-    var wrap = document.createElement('div');
-    wrap.className = 'fb';
-    var lab = document.createElement('label');
-    lab.setAttribute('for', id);
-    lab.textContent = '💬 여기에 피드백 — 고칠 것 · 빠진 것 · 질문';
-    var ta = document.createElement('textarea');
-    ta.id = id; ta.dataset.t = title;
-    ta.placeholder = '자유롭게 적으세요. 자동 저장됩니다.';
-    ta.value = store[id] || '';
-    if (ta.value.trim()) ta.classList.add('has');
-    ta.addEventListener('input', function(){
-      store[id] = ta.value;
-      try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){}
-      ta.classList.toggle('has', !!ta.value.trim());
-      count();
-    });
-    wrap.appendChild(lab); wrap.appendChild(ta);
-    s.appendChild(wrap);
-  });
-  var dirty = false;
-  Object.keys(store).forEach(function(k){ if (!live[k]) { delete store[k]; dirty = true; } });
-  if (dirty) { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){} }
-  var bar = document.createElement('div');
-  bar.className = 'fbbar';
-  bar.innerHTML = '<span class="cnt"></span>' +
-    '<button class="save" type="button">💾 피드백 저장</button>' +
-    '<button class="copy" type="button">📋 복사</button>' +
-    '<button class="clr"  type="button">🗑 지우기</button>';
-  document.body.appendChild(bar);
-  var cntEl = bar.querySelector('.cnt');
-  function filled(){
-    return Array.prototype.slice.call(document.querySelectorAll('.fb textarea'))
-      .filter(function(t){ return t.value.trim(); });
-  }
-  function count(){
-    var n = filled().length;
-    cntEl.innerHTML = n ? '피드백 <b>' + n + '개</b> 작성됨 · 자동 저장 중'
-                        : '각 항목 밑에 피드백을 남길 수 있습니다';
-  }
-  function pad(n){ return String(n).padStart(2,'0'); }
-  function build(){
-    var f = filled();
-    if (!f.length) return null;
-    var d = new Date();
-    var ts = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
-    var md = '# 피드백 — ' + DOC + '\n\n작성: ' + ts + '\n원본 파일: ' + DOC + '.html\n\n---\n\n';
-    f.forEach(function(t){ md += '## ' + t.dataset.t + '\n\n' + t.value.trim() + '\n\n'; });
-    return md;
-  }
-  bar.querySelector('.save').onclick = function(){
-    var md = build();
-    if (!md) { alert('작성된 피드백이 없습니다.'); return; }
-    var d = new Date();
-    var stamp = String(d.getFullYear()).slice(2) + pad(d.getMonth()+1) + pad(d.getDate());
-    var a = document.createElement('a');
-    var url = URL.createObjectURL(new Blob([md], {type:'text/markdown;charset=utf-8'}));
-    a.href = url; a.download = '피드백_' + DOC.replace(/\s+/g,'') + '_' + stamp + '.md';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-    var b = bar.querySelector('.save'), o = b.textContent;
-    b.textContent = '✅ 저장됨 — "피드백 반영해줘"';
-    setTimeout(function(){ b.textContent = o; }, 3000);
-  };
-  bar.querySelector('.copy').onclick = function(){
-    var md = build();
-    if (!md) { alert('작성된 피드백이 없습니다.'); return; }
-    var done = function(){
-      var b = bar.querySelector('.copy'), o = b.textContent;
-      b.textContent = '✅ 복사됨'; setTimeout(function(){ b.textContent = o; }, 1500);
-    };
-    if (navigator.clipboard) { navigator.clipboard.writeText(md).then(done, done); }
-    else { var t=document.createElement('textarea'); t.value=md; document.body.appendChild(t);
-           t.select(); document.execCommand('copy'); t.remove(); done(); }
-  };
-  bar.querySelector('.clr').onclick = function(){
-    if (!confirm('작성한 피드백을 전부 지울까요?')) return;
-    try { localStorage.removeItem(KEY); } catch(e){}
-    store = {};
-    document.querySelectorAll('.fb textarea').forEach(function(t){ t.value=''; t.classList.remove('has'); });
-    count();
-  };
-  count();
-})();
-</script>
-
 </body>
 </html>
