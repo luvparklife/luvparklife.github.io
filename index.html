@@ -141,6 +141,24 @@
       <!-- pa-claude:// 는 대표 맥에 설치된 앱(~/Applications/PA 도구/클로드.app)을 여는 전용 주소.
            다른 사람 컴퓨터에서는 아무 일도 일어나지 않는다(그래서 안전).
            보고서 보기는 노션에서, 일정 보기는 캘린더 앱에서 — 그래서 카드를 안 둔다. -->
+      <!-- 🧾 견적서 앱 (2026-08-21 신설)
+           · 장비앱과 같은 주소에 ?page=quote 만 붙인다 — 앱을 새로 만들지 않았다.
+           · data-token="1" 로 신분증을 실어 보낸다. 없으면 앱이 「대표님만 씁니다」를 띄운다.
+           · 🔴 카드를 감추는 것은 자물쇠가 아니다. 서버(Quote.js)가 매번 「대표」 등급을 확인한다. -->
+      <a class="card" data-token="1"
+         href="https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec?page=quote"
+         target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🧾</div>
+          <div class="body">
+            <div class="title">견적서</div>
+            <div class="desc">프로젝트별 견적 만들기 · 차수 비교</div>
+            <div class="note">🚧 만드는 중 — 지금은 프로젝트 목록까지</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+
       <a class="card" href="pa-claude://run">
         <div class="row">
           <div class="icon">🅰️</div>
