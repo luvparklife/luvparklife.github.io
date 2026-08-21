@@ -207,6 +207,24 @@
         <span class="gd">내 것만 보고 입력</span>
       </div>
 
+      <!-- 📁 프로젝트 (2026-08-21 신설)
+           촬영 한 건의 장비·견적서·정산을 한자리에 모은다.
+           🔴 팀 그룹에 둔다 — 문원님·명진님도 프로젝트 단위로 일한다(2026-08-21 대표 지적).
+              안에 보이는 칸만 등급에 따라 달라진다.
+           🔴 앱을 복사하지 않는다. 주소에 ?proj= 를 실어 보낼 뿐이고,
+              그게 없으면 각 앱은 지금과 100% 똑같이 동작한다. -->
+      <a class="card" href="#p" id="cardProj">
+        <div class="row">
+          <div class="icon">📁</div>
+          <div class="body">
+            <div class="title">프로젝트</div>
+            <div class="desc">촬영 한 건의 장비 · 견적서 · 정산을 한자리에서</div>
+            <div class="note">로그인해야 목록이 보입니다</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+
       <!-- data-token="1" = 로그인했으면 신분증(?t=)을 실어 보낸다.
            신분증 없이 열면 앱이 「보기 전용」으로 뜬다(2026-08-04). -->
       <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec" target="_blank" rel="noopener">
@@ -272,6 +290,25 @@
           <div class="arrow">›</div>
         </div>
       </a>
+    </div>
+
+    <!-- ═══ 📁 프로젝트 화면 (2026-08-21) — 주소 #p / #p/이름 으로 갈린다 ═══ -->
+    <div class="group pjview" id="vProjList" hidden>
+      <div class="ghead">
+        <span class="dot"></span>
+        <span class="gt">📁 프로젝트</span>
+        <span class="gd"><a href="#" class="pjback">‹ 도구 전체</a></span>
+      </div>
+      <div id="pjListBody"><p class="foot">불러오는 중…</p></div>
+    </div>
+
+    <div class="group pjview" id="vProjOne" hidden>
+      <div class="ghead">
+        <span class="dot"></span>
+        <span class="gt" id="pjName">—</span>
+        <span class="gd"><a href="#p" class="pjback">‹ 프로젝트 목록</a></span>
+      </div>
+      <div id="pjOneBody"></div>
     </div>
 
     <p class="foot">각 앱은 서로 독립적으로 작동합니다.<br>앱 링크가 바뀌면 이 페이지(index.html)만 갱신하면 됩니다.</p>
@@ -563,7 +600,9 @@
     }
     window[name] = function(d){ end(d); };
     sc.onerror = function(){ end(null); };
-    sc.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'action=badge&cb=' + name;
+    /* 🔴 2026-08-21 — 'action=badge' 를 여기서 박지 않는다. 부르는 쪽이 붙인다.
+       그래야 이 함수를 「프로젝트 목록 물어보기」에도 그대로 쓸 수 있다(새로 안 짠다). */
+    sc.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'cb=' + name;
     document.head.appendChild(sc);
   }
 
@@ -593,7 +632,7 @@
     var cards = document.querySelectorAll('a[data-badge]');
     for(var i = 0; i < cards.length; i++){
       (function(a){
-        askCount(a.getAttribute('data-badge') + '?t=' + encodeURIComponent(u.cred), function(d){
+        askCount(a.getAttribute('data-badge') + '?action=badge&t=' + encodeURIComponent(u.cred), function(d){
           paintCount(a, (d && d.ok) ? d.n : 0, d && d.kind);
         });
       })(cards[i]);
@@ -679,7 +718,138 @@
     }
     setTimeout(startGoogle, 300);
   }
+  /* ═══════════════════════════════════════════════════════════════
+     📁 프로젝트 화면 (2026-08-21)
+     ═══════════════════════════════════════════════════════════════
+     대표 요구: "허브에 프로젝트 앱 만들어서 거기에 해당 프로젝트 들어가면
+                 장비앱, 정산앱, 견적서앱 이렇게 있는 구조로"
+     🔴 앱을 «복사하지 않는다.» 주소에 ?proj= 를 실어 보낼 뿐이다.
+        그게 없으면 각 앱은 지금과 100% 똑같이 동작한다 → 되돌리기가 쉽다.
+     🔴 목록은 장비앱에 물어본다(?list=projects). 허브에 목록 파일을 두면
+        그게 «사본»이 되어 어긋난다(SSOT).
+     🔴 화면에서 칸을 감추는 것은 자물쇠가 아니다 — 각 앱이 서버에서 등급을 다시 본다.
+     ═══════════════════════════════════════════════════════════════ */
+  var FIELD_APP = 'https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec';
+  var PJ_CACHE = null, PJ_AT = 0, PJ_ROLE = '';
+
+  function pjEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(m){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); }
+
+  /* 앱으로 갈 때 신분증을 실어 보낸다 — openWithToken 과 같은 규칙 */
+  function pjUrl(base, proj, extra){
+    var u = loadUser();
+    var url = base + (base.indexOf('?')>=0?'&':'?') + 'proj=' + encodeURIComponent(proj);
+    if(extra) url += '&' + extra;
+    if(u && u.cred && credLive(u)) url += '&t=' + encodeURIComponent(u.cred);
+    return url;
+  }
+  function pjOpen(base, proj, extra){
+    var w = window.open(pjUrl(base, proj, extra), '_blank');
+    if(w) w.opener = null;
+  }
+
+  /* ── 목록 ── */
+  function pjLoad(force){
+    var box = document.getElementById('pjListBody');
+    var u = loadUser();
+    if(!u || !credLive(u)){
+      box.innerHTML = '<p class="foot">🔒 <b>로그인해야 목록이 보입니다.</b><br>' +
+        '프로젝트 이름에는 거래처 이름이 들어 있어서, 로그인한 팀에게만 보여줍니다.<br>' +
+        '<a href="#" class="pjback">‹ 도구 전체로 돌아가기</a></p>';
+      return;
+    }
+    if(!force && PJ_CACHE && Date.now()-PJ_AT < 600000){ pjPaint(PJ_CACHE); return; }
+    box.innerHTML = '<p class="foot">불러오는 중…</p>';
+    askCount(FIELD_APP + '?list=projects&t=' + encodeURIComponent(u.cred), function(d){
+      if(!d || !d.ok){
+        box.innerHTML = '<p class="foot">🔴 목록을 못 받았습니다' +
+          (d && d.why==='no_auth' ? ' — <b>직원명단에 없는 계정</b>입니다.' : '.') +
+          '<br>잠시 뒤 다시 눌러보세요. <a href="#" class="pjback">‹ 도구 전체</a></p>';
+        return;
+      }
+      PJ_CACHE = d.rows || []; PJ_AT = Date.now(); PJ_ROLE = d.role || '';
+      pjPaint(PJ_CACHE);
+    });
+  }
+  function pjPaint(rows){
+    var box = document.getElementById('pjListBody');
+    if(!rows.length){ box.innerHTML = '<p class="foot">진행 중인 프로젝트가 없습니다.</p>'; return; }
+    var h = '';
+    rows.forEach(function(p){
+      var name = p.name || p, label = p.label || name;
+      h += '<a class="card" href="#p/' + encodeURIComponent(name) + '">' +
+           '<div class="row"><div class="icon">🎬</div><div class="body">' +
+           '<div class="title">' + pjEsc(name) + '</div>' +
+           '<div class="desc">' + pjEsc(label !== name ? label : '') + '</div>' +
+           '</div><div class="arrow">›</div></div></a>';
+    });
+    h += '<p class="foot">「프로젝트목록」을 그대로 읽습니다 — 여기서 관리할 목록을 따로 만들지 않습니다.<br>' +
+         '<a href="#" onclick="pjLoad(true);return false;">🔄 다시 읽기</a></p>';
+    box.innerHTML = h;
+  }
+
+  /* ── 프로젝트 하나 ── */
+  function pjOne(proj){
+    document.getElementById('pjName').textContent = proj;
+    var role = PJ_ROLE || '확인 중';
+    var isOwner = (role === '대표');
+    var isMgr   = (role === '대표' || role === '관리');
+    var h = '';
+    h += pjCard('🎬','장비','준비 · 랩업 · 반납',
+         'pjOpen(FIELD_APP,' + JSON.stringify(proj) + ')');
+    if(isOwner) h += pjCard('🧾','견적서','인건비 · OT · 장비 · 차량 · 경비',
+         'pjOpen(FIELD_APP,' + JSON.stringify(proj) + ',"page=quote")');
+    h += pjCard('💰', isMgr ? '정산 (관리)' : '내 청구', '데이페이 · OT · 경비',
+         'pjSettle()');
+    h += '<p class="foot">🔴 <b>지금 등급: ' + pjEsc(role) + '</b> — 등급에 따라 보이는 칸이 다릅니다.<br>' +
+         (isOwner ? '' : '견적서는 단가·마진이 그대로 보여서 <b>대표님만</b> 열립니다.<br>') +
+         '📂 드라이브 폴더 · 📝 노션 페이지 · ✅ 끝내기는 <b>아직 안 만들었습니다.</b></p>';
+    document.getElementById('pjOneBody').innerHTML = h;
+  }
+  function pjCard(ic, t, d, onclick){
+    return '<a class="card" href="#" onclick="' + onclick + ';return false;">' +
+      '<div class="row"><div class="icon">' + ic + '</div><div class="body">' +
+      '<div class="title">' + t + '</div><div class="desc">' + d + '</div>' +
+      '</div><div class="arrow">›</div></div></a>';
+  }
+  /* 정산앱은 아직 ?proj= 를 못 받는다 — 프로젝트 없이 그냥 연다(거짓말하지 않는다) */
+  function pjSettle(){
+    var a = document.querySelector('a[data-badge]');
+    if(!a){ alert('정산앱 링크를 못 찾았습니다.'); return; }
+    var u = loadUser(), url = a.getAttribute('href');
+    if(u && u.cred && credLive(u)) url += (url.indexOf('?')>=0?'&':'?') + 't=' + encodeURIComponent(u.cred);
+    var w = window.open(url, '_blank'); if(w) w.opener = null;
+  }
+
+  /* ── 화면 갈아끼우기 ── */
+  function pjRoute(){
+    var h = location.hash || '';
+    var list = document.getElementById('vProjList');
+    var one  = document.getElementById('vProjOne');
+    var home = document.querySelectorAll('.group:not(.pjview)');
+    if(h.indexOf('#p/') === 0){
+      var proj = '';
+      try { proj = decodeURIComponent(h.slice(3)); } catch(e){ proj = h.slice(3); }
+      for(var i=0;i<home.length;i++) home[i].hidden = true;
+      list.hidden = true; one.hidden = false;
+      pjOne(proj);
+    } else if(h === '#p'){
+      for(var j=0;j<home.length;j++) home[j].hidden = true;
+      one.hidden = true; list.hidden = false;
+      pjLoad(false);
+    } else {
+      list.hidden = true; one.hidden = true;
+      for(var k=0;k<home.length;k++) home[k].hidden = false;
+      /* 🔴 홈으로 돌아오면 등급별 감추기를 «다시» 건다 —
+         안 그러면 대표 전용 그룹이 손님에게 열린 채로 남는다. */
+      try { applyRole(roleOf(loadUser())); } catch(e){}
+    }
+    window.scrollTo(0,0);
+  }
+  window.addEventListener('hashchange', pjRoute);
+
   startGoogle();
+  pjRoute();
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
