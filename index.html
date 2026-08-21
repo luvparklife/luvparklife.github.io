@@ -391,13 +391,32 @@
 
 
       <!-- 2026-07-30 대표 지시로 「내부 공통」 그룹에서 이리로 옮김 -->
-      <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec?page=lifecycle" target="_blank" rel="noopener">
+      <a class="card" data-token="1" data-lifecycle="1" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec?page=lifecycle" target="_blank" rel="noopener">
         <div class="row">
           <div class="icon">📋</div>
           <div class="body">
             <div class="title">프로젝트 생애주기 입력</div>
             <div class="desc">새 프로젝트 시작 시 노션에 정보 등록</div>
             <div class="note">거래처·인력 연결 · 드라이브 폴더 생성</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+
+      <!-- 🔴 2026-08-21 신설 — 세무대사(계산서 발행 확인).
+           [전에 무엇이 잘못돼 있었나] 화면·엔진(tax.html·Reconcile.js)은 있는데
+           허브에 <b>들어가는 문이 없었다.</b> 주소를 직접 쳐야만 갈 수 있었다.
+           data-token="1" = 로그인했으면 신분증(?t=)을 실어 보낸다. 이게 없으면
+           앱이 「관리자 전용」 안내를 띄운다(Code.js 의 page==='tax' 자리).
+           ⚠️ 카드는 관리자 그룹이라 명진님께도 보이지만, 실제로 열리려면
+              Code.js 의 APP_ADMIN_EMAILS 에 이메일이 들어 있어야 한다. -->
+      <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec?page=tax" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🧾</div>
+          <div class="body">
+            <div class="title">세무대사 — 계산서 발행 확인</div>
+            <div class="desc">그랜터·클로브 CSV를 올려 청구와 대조</div>
+            <div class="note">발행 / 미발행 / 제외를 한눈에 · 대표 · 명진 전용</div>
           </div>
           <div class="arrow">›</div>
         </div>
@@ -908,8 +927,21 @@
   }
   function pjPaint(rows){
     var box = document.getElementById('pjListBody');
-    if(!rows.length){ box.innerHTML = '<p class="foot">진행 중인 프로젝트가 없습니다.</p>'; return; }
+    /* 🔴 2026-08-21 대표: *"생애주기랑 프로젝트랑 합쳐줘. 프로젝트 클릭하면 프로젝트들 카드로
+       보이고. 프로젝트도 생성할 수 있게하고."*
+       [무엇이 문제였나] 프로젝트를 «만드는 곳»과 «보는 곳»이 따로였다.
+         만들기는 「프로젝트 생애주기 입력」 카드(정산앱 안), 보기는 여기.
+         그래서 대표가 「프로젝트 어디서 만들지?」를 매번 찾아야 했다.
+       [고침] 여기 맨 위에 「＋ 새 프로젝트」를 둔다. 입구가 하나가 된다.
+       🔴 새로 만들지 않았다 — 이미 있는 생애주기 화면을 «여기서 연다».
+          주소도 여기 안 적는다. 위 카드(data-lifecycle)의 것을 읽어 쓴다(두 군데면 어긋난다 §1). */
     var h = '';
+    h += '<a class="card" id="pjNew" href="#" style="border-style:dashed">' +
+         '<div class="row"><div class="icon">➕</div><div class="body">' +
+         '<div class="title">새 프로젝트</div>' +
+         '<div class="desc">거래처·인원·기자재를 등록하고 노션 페이지·드라이브 폴더를 한 번에</div>' +
+         '</div><div class="arrow">›</div></div></a>';
+    if(!rows.length){ h += '<p class="foot">진행 중인 프로젝트가 없습니다.</p>'; box.innerHTML = h; pjWireNew(); return; }
     rows.forEach(function(p){
       var name = p.name || p, label = p.label || name;
       h += '<a class="card" href="#p/' + encodeURIComponent(name) + '">' +
@@ -921,6 +953,80 @@
     h += '<p class="foot">「프로젝트목록」을 그대로 읽습니다 — 여기서 관리할 목록을 따로 만들지 않습니다.<br>' +
          '<a href="#" onclick="pjLoad(true);return false;">🔄 다시 읽기</a></p>';
     box.innerHTML = h;
+    pjWireNew();
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     📋 프로젝트 1차 정보 — 「뭐가 아직 안 들어왔나」 (2026-08-21)
+     ══════════════════════════════════════════════════════════════
+     대표 지시: *"어떤 것들이 등록이 안되었는지 확인 할 수 있어야됨."*
+     🔴 여기는 «아무것도 저장하지 않는다». 「있나 없나」만 물어 색을 칠하고,
+        고치러 갈 때는 «원본»으로 보낸다. 값을 베껴 오면 반드시 어긋난다.
+     🔴 항목 성격이 셋이다 (대표 확정)
+        필수   — 없으면 다음이 막힌다        → 빨강
+        결과물 — 일하면 저절로 생긴다        → 주황(아직 안 나옴)
+        리소스 — 쌓이면 좋은 것. 경고 안 함  → 회색  (*"로케이션은 필수라기보다는 리소스 쌓기용"*)
+     🔴 노션·정산앱은 «다른 시스템»이라 아직 못 물어본다 → 「아직 안 봄」으로 둔다.
+        자리를 미리 만들어 두어, 그 시스템을 붙이면 저절로 채워진다.
+     되돌리기 = **"프로젝트 1차정보 빼줘"** */
+  var PJ_CHK_CACHE = {};
+  function pjCheck(proj){
+    var box = document.getElementById('pjChk'); if(!box) return;
+    var got = PJ_CHK_CACHE[proj];
+    if(got){ pjChkPaint(box, got); return; }
+    box.innerHTML = '<p class="foot">📋 1차 정보 확인 중…</p>';
+    var u = loadUser();
+    if(!u || !credLive(u)){ box.innerHTML = '<p class="foot">🔑 로그인하면 1차 정보를 볼 수 있습니다.</p>'; return; }
+    askCount(FIELD_APP + '?list=pjcheck&proj=' + encodeURIComponent(proj)
+             + '&t=' + encodeURIComponent(u.cred), function(d){
+      if(!d || !d.ok){
+        box.innerHTML = '<p class="foot">📋 1차 정보를 못 받았습니다'
+                      + (d && d.why ? ' (' + pjEsc(d.why) + ')' : '') + '</p>';
+        return;
+      }
+      PJ_CHK_CACHE[proj] = d;
+      pjChkPaint(box, d);
+    });
+  }
+  function pjChkPaint(box, d){
+    var C = { '필수':'#c0392b', '결과물':'#a3590f', '리소스':'#78909C' };
+    var need = (d.items||[]).filter(function(x){ return x.state==='no' && x.kind==='필수'; }).length;
+    var h = '<div class="gt" style="margin-bottom:8px">📋 1차 정보'
+          + (need ? ' — <span style="color:#c0392b">꼭 필요한 것 ' + need + '개가 비었습니다</span>' : '')
+          + '</div>';
+    (d.items||[]).forEach(function(x){
+      var mark, col;
+      if(x.state==='ok'){ mark='✅'; col='#1e6b3a'; }
+      else if(x.state==='no'){ mark = (x.kind==='필수' ? '🔴' : '🟠'); col = C[x.kind]||'#666'; }
+      else { mark='⚪'; col='#90A4AE'; }
+      h += '<div style="display:flex;gap:9px;align-items:baseline;padding:7px 2px;'
+        +  'border-bottom:1px solid rgba(0,0,0,.06);font-size:13.5px">'
+        +  '<span style="flex:0 0 20px">' + mark + '</span>'
+        +  '<span style="flex:0 0 96px;font-weight:700">' + pjEsc(x.key) + '</span>'
+        +  '<span style="flex:1;min-width:0;color:#546E7A">'
+        +    (x.state==='unknown' ? '아직 안 봄' : (x.text || (x.state==='ok'?'있음':'없음')))
+        +  '</span>'
+        +  (x.link ? '<a href="' + pjEsc(x.link) + '" target="_blank" rel="noopener" style="flex:0 0 auto">열기 ›</a>' : '')
+        +  '</div>';
+    });
+    h += '<p class="foot" style="margin-top:9px">'
+      +  '⚪ <b>아직 안 봄</b> = 노션·정산앱에 있는 것이라 이 화면이 아직 못 물어봅니다 — 차차 붙입니다.<br>'
+      +  '🔴 꼭 필요한 것 · 🟠 일하면 생기는 것 · ⚪ 쌓이면 좋은 것(로케이션 등 — 재촉하지 않습니다)'
+      +  (d.done ? '<br>완료 점검: ' + pjEsc(d.done) : '') + '</p>';
+    box.innerHTML = h;
+  }
+
+  /* 「＋ 새 프로젝트」 — 생애주기 화면을 연다 (주소는 그 카드에서 읽는다) */
+  function pjWireNew(){
+    var b = document.getElementById('pjNew'); if(!b) return;
+    b.onclick = function(e){
+      e.preventDefault();
+      var src = document.querySelector('a[data-lifecycle]');
+      if(!src){ alert('「프로젝트 생애주기 입력」 카드를 못 찾았습니다.'); return; }
+      var u = loadUser(), url = src.getAttribute('href');
+      if(u && u.cred && credLive(u)) url += (url.indexOf('?')>=0?'&':'?') + 't=' + encodeURIComponent(u.cred);
+      var w = window.open(url, '_blank'); if(w) w.opener = null;
+    };
   }
 
   /* ── 프로젝트 하나 ── */
@@ -945,7 +1051,9 @@
          (!PJ_ROLE && !canAsk ? '🔑 <b>다시 로그인해주세요</b> — 구글 통행증이 1시간마다 만료돼서 등급을 못 물어봅니다.<br>' : '') +
          (isOwner ? '' : '견적서는 단가·마진이 그대로 보여서 <b>대표님만</b> 열립니다.<br>') +
          '📂 드라이브 폴더 · 📝 노션 페이지 · ✅ 끝내기는 <b>아직 안 만들었습니다.</b></p>';
+    h += '<div id="pjChk" style="margin-top:14px"></div>';
     document.getElementById('pjOneBody').innerHTML = h;
+    pjCheck(proj);                       /* 🔴 1차 정보가 뭐가 빠졌나 물어본다 */
     /* 🔴 2026-08-21 고침 ② — 등급을 «이 화면에서도» 물어본다.
        전에는 목록 화면(pjLoad)에서만 등급을 받아왔다. 그래서 프로젝트 주소(#p/이름)를
        새로고침하거나 폰에서 그 주소로 곧장 들어오면 등급이 비어 「확인 중」이 뜨고,
