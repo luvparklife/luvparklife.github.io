@@ -315,7 +315,9 @@
 
       <!-- data-token="1" = 로그인했으면 신분증(?t=)을 실어 보낸다.
            신분증 없이 열면 앱이 「보기 전용」으로 뜬다(2026-08-04). -->
-      <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec" target="_blank" rel="noopener">
+      <!-- data-app="field" = 「배치 저장」이 이 주소를 빌려 쓴다 (2026-08-21).
+           🔴 주소를 코드에 또 적지 않으려고 카드에서 읽는다 — 두 군데가 되면 어긋난다. -->
+      <a class="card" data-token="1" data-app="field" href="https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec" target="_blank" rel="noopener">
         <div class="row">
           <div class="icon">🎬</div>
           <div class="body">
@@ -478,6 +480,9 @@
       var need = els[i].getAttribute('data-see');
       els[i].hidden = !( role === 'owner' || (role === 'admin' && need === 'admin') );
     }
+    /* 🗂 로그인이 끝난 뒤 구글에 저장해 둔 카드 배치를 받아온다 (2026-08-21).
+       안에서 한 번만 돌게 막아둬서 여러 번 불려도 괜찮다. 실패하면 조용히 넘어간다. */
+    try { if (window.hubPullLayout) window.hubPullLayout(); } catch(e){}
   }
 
   /* 저장된 로그인 읽기. 자정이 지났으면 지우고 없는 것으로 취급한다 */
@@ -965,7 +970,7 @@
         data-id 를 12군데 박는 대신 이렇게 했다. 제목을 고치면 그 카드만
         저장본에서 빠져 원래 자리로 돌아온다 — 조용히 사라지지 않는다. */
   (function(){
-    var KEY = 'paHubLayout';
+    var LKEY = 'paHubLayout';   /* 🔴 바깥의 KEY(로그인 저장용)와 헷갈리지 않게 이름을 다르게 둔다 */
     var GROUPS = ['daily','team','adm','etc'];
     var editing = false, drag = null, line = null;
 
@@ -994,20 +999,16 @@
       var e = document.querySelector('.etcempty'), g = gEl('etc');
       if (e && g) e.hidden = cardsOf(g).length > 0;
     }
-    function save(){
+    function snapshot(){
       var out = {};
       GROUPS.forEach(function(k){
         var g = gEl(k); if (!g) return;
         out[k] = cardsOf(g).map(titleOf);
       });
-      try { localStorage.setItem(KEY, JSON.stringify(out)); } catch(e){}
-      paintEmpty();
+      return out;
     }
-    function restore(){
-      var raw = null;
-      try { raw = localStorage.getItem(KEY); } catch(e){}
-      if (!raw){ paintEmpty(); return; }
-      var map; try { map = JSON.parse(raw); } catch(e){ paintEmpty(); return; }
+    function apply(map){
+      if (!map) { paintEmpty(); return; }
       var all = {};
       Array.prototype.slice.call(document.querySelectorAll('.group a.card'))
         .forEach(function(c){ all[titleOf(c)] = c; });
@@ -1020,6 +1021,61 @@
       });
       paintEmpty();
     }
+
+    /* ── 구글 쪽 저장소 (2026-08-21) ───────────────────────────────
+       장비앱에 붙여둔 Hub.js 를 부른다. 주소는 「현장 장비앱」 카드에서 빌려 쓴다.
+       🔴 실패하면 조용히 브라우저 저장만 쓴다 — 인터넷이 없어도 허브는 그대로 돌아야 한다. */
+    function srvBase(){
+      var a = document.querySelector('a[data-app="field"]');
+      return a ? String(a.getAttribute('href')).split('?')[0] : '';
+    }
+    function cred(){
+      try { var u = loadUser(); return (u && u.cred) ? u.cred : ''; } catch(e){ return ''; }
+    }
+    function srvGet(done){
+      var b = srvBase(), t = cred();
+      if (!b || !t) return done(null);
+      fetch(b + '?action=hubLayout&t=' + encodeURIComponent(t))
+        .then(function(r){ return r.json(); })
+        .then(function(d){ done(d && d.ok ? (d.layout || null) : null); })
+        .catch(function(){ done(null); });
+    }
+    function srvSet(map){
+      var b = srvBase(), t = cred();
+      if (!b || !t) { msg('이 브라우저에만 저장했습니다 (로그인하면 폰에서도 같아집니다)'); return; }
+      var d = map ? encodeURIComponent(JSON.stringify(map)) : '';
+      fetch(b + '?action=hubLayoutSet&t=' + encodeURIComponent(t) + '&d=' + d)
+        .then(function(r){ return r.json(); })
+        .then(function(r){
+          msg(r && r.ok ? '저장했습니다 · 폰에서도 같게 보입니다' : '이 브라우저에만 저장했습니다');
+        })
+        .catch(function(){ msg('이 브라우저에만 저장했습니다 (인터넷을 확인해 주세요)'); });
+    }
+
+    function save(){
+      var out = snapshot();
+      try { localStorage.setItem(LKEY, JSON.stringify(out)); } catch(e){}
+      paintEmpty();
+      srvSet(out);
+    }
+    function restore(){
+      var raw = null;
+      try { raw = localStorage.getItem(LKEY); } catch(e){}
+      if (raw){ try { apply(JSON.parse(raw)); } catch(e){ paintEmpty(); } }
+      else paintEmpty();
+    }
+    /* 로그인이 끝난 뒤 한 번만 — 구글에 저장해 둔 배치가 있으면 그것으로 맞춘다.
+       (다른 기기에서 바꾼 것이 여기에도 반영되는 자리) */
+    var pulled = false;
+    window.hubPullLayout = function(){
+      if (pulled || !cred()) return;
+      pulled = true;
+      srvGet(function(m){
+        if (!m) return;
+        apply(m);
+        try { localStorage.setItem(LKEY, JSON.stringify(m)); } catch(e){}
+      });
+    };
 
     var btn = document.getElementById('edToggle');
     var rst = document.getElementById('edReset');
@@ -1036,9 +1092,16 @@
       if (!editing) paintEmpty();
     };
     if (rst) rst.onclick = function(){
-      if (!confirm('배치를 처음 상태로 되돌릴까요?')) return;
-      try { localStorage.removeItem(KEY); } catch(e){}
-      location.reload();
+      if (!confirm('배치를 처음 상태로 되돌릴까요?\n(폰·다른 기기에서도 같이 돌아갑니다)')) return;
+      try { localStorage.removeItem(LKEY); } catch(e){}
+      msg('되돌리는 중…');
+      var b = srvBase(), t = cred();
+      if (!b || !t) { location.reload(); return; }
+      /* 🔴 구글 쪽도 지운 뒤에 새로고침한다 — 먼저 새로고침하면
+         저장해 둔 옛 배치를 다시 받아와 되돌아간 것처럼 안 보인다. */
+      fetch(b + '?action=hubLayoutSet&t=' + encodeURIComponent(t) + '&d=')
+        .then(function(){ location.reload(); })
+        .catch(function(){ location.reload(); });
     };
 
     /* 편집 중에는 카드를 눌러도 앱이 열리지 않게 막는다 */
