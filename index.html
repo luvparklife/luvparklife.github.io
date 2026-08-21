@@ -930,22 +930,66 @@
     var isOwner = (role === '대표');
     var isMgr   = (role === '대표' || role === '관리');
     var h = '';
-    h += pjCard('🎬','장비','준비 · 랩업 · 반납',
-         'pjOpen(FIELD_APP,' + JSON.stringify(proj) + ')');
-    if(isOwner) h += pjCard('🧾','견적서','인건비 · OT · 장비 · 차량 · 경비',
-         'pjOpen(FIELD_APP,' + JSON.stringify(proj) + ',"page=quote")');
-    h += pjCard('💰', isMgr ? '정산 (관리)' : '내 청구', '데이페이 · OT · 경비',
-         'pjSettle()');
-    h += '<p class="foot">🔴 <b>지금 등급: ' + pjEsc(role) + '</b> — 등급에 따라 보이는 칸이 다릅니다.<br>' +
+    /* 🔴 2026-08-21 고침 ① — 카드에 «명령문»을 글자로 박지 않는다.
+       전에는 onclick 안에 프로젝트 이름을 통째로 넣었다. 그런데 이름이 큰따옴표로
+       감싸진 채 들어가서 onclick="pjOpen(FIELD_APP," 에서 명령이 끊겼다.
+       → 「🎬 장비」·「🧾 견적서」를 눌러도 아무 일이 없었다
+         (이름이 안 들어가는 「💰 정산」만 멀쩡했던 이유가 바로 이것이다).
+       이제 이름은 data- 칸에 «값»으로만 담는다 — 이름에 ' 나 " 가 있어도 안 깨진다. */
+    h += pjCard('🎬','장비','준비 · 랩업 · 반납', 'field', proj, '');
+    if(isOwner) h += pjCard('🧾','견적서','인건비 · OT · 장비 · 차량 · 경비', 'field', proj, 'page=quote');
+    h += pjCard('💰', isMgr ? '정산 (관리)' : '내 청구', '데이페이 · OT · 경비', 'settle', proj, '');
+    /* 통행증(로그인)이 살아 있어야 등급을 물어볼 수 있다 */
+    var canAsk = !!(function(){ var u = loadUser(); return u && credLive(u); })();
+    h += '<p class="foot">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.<br>' +
+         (!PJ_ROLE && !canAsk ? '🔑 <b>다시 로그인해주세요</b> — 구글 통행증이 1시간마다 만료돼서 등급을 못 물어봅니다.<br>' : '') +
          (isOwner ? '' : '견적서는 단가·마진이 그대로 보여서 <b>대표님만</b> 열립니다.<br>') +
          '📂 드라이브 폴더 · 📝 노션 페이지 · ✅ 끝내기는 <b>아직 안 만들었습니다.</b></p>';
     document.getElementById('pjOneBody').innerHTML = h;
+    /* 🔴 2026-08-21 고침 ② — 등급을 «이 화면에서도» 물어본다.
+       전에는 목록 화면(pjLoad)에서만 등급을 받아왔다. 그래서 프로젝트 주소(#p/이름)를
+       새로고침하거나 폰에서 그 주소로 곧장 들어오면 등급이 비어 「확인 중」이 뜨고,
+       대표인데도 「🧾 견적서」 카드가 통째로 안 보였다.
+       받아온 뒤 이 화면을 «한 번 더» 그린다 — 그때 견적서 카드가 나타난다. */
+    if(!PJ_ROLE) pjAskRole(function(){ if(PJ_ROLE) pjOne(proj); });
   }
-  function pjCard(ic, t, d, onclick){
-    return '<a class="card" href="#" onclick="' + onclick + ';return false;">' +
+  /* 카드 한 장. act = 'field'(장비앱으로) / 'settle'(정산앱으로) */
+  function pjCard(ic, t, d, act, proj, extra){
+    return '<a class="card" href="#" data-pjact="' + pjEsc(act) + '"' +
+      ' data-pjproj="' + pjEsc(proj) + '" data-pjextra="' + pjEsc(extra || '') + '">' +
       '<div class="row"><div class="icon">' + ic + '</div><div class="body">' +
       '<div class="title">' + t + '</div><div class="desc">' + d + '</div>' +
       '</div><div class="arrow">›</div></div></a>';
+  }
+  /* 카드 누름은 여기 «한 곳»에서만 받는다 (카드마다 명령문을 박지 않으려고) */
+  (function(){
+    var box = document.getElementById('pjOneBody');
+    if(!box) return;
+    box.addEventListener('click', function(e){
+      var el = e.target, n = 0, act = null;
+      while(el && el !== box && n++ < 8){
+        if(el.getAttribute){ act = el.getAttribute('data-pjact'); if(act) break; }
+        el = el.parentElement;
+      }
+      if(!act) return;
+      e.preventDefault();
+      if(act === 'settle'){ pjSettle(); return; }
+      pjOpen(FIELD_APP, el.getAttribute('data-pjproj'), el.getAttribute('data-pjextra') || '');
+    });
+  })();
+  /* 등급만 따로 물어본다. 목록을 받아오는 길과 «같은 길»을 쓴다(새로 만들지 않는다). */
+  var PJ_ROLE_ASKING = false;
+  function pjAskRole(after){
+    if(PJ_ROLE){ after(); return; }
+    var u = loadUser();
+    if(!u || !credLive(u)){ after(); return; }   /* 로그인 전이면 그냥 둔다 */
+    if(PJ_ROLE_ASKING) return;                   /* 이미 물어보는 중이면 두 번 안 묻는다 */
+    PJ_ROLE_ASKING = true;
+    askCount(FIELD_APP + '?list=projects&t=' + encodeURIComponent(u.cred), function(d){
+      PJ_ROLE_ASKING = false;
+      if(d && d.ok){ PJ_CACHE = d.rows || []; PJ_AT = Date.now(); PJ_ROLE = d.role || ''; }
+      after();
+    });
   }
   /* 정산앱은 아직 ?proj= 를 못 받는다 — 프로젝트 없이 그냥 연다(거짓말하지 않는다) */
   function pjSettle(){
