@@ -79,9 +79,31 @@
     body.editing .group{min-height:64px}
     body.editing .group[hidden]{display:block !important}
     body.editing .ghead{opacity:.9}
-    body.editing .ghead::after{
-      content:'여기로 끌어다 놓으세요'; font-size:11px; color:var(--faint); margin-left:auto;
+    body.editing .ghead .hint{font-size:11px; color:var(--faint); margin-left:auto}
+
+    /* 그룹 자체를 고치는 단추들 — 편집 모드에서만 보인다 */
+    .gtools{display:none; gap:4px; margin-left:8px}
+    body.editing .gtools{display:inline-flex}
+    .gtools button{
+      font:inherit; font-size:11.5px; cursor:pointer; line-height:1;
+      border:1px solid var(--line); background:var(--card); color:var(--sub);
+      border-radius:7px; padding:4px 7px;
     }
+    .gtools button:hover{border-color:var(--daily); color:var(--daily)}
+    .addgroup{display:none; margin:0 0 26px}
+    body.editing .addgroup{display:block}
+    .addgroup button{
+      width:100%; font:inherit; font-size:13px; font-weight:700; cursor:pointer;
+      border:1px dashed var(--line); background:transparent; color:var(--sub);
+      border-radius:12px; padding:12px;
+    }
+    .addgroup button:hover{border-color:var(--daily); color:var(--daily)}
+    /* 대표가 만든 그룹 — 기본 회색 */
+    /* 대표가 지운 그룹 — 없애지 않고 감춘다. 「↩ 원래대로」로 되살아난다. */
+    .group[data-removed]{display:none !important}
+    .group.custom .dot{background:var(--etc)}
+    .group.custom .gt{color:var(--etc)}
+    .group.custom a.card{border-left:4px solid var(--etc-line)}
 
     a.card{
       display:block; text-decoration:none; color:inherit;
@@ -177,7 +199,7 @@
          data-see="owner" = 대표로 로그인했을 때만 보인다. 기본은 hidden(손님에겐 없음).
          ⚠️ 감추는 것이지 잠그는 것이 아니다 — 소스 보기를 하면 주소는 보인다.
          진짜 자물쇠는 각 앱이 건다(구글 권한·관리자 키·내 맥에만 있는 앱). -->
-    <div class="group daily" data-see="owner" hidden>
+    <div class="group daily" data-gid="daily" data-see="owner" hidden>
       <div class="ghead">
         <span class="dot"></span>
         <span class="gt">대표 전용</span>
@@ -288,7 +310,7 @@
     </div>
 
     <!-- ============ 팀 ============ -->
-    <div class="group team">
+    <div class="group team" data-gid="team">
       <div class="ghead">
         <span class="dot"></span>
         <span class="gt">팀 · 현장 스태프 · 프리랜서</span>
@@ -348,7 +370,7 @@
 
     <!-- ============ 관리자 ============
          data-see="admin" = 대표 또는 관리자(명진)로 로그인했을 때만 보인다. -->
-    <div class="group adm" data-see="admin" hidden>
+    <div class="group adm" data-gid="adm" data-see="admin" hidden>
       <div class="ghead">
         <span class="dot"></span>
         <span class="gt">관리자 · 대표 · 명진</span>
@@ -388,7 +410,7 @@
          🔴 처음엔 비어 있다 — 「✥ 배치 바꾸기」로 카드를 끌어다 놓으면 채워진다.
          🔴 data-see="owner" 로 둔 이유 = 지금은 대표 개인 정리용이라서다.
             팀에게도 보여야 할 것이 생기면 그때 data-see 를 떼면 된다. -->
-    <div class="group etc" data-see="owner" hidden>
+    <div class="group etc" data-gid="etc" data-see="owner" hidden>
       <div class="ghead">
         <span class="dot"></span>
         <span class="gt">기타</span>
@@ -398,6 +420,9 @@
         아직 비어 있습니다 — 위 <b>✥ 배치 바꾸기</b>로 카드를 끌어다 놓으세요
       </div>
     </div>
+
+    <!-- 대표가 만든 그룹은 이 자리 바로 위에 끼워 넣는다 (JS가 한다) -->
+    <div class="addgroup"><button id="edAddGroup" type="button">＋ 그룹 추가</button></div>
 
     <!-- ═══ 📁 프로젝트 화면 (2026-08-21) — 주소 #p / #p/이름 으로 갈린다 ═══ -->
     <div class="group pjview" id="vProjList" hidden>
@@ -971,55 +996,127 @@
         저장본에서 빠져 원래 자리로 돌아온다 — 조용히 사라지지 않는다. */
   (function(){
     var LKEY = 'paHubLayout';   /* 🔴 바깥의 KEY(로그인 저장용)와 헷갈리지 않게 이름을 다르게 둔다 */
-    var GROUPS = ['daily','team','adm','etc'];
+    var FIXED = ['daily','team','adm','etc'];   /* HTML 에 박혀 있는 그룹 */
     var editing = false, drag = null, line = null;
 
-    function up(t, sel){                     /* closest 를 안전하게 */
+    function up(t, sel){
       while (t && t.nodeType === 1){
         if (t.matches && t.matches(sel)) return t;
         t = t.parentElement;
       }
       return null;
     }
-    function gEl(k){ return document.querySelector('.group.' + k); }
-    function gKey(g){
-      for (var i=0;i<GROUPS.length;i++) if (g.classList.contains(GROUPS[i])) return GROUPS[i];
-      return '';
+    /* 🔴 프로젝트 화면(.group.pjview)은 data-gid 가 없어 저절로 빠진다.
+       지운 그룹(data-removed)도 뺀다 — 저장본에 안 남아야 지운 상태가 유지된다. */
+    function allGroups(){
+      return Array.prototype.slice.call(document.querySelectorAll('.group[data-gid]'))
+        .filter(function(g){ return !g.hasAttribute('data-removed'); });
     }
-    function titleOf(c){
-      var t = c.querySelector('.title');
-      return t ? t.textContent.trim() : '';
-    }
+    function gEl(id){ return document.querySelector('.group[data-gid="' + id + '"]'); }
+    function titleOf(c){ var t = c.querySelector('.title'); return t ? t.textContent.trim() : ''; }
     function cardsOf(g){
       var out = [], ch = g.children;
       for (var i=0;i<ch.length;i++) if (ch[i].classList && ch[i].classList.contains('card')) out.push(ch[i]);
       return out;
     }
-    function paintEmpty(){
-      var e = document.querySelector('.etcempty'), g = gEl('etc');
-      if (e && g) e.hidden = cardsOf(g).length > 0;
-    }
+    function nameOf(g){ var e=g.querySelector('.gt'); return e ? e.textContent.trim() : ''; }
+    function descOf(g){ var e=g.querySelector('.gd'); return e ? e.textContent.trim() : ''; }
+
     function snapshot(){
-      var out = {};
-      GROUPS.forEach(function(k){
-        var g = gEl(k); if (!g) return;
-        out[k] = cardsOf(g).map(titleOf);
-      });
-      return out;
+      var gs = allGroups();
+      var layout = {};
+      gs.forEach(function(g){ layout[g.getAttribute('data-gid')] = cardsOf(g).map(titleOf); });
+      return {
+        v: 2,
+        groups: gs.map(function(g){
+          return { id:g.getAttribute('data-gid'), name:nameOf(g), desc:descOf(g),
+                   custom:g.classList.contains('custom') };
+        }),
+        layout: layout
+      };
     }
-    function apply(map){
-      if (!map) { paintEmpty(); return; }
+
+    /* 대표가 만든 그룹의 뼈대. 원본 그룹과 생김새를 맞춘다. */
+    function makeGroup(m){
+      var d = document.createElement('div');
+      d.className = 'group custom';
+      d.setAttribute('data-gid', m.id);
+      d.setAttribute('data-see', 'owner');   /* 대표 화면에만 */
+      d.innerHTML = '<div class="ghead"><span class="dot"></span>' +
+                    '<span class="gt"></span><span class="gd"></span></div>';
+      d.querySelector('.gt').textContent = m.name || '새 그룹';
+      d.querySelector('.gd').textContent = m.desc || '';
+      return d;
+    }
+
+    function apply(data){
+      if (!data) { paint(); return; }
+      var map, groups;
+      if (data.v === 2){ map = data.layout || {}; groups = data.groups || null; }
+      else { map = data; groups = null; }        /* 옛 저장본 — 그룹 정보가 없다 */
+
+      var anchor = document.querySelector('.addgroup');
+
+      if (groups && anchor){
+        groups.forEach(function(m){
+          var g = gEl(m.id);
+          if (!g){
+            if (!m.custom) return;               /* 원본 그룹이 통째로 없으면 만들지 않는다 */
+            g = makeGroup(m);
+          } else {
+            var gt = g.querySelector('.gt'), gd = g.querySelector('.gd');
+            if (gt && m.name) gt.textContent = m.name;
+            if (gd && typeof m.desc === 'string') gd.textContent = m.desc;
+            g.removeAttribute('data-removed');
+          }
+          anchor.parentNode.insertBefore(g, anchor);
+        });
+        /* 저장본에 없는 원본 그룹 = 대표가 지운 것 → 감춘다 */
+        FIXED.forEach(function(id){
+          var g = document.querySelector('.group[data-gid="' + id + '"]');
+          if (!g) return;
+          var live = groups.some(function(m){ return m.id === id; });
+          if (!live) g.setAttribute('data-removed','1');
+        });
+      }
+
       var all = {};
       Array.prototype.slice.call(document.querySelectorAll('.group a.card'))
         .forEach(function(c){ all[titleOf(c)] = c; });
-      GROUPS.forEach(function(k){
-        var g = gEl(k); if (!g || !map[k]) return;
-        map[k].forEach(function(t){
+      Object.keys(map).forEach(function(gid){
+        var g = gEl(gid); if (!g) return;
+        map[gid].forEach(function(t){
           var c = all[t];
           if (c){ g.appendChild(c); delete all[t]; }   /* 저장본에 없는 카드는 손대지 않는다 */
         });
       });
-      paintEmpty();
+      paint();
+    }
+
+    /* 그룹 머리에 「↑ ↓ ✎ ✕」 를 달아준다. 편집 모드에서만 보인다(CSS). */
+    function paintTools(){
+      allGroups().forEach(function(g){
+        var head = g.querySelector('.ghead'); if (!head) return;
+        if (!head.querySelector('.gtools')){
+          var box = document.createElement('span');
+          box.className = 'gtools';
+          box.innerHTML = '<button data-a="up" title="위로">↑</button>' +
+                          '<button data-a="down" title="아래로">↓</button>' +
+                          '<button data-a="rename">✎ 이름</button>' +
+                          '<button data-a="del" title="지우기">✕</button>';
+          head.appendChild(box);
+        }
+        if (!head.querySelector('.hint')){
+          var h = document.createElement('span');
+          h.className = 'hint'; h.textContent = '여기로 끌어다 놓으세요';
+          head.appendChild(h);
+        }
+      });
+    }
+    function paint(){
+      var e = document.querySelector('.etcempty'), g = gEl('etc');
+      if (e) e.hidden = !g || cardsOf(g).length > 0;
+      paintTools();
     }
 
     /* ── 구글 쪽 저장소 (2026-08-21) ───────────────────────────────
@@ -1055,17 +1152,15 @@
     function save(){
       var out = snapshot();
       try { localStorage.setItem(LKEY, JSON.stringify(out)); } catch(e){}
-      paintEmpty();
+      paint();
       srvSet(out);
     }
     function restore(){
       var raw = null;
       try { raw = localStorage.getItem(LKEY); } catch(e){}
-      if (raw){ try { apply(JSON.parse(raw)); } catch(e){ paintEmpty(); } }
-      else paintEmpty();
+      if (raw){ try { apply(JSON.parse(raw)); } catch(e){ paint(); } }
+      else paint();
     }
-    /* 로그인이 끝난 뒤 한 번만 — 구글에 저장해 둔 배치가 있으면 그것으로 맞춘다.
-       (다른 기기에서 바꾼 것이 여기에도 반영되는 자리) */
     var pulled = false;
     window.hubPullLayout = function(){
       if (pulled || !cred()) return;
@@ -1080,6 +1175,7 @@
     var btn = document.getElementById('edToggle');
     var rst = document.getElementById('edReset');
     var msgEl = document.getElementById('edMsg');
+    var addBtn = document.getElementById('edAddGroup');
     function msg(t){ if (msgEl) msgEl.textContent = t || ''; }
 
     if (btn) btn.onclick = function(){
@@ -1088,8 +1184,8 @@
       btn.classList.toggle('on', editing);
       btn.textContent = editing ? '✓ 다 됐어요' : '✥ 배치 바꾸기';
       if (rst) rst.hidden = !editing;
-      msg(editing ? '카드를 끌어 옮기세요 · 이 브라우저에만 저장됩니다' : '');
-      if (!editing) paintEmpty();
+      msg(editing ? '카드를 끌어 옮기고, 그룹은 ↑↓ ✎ ✕ 로 고치세요' : '');
+      paint();
     };
     if (rst) rst.onclick = function(){
       if (!confirm('배치를 처음 상태로 되돌릴까요?\n(폰·다른 기기에서도 같이 돌아갑니다)')) return;
@@ -1103,6 +1199,57 @@
         .then(function(){ location.reload(); })
         .catch(function(){ location.reload(); });
     };
+    if (addBtn) addBtn.onclick = function(){
+      var n = prompt('새 그룹 이름'); if (n === null) return;
+      n = String(n).trim(); if (!n) return;
+      var d = prompt('설명 (없으면 비워두세요)', '');
+      var g = makeGroup({ id: 'g' + Date.now().toString(36), name: n, desc: (d||'').trim() });
+      var anchor = document.querySelector('.addgroup');
+      anchor.parentNode.insertBefore(g, anchor);
+      save();
+      msg('그룹을 만들었습니다 — 카드를 끌어다 놓으세요');
+    };
+
+    /* 그룹 단추 (↑ ↓ ✎ ✕) */
+    document.addEventListener('click', function(e){
+      var b = up(e.target, '.gtools button'); if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      var g = up(b, '.group'); if (!g) return;
+      var act = b.getAttribute('data-a');
+
+      if (act === 'rename'){
+        var gt = g.querySelector('.gt'), gd = g.querySelector('.gd');
+        var n = prompt('그룹 이름', nameOf(g)); if (n === null) return;
+        n = String(n).trim(); if (n && gt) gt.textContent = n;
+        var d = prompt('설명 (없으면 비워두세요)', descOf(g));
+        if (d !== null && gd) gd.textContent = String(d).trim();
+        save();
+
+      } else if (act === 'del'){
+        var cs = cardsOf(g);
+        var ask = '「' + nameOf(g) + '」 그룹을 지울까요?\n' +
+          (cs.length ? '안에 있는 카드 ' + cs.length + '장은 「기타」로 옮겨집니다.' : '비어 있습니다.') +
+          '\n\n🔴 대표님 화면에서만 없어집니다 — 다른 사람 화면은 그대로입니다.\n' +
+          '「↩ 원래대로」를 누르면 되살아납니다.';
+        if (!confirm(ask)) return;
+        var etc = gEl('etc');
+        if (etc && etc !== g) cs.forEach(function(c){ etc.appendChild(c); });
+        if (g.classList.contains('custom')) g.parentNode.removeChild(g);
+        else g.setAttribute('data-removed','1');
+        save();
+
+      } else if (act === 'up' || act === 'down'){
+        var sib = (act === 'up') ? g.previousElementSibling : g.nextElementSibling;
+        while (sib && !(sib.classList && sib.classList.contains('group') &&
+                        sib.hasAttribute('data-gid') && !sib.hasAttribute('data-removed'))){
+          sib = (act === 'up') ? sib.previousElementSibling : sib.nextElementSibling;
+        }
+        if (!sib) return;
+        if (act === 'up') g.parentNode.insertBefore(g, sib);
+        else g.parentNode.insertBefore(sib, g);
+        save();
+      }
+    }, true);
 
     /* 편집 중에는 카드를 눌러도 앱이 열리지 않게 막는다 */
     document.addEventListener('click', function(e){
@@ -1111,6 +1258,7 @@
 
     document.addEventListener('pointerdown', function(e){
       if (!editing) return;
+      if (up(e.target, '.gtools')) return;          /* 그룹 단추는 드래그가 아니다 */
       var card = up(e.target, 'a.card'); if (!card) return;
       e.preventDefault();
       drag = card; card.classList.add('dragging');
@@ -1122,11 +1270,11 @@
       e.preventDefault();
       var el = document.elementFromPoint(e.clientX, e.clientY); if (!el) return;
       var over = up(el, 'a.card');
-      var grp  = up(el, '.group');
+      var grp  = up(el, '.group[data-gid]');
       if (over && over !== drag){
         var r = over.getBoundingClientRect();
         over.parentNode.insertBefore(line, (e.clientY > r.top + r.height/2) ? over.nextSibling : over);
-      } else if (grp && GROUPS.indexOf(gKey(grp)) >= 0){
+      } else if (grp && !grp.hasAttribute('data-removed')){
         grp.appendChild(line);
       }
     });
@@ -1137,7 +1285,6 @@
       if (line && line.parentNode) line.parentNode.removeChild(line);
       drag = null; line = null;
       save();
-      msg('저장했습니다 · 이 브라우저에만 적용됩니다');
     }
     document.addEventListener('pointerup', drop);
     document.addEventListener('pointercancel', drop);
