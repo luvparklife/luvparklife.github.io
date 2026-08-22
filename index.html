@@ -156,6 +156,148 @@
     .pf .setup{font-size:11.5px; color:var(--adm); background:var(--adm-bg);
         border:1px solid var(--adm-line); border-radius:9px; padding:8px 10px; margin-top:10px; line-height:1.6}
     #gbtn{flex-shrink:0}
+
+    /* ═══ 프로젝트 화면 «두 칸 관리판» (2026-08-22 대표 확정 — 디자인 5안 중 안2) ═══
+       왼쪽 = 진행 + 지금 할 일 / 오른쪽 = 쌓인 정보 + 바로가기.
+       🔴 700px 아래(폰)에서는 «저절로» 위아래로 접힌다 — 화면을 두 벌 만들지 않는다.
+       되돌리기 = **"프로젝트 화면 카드로 되돌려줘"** · 백업 hub_index_260822_두칸전.html */
+    .pj2{display:grid; grid-template-columns:1fr; gap:10px}
+    @media(min-width:700px){ .pj2{grid-template-columns:1.02fr .98fr} }
+    .pj2 .pane{background:var(--card); border:1px solid var(--line); border-radius:11px; overflow:hidden}
+    .pj2 .ph{background:var(--line2); border-bottom:1px solid var(--line); padding:7px 11px;
+      font-size:11.5px; font-weight:800; color:var(--sub); letter-spacing:.3px}
+    .pj2 .pb{padding:11px}
+    .pj2 .steps{display:flex; gap:3px; margin-bottom:6px}
+    .pj2 .steps i{flex:1; height:6px; border-radius:2px; background:var(--line); font-style:normal}
+    .pj2 .steps i.done{background:var(--team)}
+    .pj2 .steps i.now{background:var(--daily)}
+    /* 🔴 「모름」은 색을 안 칠한다 — 칠하면 다 된 것처럼 보인다 */
+    .pj2 .steps i.unk{background:repeating-linear-gradient(45deg,
+      var(--line) 0 3px, transparent 3px 6px)}
+    .pj2 .slb{display:flex; gap:3px; margin-bottom:10px}
+    .pj2 .slb span{flex:1; text-align:center; font-size:10px; color:var(--faint); font-weight:700}
+    .pj2 .slb span.done{color:var(--team)}
+    .pj2 .slb span.now{color:var(--daily)}
+    .pj2 .stg{font-size:11.5px; color:var(--faint); margin-bottom:9px; line-height:1.5}
+    .pj2 .job{display:flex; gap:8px; align-items:flex-start; padding:8px 0;
+      border-top:1px solid var(--line2); font-size:13px; line-height:1.5}
+    .pj2 .job:first-of-type{border-top:0}
+    .pj2 .job .n{flex:0 0 17px; height:17px; border-radius:4px; background:#fdecec; color:#a51d1d;
+      font-size:10.5px; font-weight:800; text-align:center; line-height:17px; margin-top:2px}
+    .pj2 .job .n.calm{background:var(--adm-bg); color:var(--adm)}
+    .pj2 .job .tx{flex:1; min-width:0}
+    .pj2 .job button{flex:0 0 auto; border:1px solid var(--line); background:var(--card);
+      border-radius:6px; padding:4px 9px; font:inherit; font-size:11.5px; cursor:pointer; color:var(--sub)}
+    .pj2 .job button:hover{border-color:var(--daily); color:var(--daily)}
+    .pj2 .none{font-size:13px; font-weight:700; color:var(--team); padding:6px 0}
+    .pj2 .kv{display:flex; gap:7px; font-size:12.5px; padding:6px 0; border-top:1px solid var(--line2)}
+    .pj2 .kv:first-child{border-top:0}
+    .pj2 .kv .m{flex:0 0 15px; font-size:11px; line-height:1.6}
+    .pj2 .kv .k{flex:0 0 70px; color:var(--sub); font-size:12px}
+    .pj2 .kv .v{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .pj2 .kv .v.no{color:var(--faint)}
+    .pj2 .kv a{flex:0 0 auto; font-size:11.5px}
+    .pj2 .qk{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:11px}
+    .pj2 .qk a{text-align:center; border:1px solid var(--line); border-radius:7px; padding:9px 0;
+      font-size:12px; font-weight:700; color:var(--sub); text-decoration:none; background:var(--card)}
+    .pj2 .qk a:hover{border-color:var(--daily); color:var(--daily)}
+    .pj2 .qk a.off{opacity:.42; pointer-events:none}
+    .pj2 .qk a.wide{grid-column:1 / -1}
+    .pj2 .qk a.warn{border-color:var(--adm-line); background:var(--adm-bg); color:var(--adm)}
+    .pj2 .fn{font-size:11px; color:var(--faint); line-height:1.6; margin-top:9px}
+
+    /* ── 목록 찾기 (2026-08-22) — 「드라이브 폴더 뒤지기」를 대신한다 ── */
+    .pjfind{background:var(--card); border:1px solid var(--line); border-radius:12px;
+      padding:10px 11px; margin-bottom:10px}
+    .pjfind .fr{display:flex; gap:6px; margin-bottom:6px}
+    .pjfind input{flex:1; min-width:0; border:1px solid var(--line); border-radius:9px;
+      padding:9px 10px; font:inherit; font-size:13.5px; background:var(--card); color:var(--ink)}
+    .pjfind select{flex:1; min-width:0; border:1px solid var(--line); border-radius:9px;
+      padding:7px 6px; font:inherit; font-size:12px; background:var(--card); color:var(--sub)}
+    .pjfind select:disabled{opacity:.45}
+    .pjfind .dead{background:var(--adm-bg); border:1px solid var(--adm-line); color:var(--adm);
+      border-radius:9px; padding:8px 10px; font-size:11.5px; margin-top:2px; line-height:1.55}
+    a.card .pjtags{display:flex; flex-wrap:wrap; gap:4px; margin-top:6px}
+    .pjtag{font-size:11px; border:1px solid var(--line); border-radius:6px; padding:2px 7px;
+      color:var(--sub); background:var(--bg); white-space:nowrap}
+    .pjtag.em{border-style:dashed; color:var(--adm); background:var(--adm-bg); border-color:var(--adm-line)}
+
+    /* ── ➕ 새 프로젝트 폼 (2026-08-22) ── */
+    .pjnew{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:15px 14px}
+    .pjnew .nf{margin-bottom:11px}
+    .pjnew label{display:block; font-size:12px; font-weight:700; color:var(--sub); margin-bottom:4px}
+    .pjnew label i{font-style:normal; color:#c0392b}
+    .pjnew label .opt{font-weight:400; color:var(--faint)}
+    .pjnew input, .pjnew select{width:100%; border:1px solid var(--line); border-radius:9px;
+      padding:9px 10px; font:inherit; font-size:13.5px; background:var(--card); color:var(--ink)}
+    .pjnew input:focus, .pjnew select:focus{outline:2px solid var(--daily-line); border-color:var(--daily-line)}
+    .pjnew .two{display:flex; gap:8px}
+    .pjnew .hint{font-size:11px; color:var(--faint); margin-top:3px; line-height:1.5}
+    .pjnew .namebox{background:var(--bg); border:1px solid var(--daily-line); border-radius:11px;
+      padding:11px 12px; margin:13px 0}
+    .pjnew .namebox .t{font-size:11px; font-weight:800; color:var(--daily); letter-spacing:.3px}
+    .pjnew .namebox input{margin-top:5px; font-size:15px; font-weight:700;
+      font-family:ui-monospace,Menlo,monospace}
+    .pjnew .willbox{background:var(--team-bg); border:1px solid var(--team-line); color:var(--team);
+      border-radius:11px; padding:11px 12px; font-size:12.5px; line-height:1.7; margin-bottom:11px}
+    .pjnew .mkbtn{width:100%; border:0; border-radius:10px; padding:12px; font:inherit;
+      font-size:14px; font-weight:700; background:var(--ink); color:#fff; cursor:pointer}
+    .pjnew .mkbtn:disabled{background:var(--line); color:var(--faint); cursor:not-allowed}
+    /* 치면 후보가 뜨는 칸 (2026-08-22 대표 컨펌본) */
+    .cbo{position:relative}
+    .cbomenu{position:absolute; left:0; right:0; top:100%; z-index:40; margin-top:3px;
+      background:var(--card); border:1px solid var(--line); border-radius:10px;
+      box-shadow:0 8px 24px rgba(0,0,0,.13); max-height:236px; overflow-y:auto}
+    .cboit{padding:9px 11px; font-size:13.5px; cursor:pointer; border-bottom:1px solid var(--bg)}
+    .cboit:last-child{border-bottom:0}
+    .cboit:hover{background:var(--daily-bg)}
+    .cboit .sub{color:var(--faint); font-size:11.5px}
+    .cbost{font-size:11.5px; margin-top:4px; line-height:1.6}
+    .cbost .ok{color:var(--team); font-weight:700}
+    .cbost .warn{color:#b9770e; font-weight:700}
+    .cbost .addbtn{border:1px solid var(--daily-line); background:var(--daily-bg); color:var(--daily);
+      border-radius:7px; padding:3px 9px; font:inherit; font-size:11.5px; font-weight:700;
+      cursor:pointer; margin-left:4px}
+    .cbost .addbtn:disabled{opacity:.55; cursor:default}
+    /* 이름 양식 설명 — 누가 만들어도 같은 양식으로 (2026-08-22 대표 지시) */
+    .rulebox{border:1px solid var(--line); border-radius:11px; padding:11px 12px; margin-bottom:11px;
+      background:var(--bg)}
+    .rulebox .rt{font-size:11.5px; font-weight:800; color:var(--sub); letter-spacing:.2px}
+    .rulebox .rex{font-family:ui-monospace,Menlo,monospace; font-size:16px; font-weight:700;
+      color:var(--ink); margin:7px 0 9px; letter-spacing:.5px}
+    .rulebox .rtb{width:100%; border-collapse:collapse; font-size:12px; line-height:1.6}
+    .rulebox .rtb td{padding:5px 0; vertical-align:top; border-top:1px solid var(--line)}
+    .rulebox .rtb tr:first-child td{border-top:0}
+    .rulebox .rtb td:first-child{width:66px; color:var(--faint); font-weight:700; white-space:nowrap}
+    .rulebox .rs{color:var(--faint); font-size:11px; margin-top:2px}
+    .rulebox .rbad{font-size:11.5px; line-height:1.65; color:var(--sub); margin-top:9px;
+      padding-top:8px; border-top:1px solid var(--line)}
+    /* 노션에 추가할 때 뜨는 속성 입력창 (2026-08-22 대표 지시) */
+    .npbox{border:1px solid var(--daily-line); background:var(--daily-bg); border-radius:10px;
+      padding:11px 11px 9px; margin-top:6px}
+    .npt{font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:8px}
+    .npt .npc{font-weight:400; color:var(--faint); font-size:11px; margin-left:4px}
+    .npg{display:grid; gap:8px}
+    @media(min-width:520px){ .npg{grid-template-columns:1fr 1fr} }
+    .npf label{display:block; font-size:11px; font-weight:700; color:var(--sub); margin-bottom:3px}
+    .npf input[type=text],.npf input[type=date],.npf input[type=number],
+    .npf input[type=email],.npf input[type=url],.npf input[type=tel]{
+      width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 9px;
+      font:inherit; font-size:13px; background:var(--card); color:var(--ink)}
+    .npf .npck{display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:400;
+      color:var(--ink); margin-top:4px}
+    .npf .npck input{width:auto}
+    .npb{display:flex; gap:7px; margin-top:10px}
+    .npb button{flex:1; border-radius:8px; padding:8px; font:inherit; font-size:12.5px;
+      font-weight:700; cursor:pointer}
+    .npb .npok{border:0; background:var(--ink); color:#fff}
+    .npb .npok:disabled{background:var(--line); color:var(--faint); cursor:default}
+    .npb .npno{border:1px solid var(--line); background:var(--card); color:var(--sub)}
+    .npmore{margin-top:8px}
+    .npmore summary{cursor:pointer; font-size:11.5px; font-weight:700; color:var(--sub);
+      padding:5px 0; list-style:none}
+    .npmore summary::-webkit-details-marker{display:none}
+    .npmore[open] summary{margin-bottom:6px}
   </style>
 </head>
 <body>
@@ -942,19 +1084,85 @@
          '<div class="desc">거래처·인원·기자재를 등록하고 노션 페이지·드라이브 폴더를 한 번에</div>' +
          '</div><div class="arrow">›</div></div></a>';
     if(!rows.length){ h += '<p class="foot">진행 중인 프로젝트가 없습니다.</p>'; box.innerHTML = h; pjWireNew(); return; }
+
+    /* ── 🔎 찾기 (2026-08-22 대표 지시) ────────────────────────────
+       *"나중에 관리하거나 되찾을때 제대로 찾을 수가 없어.
+         내가 기억하는건 포토, 브랜드, 거래처 정도인데."*
+       🔴 이름에 셋을 다 넣을 수는 없으므로(하나만 늦게 알아도 이름을 못 짓는다)
+          「프로젝트목록」의 칸에 담고 여기서 거른다.
+       🔴 드라이브 폴더 이름으로는 «브랜드»를 어차피 못 찾는다 — 여기서는 찾힌다. */
+    function opts(key, label, cur){
+      var seen = {}, vs = [];
+      rows.forEach(function(p){ var v = (p && p[key] || '').trim(); if(v && !seen[v]){ seen[v]=1; vs.push(v); } });
+      vs.sort();
+      var o = '<option value="">' + label + (vs.length ? ' 전부' : ' — 고를 게 없음') + '</option>';
+      vs.forEach(function(v){ o += '<option' + (v===cur?' selected':'') + '>' + pjEsc(v) + '</option>'; });
+      return '<select data-fkey="' + key + '"' + (vs.length ? '' : ' disabled') + '>' + o + '</select>';
+    }
+    var anyInfo = rows.some(function(p){ return (p.cli||p.mgr||p.pho||p.brand); });
+    h += '<div class="pjfind"><div class="fr">' +
+         '<input id="pjQ" placeholder="🔎 이름·거래처·담당자·포토·브랜드로 찾기" value="' + pjEsc(PJ_F.q) + '">' +
+         '</div><div class="fr">' +
+         opts('cli','거래처',PJ_F.cli) + opts('pho','포토',PJ_F.pho) + opts('brand','브랜드',PJ_F.brand) +
+         '</div>' +
+         (anyInfo ? '' :
+          '<div class="dead">🔴 <b>아직 고를 게 없습니다.</b> 「프로젝트목록」 시트의 ' +
+          '<b>거래처·담당자·포토그래퍼·브랜드</b> 칸이 비어 있습니다 — 채우면 여기서 바로 찾힙니다.</div>') +
+         '</div><div id="pjRows"></div>';
+    box.innerHTML = h;
+    pjWireNew();
+    pjRowsPaint();
+  }
+  /* 찾기 조건 — 🔴 뼈대는 한 번만 그리고 «줄만» 다시 그린다(글자 칠 때 칸이 사라지지 않게) */
+  var PJ_F = { q:'', cli:'', pho:'', brand:'' };
+  function pjRowsPaint(){
+    var box = document.getElementById('pjRows'); if(!box) return;
+    var rows = PJ_CACHE || [], h = '', n = 0;
     rows.forEach(function(p){
       var name = p.name || p, label = p.label || name;
+      if(PJ_F.cli   && (p.cli||'')   !== PJ_F.cli)   return;
+      if(PJ_F.pho   && (p.pho||'')   !== PJ_F.pho)   return;
+      if(PJ_F.brand && (p.brand||'') !== PJ_F.brand) return;
+      if(PJ_F.q){
+        var hay = [name, p.cli, p.mgr, p.pho, p.brand].join(' ').toLowerCase();
+        if(hay.indexOf(PJ_F.q.toLowerCase()) < 0) return;
+      }
+      n++;
+      function tag(ic, v){ return v ? '<span class="pjtag">' + ic + ' ' + pjEsc(v) + '</span>' : ''; }
+      var tg = tag('🏢',p.cli) + tag('👤',p.mgr) + tag('📸',p.pho) + tag('🏷',p.brand);
       h += '<a class="card" href="#p/' + encodeURIComponent(name) + '">' +
            '<div class="row"><div class="icon">🎬</div><div class="body">' +
            '<div class="title">' + pjEsc(name) + '</div>' +
-           '<div class="desc">' + pjEsc(label !== name ? label : '') + '</div>' +
+           (label !== name ? '<div class="desc">' + pjEsc(label) + '</div>' : '') +
+           '<div class="pjtags">' + (tg ||
+             '<span class="pjtag em">거래처·포토를 아직 안 적었습니다</span>') + '</div>' +
            '</div><div class="arrow">›</div></div></a>';
     });
-    h += '<p class="foot">「프로젝트목록」을 그대로 읽습니다 — 여기서 관리할 목록을 따로 만들지 않습니다.<br>' +
-         '<a href="#" onclick="pjLoad(true);return false;">🔄 다시 읽기</a></p>';
-    box.innerHTML = h;
-    pjWireNew();
+    var on = (PJ_F.q || PJ_F.cli || PJ_F.pho || PJ_F.brand);
+    box.innerHTML = (on ? '<p class="foot" style="margin:0 0 8px">🔎 찾은 것 <b>' + n + '개</b> · ' +
+        '<a href="#" onclick="pjClearFind();return false;">✕ 조건 지우기</a></p>' : '') +
+      (h || '<p class="foot">해당하는 것이 없습니다.</p>') +
+      '<p class="foot">「프로젝트목록」을 그대로 읽습니다 — 여기서 관리할 목록을 따로 만들지 않습니다.<br>' +
+      '<a href="#" onclick="pjLoad(true);return false;">🔄 다시 읽기</a></p>';
   }
+  function pjClearFind(){
+    PJ_F = { q:'', cli:'', pho:'', brand:'' };
+    var q = document.getElementById('pjQ'); if(q) q.value = '';
+    var ss = document.querySelectorAll('.pjfind select');
+    for(var i=0;i<ss.length;i++) ss[i].value = '';
+    pjRowsPaint();
+  }
+  /* 찾기 칸 조작은 여기 «한 곳»에서만 받는다 */
+  (function(){
+    var host = document.getElementById('pjListBody'); if(!host) return;
+    host.addEventListener('input', function(e){
+      if(e.target && e.target.id === 'pjQ'){ PJ_F.q = e.target.value; pjRowsPaint(); }
+    });
+    host.addEventListener('change', function(e){
+      var k = e.target && e.target.getAttribute && e.target.getAttribute('data-fkey');
+      if(k){ PJ_F[k] = e.target.value; pjRowsPaint(); }
+    });
+  })();
 
   /* ══════════════════════════════════════════════════════════════
      📋 프로젝트 1차 정보 — 「뭐가 아직 안 들어왔나」 (2026-08-21)
@@ -970,6 +1178,7 @@
         자리를 미리 만들어 두어, 그 시스템을 붙이면 저절로 채워진다.
      되돌리기 = **"프로젝트 1차정보 빼줘"** */
   var PJ_CHK_CACHE = {};
+  var PJ_NOW = '';                 /* 지금 보고 있는 프로젝트 (할 일 버튼이 쓴다) */
   function pjCheck(proj){
     var box = document.getElementById('pjChk'); if(!box) return;
     var got = PJ_CHK_CACHE[proj];
@@ -988,45 +1197,620 @@
       pjChkPaint(box, d);
     });
   }
+  /* ── 진행 단계 5칸 ──────────────────────────────────────────
+     🔴 «아는 것만» 칠한다. 서버가 지금 실제로 아는 것은
+        촬영일·담당자·거래처·장비·폴더뿐이다. 견적·정산은 다른 시스템이라 못 본다.
+        모르는 칸을 색칠하면 «다 된 것처럼» 보이므로 빗금으로 둔다. */
+  function pjStages(d){
+    var it = {}; (d.items||[]).forEach(function(x){ it[x.key] = x; });
+    var day = it['촬영일'] || {}, eq = it['장비세부내역'] || {}, mgr = it['담당자'] || {};
+    /* 서버가 날짜를 «글자»로만 준다(YYYY-MM-DD 고정) → 여기서 꺼낸다.
+       못 꺼내면 「촬영」 칸을 «모름»으로 둔다 — 틀리게 칠하지 않는다. */
+    var ds = String(day.text || '').match(/\d{4}-\d{2}-\d{2}/g) || [];
+    var t0 = new Date(); t0.setHours(0,0,0,0);
+    var s0 = ds.length ? new Date(ds[0] + 'T00:00:00') : null;
+    var e0 = ds.length ? new Date(ds[ds.length-1] + 'T00:00:00') : null;
+    var shotOk = false, shotUnk = true, shotNow = false;
+    if(e0 && isFinite(e0)){ shotUnk = false; shotOk = (t0 > e0); shotNow = (!shotOk && s0 && t0 >= s0); }
+    var A = [
+      { t:'준비', ok:(day.state === 'ok' && mgr.state === 'ok') },
+      { t:'장비', ok:(eq.state === 'ok') },
+      { t:'견적', unk:true },
+      { t:'촬영', ok:shotOk, unk:shotUnk, now:shotNow },
+      { t:'정산', unk:true }
+    ];
+    var marked = A.some(function(x){ return x.now; });
+    for(var i=0; i<A.length && !marked; i++){
+      if(!A[i].ok && !A[i].unk){ A[i].now = true; marked = true; }
+    }
+    return A;
+  }
+  /* ── 지금 할 일 ─────────────────────────────────────────────
+     🔴 따로 적는 목록이 아니다. «비어 있는 것»에서 저절로 나온다.
+        원본을 채우면 저절로 사라진다. */
+  function pjJobs(d, A){
+    var it = {}; (d.items||[]).forEach(function(x){ it[x.key] = x; });
+    function no(k){ return (it[k]||{}).state === 'no'; }
+    var J = [];
+    if(no('촬영일'))
+      J.push({ tx:'촬영일이 없습니다 — 「프로젝트목록」에 시작일·반납일을 넣어주세요' });
+    if(no('담당자'))
+      J.push({ tx:'거래처 <b>담당자</b>가 없습니다 — 견적서를 누구에게 보낼지 모릅니다' });
+    /* 🔴 셋을 «한 줄»로 묶는다 — 세 줄이 되면 늘 시끄럽고, 시끄러우면 진짜 급한 게 묻힌다 */
+    var find = ['거래처','포토그래퍼','브랜드'].filter(no);
+    if(find.length)
+      J.push({ tx:'<b>' + find.join(' · ') + '</b> 이(가) 비었습니다 — '
+        + '<b>나중에 찾을 때 쓰는 칸</b>입니다. 알게 되면 채워주세요', calm:1 });
+    var eq = it['장비세부내역'] || {};
+    if(eq.state !== 'ok') J.push({ tx:'장비를 아직 안 넣었습니다', act:'field', lb:'🎬 장비' });
+    var w = (String(eq.text||'').match(/승인 대기\s*(\d+)/) || [])[1];
+    if(w) J.push({ tx:'승인 안 한 장비가 <b>'+w+'건</b> 있습니다 — 승인해야 견적에 올라갑니다',
+                   act:'field', lb:'🎬 장비' });
+    if(no('폴더'))
+      J.push({ tx:'프로젝트 폴더가 없습니다 — 장비시트 메뉴 「📁 프로젝트 폴더 만들기」', calm:1 });
+    if(d.done && String(d.done).indexOf('미반납') >= 0)
+      /* 🔴 서버가 보낸 글자에 이미 🔴 가 들어 있다 — 여기서 또 붙이면 두 번 찍힌다 */
+      J.push({ tx:'<b>' + pjEsc(String(d.done).replace(/^[🔴🟠⚪✅\s]+/, '')) + '</b>'
+                 + ' — 반납을 안 찍으면 재고가 안 맞습니다',
+               act:'field', lb:'🎬 장비' });
+    else if(A[3] && A[3].ok && !d.done)
+      J.push({ tx:'촬영이 끝났습니다 — <b>2일 안에 최종견적서</b>를 보내야 합니다', calm:1 });
+    return J;
+  }
   function pjChkPaint(box, d){
-    var C = { '필수':'#c0392b', '결과물':'#a3590f', '리소스':'#78909C' };
-    var need = (d.items||[]).filter(function(x){ return x.state==='no' && x.kind==='필수'; }).length;
-    var h = '<div class="gt" style="margin-bottom:8px">📋 1차 정보'
-          + (need ? ' — <span style="color:#c0392b">꼭 필요한 것 ' + need + '개가 비었습니다</span>' : '')
+    /* ── 왼쪽 칸 · 진행 + 지금 할 일 ── */
+    var A = pjStages(d), bar = '', lb = '';
+    A.forEach(function(x){
+      var c = x.ok ? 'done' : (x.now ? 'now' : (x.unk ? 'unk' : ''));
+      bar += '<i class="' + c + '"></i>';
+      lb  += '<span class="' + c + '">' + x.t + '</span>';
+    });
+    var unkN = A.filter(function(x){ return x.unk; }).length;
+    var L = '<div class="steps">' + bar + '</div><div class="slb">' + lb + '</div>'
+          + '<div class="stg">확인된 단계 <b>' + A.filter(function(x){return x.ok;}).length + ' / 5</b>'
+          + (unkN ? ' · 빗금 <b>' + unkN + '칸</b>은 <b>아직 못 봅니다</b> — 견적·정산은 다른 시스템이라 물어볼 길이 없습니다' : '')
           + '</div>';
+    var J = pjJobs(d, A);
+    if(J.length){
+      J.forEach(function(j, i){
+        L += '<div class="job"><span class="n' + (j.calm ? ' calm' : '') + '">' + (i+1) + '</span>'
+          +  '<span class="tx">' + j.tx + '</span>'
+          +  (j.act ? '<button data-pjact="' + pjEsc(j.act) + '" data-pjproj="' + pjEsc(PJ_NOW)
+                    + '" data-pjextra="">' + j.lb + '</button>' : '')
+          +  '</div>';
+      });
+    } else {
+      L += '<div class="none">✅ 지금 할 일이 없습니다</div>';
+    }
+    var left = document.getElementById('pjLeft');
+    if(left) left.innerHTML = L;
+
+    /* ── 오른쪽 칸 · 쌓인 정보 ── */
+    var need = (d.items||[]).filter(function(x){ return x.state==='no' && x.kind==='필수'; }).length;
+    var h = '';
     (d.items||[]).forEach(function(x){
-      var mark, col;
-      if(x.state==='ok'){ mark='✅'; col='#1e6b3a'; }
-      else if(x.state==='no'){ mark = (x.kind==='필수' ? '🔴' : '🟠'); col = C[x.kind]||'#666'; }
-      else { mark='⚪'; col='#90A4AE'; }
-      h += '<div style="display:flex;gap:9px;align-items:baseline;padding:7px 2px;'
-        +  'border-bottom:1px solid rgba(0,0,0,.06);font-size:13.5px">'
-        +  '<span style="flex:0 0 20px">' + mark + '</span>'
-        +  '<span style="flex:0 0 96px;font-weight:700">' + pjEsc(x.key) + '</span>'
-        +  '<span style="flex:1;min-width:0;color:#546E7A">'
-        +    (x.state==='unknown' ? '아직 안 봄' : (x.text || (x.state==='ok'?'있음':'없음')))
-        +  '</span>'
-        +  (x.link ? '<a href="' + pjEsc(x.link) + '" target="_blank" rel="noopener" style="flex:0 0 auto">열기 ›</a>' : '')
+      var mark = (x.state==='ok') ? '✅'
+               : (x.state==='no') ? (x.kind==='필수' ? '🔴' : '🟠') : '⚪';
+      var txt = (x.state==='unknown') ? '아직 안 봄' : (x.text || (x.state==='ok' ? '있음' : '아직 없음'));
+      h += '<div class="kv"><span class="m">' + mark + '</span>'
+        +  '<span class="k">' + pjEsc(x.key) + '</span>'
+        +  '<span class="v' + (x.state==='ok' ? '' : ' no') + '">' + pjEsc(txt) + '</span>'
+        +  (x.link ? '<a href="' + pjEsc(x.link) + '" target="_blank" rel="noopener">열기 ›</a>' : '')
         +  '</div>';
     });
-    h += '<p class="foot" style="margin-top:9px">'
-      +  '⚪ <b>아직 안 봄</b> = 노션·정산앱에 있는 것이라 이 화면이 아직 못 물어봅니다 — 차차 붙입니다.<br>'
-      +  '🔴 꼭 필요한 것 · 🟠 일하면 생기는 것 · ⚪ 쌓이면 좋은 것(로케이션 등 — 재촉하지 않습니다)'
-      +  (d.done ? '<br>완료 점검: ' + pjEsc(d.done) : '') + '</p>';
+    if(need) h = '<div class="stg" style="color:#c0392b;margin-bottom:6px">🔴 꼭 필요한 것 '
+               + need + '개가 비었습니다</div>' + h;
     box.innerHTML = h;
+
+    /* 📁 폴더 버튼 살리기 — 주소는 방금 받은 것을 쓴다(코드에 안 적는다 §1) */
+    var fd = (d.items||[]).filter(function(x){ return x.key==='폴더'; })[0];
+    var qk = document.getElementById('pjQk');
+    if(qk && fd && fd.link){
+      var a = qk.querySelector('a[data-pjfolder]');
+      if(a){ a.className=''; a.setAttribute('data-pjact','folder'); a.setAttribute('data-pjurl', fd.link); }
+    }
   }
 
-  /* 「＋ 새 프로젝트」 — 생애주기 화면을 연다 (주소는 그 카드에서 읽는다) */
+  /* ══════════════════════════════════════════════════════════════
+     🌐 노션 네트워크 — 거래처·인력·업체를 «골라서» 넣는다 (2026-08-22)
+     ══════════════════════════════════════════════════════════════
+     대표 지시: *"노션 네트워크 DB있잖아. 이거랑 프로젝트 만들때
+       거래처, 브랜드, 포토, 로케이션, 참여인원, 등등 연결하는거잖아."*
+     🔴 허브는 노션을 «직접» 못 부른다 — 토큰을 이 페이지에 박아야 하는데
+        소스 보기로 다 보인다(§3-1-B-3). 그래서 이미 토큰을 가진 정산앱에 물어본다.
+     🔴 주소를 코드에 안 적는다 — 「정산」 카드(data-badge)의 것을 읽어 쓴다(§1).
+     🔴 계좌정보는 안 온다 — 창구가 이름·종류·담당자·포지션만 돌려준다. */
+  var NET_CACHE = {};
+  function netBase(){
+    var a = document.querySelector('a[data-badge]');
+    if(!a) return '';
+    return String(a.getAttribute('href') || '').split('?')[0];
+  }
+  /* cat = '거래처' | '인적자원' | '업체'  ·  못 물어보면 null 을 준다(막지 않는다) */
+  function netAsk(cat, done){
+    if(NET_CACHE[cat]){ done(NET_CACHE[cat]); return; }
+    var base = netBase(), u = loadUser();
+    if(!base || !u || !credLive(u)){ done(null); return; }
+    askCount(base + '?list=network&cat=' + encodeURIComponent(cat)
+             + '&t=' + encodeURIComponent(u.cred), function(d){
+      if(!d || !d.ok){ done(null); return; }
+      NET_CACHE[cat] = d.rows || [];
+      done(NET_CACHE[cat]);
+    });
+  }
+  /* 포지션·하위카테고리로 한 번 더 좁힌다 (창구는 카테고리까지만 걸러 준다) */
+  function netPick(rows, posName, subName){
+    return (rows || []).filter(function(x){
+      if(posName && (x.pos || []).indexOf(posName) < 0) return false;
+      if(subName && (x.sub || []).indexOf(subName) < 0) return false;
+      return true;
+    });
+  }
+
+  /* 「＋ 새 프로젝트」 — 🔴 2026-08-22 생애주기 화면 대신 «여기서» 만든다.
+     옛 화면은 은퇴 예정이고 백업해 뒀다(~/.claude/backups/생애주기화면_260822_은퇴전). */
   function pjWireNew(){
     var b = document.getElementById('pjNew'); if(!b) return;
-    b.onclick = function(e){
+    b.onclick = function(e){ e.preventDefault(); pjNewOpen(); };
+  }
+  var PJ_NEW = null;
+  function pjNewOpen(){
+    var box = document.getElementById('pjListBody');
+    PJ_NEW = { cli:null, mgr:'', pho:null, brand:null, loc:null };
+    box.innerHTML =
+      '<div class="pjnew">'
+      + '<div class="gt" style="font-size:15px;margin-bottom:4px">➕ 새 프로젝트</div>'
+      + '<p class="foot" style="margin:0 0 12px">🔴 <b>지금 아는 것만</b> 넣으면 됩니다. '
+      + '거래처·포토는 나중에 채워도 프로젝트는 만들어집니다.<br>🔴 <b>노션에 없는 이름은 그냥 치시면 됩니다</b> — 그대로 저장되고, 원하시면 <b>[＋ 노션에 추가]</b>도 됩니다.</p>'
+      + '<div class="nf"><label>촬영 시작 ~ 끝 <i>*</i></label>'
+      +   '<div class="two"><input type="date" id="nFrom"><input type="date" id="nTo"></div></div>'
+      + '<div class="nf"><label>헌팅일 <span class="opt">(없으면 비워두세요)</span></label>'
+      +   '<input type="date" id="nHunt"></div>'
+      + '<div class="nf"><label>거래처 <span class="opt">— 치면 노션 후보가 뜹니다</span></label>'
+      +   '<div id="pkCli">불러오는 중…</div></div>'
+      + '<div class="nf"><label>담당자 <span class="opt">— 거래처를 고르면 저절로 들어옵니다</span></label>'
+      +   '<div id="pkMgr">불러오는 중…</div></div>'
+      + '<div class="nf"><label>포토그래퍼 <span class="opt">— 치면 노션 「포토/감독」 후보</span></label>'
+      +   '<div id="pkPho">불러오는 중…</div></div>'
+      + '<div class="nf"><label>브랜드 <span class="opt">— 치면 노션 「브랜드」 후보</span></label>'
+      +   '<div id="pkBrand">불러오는 중…</div></div>'
+      + '<div class="nf"><label>로케이션 <span class="opt">— 치면 노션 「로케이션」 후보</span></label>'
+      +   '<div id="pkLoc">불러오는 중…</div></div>'
+      + '<div class="nf"><label>이 촬영을 뭐라고 부르시겠어요? <i>*</i></label>'
+      +   '<input id="nCall" placeholder="예: 킵어스위어드 · 김실장건" autocomplete="off">'
+      +   '<div class="hint">거래처를 고르면 저절로 들어옵니다. <b>고쳐도 됩니다.</b></div></div>'
+      + '<div class="namebox"><div class="t">프로젝트 이름</div>'
+      +   '<input id="nName" spellcheck="false">'
+      +   '<div class="hint">🔴 이 이름이 <b>드라이브 폴더 이름</b>이자 '
+      +   '<b>모든 앱이 서로를 알아보는 열쇠</b>입니다.</div></div>'
+      /* 🔴 2026-08-22 대표 지시: *"프로젝트 이름 양식 설명 밑에 적어줘.
+            다른사람이 만들어도 보고 같은 양식으로 쓰게."*
+         🔴 규칙을 여기서 «새로 만들지» 않았다 — 회사 이름 규칙(CLAUDE.md §4)을 그대로 옮긴 것이다. */
+      + '<div class="rulebox">'
+      +   '<div class="rt">📐 이름 양식 — 누가 만들어도 이대로</div>'
+      +   '<div class="rex"><b>260910</b>_<b>킵어스위어드</b></div>'
+      +   '<table class="rtb">'
+      +     '<tr><td>앞 6자리</td><td><b>촬영 첫날</b> · 260910 = 2026년 9월 10일'
+      +       '<div class="rs">위 날짜 칸을 고르면 저절로 들어옵니다</div></td></tr>'
+      +     '<tr><td>사이</td><td>밑줄 <b>_</b> 하나 — 띄어쓰기 대신</td></tr>'
+      +     '<tr><td>뒤</td><td><b>이 촬영을 부르는 이름</b> · 보통 <b>거래처</b>'
+      +       '<div class="rs">거래처를 모르면 담당자·브랜드·장소로 '
+      +       '(예: 김실장건 · 버버리 · 청담스튜디오)</div></td></tr>'
+      +   '</table>'
+      +   '<div class="rbad">🚫 <b>쓰지 않는 것</b> — 띄어쓰기 · '
+      +     '<b>최종 · 진짜최종 · v2 · 복사본 · 무제</b> · 20260910(8자리)</div>'
+      +   '<div class="rbad">🔴 <b>만든 뒤에 이름을 직접 고치지 마세요</b> — '
+      +     '이름은 드라이브·시트·앱이 서로를 찾는 <b>열쇠</b>라, '
+      +     '한 곳만 바꾸면 나머지가 서로를 못 찾습니다. 고칠 일이 생기면 알려주세요.</div>'
+      + '</div>'
+      + '<div id="nWill" class="willbox"></div>'
+      + '<button class="mkbtn" id="nMk" disabled>만들기</button>'
+      + '<p class="foot" style="text-align:center;margin-top:8px">'
+      +   '<a href="#" onclick="pjLoad(false);return false;">‹ 목록으로 돌아가기</a></p>'
+      + '</div>';
+    document.getElementById('nFrom').addEventListener('input', pjNewName);
+    var call = document.getElementById('nCall');
+    call.addEventListener('input', function(){ this.dataset.touched='1'; pjNewName(); });
+    document.getElementById('nMk').onclick = pjNewMake;
+    netAsk('거래처',   function(r){ pjNewPicker('pkCli',   r, null, null, 'cli');
+                                   pjNewMgrPicker(r); });
+    netAsk('인적자원', function(r){ pjNewPicker('pkPho',   r, '포토/감독', null, 'pho');
+                                   pjNewPicker('pkBrand', r, '브랜드',    null, 'brand'); });
+    netAsk('업체',     function(r){ pjNewPicker('pkLoc',   r, null, '로케이션', 'loc'); });
+    pjNewName();
+  }
+  /* 노션에 «새로» 추가한다 — 없는 이름을 쳤을 때만 부른다 */
+  function netAdd(cat, name, posName, subName, extra, done, parentId){
+    var base = netBase(), u = loadUser();
+    if(!base || !u || !credLive(u)){ done({ ok:false, why:'로그인이 풀렸습니다' }); return; }
+    askCount(base + '?add=network'
+             + '&name=' + encodeURIComponent(name)
+             + '&cat='  + encodeURIComponent(cat)
+             + '&pos='  + encodeURIComponent(posName || '')
+             + '&sub='  + encodeURIComponent(subName || '')
+             + (extra ? '&p=' + encodeURIComponent(JSON.stringify(extra)) : '')
+             + (parentId ? '&parent=' + encodeURIComponent(parentId) : '')
+             + '&t='    + encodeURIComponent(u.cred), function(d){
+      done(d || { ok:false, why:'응답이 없습니다' });
+    });
+  }
+  /* 🔴 2026-08-22 대표 지시 — 노션에 «무슨 칸이 있나» 물어본다.
+     목록을 코드에 박지 않는다 — 노션에서 칸을 늘리면 저절로 따라온다(§1). */
+  var NET_PROPS = null;
+  function netProps(done){
+    if(NET_PROPS){ done(NET_PROPS); return; }
+    var base = netBase(), u = loadUser();
+    if(!base || !u || !credLive(u)){ done([]); return; }
+    askCount(base + '?list=netprops&t=' + encodeURIComponent(u.cred), function(d){
+      NET_PROPS = (d && d.ok && d.props) ? d.props : [];
+      done(NET_PROPS);
+    });
+  }
+  /* 속성 입력칸 하나를 그린다 */
+  function netPropField(pr){
+    var id = 'np_' + pr.name.replace(/[^A-Za-z0-9가-힣]/g,'');
+    var h = '<div class="npf"><label for="' + id + '">' + pjEsc(pr.name) + '</label>';
+    if(pr.type === 'select' || pr.type === 'multi_select'){
+      h += '<input id="' + id + '" data-np="' + pjEsc(pr.name) + '" list="' + id + '_l" autocomplete="off"'
+        + ' placeholder="' + (pr.type==='multi_select' ? '여러 개면 쉼표로' : '고르거나 직접 쓰세요') + '">'
+        + '<datalist id="' + id + '_l">'
+        + (pr.opts||[]).map(function(o){ return '<option>' + pjEsc(o) + '</option>'; }).join('')
+        + '</datalist>';
+    } else if(pr.type === 'checkbox'){
+      h += '<label class="npck"><input type="checkbox" id="' + id + '" data-np="' + pjEsc(pr.name) + '"> 예</label>';
+    } else {
+      var t = pr.type==='date' ? 'date' : (pr.type==='number' ? 'number'
+            : (pr.type==='email' ? 'email' : (pr.type==='url' ? 'url'
+            : (pr.type==='phone_number' ? 'tel' : 'text'))));
+      h += '<input type="' + t + '" id="' + id + '" data-np="' + pjEsc(pr.name) + '" autocomplete="off">';
+    }
+    return h + '</div>';
+  }
+  /* 🔴 2026-08-22 실측 — DB_네트워크 칸이 15개다. 다 펼치면 아무도 안 적는다.
+     그래서 «자주 쓰는 것만» 펼치고 나머지는 접는다(장비 추가 폼과 같은 방식).
+     목록에 없는 칸이 노션에 생기면 «나머지» 쪽에 저절로 들어간다 — 빠지지 않는다. */
+  var NET_MAIN = {
+    '거래처'  : ['담당자','연락처','Email','분류','세금유형','비고'],
+    '인적자원': ['포지션(인적)','분류','연락처','Email','단가','세금유형'],
+    '업체'    : ['하위카테고리(업체)','분류','연락처','웹사이트','위치','비고']
+  };
+  function netPropHtml(props, cat){
+    var main = NET_MAIN[cat] || [];
+    var A = props.filter(function(p){ return main.indexOf(p.name) >= 0; });
+    var B = props.filter(function(p){ return main.indexOf(p.name) < 0; });
+    A.sort(function(x,y){ return main.indexOf(x.name) - main.indexOf(y.name); });
+    var h = '<div class="npg">' + A.map(netPropField).join('') + '</div>';
+    if(B.length){
+      h += '<details class="npmore"><summary>▸ 나머지 칸 ' + B.length + '개</summary>'
+         + '<div class="npg">' + B.map(netPropField).join('') + '</div></details>';
+    }
+    return h;
+  }
+  function netPropRead(box){
+    var o = {};
+    Array.prototype.slice.call(box.querySelectorAll('[data-np]')).forEach(function(e){
+      var v = (e.type === 'checkbox') ? (e.checked ? 'true' : '') : e.value;
+      if(String(v).trim()) o[e.getAttribute('data-np')] = String(v).trim();
+    });
+    return o;
+  }
+
+  /* ────────────────────────────────────────────────
+     칸 하나 — 🔴 2026-08-22 대표 컨펌본으로 되돌림.
+       *"글자 치면 그에 맞는것 드롭다운으로 나오고
+         없으면 그냥 수기로적고 노션에 추가할 수 있게"*
+     🔴 「고르기 전용 select」였던 것을 «치는 칸»으로 바꿨다.
+     🔴 한 글자마다 «입력칸을 다시 그리지 않는다» — 후보줄과 안내줄만 바꾼다.
+        (다시 그리면 커서가 튀고 한글이 조합 중에 끊긴다 — 오늘만 세 번 밟은 함정) */
+  function pjNewPicker(boxId, rows, posName, subName, key){
+    var box = document.getElementById(boxId); if(!box) return;
+    var cat = { cli:'거래처', pho:'인적자원', brand:'인적자원', loc:'업체' }[key];
+    var offline = (rows === null);
+    var list = offline ? [] : netPick(rows, posName, subName);
+
+    box.className = 'cbo';
+    box.innerHTML =
+      '<input class="cboin" autocomplete="off" spellcheck="false" placeholder="'
+      + (offline ? '직접 입력 — 노션을 못 불렀습니다'
+                 : '치면 후보가 뜹니다 (' + list.length + '개) · 없으면 그냥 쓰세요') + '">'
+      + '<div class="cbomenu" hidden></div><div class="cbost"></div>';
+    var inp  = box.querySelector('.cboin');
+    var menu = box.querySelector('.cbomenu');
+    var st   = box.querySelector('.cbost');
+    if(offline) st.innerHTML = '<span class="warn">🔑 노션을 못 불렀습니다 — 쳐서 넣으시면 그대로 저장됩니다.</span>';
+
+    function hit(v){
+      var t = String(v||'').trim().toLowerCase(); if(!t) return null;
+      for(var i=0;i<list.length;i++){ if(String(list[i].name).trim().toLowerCase() === t) return list[i]; }
+      return null;
+    }
+    /* 🔴 안내줄만 다시 그린다 */
+    function status(){
+      var v = inp.value.trim();
+      if(!v){ st.innerHTML = ''; return; }
+      var h = hit(v);
+      if(h){ st.innerHTML = '<span class="ok">✅ 노션에 있습니다</span>'; return; }
+      if(offline){ return; }
+      st.innerHTML = '<span class="warn">🆕 노션에 없는 이름입니다</span> '
+        + '<button type="button" class="addbtn">＋ 노션에 추가</button>';
+      /* 🔴 2026-08-22 대표 지시 — 그냥 추가하지 않고 «속성 입력칸»을 띄운다 */
+      st.querySelector('.addbtn').onclick = function(){
+        var btn = this; btn.disabled = true; btn.textContent = '칸 불러오는 중…';
+        netProps(function(props){
+          var panel = document.createElement('div'); panel.className = 'npbox';
+          panel.innerHTML =
+            '<div class="npt">🆕 노션에 「<b>' + pjEsc(v) + '</b>」 추가 <span class="npc">'
+            + pjEsc(cat) + (posName ? ' · ' + pjEsc(posName) : '')
+            + (subName ? ' · ' + pjEsc(subName) : '') + '</span></div>'
+            + (props.length ? netPropHtml(props, cat)
+                : '<p class="hint">적을 칸이 없거나 노션을 못 불렀습니다 — 이름만 넣습니다.</p>')
+            + '<p class="hint">🔴 <b>비워두셔도 됩니다</b> — 나중에 노션에서 채우면 됩니다. '
+            + '계좌·사업자번호는 여기서 못 적습니다(노션에서 직접).</p>'
+            + '<div class="npb"><button type="button" class="npok">노션에 넣기</button>'
+            + '<button type="button" class="npno">그만두기</button></div>';
+          st.innerHTML = ''; st.appendChild(panel);
+          panel.querySelector('.npno').onclick = function(){ status(); };
+          panel.querySelector('.npok').onclick = function(){
+            var ok = this; ok.disabled = true; ok.textContent = '넣는 중…';
+            netAdd(cat, v, posName, subName, netPropRead(panel), function(d){
+              if(!d || !d.ok){
+                ok.disabled = false; ok.textContent = '다시 넣기';
+                panel.insertAdjacentHTML('beforeend',
+                  '<div class="hint warn">넣지 못했습니다 — ' + pjEsc((d&&d.why)||'알 수 없음')
+                  + '<br>그냥 두셔도 «이름은 그대로 저장»됩니다.</div>');
+                return;
+              }
+              list.push(d.row);
+              if(NET_CACHE[cat]) NET_CACHE[cat].push(d.row);
+              PJ_NEW[key] = { id:d.row.id, name:d.row.name };
+              st.innerHTML = '<span class="ok">✅ ' + (d.already ? '이미 있어서 그것을 씁니다' : '노션에 추가했습니다') + '</span>';
+              if(key === 'cli') pjNewFromCli(d.row, d.row.name);
+              pjNewName();
+            });
+          };
+        });
+      };
+    }
+    /* 🔴 후보줄만 다시 그린다 */
+    function suggest(){
+      var v = inp.value.trim().toLowerCase();
+      var f = list.filter(function(x){
+        return !v || String(x.name).toLowerCase().indexOf(v) >= 0;
+      }).slice(0, 8);
+      if(!f.length){ menu.hidden = true; menu.innerHTML = ''; return; }
+      menu.innerHTML = f.map(function(x){
+        return '<div class="cboit" data-id="' + pjEsc(x.id) + '">' + pjEsc(x.name)
+             + (x.mgr ? ' <span class="sub">· ' + pjEsc(x.mgr) + '</span>' : '') + '</div>';
+      }).join('');
+      menu.hidden = false;
+    }
+    function commit(v, h){
+      PJ_NEW[key] = v ? { id: h ? h.id : '', name: h ? h.name : v } : null;
+      if(key === 'cli') pjNewFromCli(h, v);
+      pjNewName();
+    }
+    inp.addEventListener('input', function(){
+      var v = this.value.trim();
+      commit(v, hit(v)); suggest(); status();
+    });
+    inp.addEventListener('focus', suggest);
+    inp.addEventListener('blur', function(){ setTimeout(function(){ menu.hidden = true; }, 180); });
+    menu.addEventListener('mousedown', function(e){
+      var it = e.target.closest ? e.target.closest('.cboit') : null; if(!it) return;
       e.preventDefault();
-      var src = document.querySelector('a[data-lifecycle]');
-      if(!src){ alert('「프로젝트 생애주기 입력」 카드를 못 찾았습니다.'); return; }
-      var u = loadUser(), url = src.getAttribute('href');
-      if(u && u.cred && credLive(u)) url += (url.indexOf('?')>=0?'&':'?') + 't=' + encodeURIComponent(u.cred);
-      var w = window.open(url, '_blank'); if(w) w.opener = null;
-    };
+      var id = it.getAttribute('data-id'), h = null;
+      for(var i=0;i<list.length;i++){ if(list[i].id === id){ h = list[i]; break; } }
+      if(!h) return;
+      inp.value = h.name; menu.hidden = true;
+      commit(h.name, h); status();
+    });
+  }
+  /* ────────────────────────────────────────────────
+     담당자 칸 — 🔴 2026-08-22 대표 지시로 «노션에 연결»했다.
+     🔴 담당자는 노션에서 별도 페이지가 아니라 «거래처 항목 안의 글자칸»이다(실측).
+        그래서 후보는 «거래처들이 이미 갖고 있는 담당자»에서 모으고,
+        새 이름은 «고른 거래처의 담당자 칸»에 적는다 — 새 DB를 안 만든다(§4-1). */
+  function pjNewMgrPicker(rows){
+    var box = document.getElementById('pkMgr'); if(!box) return;
+    var offline = (rows === null);
+    var src = offline ? [] : rows;
+    /* 🔴 2026-08-22 대표 지적: *"거래처에 여러 담당자가 있을 수 있는데"*
+       → 노션 담당자 칸을 «쉼표로 나눠» 여러 명으로 읽는다. 칸을 늘리지 않는다. */
+    function splitMgr(t){
+      return String(t||'').split(/[,·\/]/).map(function(x){ return x.trim(); })
+             .filter(function(x){ return x; });
+    }
+    function rebuild(){
+      var L = [], seen = {};
+      src.forEach(function(x){
+        splitMgr(x.mgr).forEach(function(m){
+          var k = m + '@' + x.id; if(seen[k]) return; seen[k] = 1;
+          L.push({ id:'mgr:'+k, name:m, of:x.name, cliId:x.id });
+        });
+      });
+      return L;
+    }
+    var list = rebuild();
+    box.className = 'cbo';
+    box.innerHTML =
+      '<input class="cboin" autocomplete="off" spellcheck="false" placeholder="'
+      + (offline ? '직접 입력'
+                 : '거래처를 고르면 저절로 · 치면 후보 (' + list.length + '명) · 없으면 그냥 쓰세요') + '">'
+      + '<div class="cbomenu" hidden></div><div class="cbost"></div>';
+    var inp  = box.querySelector('.cboin');
+    var menu = box.querySelector('.cbomenu');
+    var st   = box.querySelector('.cbost');
+    PJ_NEW.mgrBox = inp;
+
+    function ofCli(){
+      var c = PJ_NEW.cli;
+      if(!c || !c.id) return [];
+      return list.filter(function(x){ return x.cliId === c.id; });
+    }
+    function hit(v){
+      var t = String(v||'').trim().toLowerCase(); if(!t) return null;
+      var mine = ofCli();
+      for(var i=0;i<mine.length;i++){ if(mine[i].name.toLowerCase() === t) return mine[i]; }
+      for(var j=0;j<list.length;j++){ if(list[j].name.toLowerCase() === t) return list[j]; }
+      return null;
+    }
+    function status(){
+      var v = inp.value.trim(), cli = PJ_NEW.cli, mine = ofCli();
+      if(!v){
+        if(mine.length > 1){
+          st.innerHTML = '<span class="warn">👥 「' + pjEsc(cli.name) + '」 담당자 ' + mine.length + '명</span>'
+            + '<div class="hint">이번 촬영 담당자를 <b>고르거나</b>, 다른 분이면 <b>그냥 쓰세요</b>.</div>';
+        } else st.innerHTML = '';
+        return;
+      }
+      var h = hit(v);
+      if(h){ st.innerHTML = '<span class="ok">✅ 노션에 있습니다</span>'
+                          + ' <span class="hint">— 「' + pjEsc(h.of) + '」의 담당자</span>'; return; }
+      if(offline) return;
+      if(!cli || !cli.id){
+        st.innerHTML = '<span class="warn">🆕 노션에 없는 이름입니다</span>'
+          + '<div class="hint">이름은 그대로 저장됩니다. '
+          + '<b>거래처를 먼저 고르시면</b> 노션에도 넣을 수 있습니다.</div>';
+        return;
+      }
+      st.innerHTML = '<span class="warn">🆕 노션에 없는 이름입니다</span> '
+        + '<button type="button" class="addbtn">＋ 「' + pjEsc(cli.name) + '」 담당자로 넣기</button>'
+        + (mine.length ? '<div class="hint">지금 노션엔 ' + pjEsc(mine.map(function(x){return x.name;}).join(', '))
+                       + ' — <b>지우지 않고 옆에 더합니다.</b></div>' : '');
+      /* 🔴 2026-08-22 대표 지시: *"담당자도 추가하면 거래처럼 뜨게 해줘."*
+         → 거래처와 «똑같이» 속성 입력창을 띄운다.
+         🔴 그러려면 담당자도 노션에 «자기 페이지»가 있어야 한다(글자칸엔 연락처를 못 적는다).
+            그래서 두 가지를 «같이» 한다:
+            ① DB_네트워크에 페이지를 만든다 (카테고리 인적자원 · 포지션 담당자)
+            ② 그 거래처의 담당자 칸에도 이름을 더한다 — 지우지 않고 옆에.
+            ②를 같이 하는 이유 = 거래처를 고르면 담당자가 딸려 나오는 지금 동작을 안 깨려고. */
+      st.querySelector('.addbtn').onclick = function(){
+        var btn = this; btn.disabled = true; btn.textContent = '칸 불러오는 중…';
+        netProps(function(props){
+          var panel = document.createElement('div'); panel.className = 'npbox';
+          panel.innerHTML =
+            '<div class="npt">🆕 노션에 「<b>' + pjEsc(v) + '</b>」 추가 '
+            + '<span class="npc">클라이언트 · ' + pjEsc(cli.name) + ' 밑에</span></div>'
+            + (props.length ? netPropHtml(props, '인적자원')
+                : '<p class="hint">적을 칸이 없거나 노션을 못 불렀습니다 — 이름만 넣습니다.</p>')
+            + '<p class="hint">🔴 <b>비워두셔도 됩니다.</b> 넣으면 ①노션에 <b>담당자 항목</b>이 생기고 '
+            + '②「' + pjEsc(cli.name) + '」의 담당자 칸에도 <b>지우지 않고 더합니다</b>.'
+            + '<br>분류는 <b>클라이언트</b>로 들어갑니다 — 우리 팀(분류 <b>직원</b>)과 <b>안 섞입니다</b>.'
+            + (mine.length ? '<br>지금 노션엔 ' + pjEsc(mine.map(function(x){return x.name;}).join(', ')) : '')
+            + '</p>'
+            + '<div class="npb"><button type="button" class="npok">노션에 넣기</button>'
+            + '<button type="button" class="npno">그만두기</button></div>';
+          st.innerHTML = ''; st.appendChild(panel);
+          panel.querySelector('.npno').onclick = function(){ status(); };
+          panel.querySelector('.npok').onclick = function(){
+            var ok = this; ok.disabled = true; ok.textContent = '넣는 중…';
+            var base = netBase(), u = loadUser();
+            if(!base || !u || !credLive(u)){
+              ok.disabled = false; ok.textContent = '다시 넣기';
+              panel.insertAdjacentHTML('beforeend','<div class="hint warn">로그인이 풀렸습니다.</div>'); return;
+            }
+            /* ① 담당자 페이지를 만든다 */
+            /* 🔴 2026-08-22 실측 — 노션에 「클라이언트」가 «이미» 있다(포지션·분류 둘 다).
+               새 값을 만들지 않고 그것을 쓴다. 우리 팀은 분류 「직원」이라 안 섞인다. */
+            var xt = netPropRead(panel);
+            if(!xt['분류']) xt['분류'] = '클라이언트';
+            netAdd('인적자원', v, '클라이언트', '', xt, function(d1){
+              if(!d1 || !d1.ok){
+                ok.disabled = false; ok.textContent = '다시 넣기';
+                panel.insertAdjacentHTML('beforeend',
+                  '<div class="hint warn">넣지 못했습니다 — ' + pjEsc((d1&&d1.why)||'알 수 없음')
+                  + '<br>그냥 두셔도 «이름은 그대로 저장»됩니다.</div>');
+                return;
+              }
+              /* ② 거래처의 담당자 칸에도 더한다 */
+              askCount(base + '?set=mgr&id=' + encodeURIComponent(cli.id)
+                       + '&name=' + encodeURIComponent(v)
+                       + '&t=' + encodeURIComponent(u.cred), function(d2){
+                for(var i=0;i<src.length;i++){
+                  if(src[i].id === cli.id){
+                    src[i].mgr = (d2 && d2.all && d2.all.length) ? d2.all.join(', ')
+                               : (src[i].mgr ? src[i].mgr + ', ' + v : v);
+                  }
+                }
+                list = rebuild();
+                PJ_NEW.mgr = v;
+                st.innerHTML = '<span class="ok">✅ 노션에 담당자로 넣었습니다</span>'
+                  + '<div class="hint">「' + pjEsc(cli.name) + '」의 담당자로도 들어갔습니다'
+                  + ((!d2 || !d2.ok) ? ' — <span class="warn">단, 거래처 칸에는 못 넣었습니다 ('
+                       + pjEsc((d2&&d2.why)||'알 수 없음') + ')</span>' : '') + '</div>';
+              });
+            }, cli.id);   /* 🔴 거래처 «밑에» 붙인다 (노션 상위 항목) */
+          };
+        });
+      };
+    }
+    function suggest(){
+      var v = inp.value.trim().toLowerCase(), mineIds = {};
+      ofCli().forEach(function(x){ mineIds[x.id] = 1; });
+      var f = list.filter(function(x){ return !v || x.name.toLowerCase().indexOf(v) >= 0; });
+      /* 고른 거래처의 담당자를 «맨 앞»에 */
+      f.sort(function(a,b){ return (mineIds[b.id]?1:0) - (mineIds[a.id]?1:0); });
+      f = f.slice(0,8);
+      if(!f.length){ menu.hidden = true; menu.innerHTML = ''; return; }
+      menu.innerHTML = f.map(function(x){
+        return '<div class="cboit" data-id="' + pjEsc(x.id) + '">' + pjEsc(x.name)
+             + ' <span class="sub">· ' + pjEsc(x.of) + '</span></div>';
+      }).join('');
+      menu.hidden = false;
+    }
+    inp.__status = status;
+    inp.addEventListener('input', function(){
+      this.dataset.touched = '1'; PJ_NEW.mgr = this.value.trim(); suggest(); status();
+    });
+    inp.addEventListener('focus', suggest);
+    inp.addEventListener('blur', function(){ setTimeout(function(){ menu.hidden = true; }, 180); });
+    menu.addEventListener('mousedown', function(e){
+      var it = e.target.closest ? e.target.closest('.cboit') : null; if(!it) return;
+      e.preventDefault();
+      var id = it.getAttribute('data-id');
+      for(var i=0;i<list.length;i++){ if(list[i].id === id){
+        inp.value = list[i].name; inp.dataset.touched = '1'; PJ_NEW.mgr = list[i].name; break; } }
+      menu.hidden = true; status();
+    });
+    if(PJ_NEW.cli && PJ_NEW.cli.name) pjNewFromCli(PJ_NEW.cli, PJ_NEW.cli.name);
+  }
+
+  /* 거래처를 고르면 담당자와 「부를 이름」이 저절로 들어온다 — 🔴 손으로 쓴 것은 안 덮는다 */
+  function pjNewFromCli(hit, name){
+    var m = PJ_NEW.mgrBox;
+    /* 🔴 담당자가 여러 명이면 «자동으로 안 넣는다» — 엉뚱한 사람이 들어가면 그대로 굳는다 */
+    if(m && !m.dataset.touched){
+      var ms = String((hit && hit.mgr) || '').split(/[,·\/]/)
+                 .map(function(x){ return x.trim(); }).filter(function(x){ return x; });
+      m.value = (ms.length === 1) ? ms[0] : '';
+      PJ_NEW.mgr = m.value;
+    }
+    if(m && m.__status) m.__status();
+    var c = document.getElementById('nCall');
+    if(c && !c.dataset.touched && name) c.value = name;
+  }
+  function pjNewName(){
+    var d = document.getElementById('nFrom').value;
+    var call = document.getElementById('nCall').value.trim();
+    var ymd = d ? d.slice(2).replace(/-/g,'') : '';
+    document.getElementById('nName').value = [ymd, call].filter(function(x){return x;}).join('_');
+    document.getElementById('nMk').disabled = !(ymd && call);
+    var w = document.getElementById('nWill');
+    if(w) w.innerHTML = '<b>만들면 이렇게 됩니다</b><br>'
+      + '① 「프로젝트목록」 시트에 줄 — 번호·이름·촬영일·거래처·담당자·포토·브랜드<br>'
+      + '② 드라이브 <b>프로젝트 폴더</b> (리소스·결과물 포함)<br>'
+      + '③ 노션 <b>DB_프로젝트_테스트</b> 페이지 — 거래처·참여인력·로케이션을 <b>연결</b>';
+  }
+  function pjNewMake(){
+    /* 🔴 아직 «만드는 것»은 안 붙였다. 고르는 것까지만 된다.
+       거짓말하지 않으려고 무엇이 되고 무엇이 안 되는지 그대로 적는다. */
+    var got = [];
+    ['cli','pho','brand','loc'].forEach(function(k){ if(PJ_NEW[k]) got.push(PJ_NEW[k].name); });
+    alert('아직 「만들기」는 안 붙였습니다.\n\n'
+      + '이름: ' + document.getElementById('nName').value + '\n'
+      + '담당자: ' + (PJ_NEW.mgr || '—') + '\n'
+      + '노션에서 고른 것: ' + (got.length ? got.join(', ') : '없음') + '\n\n'
+      + '지금은 «고르는 것»까지만 됩니다. 시트 줄·폴더·노션 페이지를 만드는 것은 다음 단계입니다.');
   }
 
   /* ── 프로젝트 하나 ── */
@@ -1042,16 +1826,25 @@
        → 「🎬 장비」·「🧾 견적서」를 눌러도 아무 일이 없었다
          (이름이 안 들어가는 「💰 정산」만 멀쩡했던 이유가 바로 이것이다).
        이제 이름은 data- 칸에 «값»으로만 담는다 — 이름에 ' 나 " 가 있어도 안 깨진다. */
-    h += pjCard('🎬','장비','준비 · 랩업 · 반납', 'field', proj, '');
-    if(isOwner) h += pjCard('🧾','견적서','인건비 · OT · 장비 · 차량 · 경비', 'field', proj, 'page=quote');
-    h += pjCard('💰', isMgr ? '정산 (관리)' : '내 청구', '데이페이 · OT · 경비', 'settle', proj, '');
-    /* 통행증(로그인)이 살아 있어야 등급을 물어볼 수 있다 */
+    /* 🔴 2026-08-22 대표 확정 — 「두 칸 관리판」(디자인 5안 중 안2).
+       왼쪽 = 진행 + 지금 할 일 / 오른쪽 = 쌓인 정보 + 바로가기.
+       700px 아래(폰)에서는 CSS가 «저절로» 위아래로 접는다 — 화면을 두 벌 만들지 않았다.
+       되돌리기 = **"프로젝트 화면 카드로 되돌려줘"** · 백업 hub_index_260822_두칸전.html */
+    PJ_NOW = proj;
     var canAsk = !!(function(){ var u = loadUser(); return u && credLive(u); })();
-    h += '<p class="foot">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.<br>' +
-         (!PJ_ROLE && !canAsk ? '🔑 <b>다시 로그인해주세요</b> — 구글 통행증이 1시간마다 만료돼서 등급을 못 물어봅니다.<br>' : '') +
-         (isOwner ? '' : '견적서는 단가·마진이 그대로 보여서 <b>대표님만</b> 열립니다.<br>') +
-         '📂 드라이브 폴더 · 📝 노션 페이지 · ✅ 끝내기는 <b>아직 안 만들었습니다.</b></p>';
-    h += '<div id="pjChk" style="margin-top:14px"></div>';
+    h += '<div class="pj2">'
+      +   '<div class="pane"><div class="ph">진행 · 지금 할 일</div>'
+      +     '<div class="pb" id="pjLeft"><p class="foot" style="margin:0">불러오는 중…</p></div></div>'
+      +   '<div class="pane"><div class="ph">쌓인 정보 · 바로가기</div><div class="pb">'
+      +     '<div id="pjChk"><p class="foot" style="margin:0">📋 확인 중…</p></div>'
+      +     pjLinks(proj, isOwner, isMgr)
+      +     '<p class="fn">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.'
+      +     (!PJ_ROLE && !canAsk ? '<br>🔑 <b>다시 로그인해주세요</b> — 구글 통행증이 1시간마다 만료돼서 등급을 못 물어봅니다.' : '')
+      +     (isOwner ? '' : '<br>견적서는 단가·마진이 그대로 보여서 <b>대표님만</b> 열립니다.')
+      +     '<br>⚪ <b>아직 안 봄</b> = 노션·정산앱에 있는 것이라 이 화면이 아직 못 물어봅니다.'
+      +     '<br>📝 노션 페이지 · ✅ 끝내기는 <b>아직 안 만들었습니다.</b></p>'
+      +   '</div></div>'
+      + '</div>';
     document.getElementById('pjOneBody').innerHTML = h;
     pjCheck(proj);                       /* 🔴 1차 정보가 뭐가 빠졌나 물어본다 */
     /* 🔴 2026-08-21 고침 ② — 등급을 «이 화면에서도» 물어본다.
@@ -1062,12 +1855,19 @@
     if(!PJ_ROLE) pjAskRole(function(){ if(PJ_ROLE) pjOne(proj); });
   }
   /* 카드 한 장. act = 'field'(장비앱으로) / 'settle'(정산앱으로) */
-  function pjCard(ic, t, d, act, proj, extra){
-    return '<a class="card" href="#" data-pjact="' + pjEsc(act) + '"' +
-      ' data-pjproj="' + pjEsc(proj) + '" data-pjextra="' + pjEsc(extra || '') + '">' +
-      '<div class="row"><div class="icon">' + ic + '</div><div class="body">' +
-      '<div class="title">' + t + '</div><div class="desc">' + d + '</div>' +
-      '</div><div class="arrow">›</div></div></a>';
+  /* 🔴 pjCard() 는 2026-08-22 「두 칸 관리판」으로 바뀌면서 부르는 곳이 0이 되어 뺐다.
+     되살리려면 백업 hub_index_260822_두칸전.html 에 있다. */
+  /* 바로가기 5개. 🔴 폴더는 «주소를 받은 뒤»에 살아난다(pjChkPaint) — 코드에 주소를 안 적는다 §1 */
+  function pjLinks(proj, isOwner, isMgr){
+    var p = pjEsc(proj);
+    return '<div class="qk" id="pjQk">'
+      + '<a href="#" data-pjact="field" data-pjproj="' + p + '" data-pjextra="">🎬 장비</a>'
+      + (isOwner
+          ? '<a href="#" data-pjact="field" data-pjproj="' + p + '" data-pjextra="page=quote">🧾 견적서</a>'
+          : '<a href="#" class="off">🧾 견적서</a>')
+      + '<a href="#" class="off" data-pjfolder="1">📁 폴더</a>'
+      + '<a href="#" data-pjact="settle">💰 ' + (isMgr ? '정산 (관리)' : '내 청구') + '</a>'
+      + '</div>';
   }
   /* 카드 누름은 여기 «한 곳»에서만 받는다 (카드마다 명령문을 박지 않으려고) */
   (function(){
@@ -1082,6 +1882,12 @@
       if(!act) return;
       e.preventDefault();
       if(act === 'settle'){ pjSettle(); return; }
+      if(act === 'folder'){
+        var fu = el.getAttribute('data-pjurl');
+        if(!fu){ alert('폴더 주소를 아직 못 받았습니다.'); return; }
+        var fw = window.open(fu, '_blank'); if(fw) fw.opener = null;
+        return;
+      }
       pjOpen(FIELD_APP, el.getAttribute('data-pjproj'), el.getAttribute('data-pjextra') || '');
     });
   })();
