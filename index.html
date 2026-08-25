@@ -1834,18 +1834,66 @@
     if(w) w.innerHTML = '<b>만들면 이렇게 됩니다</b><br>'
       + '① 「프로젝트목록」 시트에 줄 — 번호·이름·촬영일·거래처·담당자·포토·브랜드<br>'
       + '② 드라이브 <b>프로젝트 폴더</b> (리소스·결과물 포함)<br>'
-      + '③ 노션 <b>DB_프로젝트_테스트</b> 페이지 — 거래처·참여인력·로케이션을 <b>연결</b>';
+      + '③ 노션 <b>DB_프로젝트_테스트</b> 페이지 — 거래처·참여인력·로케이션을 <b>연결</b>'
+      + ' <span style="color:#a3590f">(아직 안 붙었습니다 — ①②만 됩니다)</span>';
   }
+  /* 🔴 2026-08-25 — 「만들기」를 실제로 붙였다.
+     서버는 장비앱 Project.js 의 projMake_() 다. 새로 만든 것이 거의 없다 —
+     프로젝트목록 줄(ensureProjectInList_) · 번호(assignProjectNos) ·
+     드라이브 폴더(makeProjectFolders_ — 템플릿을 통째로 복사) 를 순서대로 부른다.
+     🔴 노션 페이지는 «아직 안 붙었다» — 정산앱에 창구를 열어야 하는데
+        그 앱을 다른 창이 만지는 중이라 겹치지 않게 미뤘다(§3-0-D ⑥).
+        그래서 화면에도 «①②만 됩니다» 라고 그대로 적는다. 거짓말하지 않는다.
+     🔴 hubLayout 과 «같은 방식»(fetch)으로 부른다 — 새 통신 방법을 만들지 않았다. */
   function pjNewMake(){
-    /* 🔴 아직 «만드는 것»은 안 붙였다. 고르는 것까지만 된다.
-       거짓말하지 않으려고 무엇이 되고 무엇이 안 되는지 그대로 적는다. */
-    var got = [];
-    ['cli','pho','brand','loc'].forEach(function(k){ if(PJ_NEW[k]) got.push(PJ_NEW[k].name); });
-    alert('아직 「만들기」는 안 붙였습니다.\n\n'
-      + '이름: ' + document.getElementById('nName').value + '\n'
-      + '담당자: ' + (PJ_NEW.mgr || '—') + '\n'
-      + '노션에서 고른 것: ' + (got.length ? got.join(', ') : '없음') + '\n\n'
-      + '지금은 «고르는 것»까지만 됩니다. 시트 줄·폴더·노션 페이지를 만드는 것은 다음 단계입니다.');
+    var btn  = document.getElementById('nMk');
+    var name = (document.getElementById('nName').value || '').trim();
+    if(!name){ alert('이름이 비어 있습니다.'); return; }
+
+    var u = loadUser();
+    if(!u || !u.cred || !credLive(u)){
+      alert('로그인이 필요합니다.\n허브에서 구글 로그인을 다시 해주세요.');
+      return;
+    }
+
+    var info = {
+      name:   name,
+      date:   document.getElementById('nFrom').value || '',
+      client: (PJ_NEW.cli   && PJ_NEW.cli.name)   || '',
+      mgr:    PJ_NEW.mgr || '',
+      photo:  (PJ_NEW.pho   && PJ_NEW.pho.name)   || '',
+      brand:  (PJ_NEW.brand && PJ_NEW.brand.name) || ''
+    };
+
+    var old = btn.textContent;
+    btn.disabled = true; btn.textContent = '만드는 중… (폴더까지 20초쯤)';
+
+    fetch(FIELD_APP + '?action=projMake'
+          + '&t='    + encodeURIComponent(u.cred)
+          + '&info=' + encodeURIComponent(JSON.stringify(info)))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        btn.disabled = false; btn.textContent = old;
+        if(!d || !d.ok){
+          alert('만들지 못했습니다.\n\n' + ((d && d.error) || '서버가 답하지 않았습니다.')
+                + '\n\n🔴 아무것도 안 만들어졌습니다 — 다시 눌러도 안전합니다.');
+          return;
+        }
+        var msg = '✅ 「' + d.name + '」 만들었습니다.\n\n';
+        if(d.no) msg += '번호: ' + d.no + '\n';
+        (d.done || []).forEach(function(x){ msg += '  ✅ ' + x + '\n'; });
+        (d.failed || []).forEach(function(x){ msg += '  🔴 ' + x + '\n'; });
+        msg += '\n🔴 노션 페이지는 아직 안 만들어집니다 — 다음 단계입니다.';
+        if(d.folder) msg += '\n\n📂 폴더: ' + d.folder;
+        alert(msg);
+        PJ_CACHE = null;                      /* 목록을 다시 읽게 */
+        location.hash = '#p/' + encodeURIComponent(d.name);
+      })
+      .catch(function(e){
+        btn.disabled = false; btn.textContent = old;
+        alert('만들지 못했습니다 — 연결이 끊겼습니다.\n\n' + String(e && e.message || e)
+              + '\n\n🔴 시트에 줄이 생겼는지 「📁 프로젝트」 목록에서 확인해 주세요.');
+      });
   }
 
   /* ── 프로젝트 하나 ── */
