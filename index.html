@@ -211,6 +211,9 @@
     .pj2 .qk{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:11px}
     .pj2 .qk a{text-align:center; border:1px solid var(--line); border-radius:7px; padding:9px 0;
       font-size:12px; font-weight:700; color:var(--sub); text-decoration:none; background:var(--card)}
+    /* 🗑 지우기는 «다른 색»으로 — 실수로 누르지 않게 (2026-08-26) */
+    .pj2 .qk a.danger{color:#c62828;border-color:#f0c0c0}
+    .pj2 .qk a.danger:hover{background:#fff2f2}
     .pj2 .qk a:hover{border-color:var(--daily); color:var(--daily)}
     .pj2 .qk a.off{opacity:.42; pointer-events:none}
     .pj2 .qk a.wide{grid-column:1 / -1}
@@ -2608,8 +2611,71 @@
           : '<a href="#" class="off">🧾 견적서</a>')
       + '<a href="#" class="off" data-pjfolder="1">📁 폴더</a>'
       + '<a href="#" data-pjact="settle">💰 ' + (isMgr ? '정산 (관리)' : '내 청구') + '</a>'
+      /* 🔴 2026-08-26 대표 지시 *"잘못만들었을때 … 삭제하거나 수정할 수 있게"*
+         대표에게만 보인다 — 서버도 대표가 아니면 거절한다(화면만 감추는 게 아니다). */
+      + (isOwner
+          ? '<a href="#" data-pjact="rename" data-pjproj="' + p + '">✏️ 이름</a>'
+            + '<a href="#" class="danger" data-pjact="del" data-pjproj="' + p + '">🗑 지우기</a>'
+          : '')
       + '</div>';
   }
+  /* ═══════════════════════════════════════════════════════════════
+     🗑 프로젝트 지우기 · ✏️ 이름 고치기   (2026-08-26 대표 지시)
+     ═══════════════════════════════════════════════════════════════
+     🔴 지우기는 «되돌리기 어려운 일»이라 세 겹으로 막는다.
+        ①먼저 «무엇이 딸려 있나»를 물어본다(장비 줄이 있으면 서버가 아예 거절)
+        ②무엇이 지워지는지 글자로 보여준다
+        ③이름을 «똑같이» 다시 쳐야 지워진다
+     🔴 노션 페이지는 안 건드린다 — 이 앱에 노션 열쇠가 없다. 화면에 그 사실을 적는다. */
+  function pjAdmin(act, name, extra, done){
+    var base = FIELD_APP + '?action=projAdmin&act=' + encodeURIComponent(act)
+             + '&name=' + encodeURIComponent(name) + appTok();
+    if(extra) base += extra;
+    askCount(base, function(d){ done(d || { ok:false, error:'답이 없습니다(느리거나 끊김).' }); }, 25000);
+  }
+
+  function pjDelete(name){
+    if(!name) return;
+    pjAdmin('check', name, '', function(c){
+      if(!c.ok){ alert('🔴 ' + (c.error || '확인하지 못했습니다.')); return; }
+      if(c.blocked){ alert('🔴 지울 수 없습니다.\n\n' + c.why); return; }
+      var msg = '🗑 「' + name + '」 를 지울까요?\n\n'
+        + '지워지는 것\n'
+        + ' · 프로젝트목록 1줄\n'
+        + (c.days ? ' · 회차 ' + c.days + '줄\n' : '')
+        + (c.folder ? ' · 드라이브 폴더 → 휴지통 (30일 안에 되살릴 수 있습니다)\n' : '')
+        + '\n안 건드리는 것\n · 노션 페이지 (필요하면 노션에서 직접 보관하세요)\n'
+        + '\n확인하려면 프로젝트 이름을 그대로 쳐주세요.';
+      var typed = prompt(msg, '');
+      if(typed === null) return;
+      if(String(typed).trim() !== name){ alert('이름이 다릅니다 — 그만둡니다.'); return; }
+      pjAdmin('delete', name, '', function(r){
+        if(!r.ok){ alert('🔴 못 지웠습니다.\n\n' + (r.error || '')); return; }
+        alert('✅ 지웠습니다.\n\n' + (r.done || []).join('\n') + '\n\n' + (r.note || ''));
+        PJ_CACHE = null; location.hash = '#p';
+        if(typeof pjLoad === 'function') pjLoad(true);
+      });
+    });
+  }
+
+  function pjRename(name){
+    if(!name) return;
+    var to = prompt('✏️ 새 이름\n\n🔴 이 이름은 «모든 앱이 서로를 알아보는 열쇠»입니다.\n'
+      + '목록·회차·소싱시트·드라이브 폴더가 «같이» 바뀝니다.\n'
+      + '🔴 노션 페이지 제목은 안 바뀝니다 — 노션에서 직접 고쳐 주세요.\n\n'
+      + '양식: 260910_킵어스위어드', name);
+    if(to === null) return;
+    to = String(to).trim();
+    if(!to || to === name) return;
+    pjAdmin('rename', name, '&to=' + encodeURIComponent(to), function(r){
+      if(!r.ok){ alert('🔴 못 바꿨습니다.\n\n' + (r.error || '')); return; }
+      alert('✅ 바꿨습니다.\n\n' + name + '\n  ↓\n' + to + '\n\n'
+            + (r.done || []).join(' · ') + '\n\n' + (r.note || ''));
+      PJ_CACHE = null; location.hash = '#p';
+      if(typeof pjLoad === 'function') pjLoad(true);
+    });
+  }
+
   /* 카드 누름은 여기 «한 곳»에서만 받는다 (카드마다 명령문을 박지 않으려고) */
   (function(){
     var box = document.getElementById('pjOneBody');
@@ -2623,6 +2689,8 @@
       if(!act) return;
       e.preventDefault();
       if(act === 'settle'){ pjSettle(); return; }
+      if(act === 'rename'){ pjRename(el.getAttribute('data-pjproj')); return; }
+      if(act === 'del'){    pjDelete(el.getAttribute('data-pjproj')); return; }
       if(act === 'folder'){
         var fu = el.getAttribute('data-pjurl');
         if(!fu){ alert('폴더 주소를 아직 못 받았습니다.'); return; }
