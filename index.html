@@ -1922,6 +1922,10 @@
       localStorage.setItem(PJ_DRAFT, JSON.stringify({
         from: pjDraftVal('nFrom'), to: pjDraftVal('nTo'),
         hunt: pjDraftVal('nHunt'), call: pjDraftVal('nCall'),
+        /* 🔴 2026-08-26 — 폴더명은 «열쇠»다. 손으로 고친 것을 안 지키면
+           나갔다 들어왔을 때 자동 제안이 덮어쓴다(교차검증 ⑧). */
+        name: pjDraftVal('nName'),
+        nameT: (document.getElementById('nName') && document.getElementById('nName').dataset.touched) ? '1' : '',
         cli: PJ_NEW.cli, mgr: PJ_NEW.mgr, pho: PJ_NEW.pho,
         brand: PJ_NEW.brand, loc: PJ_NEW.loc,
         locs: PJ_NEW.locs, people: PJ_NEW.people, days: PJ_NEW.days, at: Date.now()
@@ -2018,6 +2022,11 @@
       + '</div>';
     /* 🔴 적어둔 날짜·이름을 되살린다 (2026-08-26) */
     if(DR){
+      /* 🔴 손으로 고친 폴더명을 되살린다 (2026-08-26) */
+      if(DR.name){
+        var _ne = document.getElementById('nName');
+        if(_ne){ _ne.value = DR.name; if(DR.nameT) _ne.dataset.touched = '1'; }
+      }
       ['nFrom','nTo','nHunt','nCall'].forEach(function(id, i){
         var v = [DR.from, DR.to, DR.hunt, DR.call][i];
         var e = document.getElementById(id);
@@ -2044,7 +2053,11 @@
     call.addEventListener('input', function(){ this.dataset.touched='1'; pjNewName(); });
     /* 🔴 폴더명을 직접 고치면 그때부터 자동 제안을 멈춘다 (2026-08-26) */
     var nmEl = document.getElementById('nName');
-    if(nmEl) nmEl.addEventListener('input', function(){ this.dataset.touched='1'; });
+    if(nmEl) nmEl.addEventListener('input', function(){
+      this.dataset.touched='1';
+      pjNewName();            /* 🔴 버튼 활성 상태도 같이 갱신 (교차검증 ⑧ 덤) */
+      pjDraftTouch();
+    });
     var da = document.getElementById('nDayAdd');
     if(da) da.onclick = pjDayAdd;
     pjDaysDraw();                       /* 적어둔 회차가 있으면 바로 보인다 */
@@ -2539,6 +2552,9 @@
     var base = netBase(), u = loadUser();
     if(!base || !u || !u.cred || !credLive(u)){ done(null); return; }
     var data = {
+      /* 🔴 2026-08-26 교차검증 ⑤ — 이 줄이 없어서 노션 「프로젝트명」 칸이 영영 비었다.
+         화면에는 *「노션 「프로젝트명」 칸에 그대로 저장됩니다」* 라고 적어놓고 안 보내고 있었다. */
+      title: ((document.getElementById('nCall') || {}).value || '').trim(),
       name:      name,
       brand:     (PJ_NEW.brand && PJ_NEW.brand.name) || '',
       dateStart: document.getElementById('nFrom').value || '',
@@ -2590,7 +2606,7 @@
         if(!d || !d.ok){
           btn.disabled = false; btn.textContent = old;
           alert('만들지 못했습니다.\n\n' + ((d && d.error) || '서버가 60초 안에 답하지 않았습니다.')
-                + '\n\n🔴 아무것도 안 만들어졌습니다 — 다시 눌러도 안전합니다.');
+                + '\n\n🔴 답을 못 받았습니다 — 만들어졌을 수도 있으니 목록을 새로고침해 확인해 주세요.');
           return;
         }
         /* ①②는 됐다. 이어서 ③ 노션 페이지 — 🔴 버튼은 아직 잠가 둔다(두 번 눌리면 두 번 만들어진다) */
