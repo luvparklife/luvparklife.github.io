@@ -1461,6 +1461,10 @@
   }
 
   function pjLoad(force){
+    /* 🔴 2026-08-26 — 고치는 중에는 목록을 «그리지 않는다».
+       전에는 「✏️ 정보」를 누르면 폼이 떴다가, 늦게 도착한 목록이 그 위를 덮어써
+       대표 눈에는 «목록으로 돌아간 것»처럼 보였다(대표: *"정보를 누르면 프로젝트 목록으로 가는데"*). */
+    if(PJ_EDIT) return;
     var box = document.getElementById('pjListBody');
     var u = loadUser();
     if(!canApp()){
@@ -1500,6 +1504,7 @@
     }, 25000);
   }
   function pjPaint(rows){
+    if(PJ_EDIT) return;        /* 🔴 고치는 중이면 폼을 덮지 않는다 (2026-08-26) */
     var box = document.getElementById('pjListBody');
     /* 🔴 2026-08-21 대표: *"생애주기랑 프로젝트랑 합쳐줘. 프로젝트 클릭하면 프로젝트들 카드로
        보이고. 프로젝트도 생성할 수 있게하고."*
@@ -2778,9 +2783,12 @@
         alert('🔴 정보를 못 읽었습니다.\n\n' + ((c && c.error) || '답이 없습니다'));
         return;
       }
-      /* 폼을 열고 지금 값을 채운다 */
-      location.hash = '#p';
+      /* 폼을 열고 지금 값을 채운다.
+         🔴 PJ_EDIT 를 «먼저» 세운다 — 그래야 pjLoad/pjPaint 가 폼을 안 덮는다. */
       PJ_EDIT = name;
+      if(String(location.hash || '').indexOf('#p') !== 0){
+        location.hash = '#p';
+      }
       pjNewOpen();
       setTimeout(function(){ pjEditFill(c); }, 60);
     });
@@ -2832,6 +2840,14 @@
       brand:  (PJ_NEW.brand && PJ_NEW.brand.name) || '',
       days:   (PJ_NEW.days || []).filter(function(d){ return d.date || d.loc; })
     };
+    /* 🔴 2026-08-26 — 회차가 있는데 촬영일이 비면 「촬영일 아직 없음」으로 남는다
+       (대표: *"촬영회차는 3회차까지 있는데 촬영일이 아직없음으로 나오는데"*).
+       회차 날짜에서 «가장 이른 날 ~ 가장 늦은 날»을 뽑아 채운다. 적어둔 날짜는 안 덮는다. */
+    var ds = info.days.map(function(d){ return d.date; }).filter(function(x){ return x; }).sort();
+    if(ds.length){
+      if(!info.from) info.from = ds[0];
+      if(!info.to)   info.to   = ds[ds.length - 1];
+    }
     var mk = document.getElementById('nMk');
     if(mk){ mk.disabled = true; mk.textContent = '저장하는 중…'; }
     pjAdmin('update', name, '&info=' + encodeURIComponent(JSON.stringify(info)), function(r){
