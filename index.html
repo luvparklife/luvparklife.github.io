@@ -646,6 +646,27 @@
      (…apps.googleusercontent.com 으로 끝나는 긴 글자)
      비워두면 버튼 대신 "설정 준비 중" 안내가 뜹니다.
      ───────────────────────────────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════════════════
+     🔴 오류가 나면 «빨간 띠»로 알린다   (2026-08-26 · 교차검증 지적)
+     ═══════════════════════════════════════════════════════════════
+     [왜 없으면 안 되나] 오늘까지 허브에는 오류를 잡는 장치가 «하나도» 없었다.
+       그래서 자바스크립트가 죽어도 화면은 멀쩡해 보이고, 대표에게는
+       「눌러도 안 되네」로만 보였다. 원인을 찾는 데 하루가 걸렸다.
+       정산앱에는 2026-08-21에 이 띠를 붙였는데 허브에만 안 붙어 있었다.
+     🔴 오류 «내용»만 담는다 — 이메일·통행증 같은 값은 안 담는다. */
+  window.onerror = function(m, u, l){
+    try{
+      if (document.getElementById('hubErr')) return;
+      var d = document.createElement('div');
+      d.id = 'hubErr';
+      d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#c62828;'
+        + 'color:#fff;padding:10px 12px;font-size:13px;line-height:1.5;font-family:inherit';
+      d.textContent = '🔴 허브에 오류가 났습니다 — ' + m + ' (' + l + '행). '
+        + '이 글자를 그대로 알려주시면 바로 고칩니다.';
+      (document.body || document.documentElement).appendChild(d);
+    }catch(e){}
+  };
+
   var GOOGLE_CLIENT_ID = "724029471636-lhf2gugr6rksl6hdu10huf7ojk2tq59u.apps.googleusercontent.com";
 
   /* ═══════════════════════════════════════════════════════════════
@@ -1265,7 +1286,13 @@
          허브는 <b>문을 열어주는 곳이지 판정하는 곳이 아니다.</b> 판정은 각 앱이 한다.
          신분증이 살아 있으면 붙여서 열고, 없으면 없이 연다.
          갱신은 열어준 <u>뒤에</u> 조용히 시도한다(다음 번을 위해). */
-    openWithToken(a);
+    /* 🔴 2026-08-26 교차검증 ④ — 위에서 preventDefault() 를 «먼저» 했으므로,
+       여기서 무슨 오류가 나든 「눌러도 아무 반응 없음」이 된다.
+       그러니 실패하면 «최소한 손님으로라도» 열어 준다. 조용히 삼키지 않는다. */
+    try { openWithToken(a); }
+    catch(e){
+      try { openApp_(a.getAttribute('href')); } catch(e2){}
+    }
     if(!credLive(u)){
       $('pfSt').innerHTML = '<span class="sdot" style="background:#e0a020"></span>로그인 새로 받는 중…';
       refreshCred(null);          /* 링크는 안 넘긴다 — 이미 열었다 */
@@ -2880,6 +2907,7 @@
       srvSet(out);
     }
     function restore(){
+      markHome();   /* 🔴 저장본이 없어도 «원래 자리»는 적어 둔다 (2026-08-26 교차검증 ⑦) */
       /* 🔴 2026-08-26 — 배치가 꼬여 카드가 사라졌을 때 «주소 하나»로 풀 수 있게.
          luvparklife.github.io/?layoutreset=1 로 들어오면 저장된 배치를 버린다.
          (「✥ 배치 바꾸기 → ↩ 원래대로」와 같은 일인데, 카드가 다 사라진 상태에서도 된다) */
