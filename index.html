@@ -1427,6 +1427,27 @@
          '<div class="desc">거래처·인원·기자재를 등록하고 노션 페이지·드라이브 폴더를 한 번에</div>' +
          '</div><div class="arrow">›</div></div></a>';
   }
+  /* 🧪 2026-08-26 대표 지시 *"추가,수정,제거 모두 문제없는지 교차검증"*
+     가짜 프로젝트를 만들어 이름 바꾸고 지워 보고, 흔적이 남았나까지 확인한다.
+     🔴 진짜 프로젝트는 한 글자도 안 건드린다 — 이름이 `_검사_지워도됨_<시각>` 이다. */
+  function pjSelfTest(){
+    if(!confirm('🧪 추가·수정·제거를 실제로 시험합니다.\n\n'
+      + '가짜 프로젝트 하나를 만들어 이름을 바꾸고 지웁니다.\n'
+      + '🔴 진짜 프로젝트는 건드리지 않습니다.\n'
+      + '20초쯤 걸립니다. 할까요?')) return false;
+    var el = document.getElementById('pjTestMsg');
+    if(el) el.textContent = ' 시험하는 중… (20초쯤)';
+    pjAdmin('selftest', '-', '', function(r){
+      if(!el) return;
+      if(!r || (!r.ok && !r.log)){ el.textContent = ' 🔴 ' + ((r && r.error) || '답이 없습니다'); return; }
+      el.innerHTML = ' ' + (r.ok ? '✅' : '🔴') + ' 통과 ' + (r.pass || 0) + ' · 문제 ' + (r.fail || 0)
+        + ' <a href="#" data-t="' + pjEsc((r.log || []).join('\n'))
+        + '" onclick="alert(this.getAttribute(\'data-t\'));return false">자세히</a>';
+    });
+    return false;
+  }
+  window.pjSelfTest = pjSelfTest;
+
   function pjShowNewCardNow(){
     var box = document.getElementById('pjListBody'); if(!box) return;
     if(document.getElementById('pjNew')) return;      /* 이미 있으면 그대로 */
@@ -1485,7 +1506,10 @@
           주소도 여기 안 적는다. 위 카드(data-lifecycle)의 것을 읽어 쓴다(두 군데면 어긋난다 §1). */
     var h = '';
     h += pjNewCardHtml();
-    if(!rows.length){ h += '<p class="foot">진행 중인 프로젝트가 없습니다.</p>'; box.innerHTML = h; pjWireNew(); return; }
+    /* 🧪 대표만 보이는 검사 줄 (2026-08-26) */
+    var testLine = (PJ_ROLE === '대표') ? '<p class="foot" style="margin-top:14px">🧪 <a href="#" onclick="return pjSelfTest()">'
+        + '추가·수정·제거 시험해보기</a> <span id="pjTestMsg"></span></p>' : '';
+    if(!rows.length){ h += '<p class="foot">진행 중인 프로젝트가 없습니다.</p>' + testLine; box.innerHTML = h; pjWireNew(); return; }
 
     /* ── 🔎 찾기 (2026-08-22 대표 지시) ────────────────────────────
        *"나중에 관리하거나 되찾을때 제대로 찾을 수가 없어.
@@ -1511,7 +1535,7 @@
           '<div class="dead">🔴 <b>아직 고를 게 없습니다.</b> 「프로젝트목록」 시트의 ' +
           '<b>거래처·담당자·포토그래퍼·브랜드</b> 칸이 비어 있습니다 — 채우면 여기서 바로 찾힙니다.</div>') +
          '</div><div id="pjRows"></div>';
-    box.innerHTML = h;
+    box.innerHTML = h + testLine;
     pjWireNew();
     pjRowsPaint();
   }
