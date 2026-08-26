@@ -705,8 +705,22 @@
   function tokText(){
     var a = hubSessGet() ? 1 : 0, b = paySessGet() ? 1 : 0;
     if(a && b) return ' · <span style="color:#2e9e5b">🔑 앱 통행증 ✅ 2/2</span>';
-    return ' · <span style="color:#e0a020">🔑 앱 통행증 ' + (a + b) + '/2 · 받는 중…</span>';
+    var why = [];
+    if(!a && SESS_WHY.field) why.push(SESS_WHY.field);
+    if(!b && SESS_WHY.pay)   why.push(SESS_WHY.pay);
+    return ' · <span style="color:#e0a020">🔑 앱 통행증 ' + (a + b) + '/2'
+         + (why.length ? ' · ' + why.join(' / ') : ' · 받는 중…') + '</span>'
+         + ' <a href="#" onclick="return sessRetry()" style="font-size:12px">🔄 다시 받기</a>';
   }
+  /* 🔄 손으로 다시 받기 — 「받는 중…」에 멈췄을 때 대표가 눌러 확인할 수 있게 */
+  function sessRetry(){
+    SESS_WHY.field = SESS_WHY.pay = '받는 중…';
+    paint(loadUser());
+    hubSessFetch(function(){ paint(loadUser()); });
+    paySessFetch(function(){ paint(loadUser()); });
+    return false;
+  }
+  window.sessRetry = sessRetry;
 
   function untilText(exp){
     var d = new Date(exp);
@@ -775,12 +789,17 @@
   }
   function hubSessClear(){ try{ localStorage.removeItem(HUB_SESS); }catch(e){} }
   /* 구글 신분증이 살아 있을 때 «한 번» 받아 둔다 */
+  /* 🔴 못 받았을 때 «왜» 를 담아둔다 (2026-08-26) — 안 보이면 원인을 못 찾는다.
+     실제로 0/2 가 떴는데 화면엔 「받는 중…」만 있어 진단이 안 됐다. */
+  var SESS_WHY = { field:'', pay:'' };
   function hubSessFetch(done){
     var u = loadUser();
-    if(!u || !u.cred || !credLive(u)){ if(done) done(null); return; }
-    if(hubSessGet()){ if(done) done(hubSessGet()); return; }
+    if(hubSessGet()){ SESS_WHY.field=''; if(done) done(hubSessGet()); return; }
+    if(!u || !u.cred){ SESS_WHY.field='로그인 안 됨'; if(done) done(null); return; }
+    if(!credLive(u)){ SESS_WHY.field='구글 신분증 만료 — 다시 로그인'; if(done) done(null); return; }
     askCount(FIELD_APP + '?action=hubSess&t=' + encodeURIComponent(u.cred), function(d){
-      if(d && d.ok && d.sess) hubSessSave(d.sess, d.days);
+      if(d && d.ok && d.sess){ hubSessSave(d.sess, d.days); SESS_WHY.field=''; }
+      else SESS_WHY.field = '장비앱: ' + ((d && (d.why || d.error)) || '응답 없음');
       if(done) done(hubSessGet());
     });
   }
@@ -816,10 +835,13 @@
   function paySessClear(){ try{ localStorage.removeItem(PAY_SESS); }catch(e){} }
   function paySessFetch(done){
     var u = loadUser(), base = netBase();
-    if(!base || !u || !u.cred || !credLive(u)){ if(done) done(null); return; }
-    if(paySessGet()){ if(done) done(paySessGet()); return; }
+    if(paySessGet()){ SESS_WHY.pay=''; if(done) done(paySessGet()); return; }
+    if(!base){ SESS_WHY.pay='정산앱 카드를 못 찾음'; if(done) done(null); return; }
+    if(!u || !u.cred){ SESS_WHY.pay='로그인 안 됨'; if(done) done(null); return; }
+    if(!credLive(u)){ SESS_WHY.pay='구글 신분증 만료 — 다시 로그인'; if(done) done(null); return; }
     askCount(base + '?action=hubSess&t=' + encodeURIComponent(u.cred), function(d){
-      if(d && d.ok && d.sess) paySessSave(d.sess, d.days);
+      if(d && d.ok && d.sess){ paySessSave(d.sess, d.days); SESS_WHY.pay=''; }
+      else SESS_WHY.pay = '정산앱: ' + ((d && (d.why || d.error)) || '응답 없음');
       if(done) done(paySessGet());
     });
   }
