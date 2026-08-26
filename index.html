@@ -775,16 +775,21 @@
         정산앱만 화면에서 읽으므로 «정산앱만» 실패한 것이다.
      🔴 고침 — 못 받은 게 있으면 3초 뒤 다시. 신분증이 살아 있는 동안만, 최대 7번.
         받으면 멈춘다. 이미 있으면 아무 일도 안 한다(헛물 없음). */
-  var SESS_TRY = 0;
+  var SESS_TRY = 0, SESS_BUSY = false;
   function sessEnsure(){
     var u = loadUser();
     if(!u || !credLive(u)) return;        /* 신분증이 죽었으면 더 해봐야 소용없다 */
     if(hubSessGet() && paySessGet()){ SESS_TRY = 0; return; }
-    if(SESS_TRY >= 7) return;
-    SESS_TRY++;
-    if(!hubSessGet()) hubSessFetch(function(){ paint(loadUser()); });
-    if(!paySessGet()) paySessFetch(function(){ paint(loadUser()); });
-    setTimeout(sessEnsure, 3000);
+    /* 🔴 2026-08-26 — ①7번은 너무 많다(3번) ②«가는 중»이면 또 안 부른다
+       ③받고 나서 화면을 다시 그리면 그게 또 카드 숫자를 물어본다 → 요청이 눈덩이가 된다.
+          실측: 폼 한 번 여는 데 hubSess 11번 · badge 13번이 나갔다. */
+    if(SESS_TRY >= 3 || SESS_BUSY) return;
+    SESS_TRY++; SESS_BUSY = true;
+    var left = 2;
+    function fin(){ if(--left <= 0){ SESS_BUSY = false; paint(loadUser()); } }
+    if(!hubSessGet()) hubSessFetch(fin); else fin();
+    if(!paySessGet()) paySessFetch(fin); else fin();
+    setTimeout(sessEnsure, 5000);
   }
 
   /* 🔄 손으로 다시 받기 — 「받는 중…」에 멈췄을 때 대표가 눌러 확인할 수 있게
@@ -1029,7 +1034,10 @@
       $('pfOut').hidden = false;
       /* 🔔 2026-08-19 — 로그인이 살아 있으면 카드에 「몇 건 남았나」를 물어본다.
          여기서 안 부르면 새로고침해야만 숫자가 보인다. force=true 로 30초 제한을 건너뛴다. */
-      if(credLive(u) && typeof loadCounts === 'function') loadCounts(true);
+      /* 🔴 2026-08-26 — 여기서 force=true 를 쓰면 «화면을 다시 그릴 때마다» 카드 숫자를
+         전부 다시 물어본다(30초 제한을 건너뛴다). 통행증 재시도가 paint 를 여러 번 부르면서
+         badge 요청이 13번까지 갔다(실측). → 30초 제한을 «지킨다». */
+      if(credLive(u) && typeof loadCounts === 'function') loadCounts(false);
     }else{
       /* 로그아웃하면 남아 있던 숫자를 지운다 — 남의 건수가 화면에 남으면 안 된다 */
       var stale = document.querySelectorAll('.cbadge');
@@ -1171,6 +1179,8 @@
     scheduleExpire(u.exp);
     /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 — 그러면 1시간 뒤에도 앱이 열린다 */
     SESS_TRY = 0; sessEnsure();
+    /* 로그인 «직후»에는 한 번 강제로 — 그때는 숫자가 비어 있으니 바로 채운다 */
+    try { if(typeof loadCounts === 'function') loadCounts(true); } catch(e){}
 
     /* 카드를 누르다 갱신한 경우 — 이제 열어준다 */
     if(PENDING_LINK){ var a = PENDING_LINK; PENDING_LINK = null; openWithToken(a); }
@@ -1794,8 +1804,18 @@
      ①시간이 모자란 건지 ②권한인지 ③노션이 죽은 건지 구별할 수가 없었다.
      🔴 그리고 25초를 준다 — 노션 검색은 느려서 9초로는 자주 잘린다(정산앱 콜드스타트 포함). */
   var NET_WHY = '';
+  /* 🔴 2026-08-26 — 같은 목록을 «동시에» 부르면 그만큼 요청이 나간다.
+     폼을 열 때 「인적자원」을 포토·브랜드·참여인원이 각각 불러 2~3번 중복됐다.
+     이미 가는 중이면 «그 답을 같이 기다린다». */
+  var NET_WAIT = {};
   function netAsk(cat, done){
     if(NET_CACHE[cat]){ done(NET_CACHE[cat]); return; }
+    if(NET_WAIT[cat]){ NET_WAIT[cat].push(done); return; }
+    NET_WAIT[cat] = [done];
+    done = function(r){
+      var list = NET_WAIT[cat] || []; NET_WAIT[cat] = null;
+      for(var i=0;i<list.length;i++){ try{ list[i](r); }catch(e){} }
+    };
     var base = netBase();
     if(!base){ NET_WHY = '정산앱 카드를 못 찾음'; done(null); return; }
     if(!payOK()){ NET_WHY = '통행증·신분증 없음 — 다시 로그인'; done(null); return; }
