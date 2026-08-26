@@ -290,6 +290,21 @@
     .npt .npc{font-weight:400; color:var(--faint); font-size:11px; margin-left:4px}
     .npg{display:grid; gap:8px}
     @media(min-width:520px){ .npg{grid-template-columns:1fr 1fr} }
+    .dayline{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;font-size:12.5px;
+      padding:5px 2px;border-bottom:1px solid rgba(0,0,0,.06)}
+    .dayline b{min-width:44px}
+    .dayline .dt{color:var(--sub,#5b6472)}
+    .dayline .lc{flex:1;min-width:90px;font-weight:700}
+    .dayline .tm{color:var(--sub,#5b6472);white-space:nowrap}
+    .dayrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+    .dayrow .dn{font-weight:800;font-size:12.5px;min-width:44px;color:var(--sub,#5b6472)}
+    .dayrow input[type=date]{width:132px}
+    .dayrow input[type=time]{width:96px}
+    .dayrow input[list]{flex:1;min-width:130px}
+    .dayrow .dx{border:none;background:none;color:#b23b3b;font-size:17px;cursor:pointer;padding:0 4px}
+    button.mini{font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border-radius:7px;
+      padding:5px 11px;border:1.5px solid var(--accent,#3b6cff);background:#fff;color:var(--accent,#3b6cff)}
+    .chips .chip.ro{background:var(--chip,#eef1f6);color:var(--sub,#5b6472);padding:3px 11px}
     .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
     .chips .chip{display:inline-flex;align-items:center;gap:5px;background:var(--accent-soft,#eaf0ff);
       color:var(--accent,#3b6cff);border-radius:999px;padding:3px 6px 3px 11px;font-size:12.5px;font-weight:700}
@@ -1216,6 +1231,33 @@
      🔴 노션·정산앱은 «다른 시스템»이라 아직 못 물어본다 → 「아직 안 봄」으로 둔다.
         자리를 미리 만들어 두어, 그 시스템을 붙이면 저절로 채워진다.
      되돌리기 = **"프로젝트 1차정보 빼줘"** */
+  /* 📅 이 프로젝트의 회차를 회차별로 보여준다 (2026-08-26 대표 확정 ⓑ)
+     대표 원문: *"내가 허브에서 프로젝트를 볼때 회차별로 나오면 좋겠어."*
+     🔴 원본은 시트 「회차」 탭이다 — 여기서는 «읽기만» 한다. */
+  function pjDaysShow(proj){
+    var box = document.getElementById('pjDays'); if(!box) return;
+    var u = loadUser();
+    if(!u || !u.cred || !credLive(u)){ box.innerHTML = ''; return; }
+    box.innerHTML = '<p class="fn" style="margin:0 0 10px">📅 회차 불러오는 중…</p>';
+    askCount(FIELD_APP + '?action=projDays&proj=' + encodeURIComponent(proj)
+             + '&t=' + encodeURIComponent(u.cred), function(d){
+      if(!d || !d.ok || !d.rows || !d.rows.length){
+        box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차</div>'
+                      + '<p class="fn" style="margin:0 0 10px">아직 없습니다 — 「＋ 새 프로젝트」에서 넣으시면 여기 나옵니다.</p>';
+        return;
+      }
+      box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 <span class="fn">'
+                    + d.rows.length + '회차</span></div>'
+        + d.rows.map(function(r){
+            return '<div class="dayline"><b>' + r.no + '회차</b>'
+                 + '<span class="dt">' + pjEsc(r.date || '—') + '</span>'
+                 + '<span class="lc">' + pjEsc(r.loc || '—') + '</span>'
+                 + '<span class="tm">' + pjEsc(r.call || '') + (r.wrap ? ' ~ ' + pjEsc(r.wrap) : '') + '</span></div>';
+          }).join('')
+        + '<div style="height:10px"></div>';
+    });
+  }
+
   var PJ_CHK_CACHE = {};
   var PJ_NOW = '';                 /* 지금 보고 있는 프로젝트 (할 일 버튼이 쓴다) */
   function pjCheck(proj){
@@ -1398,6 +1440,69 @@
      🔴 로그아웃·다른 기기에서는 안 살아난다(대표 확정 — 그건 안 해도 된다).
      🔴 한글은 조합해서 만드는 글자라 «한 글자마다» 저장하면 입력이 끊긴다.
         그래서 손을 멈추고 0.5초 뒤에 저장한다(2026-08-22에 겪은 함정). */
+  /* ══════════════════════════════════════════════════════════
+     📅 촬영 회차 (2026-08-26 대표 확정 ⓑ)
+     회차마다 날짜·로케이션·콜·랩. 원본은 «시트」의 「회차」 탭이다(노션 아님).
+     🔴 프로젝트 전체 로케 목록은 «회차에서 모은 것»이다 — 따로 안 적는다(§1). */
+  var PJ_LOCS = [];
+  function pjDaysDraw(){
+    var box = document.getElementById('dayRows'); if(!box || !PJ_NEW) return;
+    var ds = PJ_NEW.days || (PJ_NEW.days = []);
+    box.innerHTML = ds.map(function(d, i){
+      return '<div class="dayrow">'
+        + '<span class="dn">' + (i+1) + '회차</span>'
+        + '<input type="date" data-d="' + i + '" data-f="date" value="' + pjEsc(d.date||'') + '">'
+        + '<input list="locList" data-d="' + i + '" data-f="loc" placeholder="로케이션" value="' + pjEsc(d.loc||'') + '">'
+        + '<input type="time" data-d="' + i + '" data-f="call" value="' + pjEsc(d.call||'') + '" title="콜">'
+        + '<input type="time" data-d="' + i + '" data-f="wrap" value="' + pjEsc(d.wrap||'') + '" title="랩">'
+        + '<button type="button" class="dx" data-dd="' + i + '" title="이 회차 빼기">×</button>'
+        + '</div>';
+    }).join('');
+    pjLocChips();
+  }
+  /* 회차에서 로케를 모아 보여준다 — 읽기만 (여기서 못 지운다. 회차에서 지운다) */
+  function pjLocChips(){
+    var box = document.getElementById('chLoc'); if(!box || !PJ_NEW) return;
+    var seen = {}, out = [];
+    (PJ_NEW.days||[]).forEach(function(d){
+      var nm = String(d.loc||'').trim(); if(!nm || seen[nm]) return;
+      seen[nm] = 1; out.push(nm);
+    });
+    box.innerHTML = out.length
+      ? out.map(function(nm){ return '<span class="chip ro">' + pjEsc(nm) + '</span>'; }).join('')
+      : '';
+  }
+  function pjDayAdd(){
+    var ds = PJ_NEW.days || (PJ_NEW.days = []);
+    var lastD = ds.length ? ds[ds.length-1].date : (document.getElementById('nFrom')||{}).value;
+    var nd = '';
+    if(lastD){ var x = new Date(lastD); x.setDate(x.getDate() + (ds.length ? 1 : 0));
+      nd = x.getFullYear() + '-' + ('0'+(x.getMonth()+1)).slice(-2) + '-' + ('0'+x.getDate()).slice(-2); }
+    ds.push({ date: nd, loc:'', locId:'', call:'08:00', wrap:'20:00' });
+    pjDaysDraw(); pjDraftTouch();
+  }
+  document.addEventListener('input', function(e){
+    var el = e.target; if(!el || el.getAttribute == null) return;
+    var i = el.getAttribute('data-d'); if(i === null) return;
+    if(!PJ_NEW || !PJ_NEW.days || !PJ_NEW.days[+i]) return;
+    var f = el.getAttribute('data-f');
+    PJ_NEW.days[+i][f] = el.value;
+    if(f === 'loc'){
+      var hit = null;
+      for(var k=0;k<PJ_LOCS.length;k++){ if(PJ_LOCS[k].name === el.value){ hit = PJ_LOCS[k]; break; } }
+      PJ_NEW.days[+i].locId = hit ? hit.id : '';
+      pjLocChips();
+    }
+    pjDraftTouch();
+  });
+  document.addEventListener('click', function(e){
+    var b = e.target; if(!b || b.getAttribute == null) return;
+    var i = b.getAttribute('data-dd'); if(i === null) return;
+    e.preventDefault();
+    if(PJ_NEW && PJ_NEW.days) PJ_NEW.days.splice(+i, 1);
+    pjDaysDraw(); pjDraftTouch();
+  });
+
   /* 고른 것을 «칩»으로 보여준다 — × 로 뺀다 (2026-08-26) */
   function pjChips(key){
     var box = document.getElementById(key === 'locs' ? 'chLoc' : 'chPeople');
@@ -1429,7 +1534,7 @@
         hunt: pjDraftVal('nHunt'), call: pjDraftVal('nCall'),
         cli: PJ_NEW.cli, mgr: PJ_NEW.mgr, pho: PJ_NEW.pho,
         brand: PJ_NEW.brand, loc: PJ_NEW.loc,
-        locs: PJ_NEW.locs, people: PJ_NEW.people, at: Date.now()
+        locs: PJ_NEW.locs, people: PJ_NEW.people, days: PJ_NEW.days, at: Date.now()
       }));
     }catch(e){}
   }
@@ -1450,13 +1555,13 @@
   var PJ_NEW = null;
   function pjNewOpen(){
     var box = document.getElementById('pjListBody');
-    PJ_NEW = { cli:null, mgr:'', pho:null, brand:null, loc:null, locs:[], people:[] };
+    PJ_NEW = { cli:null, mgr:'', pho:null, brand:null, loc:null, locs:[], people:[], days:[] };
     /* 🔴 적다 만 것이 있으면 되살린다 — 나갔다 들어와도 그대로 */
     var DR = pjDraftRead();
     if(DR){
       PJ_NEW.cli = DR.cli || null; PJ_NEW.mgr = DR.mgr || '';
       PJ_NEW.pho = DR.pho || null; PJ_NEW.brand = DR.brand || null; PJ_NEW.loc = DR.loc || null;
-      PJ_NEW.locs = DR.locs || []; PJ_NEW.people = DR.people || [];
+      PJ_NEW.locs = DR.locs || []; PJ_NEW.people = DR.people || []; PJ_NEW.days = DR.days || [];
     }
     box.innerHTML =
       '<div class="pjnew">'
@@ -1475,8 +1580,12 @@
       +   '<div id="pkPho">불러오는 중…</div></div>'
       + '<div class="nf"><label>브랜드 <span class="opt">— 치면 노션 「브랜드」 후보</span></label>'
       +   '<div id="pkBrand">불러오는 중…</div></div>'
-      + '<div class="nf"><label>로케이션 <span class="opt">— 여러 곳이면 계속 고르세요 (회차마다 달라도 됩니다)</span></label>'
-      +   '<div id="pkLoc">불러오는 중…</div><div class="chips" id="chLoc"></div></div>'
+      + '<div class="nf"><label>📅 촬영 회차 <span class="opt">— 회차마다 로케이션·시간이 달라도 됩니다</span></label>'
+      +   '<div id="dayRows"></div>'
+      +   '<button type="button" class="mini" id="nDayAdd">＋ 회차 추가</button>'
+      +   '<div class="hint">🔴 로케이션은 <b>회차에서 고르시면</b> 아래에 저절로 모입니다 — 따로 안 적으셔도 됩니다.</div>'
+      +   '<div class="chips" id="chLoc"></div>'
+      +   '<datalist id="locList"></datalist></div>'
       + '<div class="nf"><label>참여 인원 <span class="opt">— 여러 명이면 계속 고르세요</span></label>'
       +   '<div id="pkPeople">불러오는 중…</div><div class="chips" id="chPeople"></div></div>'
       + '<div class="nf"><label>이 촬영을 뭐라고 부르시겠어요? <i>*</i></label>'
@@ -1537,12 +1646,21 @@
     document.getElementById('nFrom').addEventListener('input', pjNewName);
     var call = document.getElementById('nCall');
     call.addEventListener('input', function(){ this.dataset.touched='1'; pjNewName(); });
+    var da = document.getElementById('nDayAdd');
+    if(da) da.onclick = pjDayAdd;
+    pjDaysDraw();                       /* 적어둔 회차가 있으면 바로 보인다 */
     document.getElementById('nMk').onclick = pjNewMake;
     netAsk('거래처',   function(r){ pjNewPicker('pkCli',   r, null, null, 'cli');
                                    pjNewMgrPicker(r); });
     netAsk('인적자원', function(r){ pjNewPicker('pkPho',   r, '포토/감독', null, 'pho');
                                    pjNewPicker('pkBrand', r, '브랜드',    null, 'brand'); });
-    netAsk('업체',     function(r){ pjNewPicker('pkLoc',   r, null, '로케이션', 'locs'); });
+    netAsk('업체',     function(r){
+      /* 🔴 로케이션은 «회차 안»에서 고른다 — 따로 고르는 칸을 두면 두 군데가 되어 어긋난다(§1) */
+      PJ_LOCS = netPick(r, null, '로케이션');
+      var dl = document.getElementById('locList');
+      if(dl) dl.innerHTML = PJ_LOCS.map(function(x){ return '<option>' + pjEsc(x.name) + '</option>'; }).join('');
+      pjDaysDraw();
+    });
     netAsk('인적자원', function(r){ pjNewPicker('pkPeople', r, null, null, 'people'); });
     pjNewName();
   }
@@ -1985,7 +2103,8 @@
       /* 🔴 여러 명·여러 곳을 그대로 보낸다. 포토그래퍼(대표 한 명)도 참여인원에 같이 넣는다 —
          노션에는 「포토그래퍼」 칸이 따로 없고 「참여 인력」 하나다(2026-08-22 대표 확정). */
       people:    ids([PJ_NEW.pho].concat(PJ_NEW.people || [])),
-      locations: ids((PJ_NEW.locs || []).concat([PJ_NEW.loc]))
+      /* 🔴 로케이션은 «회차에서» 모은다 — 따로 적어두면 두 군데가 되어 어긋난다(§1) */
+      locations: ids((PJ_NEW.days || []).map(function(d){ return { id:d.locId, name:d.loc }; }))
     };
     askCount(base + '?action=projCreate'
              + '&t='    + encodeURIComponent(u.cred)
@@ -2009,7 +2128,9 @@
       client: (PJ_NEW.cli   && PJ_NEW.cli.name)   || '',
       mgr:    PJ_NEW.mgr || '',
       photo:  (PJ_NEW.pho   && PJ_NEW.pho.name)   || '',
-      brand:  (PJ_NEW.brand && PJ_NEW.brand.name) || ''
+      brand:  (PJ_NEW.brand && PJ_NEW.brand.name) || '',
+      /* 📅 회차 — 시트 「회차」 탭에 저장된다 (2026-08-26 대표 확정 ⓑ) */
+      days:   (PJ_NEW.days || []).filter(function(d){ return d.date || d.loc; })
     };
 
     var old = btn.textContent;
@@ -2076,6 +2197,7 @@
       +   '<div class="pane"><div class="ph">진행 · 지금 할 일</div>'
       +     '<div class="pb" id="pjLeft"><p class="foot" style="margin:0">불러오는 중…</p></div></div>'
       +   '<div class="pane"><div class="ph">쌓인 정보 · 바로가기</div><div class="pb">'
+      +     '<div id="pjDays"></div>'
       +     '<div id="pjChk"><p class="foot" style="margin:0">📋 확인 중…</p></div>'
       +     pjLinks(proj, isOwner, isMgr)
       +     '<p class="fn">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.'
@@ -2086,6 +2208,7 @@
       +   '</div></div>'
       + '</div>';
     document.getElementById('pjOneBody').innerHTML = h;
+    pjDaysShow(proj);                    /* 📅 회차별로 보여준다 (2026-08-26 대표 확정 ⓑ) */
     pjCheck(proj);                       /* 🔴 1차 정보가 뭐가 빠졌나 물어본다 */
     /* 🔴 2026-08-21 고침 ② — 등급을 «이 화면에서도» 물어본다.
        전에는 목록 화면(pjLoad)에서만 등급을 받아왔다. 그래서 프로젝트 주소(#p/이름)를
