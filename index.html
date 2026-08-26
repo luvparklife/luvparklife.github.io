@@ -2634,6 +2634,7 @@
         저장본에서 빠져 원래 자리로 돌아온다 — 조용히 사라지지 않는다. */
   (function(){
     var LKEY = 'paHubLayout';   /* 🔴 바깥의 KEY(로그인 저장용)와 헷갈리지 않게 이름을 다르게 둔다 */
+    var RKEY = 'paHubLayoutReset';  /* 「되돌려 달라」는 뜻을 로그인 때까지 들고 있는 쪽지 (2026-08-26) */
     var FIXED = ['daily','team','adm','etc'];   /* HTML 에 박혀 있는 그룹 */
     var editing = false, drag = null, line = null;
 
@@ -2723,6 +2724,26 @@
         });
     }
 
+    /* 🔴 2026-08-26 마지막 안전망 — 배치를 적용했더니 «눈에 보이는 카드»가 거의 없으면
+       그건 배치가 아니라 «사고»다. 그럴 땐 배치를 무시하고 카드를 원래 자리로 돌린다.
+       [왜] 대표 화면에서 카드가 정산앱 하나만 남아 **앱에 들어갈 길이 통째로 사라졌다**.
+            그 상태에서는 「✥ 배치 바꾸기 → ↩ 원래대로」조차 찾기 어렵다.
+       🔴 프로젝트 화면(#p)에서는 홈 카드가 «원래» 다 숨겨져 있으므로 재지 않는다 —
+          안 그러면 멀쩡한 배치를 사고로 오해한다(§3-2-D 거짓 경보). */
+    function guardVisible(){
+      if (String(location.hash || '').indexOf('#p') === 0) return;
+      var vis = Array.prototype.filter.call(document.querySelectorAll('a.card'), function(c){
+        return c.offsetParent !== null && !c.closest('.pjview'); }).length;
+      if (vis >= 2) return;
+      Array.prototype.slice.call(document.querySelectorAll('.group[data-gid] a.card'))
+        .filter(function(c){ return !c.closest('.pjview'); })
+        .forEach(function(c){
+          var home = c.getAttribute('data-home');
+          var g = home ? document.querySelector('.group[data-gid="' + home + '"]') : null;
+          if (g){ g.removeAttribute('data-removed'); g.appendChild(c); }
+        });
+    }
+
     function apply(data){
       markHome();
       if (!data) { paint(); rescueCards(); return; }
@@ -2771,6 +2792,8 @@
         });
       });
       rescueCards();     /* 🔴 감춰진 그룹에 갇힌 카드를 제자리로 (2026-08-26) */
+      paint();
+      guardVisible();    /* 🔴 그래도 카드가 안 보이면 배치를 통째로 무시한다 */
       paint();
     }
 
@@ -2842,10 +2865,18 @@
          (「✥ 배치 바꾸기 → ↩ 원래대로」와 같은 일인데, 카드가 다 사라진 상태에서도 된다) */
       if (location.search.indexOf('layoutreset=1') >= 0){
         try { localStorage.removeItem(LKEY); } catch(e){}
+        /* 🔴 2026-08-26 — 배치는 «두 군데»에 있다: 이 브라우저 + 장비앱 서버(폰과 같이 쓰라고).
+           서버 것은 «로그인해야» 지울 수 있는데, 대표는 로그인 안 된 채로 이 주소를 여셨다.
+           그러면 브라우저 것만 지워지고, 로그인하는 순간 서버에서 «망가진 배치»를 다시 받아온다.
+           → 되돌리라는 뜻을 «적어 두었다가», 로그인되는 순간 서버 것도 지운다. */
+        try { localStorage.setItem(RKEY, '1'); } catch(e){}
         markHome();
         var _b = srvBase(), _t = cred();
         if (_b && _t){
-          try { fetch(_b + '?action=hubLayoutSet&t=' + encodeURIComponent(_t) + '&d='); } catch(e){}
+          try {
+            fetch(_b + '?action=hubLayoutSet&t=' + encodeURIComponent(_t) + '&d=');
+            localStorage.removeItem(RKEY);      /* 지금 지웠으니 적어둘 것 없다 */
+          } catch(e){}
         }
         paint();
         return;                      /* 저장본을 «불러오지 않는다» = 처음 상태 */
@@ -2859,6 +2890,20 @@
     window.hubPullLayout = function(){
       if (pulled || !cred()) return;
       pulled = true;
+      /* 🔴 되돌리라는 쪽지가 있으면, 서버 배치를 «가져오지 말고 지운다» (2026-08-26) */
+      var want = null;
+      try { want = localStorage.getItem(RKEY); } catch(e){}
+      if (want){
+        var b = srvBase(), tk = cred();
+        try { localStorage.removeItem(LKEY); } catch(e){}
+        if (b && tk){
+          fetch(b + '?action=hubLayoutSet&t=' + encodeURIComponent(tk) + '&d=')
+            .then(function(){ try{ localStorage.removeItem(RKEY); }catch(e){} })
+            .catch(function(){});
+        }
+        markHome(); rescueCards(); paint();
+        return;
+      }
       srvGet(function(m){
         if (!m) return;
         apply(m);
