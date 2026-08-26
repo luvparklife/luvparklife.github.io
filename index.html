@@ -1954,32 +1954,38 @@
       +   '<datalist id="locList"></datalist></div>'
       + '<div class="nf"><label>참여 인원 <span class="opt">— 여러 명이면 계속 고르세요</span></label>'
       +   '<div id="pkPeople">불러오는 중…</div><div class="chips" id="chPeople"></div></div>'
-      + '<div class="nf"><label>이 촬영을 뭐라고 부르시겠어요? <i>*</i></label>'
-      +   '<input id="nCall" placeholder="예: 킵어스위어드 · 김실장건" autocomplete="off">'
-      +   '<div class="hint">거래처를 고르면 저절로 들어옵니다. <b>고쳐도 됩니다.</b></div></div>'
+      + '<div class="nf"><label>프로젝트명 <i>*</i> <span class="opt">— 실제로 부르는 이름</span></label>'
+      +   '<input id="nCall" placeholder="예: lalala 26FW · Lisa Press" autocomplete="off">'
+      +   '<div class="hint">🔴 <b>실제로 부르는 이름</b>입니다 — 노션 「프로젝트명」 칸에 그대로 저장됩니다.<br>'
+      +   '아래 <b>폴더명</b>은 여기서 만들어지지만 <b>따로 고칠 수 있습니다</b>.</div></div>'
       + '<div class="namebox"><div class="t">프로젝트 이름</div>'
       +   '<input id="nName" spellcheck="false">'
       +   '<div class="hint">🔴 이 이름이 <b>드라이브 폴더 이름</b>이자 '
-      +   '<b>모든 앱이 서로를 알아보는 열쇠</b>입니다.</div></div>'
+      +   '<b>모든 앱이 서로를 알아보는 열쇠</b>입니다.<br>'
+      +   '🔴 <b>짧게 다듬으셔도 됩니다</b> — 예: 프로젝트명이 <b>lalala 26FW</b> 라면 폴더명은 '
+      +   '<b>260910_lalala_킷튼프로덕션</b> 처럼 <b>26FW 를 빼도</b> 됩니다.</div></div>'
       /* 🔴 2026-08-22 대표 지시: *"프로젝트 이름 양식 설명 밑에 적어줘.
             다른사람이 만들어도 보고 같은 양식으로 쓰게."*
          🔴 규칙을 여기서 «새로 만들지» 않았다 — 회사 이름 규칙(CLAUDE.md §4)을 그대로 옮긴 것이다. */
       + '<div class="rulebox">'
       +   '<div class="rt">📐 이름 양식 — 누가 만들어도 이대로</div>'
-      +   '<div class="rex"><b>260910</b>_<b>킵어스위어드</b></div>'
+      +   '<div class="rex"><b>260910</b>_<b>lalala</b>_<b>킷튼프로덕션</b></div>'
       +   '<table class="rtb">'
-      +     '<tr><td>앞 6자리</td><td><b>촬영 첫날</b> · 260910 = 2026년 9월 10일'
+      +     '<tr><td>① 날짜</td><td><b>촬영 첫날</b> · 260910 = 2026년 9월 10일'
       +       '<div class="rs">위 날짜 칸을 고르면 저절로 들어옵니다</div></td></tr>'
+      +     '<tr><td>② 가운데</td><td><b>브랜드</b> · 없으면 <b>프로젝트명</b>'
+      +       '<div class="rs">브랜드를 고르면 저절로 들어옵니다. '
+      +       '프로젝트명이 <b>lalala 26FW</b> 라면 <b>lalala</b> 만 남겨도 됩니다</div></td></tr>'
+      +     '<tr><td>③ 뒤</td><td><b>거래처</b>'
+      +       '<div class="rs">거래처를 고르면 저절로 들어옵니다</div></td></tr>'
       +     '<tr><td>사이</td><td>밑줄 <b>_</b> 하나 — 띄어쓰기 대신</td></tr>'
-      +     '<tr><td>뒤</td><td><b>이 촬영을 부르는 이름</b> · 보통 <b>거래처</b>'
-      +       '<div class="rs">거래처를 모르면 담당자·브랜드·장소로 '
-      +       '(예: 김실장건 · 버버리 · 청담스튜디오)</div></td></tr>'
       +   '</table>'
       +   '<div class="rbad">🚫 <b>쓰지 않는 것</b> — 띄어쓰기 · '
       +     '<b>최종 · 진짜최종 · v2 · 복사본 · 무제</b> · 20260910(8자리)</div>'
-      +   '<div class="rbad">🔴 <b>만든 뒤에 이름을 직접 고치지 마세요</b> — '
-      +     '이름은 드라이브·시트·앱이 서로를 찾는 <b>열쇠</b>라, '
-      +     '한 곳만 바꾸면 나머지가 서로를 못 찾습니다. 고칠 일이 생기면 알려주세요.</div>'
+      +   '<div class="rbad">🔴 <b>만든 뒤에는 시트·드라이브에서 직접 고치지 마세요</b> — '
+      +     '이름은 서로를 찾는 <b>열쇠</b>라 한 곳만 바꾸면 나머지가 못 찾습니다.<br>'
+      +     '고칠 일이 생기면 프로젝트를 열고 <b>✏️ 이름</b>을 쓰세요 — '
+      +     '시트·회차·소싱·견적·수리·매입·드라이브 폴더와 <b>그 안 파일 이름</b>·<b>노션</b>까지 한 번에 바뀝니다.</div>'
       + '</div>'
       + '<div id="nWill" class="willbox"></div>'
       + '<button class="mkbtn" id="nMk" disabled>만들기</button>'
@@ -2012,6 +2018,9 @@
     document.getElementById('nFrom').addEventListener('input', pjNewName);
     var call = document.getElementById('nCall');
     call.addEventListener('input', function(){ this.dataset.touched='1'; pjNewName(); });
+    /* 🔴 폴더명을 직접 고치면 그때부터 자동 제안을 멈춘다 (2026-08-26) */
+    var nmEl = document.getElementById('nName');
+    if(nmEl) nmEl.addEventListener('input', function(){ this.dataset.touched='1'; });
     var da = document.getElementById('nDayAdd');
     if(da) da.onclick = pjDayAdd;
     pjDaysDraw();                       /* 적어둔 회차가 있으면 바로 보인다 */
@@ -2455,12 +2464,23 @@
     var c = document.getElementById('nCall');
     if(c && !c.dataset.touched && name) c.value = name;
   }
+  /* 🔴 2026-08-26 대표 확정 — 폴더명 양식 = 날짜_브랜드또는프로젝트명_거래처
+     대표 원문: *"이름 양식이 다른데 날짜_브랜드or프로젝트명_거래처로 바꿔줘."*
+     🔴 «제안»일 뿐이다 — 대표가 폴더명 칸을 직접 고치면 그것을 그대로 쓴다
+        (`lalala 26FW` 에서 `26FW` 를 빼는 것 같은 일은 사람만 판단할 수 있다). */
   function pjNewName(){
     var d = document.getElementById('nFrom').value;
-    var call = document.getElementById('nCall').value.trim();
+    var call = document.getElementById('nCall').value.trim();     /* 실제 프로젝트명 */
     var ymd = d ? d.slice(2).replace(/-/g,'') : '';
-    document.getElementById('nName').value = [ymd, call].filter(function(x){return x;}).join('_');
-    document.getElementById('nMk').disabled = !(ymd && call);
+    var brand = (PJ_NEW && PJ_NEW.brand && PJ_NEW.brand.name) ? PJ_NEW.brand.name.trim() : '';
+    var cli   = (PJ_NEW && PJ_NEW.cli   && PJ_NEW.cli.name)   ? PJ_NEW.cli.name.trim()   : '';
+    var mid   = brand || call;                                    /* 브랜드가 있으면 브랜드 */
+    var nameEl = document.getElementById('nName');
+    /* 🔴 대표가 손으로 고쳤으면 덮어쓰지 않는다 */
+    if(!nameEl.dataset.touched){
+      nameEl.value = [ymd, mid, cli].filter(function(x){return x;}).join('_');
+    }
+    document.getElementById('nMk').disabled = !(ymd && nameEl.value.trim());
     var w = document.getElementById('nWill');
     if(w) w.innerHTML = '<b>만들면 이렇게 됩니다</b><br>'
       + '① 「프로젝트목록」 시트에 줄 — 번호·이름·촬영일·거래처·담당자·포토·브랜드<br>'
@@ -2522,7 +2542,8 @@
     }
 
     var info = {
-      name:   name,
+      name:   name,                                              /* 폴더명 = 열쇠 */
+      title:  (document.getElementById('nCall').value || '').trim(),  /* 실제 프로젝트명 */
       date:   document.getElementById('nFrom').value || '',
       client: (PJ_NEW.cli   && PJ_NEW.cli.name)   || '',
       mgr:    PJ_NEW.mgr || '',
