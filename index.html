@@ -2691,8 +2691,41 @@
       return d;
     }
 
+    /* 🔴 2026-08-26 — 카드가 «원래 어느 그룹»에 있었는지 한 번만 적어 둔다.
+       이게 있어야, 배치가 꼬여 감춰진 그룹에 갇힌 카드를 제자리로 돌릴 수 있다. */
+    function markHome(){
+      Array.prototype.slice.call(document.querySelectorAll('.group[data-gid] a.card'))
+        .filter(function(c){ return !c.closest('.pjview'); })
+        .forEach(function(c){
+          if (!c.getAttribute('data-home')){
+            var g = c.closest('.group[data-gid]');
+            if (g) c.setAttribute('data-home', g.getAttribute('data-gid'));
+          }
+        });
+    }
+
+    /* 🔴 2026-08-26 — 감춰진 그룹 안에 갇힌 카드를 구해 낸다.
+       [무엇이 일어났나] 저장된 배치가 그룹을 감추면 «그 안의 카드까지 통째로» 사라진다.
+         실제로 대표 화면에서 「프로젝트」·「현장 장비앱」 카드가 없어져
+         **앱에 들어갈 방법 자체가 사라졌다**(2026-08-26).
+       「그룹을 지우면 카드는 기타로 간다」는 규칙이 «지울 때»만 돌고
+       «저장본을 불러올 때»는 안 돌았던 것이다. 여기서 한 번 더 챙긴다.
+       🔴 「기타」는 대표 전용이라 손님에겐 안 보인다 → 원래 그룹을 «먼저» 시도한다. */
+    function rescueCards(){
+      Array.prototype.slice.call(document.querySelectorAll('.group[data-removed] a.card'))
+        .filter(function(c){ return !c.closest('.pjview'); })
+        .forEach(function(c){
+          var home = c.getAttribute('data-home');
+          var g = home ? document.querySelector('.group[data-gid="' + home + '"]:not([data-removed])') : null;
+          if (!g) g = document.querySelector('.group[data-gid="team"]:not([data-removed])');
+          if (!g) g = document.querySelector('.group[data-gid="etc"]');
+          if (g) g.appendChild(c);
+        });
+    }
+
     function apply(data){
-      if (!data) { paint(); return; }
+      markHome();
+      if (!data) { paint(); rescueCards(); return; }
       var map, groups;
       if (data.v === 2){ map = data.layout || {}; groups = data.groups || null; }
       else { map = data; groups = null; }        /* 옛 저장본 — 그룹 정보가 없다 */
@@ -2737,6 +2770,7 @@
           if (c){ g.appendChild(c); delete all[t]; }   /* 저장본에 없는 카드는 손대지 않는다 */
         });
       });
+      rescueCards();     /* 🔴 감춰진 그룹에 갇힌 카드를 제자리로 (2026-08-26) */
       paint();
     }
 
@@ -2803,6 +2837,19 @@
       srvSet(out);
     }
     function restore(){
+      /* 🔴 2026-08-26 — 배치가 꼬여 카드가 사라졌을 때 «주소 하나»로 풀 수 있게.
+         luvparklife.github.io/?layoutreset=1 로 들어오면 저장된 배치를 버린다.
+         (「✥ 배치 바꾸기 → ↩ 원래대로」와 같은 일인데, 카드가 다 사라진 상태에서도 된다) */
+      if (location.search.indexOf('layoutreset=1') >= 0){
+        try { localStorage.removeItem(LKEY); } catch(e){}
+        markHome();
+        var _b = srvBase(), _t = cred();
+        if (_b && _t){
+          try { fetch(_b + '?action=hubLayoutSet&t=' + encodeURIComponent(_t) + '&d='); } catch(e){}
+        }
+        paint();
+        return;                      /* 저장본을 «불러오지 않는다» = 처음 상태 */
+      }
       var raw = null;
       try { raw = localStorage.getItem(LKEY); } catch(e){}
       if (raw){ try { apply(JSON.parse(raw)); } catch(e){ paint(); } }
