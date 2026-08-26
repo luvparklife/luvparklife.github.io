@@ -290,6 +290,12 @@
     .npt .npc{font-weight:400; color:var(--faint); font-size:11px; margin-left:4px}
     .npg{display:grid; gap:8px}
     @media(min-width:520px){ .npg{grid-template-columns:1fr 1fr} }
+    .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+    .chips .chip{display:inline-flex;align-items:center;gap:5px;background:var(--accent-soft,#eaf0ff);
+      color:var(--accent,#3b6cff);border-radius:999px;padding:3px 6px 3px 11px;font-size:12.5px;font-weight:700}
+    .chips .chip button{border:none;background:none;color:inherit;font-size:15px;line-height:1;
+      cursor:pointer;padding:0 4px;opacity:.7}
+    .chips .chip button:hover{opacity:1}
     .npf label{display:block; font-size:11px; font-weight:700; color:var(--sub); margin-bottom:3px}
     .npf input[type=text],.npf input[type=date],.npf input[type=number],
     .npf input[type=email],.npf input[type=url],.npf input[type=tel]{
@@ -1382,6 +1388,61 @@
 
   /* 「＋ 새 프로젝트」 — 🔴 2026-08-22 생애주기 화면 대신 «여기서» 만든다.
      옛 화면은 은퇴 예정이고 백업해 뒀다(~/.claude/backups/생애주기화면_260822_은퇴전). */
+  /* ══════════════════════════════════════════════════════════
+     ✍️ 적다 만 것 지키기 (2026-08-26 대표 지시)
+     대표 원문: *"만들어지지 않았거나그러면 데이터가 날라가는게 아니라
+                  그전에 있던 데이터가 그대로 있어서 두번 할일 없게 하고싶어.
+                  나갔다 들어와도 그렇게한다면 … 로그아웃했을때는 안되도 돼."*
+     🔴 브라우저 안에만 적어둔다 — 서버를 안 거치므로 느려지지 않는다.
+     🔴 만들기가 «성공하면» 지운다. 안 지우면 다음 프로젝트에 옛 값이 남는다.
+     🔴 로그아웃·다른 기기에서는 안 살아난다(대표 확정 — 그건 안 해도 된다).
+     🔴 한글은 조합해서 만드는 글자라 «한 글자마다» 저장하면 입력이 끊긴다.
+        그래서 손을 멈추고 0.5초 뒤에 저장한다(2026-08-22에 겪은 함정). */
+  /* 고른 것을 «칩»으로 보여준다 — × 로 뺀다 (2026-08-26) */
+  function pjChips(key){
+    var box = document.getElementById(key === 'locs' ? 'chLoc' : 'chPeople');
+    if(!box || !PJ_NEW) return;
+    var arr = PJ_NEW[key] || [];
+    if(!arr.length){ box.innerHTML = ''; return; }
+    box.innerHTML = arr.map(function(x, i){
+      return '<span class="chip">' + pjEsc(x.name)
+           + '<button type="button" data-k="' + key + '" data-i="' + i + '" title="빼기">×</button></span>';
+    }).join('');
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target;
+    if(!b || b.tagName !== 'BUTTON' || !b.getAttribute('data-k')) return;
+    var k = b.getAttribute('data-k'), i = parseInt(b.getAttribute('data-i'), 10);
+    if(!PJ_NEW || !PJ_NEW[k]) return;
+    e.preventDefault();
+    PJ_NEW[k].splice(i, 1);
+    pjChips(k); pjDraftTouch();
+  });
+
+  var PJ_DRAFT = 'pa_pjdraft_v1', PJ_DT = null;
+  function pjDraftVal(id){ var e = document.getElementById(id); return e ? e.value : ''; }
+  function pjDraftSave(){
+    if(!PJ_NEW) return;
+    try{
+      localStorage.setItem(PJ_DRAFT, JSON.stringify({
+        from: pjDraftVal('nFrom'), to: pjDraftVal('nTo'),
+        hunt: pjDraftVal('nHunt'), call: pjDraftVal('nCall'),
+        cli: PJ_NEW.cli, mgr: PJ_NEW.mgr, pho: PJ_NEW.pho,
+        brand: PJ_NEW.brand, loc: PJ_NEW.loc,
+        locs: PJ_NEW.locs, people: PJ_NEW.people, at: Date.now()
+      }));
+    }catch(e){}
+  }
+  function pjDraftTouch(){ if(PJ_DT) clearTimeout(PJ_DT); PJ_DT = setTimeout(pjDraftSave, 500); }
+  function pjDraftClear(){ try{ localStorage.removeItem(PJ_DRAFT); }catch(e){} if(PJ_DT) clearTimeout(PJ_DT); }
+  function pjDraftRead(){
+    try{ return JSON.parse(localStorage.getItem(PJ_DRAFT) || 'null'); }catch(e){ return null; }
+  }
+  function pjDraftReset(){
+    if(!confirm('적어두신 것을 버리고 처음부터 할까요?')) return;
+    pjDraftClear(); pjNewOpen();
+  }
+
   function pjWireNew(){
     var b = document.getElementById('pjNew'); if(!b) return;
     b.onclick = function(e){ e.preventDefault(); pjNewOpen(); };
@@ -1389,7 +1450,14 @@
   var PJ_NEW = null;
   function pjNewOpen(){
     var box = document.getElementById('pjListBody');
-    PJ_NEW = { cli:null, mgr:'', pho:null, brand:null, loc:null };
+    PJ_NEW = { cli:null, mgr:'', pho:null, brand:null, loc:null, locs:[], people:[] };
+    /* 🔴 적다 만 것이 있으면 되살린다 — 나갔다 들어와도 그대로 */
+    var DR = pjDraftRead();
+    if(DR){
+      PJ_NEW.cli = DR.cli || null; PJ_NEW.mgr = DR.mgr || '';
+      PJ_NEW.pho = DR.pho || null; PJ_NEW.brand = DR.brand || null; PJ_NEW.loc = DR.loc || null;
+      PJ_NEW.locs = DR.locs || []; PJ_NEW.people = DR.people || [];
+    }
     box.innerHTML =
       '<div class="pjnew">'
       + '<div class="gt" style="font-size:15px;margin-bottom:4px">➕ 새 프로젝트</div>'
@@ -1407,8 +1475,10 @@
       +   '<div id="pkPho">불러오는 중…</div></div>'
       + '<div class="nf"><label>브랜드 <span class="opt">— 치면 노션 「브랜드」 후보</span></label>'
       +   '<div id="pkBrand">불러오는 중…</div></div>'
-      + '<div class="nf"><label>로케이션 <span class="opt">— 치면 노션 「로케이션」 후보</span></label>'
-      +   '<div id="pkLoc">불러오는 중…</div></div>'
+      + '<div class="nf"><label>로케이션 <span class="opt">— 여러 곳이면 계속 고르세요 (회차마다 달라도 됩니다)</span></label>'
+      +   '<div id="pkLoc">불러오는 중…</div><div class="chips" id="chLoc"></div></div>'
+      + '<div class="nf"><label>참여 인원 <span class="opt">— 여러 명이면 계속 고르세요</span></label>'
+      +   '<div id="pkPeople">불러오는 중…</div><div class="chips" id="chPeople"></div></div>'
       + '<div class="nf"><label>이 촬영을 뭐라고 부르시겠어요? <i>*</i></label>'
       +   '<input id="nCall" placeholder="예: 킵어스위어드 · 김실장건" autocomplete="off">'
       +   '<div class="hint">거래처를 고르면 저절로 들어옵니다. <b>고쳐도 됩니다.</b></div></div>'
@@ -1441,6 +1511,29 @@
       + '<p class="foot" style="text-align:center;margin-top:8px">'
       +   '<a href="#" onclick="pjLoad(false);return false;">‹ 목록으로 돌아가기</a></p>'
       + '</div>';
+    /* 🔴 적어둔 날짜·이름을 되살린다 (2026-08-26) */
+    if(DR){
+      ['nFrom','nTo','nHunt','nCall'].forEach(function(id, i){
+        var v = [DR.from, DR.to, DR.hunt, DR.call][i];
+        var e = document.getElementById(id);
+        if(e && v){ e.value = v; if(id === 'nCall') e.dataset.touched = '1'; }
+      });
+      var mb = document.getElementById('pkMgr');
+      var banner = document.createElement('div');
+      banner.className = 'note';
+      banner.style.cssText = 'background:#fff6e6;border:1px solid #f2c56b;color:#7a5200;'
+        + 'border-radius:9px;padding:9px 11px;font-size:12.5px;margin:0 0 12px';
+      banner.innerHTML = '✍️ <b>적다 만 것을 되살렸습니다.</b> 이어서 하시면 됩니다.'
+        + ' <a href="#" id="nReset" style="margin-left:6px">↩ 버리고 처음부터</a>';
+      var box0 = document.querySelector('.pjnew');
+      if(box0) box0.insertBefore(banner, box0.children[2] || null);
+      var rb = document.getElementById('nReset');
+      if(rb) rb.onclick = function(e){ e.preventDefault(); pjDraftReset(); };
+    }
+    /* 🔴 폼 안 아무 칸이나 고치면 적어둔다 — 손 멈추고 0.5초 뒤(한글이 안 끊기게) */
+    var pjnew = document.querySelector('.pjnew');
+    if(pjnew) pjnew.addEventListener('input', pjDraftTouch);
+
     document.getElementById('nFrom').addEventListener('input', pjNewName);
     var call = document.getElementById('nCall');
     call.addEventListener('input', function(){ this.dataset.touched='1'; pjNewName(); });
@@ -1449,7 +1542,8 @@
                                    pjNewMgrPicker(r); });
     netAsk('인적자원', function(r){ pjNewPicker('pkPho',   r, '포토/감독', null, 'pho');
                                    pjNewPicker('pkBrand', r, '브랜드',    null, 'brand'); });
-    netAsk('업체',     function(r){ pjNewPicker('pkLoc',   r, null, '로케이션', 'loc'); });
+    netAsk('업체',     function(r){ pjNewPicker('pkLoc',   r, null, '로케이션', 'locs'); });
+    netAsk('인적자원', function(r){ pjNewPicker('pkPeople', r, null, null, 'people'); });
     pjNewName();
   }
   /* 노션에 «새로» 추가한다 — 없는 이름을 쳤을 때만 부른다 */
@@ -1554,6 +1648,9 @@
     var inp  = box.querySelector('.cboin');
     var menu = box.querySelector('.cbomenu');
     var st   = box.querySelector('.cbost');
+    /* 🔴 적어둔 것이 있으면 칸에 되살린다 (2026-08-26) */
+    if(key === 'locs' || key === 'people'){ pjChips(key); }
+    else if(PJ_NEW && PJ_NEW[key] && PJ_NEW[key].name) inp.value = PJ_NEW[key].name;
     if(offline) st.innerHTML = '<span class="warn">🔑 노션을 못 불렀습니다 — 쳐서 넣으시면 그대로 저장됩니다.</span>';
 
     function hit(v){
@@ -1621,10 +1718,25 @@
       }).join('');
       menu.hidden = false;
     }
+    /* 🔴 2026-08-26 대표 지시 — 로케이션·참여인원은 «여러 개»다.
+       대표 원문: *"네트워크 DB에 다수로 등록이 가능하게 해줘야해. 그리고 참여인원도 등록해줘."*
+       고르면 칸을 비우고 «칩»으로 쌓는다. 같은 것을 두 번 고르면 안 쌓는다. */
     function commit(v, h){
+      if(key === 'locs' || key === 'people'){
+        if(!v) return;
+        var one = { id: h ? h.id : '', name: h ? h.name : v };
+        var arr = PJ_NEW[key] || (PJ_NEW[key] = []);
+        var dup = arr.some(function(x){ return (x.id && x.id === one.id) || x.name === one.name; });
+        if(!dup) arr.push(one);
+        inp.value = '';                  /* 다음 것을 바로 고를 수 있게 */
+        pjChips(key);
+        pjNewName(); pjDraftTouch();
+        return;
+      }
       PJ_NEW[key] = v ? { id: h ? h.id : '', name: h ? h.name : v } : null;
       if(key === 'cli') pjNewFromCli(h, v);
       pjNewName();
+      pjDraftTouch();                    /* 고른 것도 적어둔다 */
     }
     inp.addEventListener('input', function(){
       var v = this.value.trim();
@@ -1853,6 +1965,15 @@
      🔴 makeFolder 를 «안 보낸다» — 폴더는 장비앱이 템플릿을 복사해 만든다(2026-08-25 대표 확정).
         정산앱은 기본이 「폴더 안 만듦」이라 이대로가 맞다. 보내면 빈 폴더가 하나 더 생긴다.
      🔴 못 불러도 «막지 않는다» — 시트 줄과 폴더는 이미 만들어졌으니, 노션만 안 됐다고 알린다. */
+  /* 고른 것들에서 노션 id 만 뽑는다 — 직접 쳐서 넣은 것(id 없음)은 빠진다 */
+  function ids(arr){
+    var out = [], seen = {};
+    (arr || []).forEach(function(x){
+      if(!x || !x.id || seen[x.id]) return;
+      seen[x.id] = 1; out.push(x.id);
+    });
+    return out;
+  }
   function pjNewNotion(name, done){
     var base = netBase(), u = loadUser();
     if(!base || !u || !u.cred || !credLive(u)){ done(null); return; }
@@ -1861,8 +1982,10 @@
       brand:     (PJ_NEW.brand && PJ_NEW.brand.name) || '',
       dateStart: document.getElementById('nFrom').value || '',
       clientId:  (PJ_NEW.cli && PJ_NEW.cli.id) || '',
-      people:    (PJ_NEW.pho && PJ_NEW.pho.id) ? [PJ_NEW.pho.id] : [],
-      locations: (PJ_NEW.loc && PJ_NEW.loc.id) ? [PJ_NEW.loc.id] : []
+      /* 🔴 여러 명·여러 곳을 그대로 보낸다. 포토그래퍼(대표 한 명)도 참여인원에 같이 넣는다 —
+         노션에는 「포토그래퍼」 칸이 따로 없고 「참여 인력」 하나다(2026-08-22 대표 확정). */
+      people:    ids([PJ_NEW.pho].concat(PJ_NEW.people || [])),
+      locations: ids((PJ_NEW.locs || []).concat([PJ_NEW.loc]))
     };
     askCount(base + '?action=projCreate'
              + '&t='    + encodeURIComponent(u.cred)
@@ -1923,6 +2046,7 @@
           if(d.folder) msg += '\n📂 폴더: ' + d.folder;
           if(nd && nd.ok && nd.url) msg += '\n📝 노션: ' + nd.url;
           alert(msg);
+          pjDraftClear();                       /* 🔴 성공했으니 적어둔 것을 지운다 */
           PJ_CACHE = null;                      /* 목록을 다시 읽게 */
           location.hash = '#p/' + encodeURIComponent(d.name);
         });
