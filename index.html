@@ -2656,11 +2656,16 @@
     pjAdmin('check', name, '', function(c){
       if(!c.ok){ alert('🔴 ' + (c.error || '확인하지 못했습니다.')); return; }
       if(c.blocked){ alert('🔴 지울 수 없습니다.\n\n' + c.why); return; }
+      var lk = (c.linked || []);
       var msg = '🗑 「' + name + '」 를 지울까요?\n\n'
         + '지워지는 것\n'
         + ' · 프로젝트목록 1줄\n'
         + (c.days ? ' · 회차 ' + c.days + '줄\n' : '')
         + (c.folder ? ' · 드라이브 폴더 → 휴지통 (30일 안에 되살릴 수 있습니다)\n' : '')
+        + '\n🔗 이 이름이 «적혀 있는» 다른 자리\n'
+        + (lk.length
+            ? lk.map(function(x){ return ' · ' + x.tab + ' ' + x.rows + '줄 (' + x.why + ') — 그대로 남습니다'; }).join('\n') + '\n'
+            : ' · 없습니다\n')
         + '\n안 건드리는 것\n · 노션 페이지 (필요하면 노션에서 직접 보관하세요)\n'
         + '\n확인하려면 프로젝트 이름을 그대로 쳐주세요.';
       var typed = prompt(msg, '');
@@ -2677,10 +2682,22 @@
 
   function pjRename(name){
     if(!name) return;
-    var to = prompt('✏️ 새 이름\n\n🔴 이 이름은 «모든 앱이 서로를 알아보는 열쇠»입니다.\n'
-      + '목록·회차·소싱시트·드라이브 폴더가 «같이» 바뀝니다.\n'
-      + '🔴 노션 페이지 제목은 안 바뀝니다 — 노션에서 직접 고쳐 주세요.\n\n'
-      + '양식: 260910_킵어스위어드', name);
+    /* 🔴 먼저 «어디에 적혀 있나»를 물어본다 — 그래야 무엇이 같이 바뀌는지 보여줄 수 있다 */
+    pjAdmin('check', name, '', function(c){
+      var lk = (c && c.linked) || [];
+      var to = prompt('✏️ 새 이름\n\n🔴 이 이름은 «모든 앱이 서로를 알아보는 열쇠»입니다.\n\n'
+        + '같이 바뀌는 곳\n · 프로젝트목록\n'
+        + ((c && c.days) ? ' · 회차 ' + c.days + '줄\n' : '')
+        + (lk.length ? lk.map(function(x){ return ' · ' + x.tab + ' ' + x.rows + '줄 (' + x.why + ')'; }).join('\n') + '\n' : '')
+        + ((c && c.folder) ? ' · 드라이브 폴더 이름\n' : '')
+        + '\n🔴 안 바뀌는 것\n · 노션 페이지 제목 (노션에서 직접)\n'
+        + ' · 이미 내보낸 PDF·공유파일\n\n'
+        + '양식: 260910_브랜드_거래처', name);
+      pjRenameGo(name, to);
+    });
+  }
+
+  function pjRenameGo(name, to){
     if(to === null) return;
     to = String(to).trim();
     if(!to || to === name) return;
