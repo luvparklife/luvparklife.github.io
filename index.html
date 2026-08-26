@@ -2634,8 +2634,12 @@
       PJ_NEW.mgr = m.value;
     }
     if(m && m.__status) m.__status();
-    var c = document.getElementById('nCall');
-    if(c && !c.dataset.touched && name) c.value = name;
+    /* 🔴 2026-08-26 — 여기서 「프로젝트명」 칸에 «거래처 이름»을 넣고 있었다.
+       그 칸이 예전엔 「이 촬영을 부르는 이름」이라 맞았지만,
+       지금은 «실제 프로젝트명»(lalala 26FW · Lisa Press)을 적는 자리다.
+       거래처를 고르면 폴더명에 저절로 들어가므로 여기서 넣을 이유가 없다.
+       (정보 고치기에서 `검사 26FW` 가 `키튼`으로 덮이는 것을 실측으로 잡았다) */
+    if(typeof pjNewName === 'function') pjNewName();   /* 폴더명 제안만 다시 만든다 */
   }
   /* 🔴 2026-08-26 대표 확정 — 폴더명 양식 = 날짜_브랜드또는프로젝트명_거래처
      대표 원문: *"이름 양식이 다른데 날짜_브랜드or프로젝트명_거래처로 바꿔줘."*
@@ -2649,8 +2653,8 @@
     var cli   = (PJ_NEW && PJ_NEW.cli   && PJ_NEW.cli.name)   ? PJ_NEW.cli.name.trim()   : '';
     var mid   = brand || call;                                    /* 브랜드가 있으면 브랜드 */
     var nameEl = document.getElementById('nName');
-    /* 🔴 대표가 손으로 고쳤으면 덮어쓰지 않는다 */
-    if(!nameEl.dataset.touched){
+    /* 🔴 대표가 손으로 고쳤으면 덮어쓰지 않는다. 고치는 중이면 이름은 «열쇠»라 아예 안 건드린다 */
+    if(!nameEl.dataset.touched && !PJ_EDIT){
       nameEl.value = [ymd, mid, cli].filter(function(x){return x;}).join('_');
     }
     document.getElementById('nMk').disabled = !(ymd && nameEl.value.trim());
@@ -2852,6 +2856,41 @@
      25초로는 자주 잘렸다(대표: *"못바꿨다고해. 답이 없습니다라고해"*).
      🔴 그리고 「답이 없다」와 「안 됐다」는 다르다 — 서버는 이미 끝냈을 수 있다.
         그러니 조회(check)는 짧게, 실제로 바꾸는 것은 «넉넉히» 준다. */
+  /* 🔴 2026-08-26 — 눌렀는지 «안 눌렸는지» 알 수 없던 것을 고친다.
+     서버에 물어보는 데 3~5초가 드는데 그 동안 화면이 그대로라,
+     대표는 안 눌린 줄 알고 있다가 «갑자기» 창이 떴다.
+     → 누르는 즉시 그 버튼을 「확인하는 중…」으로 바꾸고 다시 못 누르게 막는다. */
+  var PJ_BUSY = false;
+  function pjBusy(on, txt){
+    PJ_BUSY = !!on;
+    var qk = document.getElementById('pjQk');
+    if(!qk) return;
+    var links = qk.querySelectorAll('a');
+    for(var i=0;i<links.length;i++){
+      if(on){ links[i].style.pointerEvents = 'none'; links[i].style.opacity = '.45'; }
+      else  { links[i].style.pointerEvents = ''; links[i].style.opacity = ''; }
+    }
+    var m = document.getElementById('pjBusyMsg');
+    if(on){
+      if(!m){
+        m = document.createElement('div'); m.id = 'pjBusyMsg';
+        m.style.cssText = 'margin:8px 0 0;font-size:13px;color:var(--faint)';
+        qk.parentNode.insertBefore(m, qk.nextSibling);
+      }
+      var t0 = Date.now();
+      m.textContent = (txt || '확인하는 중…') + ' 0초';
+      if(window.__pjBusyT) clearInterval(window.__pjBusyT);
+      window.__pjBusyT = setInterval(function(){
+        var e = document.getElementById('pjBusyMsg');
+        if(!e){ clearInterval(window.__pjBusyT); return; }
+        e.textContent = (txt || '확인하는 중…') + ' ' + Math.round((Date.now()-t0)/1000) + '초';
+      }, 1000);
+    }else{
+      if(window.__pjBusyT) clearInterval(window.__pjBusyT);
+      if(m && m.parentNode) m.parentNode.removeChild(m);
+    }
+  }
+
   function pjAdmin(act, name, extra, done){
     var base = FIELD_APP + '?action=projAdmin&act=' + encodeURIComponent(act)
              + '&name=' + encodeURIComponent(name) + appTok();
@@ -2896,22 +2935,33 @@
         두 길을 섞으면 열쇠가 조용히 바뀌어 시스템이 갈린다. */
 
   function pjEdit(name){
-    if(!name) return;
-    var box = document.getElementById('pjListBody');
+    if(!name || PJ_BUSY) return;
+    pjBusy(true, '📋 정보 불러오는 중…');
     pjAdmin('info', name, '', function(c){
+      pjBusy(false);
       if(!c || !c.ok){
         alert('🔴 정보를 못 읽었습니다.\n\n' + ((c && c.error) || '답이 없습니다'));
         return;
       }
-      /* 폼을 열고 지금 값을 채운다.
-         🔴 PJ_EDIT 를 «먼저» 세운다 — 그래야 pjLoad/pjPaint 가 폼을 안 덮는다. */
-      PJ_EDIT = name;
-      if(String(location.hash || '').indexOf('#p') !== 0){
+      /* 🔴 2026-08-26 — 여기서 «#p 로 시작하나»를 보고 있었다.
+         그런데 프로젝트 «하나» 화면 주소는 `#pj/이름` 이라 그것도 «#p 로 시작»한다.
+         그래서 목록 화면으로 안 가고, 폼이 «숨겨진 칸»에 그려져
+         대표 눈엔 「눌러도 반응 없음」이 됐다(2026-08-26 대표 신고).
+         → 정확히 `#p` 인지 본다. 그리고 화면이 바뀐 «뒤에» 폼을 연다. */
+      if(location.hash !== '#p'){
+        PJ_EDIT = null;                    /* 라우팅이 정상으로 돌게 잠깐 푼다 */
         location.hash = '#p';
+        setTimeout(function(){ pjEditOpen(name, c); }, 150);
+      } else {
+        pjEditOpen(name, c);
       }
-      pjNewOpen();
-      setTimeout(function(){ pjEditFill(c); }, 60);
     });
+  }
+
+  function pjEditOpen(name, c){
+    PJ_EDIT = name;                        /* 🔴 폼을 열기 «직전»에 세운다 — 목록이 덮지 못하게 */
+    pjNewOpen();
+    setTimeout(function(){ pjEditFill(c); }, 60);
   }
 
   function pjEditFill(c){
@@ -2982,8 +3032,10 @@
   }
 
   function pjDelete(name){
-    if(!name) return;
+    if(!name || PJ_BUSY) return;
+    pjBusy(true, '🗑 무엇이 딸려 있나 확인하는 중…');
     pjAdmin('check', name, '', function(c){
+      pjBusy(false);
       if(!c.ok){ alert('🔴 ' + (c.error || '확인하지 못했습니다.')); return; }
       var deep = false;
       if(c.blocked){
@@ -3024,9 +3076,11 @@
   }
 
   function pjRename(name){
-    if(!name) return;
+    if(!name || PJ_BUSY) return;
+    pjBusy(true, '✏️ 어디에 적혀 있나 확인하는 중…');
     /* 🔴 먼저 «어디에 적혀 있나»를 물어본다 — 그래야 무엇이 같이 바뀌는지 보여줄 수 있다 */
     pjAdmin('check', name, '', function(c){
+      pjBusy(false);
       /* 🔴 2026-08-26 교차검증 — 조회가 실패해도 그대로 이름 프롬프트로 넘어갔다.
          그러면 대표는 이름을 다시 치고 또 실패한다(*"계속 같은 창이 뜨고"*). */
       if(!c || !c.ok){
