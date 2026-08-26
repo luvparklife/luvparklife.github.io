@@ -1834,8 +1834,7 @@
     if(w) w.innerHTML = '<b>만들면 이렇게 됩니다</b><br>'
       + '① 「프로젝트목록」 시트에 줄 — 번호·이름·촬영일·거래처·담당자·포토·브랜드<br>'
       + '② 드라이브 <b>프로젝트 폴더</b> (리소스·결과물 포함)<br>'
-      + '③ 노션 <b>DB_프로젝트_테스트</b> 페이지 — 거래처·참여인력·로케이션을 <b>연결</b>'
-      + ' <span style="color:#a3590f">(아직 안 붙었습니다 — ①②만 됩니다)</span>';
+      + '③ 노션 <b>DB_프로젝트_테스트</b> 페이지 — 거래처·참여인력·로케이션을 <b>연결</b>';
   }
   /* 🔴 2026-08-25 — 「만들기」를 실제로 붙였다.
      서버는 장비앱 Project.js 의 projMake_() 다. 새로 만든 것이 거의 없다 —
@@ -1845,6 +1844,29 @@
         그 앱을 다른 창이 만지는 중이라 겹치지 않게 미뤘다(§3-0-D ⑥).
         그래서 화면에도 «①②만 됩니다» 라고 그대로 적는다. 거짓말하지 않는다.
      🔴 hubLayout 과 «같은 방식»(fetch)으로 부른다 — 새 통신 방법을 만들지 않았다. */
+  /* ③ 노션 페이지 — 정산앱 창구 (2026-08-25 @175 · 다른 창이 열어줬다)
+     🔴 fetch 로는 «못» 부른다. 정산앱은 로그인이 필요한 앱이라 두 겹으로 막힌다
+        (①accounts.google.com 으로 302 ②CORS). 옆의 netAsk/netAdd 와 «같은 방식»(JSONP)을 쓴다.
+        새 통신 방법을 만들지 않았다.
+     🔴 makeFolder 를 «안 보낸다» — 폴더는 장비앱이 템플릿을 복사해 만든다(2026-08-25 대표 확정).
+        정산앱은 기본이 「폴더 안 만듦」이라 이대로가 맞다. 보내면 빈 폴더가 하나 더 생긴다.
+     🔴 못 불러도 «막지 않는다» — 시트 줄과 폴더는 이미 만들어졌으니, 노션만 안 됐다고 알린다. */
+  function pjNewNotion(name, done){
+    var base = netBase(), u = loadUser();
+    if(!base || !u || !u.cred || !credLive(u)){ done(null); return; }
+    var data = {
+      name:      name,
+      brand:     (PJ_NEW.brand && PJ_NEW.brand.name) || '',
+      dateStart: document.getElementById('nFrom').value || '',
+      clientId:  (PJ_NEW.cli && PJ_NEW.cli.id) || '',
+      people:    (PJ_NEW.pho && PJ_NEW.pho.id) ? [PJ_NEW.pho.id] : [],
+      locations: (PJ_NEW.loc && PJ_NEW.loc.id) ? [PJ_NEW.loc.id] : []
+    };
+    askCount(base + '?action=projCreate'
+             + '&t='    + encodeURIComponent(u.cred)
+             + '&data=' + encodeURIComponent(JSON.stringify(data)), done);
+  }
+
   function pjNewMake(){
     var btn  = document.getElementById('nMk');
     var name = (document.getElementById('nName').value || '').trim();
@@ -1873,21 +1895,32 @@
           + '&info=' + encodeURIComponent(JSON.stringify(info)))
       .then(function(r){ return r.json(); })
       .then(function(d){
-        btn.disabled = false; btn.textContent = old;
         if(!d || !d.ok){
+          btn.disabled = false; btn.textContent = old;
           alert('만들지 못했습니다.\n\n' + ((d && d.error) || '서버가 답하지 않았습니다.')
                 + '\n\n🔴 아무것도 안 만들어졌습니다 — 다시 눌러도 안전합니다.');
           return;
         }
-        var msg = '✅ 「' + d.name + '」 만들었습니다.\n\n';
-        if(d.no) msg += '번호: ' + d.no + '\n';
-        (d.done || []).forEach(function(x){ msg += '  ✅ ' + x + '\n'; });
-        (d.failed || []).forEach(function(x){ msg += '  🔴 ' + x + '\n'; });
-        msg += '\n🔴 노션 페이지는 아직 안 만들어집니다 — 다음 단계입니다.';
-        if(d.folder) msg += '\n\n📂 폴더: ' + d.folder;
-        alert(msg);
-        PJ_CACHE = null;                      /* 목록을 다시 읽게 */
-        location.hash = '#p/' + encodeURIComponent(d.name);
+        /* ①②는 됐다. 이어서 ③ 노션 페이지 — 🔴 버튼은 아직 잠가 둔다(두 번 눌리면 두 번 만들어진다) */
+        btn.textContent = '노션 페이지 만드는 중…';
+        pjNewNotion(d.name, function(nd){
+          btn.disabled = false; btn.textContent = old;
+          var msg = '✅ 「' + d.name + '」 만들었습니다.\n\n';
+          if(d.no) msg += '번호: ' + d.no + '\n';
+          (d.done || []).forEach(function(x){ msg += '  ✅ ' + x + '\n'; });
+          (d.failed || []).forEach(function(x){ msg += '  🔴 ' + x + '\n'; });
+          if(nd && nd.ok){
+            msg += '  ✅ 노션 페이지\n';
+          } else {
+            msg += '  🔴 노션 페이지 — ' + ((nd && (nd.error || nd.why)) || '못 만들었습니다')
+                +  '\n      (시트 줄과 폴더는 만들어졌습니다. 노션만 다시 하시면 됩니다)\n';
+          }
+          if(d.folder) msg += '\n📂 폴더: ' + d.folder;
+          if(nd && nd.ok && nd.url) msg += '\n📝 노션: ' + nd.url;
+          alert(msg);
+          PJ_CACHE = null;                      /* 목록을 다시 읽게 */
+          location.hash = '#p/' + encodeURIComponent(d.name);
+        });
       })
       .catch(function(e){
         btn.disabled = false; btn.textContent = old;
