@@ -2651,11 +2651,31 @@
     askCount(base, function(d){ done(d || { ok:false, error:'답이 없습니다(느리거나 끊김).' }); }, 25000);
   }
 
+  /* 🔴 노션 프로젝트 제목도 «같이» 바꾸거나 보관한다 (2026-08-26 대표 지시
+     *"다 바뀌게 할수 없어? 안그럼 다 뒤틀리잖아."*)
+     노션 열쇠는 정산앱에만 있으므로 그 앱 창구를 부른다(열쇠를 두 군데 두지 않는다 §1). */
+  function pjNotion(act, from, to, done){
+    var base = netBase();
+    if(!base){ done({ ok:false, error:'정산앱을 못 찾았습니다.' }); return; }
+    var u = base + '?action=projNotion&act=' + encodeURIComponent(act)
+          + '&from=' + encodeURIComponent(from) + payTok();
+    if(to) u += '&to=' + encodeURIComponent(to);
+    askCount(u, function(d){ done(d || { ok:false, error:'노션 쪽 답이 없습니다.' }); }, 25000);
+  }
+
   function pjDelete(name){
     if(!name) return;
     pjAdmin('check', name, '', function(c){
       if(!c.ok){ alert('🔴 ' + (c.error || '확인하지 못했습니다.')); return; }
-      if(c.blocked){ alert('🔴 지울 수 없습니다.\n\n' + c.why); return; }
+      var deep = false;
+      if(c.blocked){
+        /* 🔴 장비 줄이 있으면 «기본은 막는다». 대표가 「전부」를 고를 때만 진행한다. */
+        deep = confirm('🔴 ' + c.why + '\n\n'
+          + '「확인」을 누르면 그 줄까지 «전부 지웁니다».\n'
+          + '🔴 견적 기록처럼 되돌릴 수 없는 것도 함께 지워집니다.\n\n'
+          + '전부 지울까요?  (취소 = 그만두기)');
+        if(!deep) return;
+      }
       var lk = (c.linked || []);
       var msg = '🗑 「' + name + '」 를 지울까요?\n\n'
         + '지워지는 것\n'
@@ -2671,11 +2691,16 @@
       var typed = prompt(msg, '');
       if(typed === null) return;
       if(String(typed).trim() !== name){ alert('이름이 다릅니다 — 그만둡니다.'); return; }
-      pjAdmin('delete', name, '', function(r){
+      pjAdmin('delete', name, deep ? '&deep=1' : '', function(r){
         if(!r.ok){ alert('🔴 못 지웠습니다.\n\n' + (r.error || '')); return; }
-        alert('✅ 지웠습니다.\n\n' + (r.done || []).join('\n') + '\n\n' + (r.note || ''));
-        PJ_CACHE = null; location.hash = '#p';
-        if(typeof pjLoad === 'function') pjLoad(true);
+        /* 노션 페이지도 보관한다 — 노션 휴지통에서 되살릴 수 있다 */
+        pjNotion('archive', name, '', function(nd){
+          var extra = nd && nd.ok ? (nd.skipped ? '노션: ' + nd.why : (nd.done || '노션 보관함'))
+                                  : ('🔴 노션은 그대로입니다 — ' + ((nd && nd.error) || '못 불렀습니다'));
+          alert('✅ 지웠습니다.\n\n' + (r.done || []).join('\n') + '\n · ' + extra);
+          PJ_CACHE = null; location.hash = '#p';
+          if(typeof pjLoad === 'function') pjLoad(true);
+        });
       });
     });
   }
@@ -2690,8 +2715,9 @@
         + ((c && c.days) ? ' · 회차 ' + c.days + '줄\n' : '')
         + (lk.length ? lk.map(function(x){ return ' · ' + x.tab + ' ' + x.rows + '줄 (' + x.why + ')'; }).join('\n') + '\n' : '')
         + ((c && c.folder) ? ' · 드라이브 폴더 이름\n' : '')
-        + '\n🔴 안 바뀌는 것\n · 노션 페이지 제목 (노션에서 직접)\n'
-        + ' · 이미 내보낸 PDF·공유파일\n\n'
+        + ' · 드라이브 폴더 «안의 파일 이름»까지\n'
+        + ' · 🔗 노션 프로젝트 제목\n'
+        + '\n🔴 안 바뀌는 것\n · 이미 내보낸 PDF·공유파일 (대표님이 「괜찮다」고 하신 것)\n\n'
         + '양식: 260910_브랜드_거래처', name);
       pjRenameGo(name, to);
     });
@@ -2703,10 +2729,14 @@
     if(!to || to === name) return;
     pjAdmin('rename', name, '&to=' + encodeURIComponent(to), function(r){
       if(!r.ok){ alert('🔴 못 바꿨습니다.\n\n' + (r.error || '')); return; }
-      alert('✅ 바꿨습니다.\n\n' + name + '\n  ↓\n' + to + '\n\n'
-            + (r.done || []).join(' · ') + '\n\n' + (r.note || ''));
-      PJ_CACHE = null; location.hash = '#p';
-      if(typeof pjLoad === 'function') pjLoad(true);
+      pjNotion('rename', name, to, function(nd){
+        var extra = nd && nd.ok ? (nd.skipped ? '노션: ' + nd.why : (nd.done || '노션 제목도 바꿈'))
+                                : ('🔴 노션 제목은 그대로입니다 — ' + ((nd && nd.error) || '못 불렀습니다'));
+        alert('✅ 바꿨습니다.\n\n' + name + '\n  ↓\n' + to + '\n\n'
+              + (r.done || []).join(' · ') + '\n · ' + extra);
+        PJ_CACHE = null; location.hash = '#p';
+        if(typeof pjLoad === 'function') pjLoad(true);
+      });
     });
   }
 
