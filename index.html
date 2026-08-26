@@ -712,6 +712,27 @@
          + (why.length ? ' · ' + why.join(' / ') : ' · 받는 중…') + '</span>'
          + ' <a href="#" onclick="return sessRetry()" style="font-size:12px">🔄 다시 받기</a>';
   }
+  /* ═══════════════════════════════════════════════════════════════
+     🔑 통행증을 «놓치지 않게» 끝까지 받아낸다   (2026-08-26)
+     ═══════════════════════════════════════════════════════════════
+     🔴 무엇이 문제였나 — 로그인하자마자 받으러 가는데, 그 순간엔 화면(앱 카드)이
+        아직 안 그려져 «정산앱 주소»를 못 찾는다. 그래서 한 번 놓치면 **영영 1/2** 로 남았다
+        (대표: *"또 통행증이 문제고"*). 장비앱 주소는 코드에 박혀 있어 늘 되고,
+        정산앱만 화면에서 읽으므로 «정산앱만» 실패한 것이다.
+     🔴 고침 — 못 받은 게 있으면 3초 뒤 다시. 신분증이 살아 있는 동안만, 최대 7번.
+        받으면 멈춘다. 이미 있으면 아무 일도 안 한다(헛물 없음). */
+  var SESS_TRY = 0;
+  function sessEnsure(){
+    var u = loadUser();
+    if(!u || !credLive(u)) return;        /* 신분증이 죽었으면 더 해봐야 소용없다 */
+    if(hubSessGet() && paySessGet()){ SESS_TRY = 0; return; }
+    if(SESS_TRY >= 7) return;
+    SESS_TRY++;
+    if(!hubSessGet()) hubSessFetch(function(){ paint(loadUser()); });
+    if(!paySessGet()) paySessFetch(function(){ paint(loadUser()); });
+    setTimeout(sessEnsure, 3000);
+  }
+
   /* 🔄 손으로 다시 받기 — 「받는 중…」에 멈췄을 때 대표가 눌러 확인할 수 있게
      🔴 2026-08-26 — 초를 센다. 최대 12초가 걸리는데 글자가 그대로라
         「멈춘 것」으로 보여 대표가 진행이 없다고 하셨다(실제로는 돌고 있었다). */
@@ -729,8 +750,10 @@
       paint(loadUser());
     }, 1000);
     function fin(){ if(--left <= 0) sessTickStop(); paint(loadUser()); }
+    SESS_TRY = 0;
     hubSessFetch(fin);
     paySessFetch(fin);
+    setTimeout(sessEnsure, 3000);   /* 한 번에 안 되면 알아서 다시 시도한다 */
     return false;
   }
   window.sessRetry = sessRetry;
@@ -1057,8 +1080,7 @@
     paint(u);
     scheduleExpire(u.exp);
     /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 — 그러면 1시간 뒤에도 앱이 열린다 */
-    hubSessFetch(function(){ paint(loadUser()); });
-    paySessFetch(function(){ paint(loadUser()); });
+    SESS_TRY = 0; sessEnsure();
 
     /* 카드를 누르다 갱신한 경우 — 이제 열어준다 */
     if(PENDING_LINK){ var a = PENDING_LINK; PENDING_LINK = null; openWithToken(a); }
@@ -1237,10 +1259,7 @@
         var cur = loadUser();
         if(cur && !credLive(cur) && !hubSessGet()) refreshCred(null);
         /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 (2026-08-26) */
-        if(cur && credLive(cur)){
-          hubSessFetch(function(){ paint(loadUser()); });
-          paySessFetch(function(){ paint(loadUser()); });
-        }
+        if(cur && credLive(cur)){ SESS_TRY = 0; sessEnsure(); }
       }catch(e){
         say('⚠️ 구글 로그인 준비 중 오류 — ' + (e && e.message ? e.message : e));
       }
