@@ -781,6 +781,57 @@
   /* 앱 창구를 부를 수 있나 — 통행증이 있으면 신분증이 죽어도 된다 */
   function canApp(){ return !!(hubSessGet() || credLive(loadUser())); }
 
+  /* ═══════════════════════════════════════════════════════════════
+     🔑 정산앱 통행증  (2026-08-26)
+     ═══════════════════════════════════════════════════════════════
+     🔴 통행증은 «앱마다 따로»다 — 장비앱 것이 정산앱에서 안 통한다.
+        각 앱이 자기가 내준 것만 알아보기 때문이다. 그래서 보관함도 둘이다.
+     🔴 정산앱은 통행증을 «신분증 자리(t)»로 받아도 알아본다(whoAmI_ 가 'PS_' 로 가린다).
+        그래서 부르는 쪽은 값만 바꾸면 되고, 창구 이름을 하나도 안 고쳐도 된다. */
+  var PAY_SESS = 'pa_paysess_v1';
+  function paySessGet(){
+    try{
+      var o = JSON.parse(localStorage.getItem(PAY_SESS) || 'null');
+      return (o && o.s && o.x && Date.now() < o.x) ? o : null;
+    }catch(e){ return null; }
+  }
+  function paySessSave(s, days){
+    try{ localStorage.setItem(PAY_SESS, JSON.stringify({
+      s: s, x: Date.now() + (days || 30) * 24 * 60 * 60 * 1000
+    })); }catch(e){}
+  }
+  function paySessClear(){ try{ localStorage.removeItem(PAY_SESS); }catch(e){} }
+  function paySessFetch(done){
+    var u = loadUser(), base = netBase();
+    if(!base || !u || !u.cred || !credLive(u)){ if(done) done(null); return; }
+    if(paySessGet()){ if(done) done(paySessGet()); return; }
+    askCount(base + '?action=hubSess&t=' + encodeURIComponent(u.cred), function(d){
+      if(d && d.ok && d.sess) paySessSave(d.sess, d.days);
+      if(done) done(paySessGet());
+    });
+  }
+  /* 정산앱 창구에 실어 보낼 «표» — 통행증이 있으면 그것, 없으면 구글 신분증 */
+  function payTok(){
+    var h = paySessGet();
+    if(h) return '&t=' + encodeURIComponent(h.s);
+    var u = loadUser();
+    return (u && u.cred && credLive(u)) ? '&t=' + encodeURIComponent(u.cred) : '';
+  }
+  function payOK(){ return !!(paySessGet() || credLive(loadUser())); }
+  /* 카드 주소를 보고 «맞는 통행증»을 고른다 (앱을 새 창으로 열 때 쓴다) */
+  function tokFor(url){
+    var root = FIELD_APP.split('/exec')[0];
+    if(String(url || '').indexOf(root) === 0){
+      var h = hubSessGet();
+      if(h) return '&s=' + encodeURIComponent(h.s);
+    }else{
+      var q = paySessGet();
+      if(q) return '&t=' + encodeURIComponent(q.s);
+    }
+    var u = loadUser();
+    return (u && u.cred && credLive(u)) ? '&t=' + encodeURIComponent(u.cred) : '';
+  }
+
   function paint(u){
     var role = roleOf(u);
     applyRole(role);
@@ -791,7 +842,7 @@
       $('pfEm').textContent = u.email || '';
       /* 🔴 2026-08-26 — 구글 신분증(1시간)이 죽어도 «우리 통행증»(30일)이 있으면 그냥 쓴다.
          전에는 여기서 무조건 「다시 로그인해주세요」를 띄워, 실제로는 되는데도 막힌 줄 아셨다. */
-      if(!credLive(u) && !hubSessGet()){
+      if(!credLive(u) && !hubSessGet() && !paySessGet()){
         $('pfSt').innerHTML = '<span class="sdot" style="background:#e0a020"></span>'
           + '앱에 들어가려면 다시 로그인해주세요 <span style="color:var(--faint)">(구글 통행증이 1시간마다 만료됩니다)</span>';
         $('gbtn').hidden = false;
@@ -826,7 +877,7 @@
      기간 만료 자동 로그아웃(scheduleExpire)에서는 사람이 없으므로 묻지 않는다. */
   function logout(ask){
     localStorage.removeItem(KEY);
-    hubSessClear();                 /* 🔑 앱 통행증도 같이 버린다 (2026-08-26) */
+    hubSessClear(); paySessClear(); /* 🔑 앱 통행증도 같이 버린다 (2026-08-26 · 앱마다 따로다) */
     PENDING_LINK = null;
     REFRESHING   = false;
     /* 🔴 이게 있어야 「로그아웃하면 진짜 로그아웃」이 된다.
@@ -902,7 +953,7 @@
     /* 🔴 2026-08-20 교차검증 지적 — <u>살아 있는</u> 신분증만 붙인다.
        죽은 신분증을 붙이면 ①주소·기록에 쓸데없이 남고 ②앱이 그걸 확인하느라
        구글에 헛물음을 한 번 더 한다. 앱은 자기 통행증으로 알아서 들어간다. */
-    if(u && u.cred && credLive(u)) url += (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(u.cred);
+    url += (base.indexOf('?') >= 0 ? '&' : '?') + tokFor(base).slice(1);
     /* 처리할 게 남아 있으면 그 화면으로 바로 연다 */
     var goTo = a.getAttribute('data-go');
     if(goTo) url += (url.indexOf('?') >= 0 ? '&' : '?') + 'go=' + encodeURIComponent(goTo);
@@ -933,11 +984,12 @@
     localStorage.setItem(KEY, JSON.stringify(u));
     REFRESHING = false;
     /* 🔑 2026-08-26 — 사람이 바뀌었으면 옛 통행증은 버린다(남의 표를 쓰면 안 된다) */
-    if(!prev || prev.email !== u.email) hubSessClear();
+    if(!prev || prev.email !== u.email){ hubSessClear(); paySessClear(); }
     paint(u);
     scheduleExpire(u.exp);
     /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 — 그러면 1시간 뒤에도 앱이 열린다 */
     hubSessFetch(function(){ paint(loadUser()); });
+    paySessFetch(null);
 
     /* 카드를 누르다 갱신한 경우 — 이제 열어준다 */
     if(PENDING_LINK){ var a = PENDING_LINK; PENDING_LINK = null; openWithToken(a); }
@@ -1031,7 +1083,8 @@
     var cards = document.querySelectorAll('a[data-badge]');
     for(var i = 0; i < cards.length; i++){
       (function(a){
-        askCount(a.getAttribute('data-badge') + '?action=badge&t=' + encodeURIComponent(u.cred), function(d){
+        askCount(a.getAttribute('data-badge') + '?action=badge'
+                 + tokFor(a.getAttribute('data-badge')), function(d){
           paintCount(a, (d && d.ok) ? d.n : 0, d && d.kind);
         });
       })(cards[i]);
@@ -1103,7 +1156,7 @@
         var cur = loadUser();
         if(cur && !credLive(cur) && !hubSessGet()) refreshCred(null);
         /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 (2026-08-26) */
-        if(cur && credLive(cur)) hubSessFetch(null);
+        if(cur && credLive(cur)){ hubSessFetch(null); paySessFetch(null); }
       }catch(e){
         say('⚠️ 구글 로그인 준비 중 오류 — ' + (e && e.message ? e.message : e));
       }
@@ -1141,7 +1194,7 @@
     var u = loadUser();
     var url = base + (base.indexOf('?')>=0?'&':'?') + 'proj=' + encodeURIComponent(proj);
     if(extra) url += '&' + extra;
-    if(u && u.cred && credLive(u)) url += '&t=' + encodeURIComponent(u.cred);
+    url += tokFor(base);
     return url;
   }
   function pjOpen(base, proj, extra){
@@ -1462,9 +1515,9 @@
   function netAsk(cat, done){
     if(NET_CACHE[cat]){ done(NET_CACHE[cat]); return; }
     var base = netBase(), u = loadUser();
-    if(!base || !u || !credLive(u)){ done(null); return; }
+    if(!base || !payOK()){ done(null); return; }
     askCount(base + '?list=network&cat=' + encodeURIComponent(cat)
-             + '&t=' + encodeURIComponent(u.cred), function(d){
+             + payTok(), function(d){
       if(!d || !d.ok){ done(null); return; }
       NET_CACHE[cat] = d.rows || [];
       done(NET_CACHE[cat]);
@@ -1726,7 +1779,7 @@
              + '&sub='  + encodeURIComponent(subName || '')
              + (extra ? '&p=' + encodeURIComponent(JSON.stringify(extra)) : '')
              + (parentId ? '&parent=' + encodeURIComponent(parentId) : '')
-             + '&t='    + encodeURIComponent(u.cred), function(d){
+             + payTok(), function(d){
       done(d || { ok:false, why:'응답이 없습니다' });
     });
   }
@@ -1736,8 +1789,8 @@
   function netProps(done){
     if(NET_PROPS){ done(NET_PROPS); return; }
     var base = netBase(), u = loadUser();
-    if(!base || !u || !credLive(u)){ done([]); return; }
-    askCount(base + '?list=netprops&t=' + encodeURIComponent(u.cred), function(d){
+    if(!base || !payOK()){ done([]); return; }
+    askCount(base + '?list=netprops' + payTok(), function(d){
       NET_PROPS = (d && d.ok && d.props) ? d.props : [];
       done(NET_PROPS);
     });
@@ -2057,7 +2110,7 @@
               /* ② 거래처의 담당자 칸에도 더한다 */
               askCount(base + '?set=mgr&id=' + encodeURIComponent(cli.id)
                        + '&name=' + encodeURIComponent(v)
-                       + '&t=' + encodeURIComponent(u.cred), function(d2){
+                       + payTok(), function(d2){
                 for(var i=0;i<src.length;i++){
                   if(src[i].id === cli.id){
                     src[i].mgr = (d2 && d2.all && d2.all.length) ? d2.all.join(', ')
@@ -2172,7 +2225,7 @@
       locations: ids((PJ_NEW.days || []).map(function(d){ return { id:d.locId, name:d.loc }; }))
     };
     askCount(base + '?action=projCreate'
-             + '&t='    + encodeURIComponent(u.cred)
+             + payTok()
              + '&data=' + encodeURIComponent(JSON.stringify(data)), done, 45000);
   }
 
@@ -2337,7 +2390,7 @@
     var a = document.querySelector('a[data-badge]');
     if(!a){ alert('정산앱 링크를 못 찾았습니다.'); return; }
     var u = loadUser(), url = a.getAttribute('href');
-    if(u && u.cred && credLive(u)) url += (url.indexOf('?')>=0?'&':'?') + 't=' + encodeURIComponent(u.cred);
+    url += (url.indexOf('?')>=0?'&':'?') + tokFor(url).slice(1);
     var w = window.open(url, '_blank'); if(w) w.opener = null;
   }
 
