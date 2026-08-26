@@ -739,6 +739,48 @@
     return !!(u && u.cred && u.credExp && Date.now() < u.credExp - 120000);
   }
 
+  /* ══════════════════════════════════════════════════════════
+     🔑 앱 통행증 30일 (2026-08-26)
+     🔴 무엇이 문제였나 — 앱 창구를 «구글 신분증»(t)으로 불렀다. 그건 «1시간»이 상한이라
+        (구글이 정한 것) 1시간만 지나면 프로젝트 목록·만들기·회차가 통째로 막혔다.
+        조용히 다시 받는 길이 있지만 구글이 자주 막는다.
+     🔴 그래서 앱에서 «우리 통행증»(30일)을 한 번 받아 두고 그걸 쓴다.
+        장비앱 화면은 이미 이 방식이다 — 새로 발명한 게 아니라 허브에도 준 것이다.
+     🔴 통행증에는 이메일만 담긴다. 등급은 저장할 때마다 명단을 다시 읽으므로
+        퇴사·강등이 그 자리에서 먹는다. */
+  var HUB_SESS = 'pa_hubsess_v1';
+  function hubSessGet(){
+    try{
+      var o = JSON.parse(localStorage.getItem(HUB_SESS) || 'null');
+      return (o && o.s && o.x && Date.now() < o.x) ? o : null;
+    }catch(e){ return null; }
+  }
+  function hubSessSave(s, days){
+    try{ localStorage.setItem(HUB_SESS, JSON.stringify({
+      s: s, x: Date.now() + (days || 30) * 24 * 60 * 60 * 1000
+    })); }catch(e){}
+  }
+  function hubSessClear(){ try{ localStorage.removeItem(HUB_SESS); }catch(e){} }
+  /* 구글 신분증이 살아 있을 때 «한 번» 받아 둔다 */
+  function hubSessFetch(done){
+    var u = loadUser();
+    if(!u || !u.cred || !credLive(u)){ if(done) done(null); return; }
+    if(hubSessGet()){ if(done) done(hubSessGet()); return; }
+    askCount(FIELD_APP + '?action=hubSess&t=' + encodeURIComponent(u.cred), function(d){
+      if(d && d.ok && d.sess) hubSessSave(d.sess, d.days);
+      if(done) done(hubSessGet());
+    });
+  }
+  /* 창구를 부를 때 실어 보낼 «표» — 통행증이 있으면 그것, 없으면 구글 신분증 */
+  function appTok(){
+    var h = hubSessGet();
+    if(h) return '&s=' + encodeURIComponent(h.s);
+    var u = loadUser();
+    return (u && u.cred && credLive(u)) ? '&t=' + encodeURIComponent(u.cred) : '';
+  }
+  /* 앱 창구를 부를 수 있나 — 통행증이 있으면 신분증이 죽어도 된다 */
+  function canApp(){ return !!(hubSessGet() || credLive(loadUser())); }
+
   function paint(u){
     var role = roleOf(u);
     applyRole(role);
@@ -747,7 +789,9 @@
       $('pfAv').innerHTML = u.picture ? '<img src="'+u.picture+'" alt="" referrerpolicy="no-referrer">' : '🙂';
       $('pfNm').textContent = u.name || '로그인됨';
       $('pfEm').textContent = u.email || '';
-      if(!credLive(u)){
+      /* 🔴 2026-08-26 — 구글 신분증(1시간)이 죽어도 «우리 통행증»(30일)이 있으면 그냥 쓴다.
+         전에는 여기서 무조건 「다시 로그인해주세요」를 띄워, 실제로는 되는데도 막힌 줄 아셨다. */
+      if(!credLive(u) && !hubSessGet()){
         $('pfSt').innerHTML = '<span class="sdot" style="background:#e0a020"></span>'
           + '앱에 들어가려면 다시 로그인해주세요 <span style="color:var(--faint)">(구글 통행증이 1시간마다 만료됩니다)</span>';
         $('gbtn').hidden = false;
@@ -782,6 +826,7 @@
      기간 만료 자동 로그아웃(scheduleExpire)에서는 사람이 없으므로 묻지 않는다. */
   function logout(ask){
     localStorage.removeItem(KEY);
+    hubSessClear();                 /* 🔑 앱 통행증도 같이 버린다 (2026-08-26) */
     PENDING_LINK = null;
     REFRESHING   = false;
     /* 🔴 이게 있어야 「로그아웃하면 진짜 로그아웃」이 된다.
@@ -887,8 +932,12 @@
     }
     localStorage.setItem(KEY, JSON.stringify(u));
     REFRESHING = false;
+    /* 🔑 2026-08-26 — 사람이 바뀌었으면 옛 통행증은 버린다(남의 표를 쓰면 안 된다) */
+    if(!prev || prev.email !== u.email) hubSessClear();
     paint(u);
     scheduleExpire(u.exp);
+    /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 — 그러면 1시간 뒤에도 앱이 열린다 */
+    hubSessFetch(function(){ paint(loadUser()); });
 
     /* 카드를 누르다 갱신한 경우 — 이제 열어준다 */
     if(PENDING_LINK){ var a = PENDING_LINK; PENDING_LINK = null; openWithToken(a); }
@@ -1052,7 +1101,9 @@
         showButton();
         /* 로그인은 살아 있는데 신분증만 만료된 상태면, 눌리기 전에 미리 조용히 받아둔다 */
         var cur = loadUser();
-        if(cur && !credLive(cur)) refreshCred(null);
+        if(cur && !credLive(cur) && !hubSessGet()) refreshCred(null);
+        /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 (2026-08-26) */
+        if(cur && credLive(cur)) hubSessFetch(null);
       }catch(e){
         say('⚠️ 구글 로그인 준비 중 오류 — ' + (e && e.message ? e.message : e));
       }
@@ -1102,7 +1153,7 @@
   function pjLoad(force){
     var box = document.getElementById('pjListBody');
     var u = loadUser();
-    if(!u || !credLive(u)){
+    if(!canApp()){
       box.innerHTML = '<p class="foot">🔒 <b>로그인해야 목록이 보입니다.</b><br>' +
         '프로젝트 이름에는 거래처 이름이 들어 있어서, 로그인한 팀에게만 보여줍니다.<br>' +
         '<a href="#" class="pjback">‹ 도구 전체로 돌아가기</a></p>';
@@ -1110,7 +1161,7 @@
     }
     if(!force && PJ_CACHE && Date.now()-PJ_AT < 600000){ pjPaint(PJ_CACHE); return; }
     box.innerHTML = '<p class="foot">불러오는 중…</p>';
-    askCount(FIELD_APP + '?list=projects&t=' + encodeURIComponent(u.cred), function(d){
+    askCount(FIELD_APP + '?list=projects' + appTok(), function(d){
       if(!d || !d.ok){
         box.innerHTML = '<p class="foot">🔴 목록을 못 받았습니다' +
           (d && d.why==='no_auth' ? ' — <b>직원명단에 없는 계정</b>입니다.' : '.') +
@@ -1237,10 +1288,10 @@
   function pjDaysShow(proj){
     var box = document.getElementById('pjDays'); if(!box) return;
     var u = loadUser();
-    if(!u || !u.cred || !credLive(u)){ box.innerHTML = ''; return; }
+    if(!canApp()){ box.innerHTML = ''; return; }
     box.innerHTML = '<p class="fn" style="margin:0 0 10px">📅 회차 불러오는 중…</p>';
     askCount(FIELD_APP + '?action=projDays&proj=' + encodeURIComponent(proj)
-             + '&t=' + encodeURIComponent(u.cred), function(d){
+             + appTok(), function(d){
       if(!d || !d.ok || !d.rows || !d.rows.length){
         box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차</div>'
                       + '<p class="fn" style="margin:0 0 10px">아직 없습니다 — 「＋ 새 프로젝트」에서 넣으시면 여기 나옵니다.</p>';
@@ -1266,9 +1317,9 @@
     if(got){ pjChkPaint(box, got); return; }
     box.innerHTML = '<p class="foot">📋 1차 정보 확인 중…</p>';
     var u = loadUser();
-    if(!u || !credLive(u)){ box.innerHTML = '<p class="foot">🔑 로그인하면 1차 정보를 볼 수 있습니다.</p>'; return; }
+    if(!canApp()){ box.innerHTML = '<p class="foot">🔑 로그인하면 1차 정보를 볼 수 있습니다.</p>'; return; }
     askCount(FIELD_APP + '?list=pjcheck&proj=' + encodeURIComponent(proj)
-             + '&t=' + encodeURIComponent(u.cred), function(d){
+             + appTok(), function(d){
       if(!d || !d.ok){
         box.innerHTML = '<p class="foot">📋 1차 정보를 못 받았습니다'
                       + (d && d.why ? ' (' + pjEsc(d.why) + ')' : '') + '</p>';
@@ -2154,8 +2205,7 @@
        Apps Script /exec 는 내용을 googleusercontent.com 으로 302 리다이렉트해서 주는데
        그 응답에 CORS 허용이 없어 브라우저가 막는다. 옆의 netAsk 와 «같은 방식»(JSONP)으로 간다.
        🔴 60초를 기다린다 — 드라이브 폴더를 템플릿째 복사하느라 20~30초가 걸린다. */
-    askCount(FIELD_APP + '?action=projMake'
-             + '&t='    + encodeURIComponent(u.cred)
+    askCount(FIELD_APP + '?action=projMake' + appTok()
              + '&info=' + encodeURIComponent(JSON.stringify(info)),
       function(d){
         if(!d || !d.ok){
@@ -2276,7 +2326,7 @@
     if(!u || !credLive(u)){ after(); return; }   /* 로그인 전이면 그냥 둔다 */
     if(PJ_ROLE_ASKING) return;                   /* 이미 물어보는 중이면 두 번 안 묻는다 */
     PJ_ROLE_ASKING = true;
-    askCount(FIELD_APP + '?list=projects&t=' + encodeURIComponent(u.cred), function(d){
+    askCount(FIELD_APP + '?list=projects' + appTok(), function(d){
       PJ_ROLE_ASKING = false;
       if(d && d.ok){ PJ_CACHE = d.rows || []; PJ_AT = Date.now(); PJ_ROLE = d.role || ''; }
       after();
