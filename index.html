@@ -866,7 +866,26 @@
     return (u && u.cred && credLive(u)) ? '&t=' + encodeURIComponent(u.cred) : '';
   }
   function payOK(){ return !!(paySessGet() || credLive(loadUser())); }
-  /* 카드 주소를 보고 «맞는 통행증»을 고른다 (앱을 새 창으로 열 때 쓴다) */
+  /* 🔴 앱 «화면»을 새 창으로 열 때는 신분증과 통행증을 «둘 다» 보낸다 (2026-08-26)
+     [무엇이 문제였나] 통행증만 보내게 바꿨더니, 장비앱 «화면»은 t·k 만 읽고 s 를 안 읽어서
+       프로젝트를 눌러도 «손님»으로 열렸다(대표: *"프로젝트 클릭하면 앱으로 안들어가져"*).
+     [고침] 화면 쪽도 s 를 읽게 고쳤지만, 그 배포가 아직 안 퍼진 창·옛 판에서도 되어야 하므로
+       **둘 다 실어 보낸다.** 신분증이 죽어 있으면 통행증만 간다.
+     🔴 정산앱은 통행증을 «t 자리»로 받아 알아본다(whoAmI_) — 그래서 t 하나로 충분하다. */
+  function tokForOpen(url){
+    var out = '', u = loadUser();
+    var live = !!(u && u.cred && credLive(u));
+    var isField = String(url || '').indexOf(FIELD_APP.split('/exec')[0]) === 0;
+    if(live) out += '&t=' + encodeURIComponent(u.cred);
+    var h = isField ? hubSessGet() : paySessGet();
+    if(h){
+      if(isField) out += '&s=' + encodeURIComponent(h.s);
+      else if(!live) out += '&t=' + encodeURIComponent(h.s);
+    }
+    return out;
+  }
+
+  /* 카드 주소를 보고 «맞는 통행증»을 고른다 (창구를 부를 때 쓴다) */
   function tokFor(url){
     var root = FIELD_APP.split('/exec')[0];
     if(String(url || '').indexOf(root) === 0){
@@ -1001,7 +1020,8 @@
     /* 🔴 2026-08-20 교차검증 지적 — <u>살아 있는</u> 신분증만 붙인다.
        죽은 신분증을 붙이면 ①주소·기록에 쓸데없이 남고 ②앱이 그걸 확인하느라
        구글에 헛물음을 한 번 더 한다. 앱은 자기 통행증으로 알아서 들어간다. */
-    url += (base.indexOf('?') >= 0 ? '&' : '?') + tokFor(base).slice(1);
+    var tk = tokForOpen(base);
+    if(tk) url += (base.indexOf('?') >= 0 ? '&' : '?') + tk.slice(1);
     /* 처리할 게 남아 있으면 그 화면으로 바로 연다 */
     var goTo = a.getAttribute('data-go');
     if(goTo) url += (url.indexOf('?') >= 0 ? '&' : '?') + 'go=' + encodeURIComponent(goTo);
@@ -1245,7 +1265,7 @@
     var u = loadUser();
     var url = base + (base.indexOf('?')>=0?'&':'?') + 'proj=' + encodeURIComponent(proj);
     if(extra) url += '&' + extra;
-    url += tokFor(base);
+    url += tokForOpen(base);
     return url;
   }
   function pjOpen(base, proj, extra){
@@ -2502,7 +2522,8 @@
     var a = document.querySelector('a[data-badge]');
     if(!a){ alert('정산앱 링크를 못 찾았습니다.'); return; }
     var u = loadUser(), url = a.getAttribute('href');
-    url += (url.indexOf('?')>=0?'&':'?') + tokFor(url).slice(1);
+    var tk2 = tokForOpen(url);
+    if(tk2) url += (url.indexOf('?')>=0?'&':'?') + tk2.slice(1);
     var w = window.open(url, '_blank'); if(w) w.opener = null;
   }
 
