@@ -712,12 +712,25 @@
          + (why.length ? ' · ' + why.join(' / ') : ' · 받는 중…') + '</span>'
          + ' <a href="#" onclick="return sessRetry()" style="font-size:12px">🔄 다시 받기</a>';
   }
-  /* 🔄 손으로 다시 받기 — 「받는 중…」에 멈췄을 때 대표가 눌러 확인할 수 있게 */
+  /* 🔄 손으로 다시 받기 — 「받는 중…」에 멈췄을 때 대표가 눌러 확인할 수 있게
+     🔴 2026-08-26 — 초를 센다. 최대 12초가 걸리는데 글자가 그대로라
+        「멈춘 것」으로 보여 대표가 진행이 없다고 하셨다(실제로는 돌고 있었다). */
+  var SESS_TICK = null;
+  function sessTickStop(){ if(SESS_TICK){ clearInterval(SESS_TICK); SESS_TICK = null; } }
   function sessRetry(){
-    SESS_WHY.field = SESS_WHY.pay = '받는 중…';
+    var t0 = Date.now(), left = 2;
+    sessTickStop();
+    SESS_WHY.field = SESS_WHY.pay = '받는 중… 0초';
     paint(loadUser());
-    hubSessFetch(function(){ paint(loadUser()); });
-    paySessFetch(function(){ paint(loadUser()); });
+    SESS_TICK = setInterval(function(){
+      var s = Math.round((Date.now() - t0) / 1000);
+      if(SESS_WHY.field.indexOf('받는 중') === 0) SESS_WHY.field = '받는 중… ' + s + '초';
+      if(SESS_WHY.pay.indexOf('받는 중')   === 0) SESS_WHY.pay   = '받는 중… ' + s + '초';
+      paint(loadUser());
+    }, 1000);
+    function fin(){ if(--left <= 0) sessTickStop(); paint(loadUser()); }
+    hubSessFetch(fin);
+    paySessFetch(fin);
     return false;
   }
   window.sessRetry = sessRetry;
@@ -801,7 +814,7 @@
       if(d && d.ok && d.sess){ hubSessSave(d.sess, d.days); SESS_WHY.field=''; }
       else SESS_WHY.field = '장비앱: ' + ((d && (d.why || d.error)) || '응답 없음');
       if(done) done(hubSessGet());
-    });
+    }, 14000);
   }
   /* 창구를 부를 때 실어 보낼 «표» — 통행증이 있으면 그것, 없으면 구글 신분증 */
   function appTok(){
@@ -843,7 +856,7 @@
       if(d && d.ok && d.sess){ paySessSave(d.sess, d.days); SESS_WHY.pay=''; }
       else SESS_WHY.pay = '정산앱: ' + ((d && (d.why || d.error)) || '응답 없음');
       if(done) done(paySessGet());
-    });
+    }, 14000);
   }
   /* 정산앱 창구에 실어 보낼 «표» — 통행증이 있으면 그것, 없으면 구글 신분증 */
   function payTok(){
