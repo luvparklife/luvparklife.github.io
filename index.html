@@ -1260,7 +1260,13 @@
     function end(data){
       if(fin) return; fin = true;
       clearTimeout(timer);
-      try { delete window[name]; } catch(e) { window[name] = undefined; }
+      /* 🔴 2026-08-26 — 콜백을 «바로 지우면» 늦게 도착한 응답이
+         `Uncaught ReferenceError: pab_xxx is not defined` 를 낸다(검사에서 잡힘).
+         타임아웃이 잦은 창구일수록 자주 난다. → 빈 함수로 두었다가 나중에 치운다. */
+      window[name] = function(){};
+      setTimeout(function(){
+        try { delete window[name]; } catch(e) { window[name] = undefined; }
+      }, 60000);
       if(sc.parentNode) sc.parentNode.removeChild(sc);
       done(data);
     }
@@ -1651,20 +1657,83 @@
                       + '<p class="fn" style="margin:0 0 10px">아직 없습니다 — 「＋ 새 프로젝트」에서 넣으시면 여기 나옵니다.</p>';
         return;
       }
-      box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 <span class="fn">'
-                    + d.rows.length + '회차</span></div>'
-        + d.rows.map(function(r){
-            return '<div class="dayline"><b>' + r.no + '회차</b>'
-                 + '<span class="dt">' + pjEsc(r.date || '—') + '</span>'
-                 + '<span class="lc">' + pjEsc(r.loc || '—') + '</span>'
-                 + '<span class="tm">' + pjEsc(pjHm(r.call)) + (pjHm(r.wrap) ? ' ~ ' + pjEsc(pjHm(r.wrap)) : '') + '</span></div>';
-          }).join('')
-        + '<div style="height:10px"></div>';
+      pjDaysPaint(proj, d.rows);
     });
+  }
+
+  /* 🔴 2026-08-26 — 회차를 «그리는» 부분만 따로 뺐다.
+     한 번에 받은 답(`?action=pjOne`)으로도 같은 그림을 그려야 하는데,
+     그리는 코드가 «불러오는 코드» 안에 갇혀 있으면 두 벌을 만들게 된다(§1). */
+  function pjDaysPaint(proj, rows){
+    var box = document.getElementById('pjDays'); if(!box) return;
+    if(!rows || !rows.length){
+      box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차</div>'
+                    + '<p class="fn" style="margin:0 0 10px">아직 없습니다 — 「＋ 새 프로젝트」에서 넣으시면 여기 나옵니다.</p>';
+      return;
+    }
+    box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 <span class="fn">'
+                  + rows.length + '회차</span></div>'
+      + rows.map(function(r){
+          return '<div class="dayline"><b>' + r.no + '회차</b>'
+               + '<span class="dt">' + pjEsc(r.date || '—') + '</span>'
+               + '<span class="lc">' + pjEsc(r.loc || '—') + '</span>'
+               + '<span class="tm">' + pjEsc(pjHm(r.call)) + (pjHm(r.wrap) ? ' ~ ' + pjEsc(pjHm(r.wrap)) : '') + '</span></div>';
+        }).join('')
+      + '<div style="height:10px"></div>';
   }
 
   var PJ_CHK_CACHE = {};
   var PJ_NOW = '';                 /* 지금 보고 있는 프로젝트 (할 일 버튼이 쓴다) */
+  /* ═══════════════════════════════════════════════════════════════
+     ⚡ 프로젝트 화면을 «한 번에» 받는다   (2026-08-26 대표 확정 🅐+🅑)
+     ═══════════════════════════════════════════════════════════════
+     🔴 전에는 «회차 · 1차정보 · 등급»을 따로 물어봤고, 서버가 그때마다 시트를 다시 열었다.
+        구글시트는 탭 하나 여는 데만 0.5~1.2초가 든다 → 기다림이 3번, 실패할 자리도 3배.
+     🔴 이제 창구 하나(`?action=pjOne`)가 셋을 다 담아 준다. 기다림이 «한 번»이다.
+     🔴 캐시 — 60초 안에 같은 프로젝트를 다시 열면 아예 안 물어본다.
+        서버 쪽 캐시 열쇠에 「바뀐 시각 도장」이 들어 있어, 시트가 바뀌면 저절로 새로 읽는다. */
+  var PJ_ONE_CACHE = {};      /* { 프로젝트: {at, data} } */
+
+  function pjOneLoad(proj, force){
+    var box = document.getElementById('pjChk');
+    var got = PJ_ONE_CACHE[proj];
+    if(!force && got && Date.now() - got.at < 60000){ pjOnePaint(proj, got.data); return; }
+    if(!canApp()){
+      if(box) box.innerHTML = '<p class="foot">🔑 로그인하면 1차 정보를 볼 수 있습니다.</p>';
+      return;
+    }
+    var t0 = Date.now();
+    if(box) box.innerHTML = '<p class="foot" id="pjChkMsg">📋 불러오는 중… 0초</p>';
+    var tk = setInterval(function(){
+      var m = document.getElementById('pjChkMsg');
+      if(!m){ clearInterval(tk); return; }
+      m.textContent = '📋 불러오는 중… ' + Math.round((Date.now()-t0)/1000) + '초';
+    }, 1000);
+    askCount(FIELD_APP + '?action=pjOne&proj=' + encodeURIComponent(proj) + appTok(), function(d){
+      clearInterval(tk);
+      if(!d || !d.ok){
+        if(box) box.innerHTML = '<p class="foot">📋 못 받았습니다'
+          + (d && d.why ? ' (' + pjEsc(d.why) + ')' : ' — 25초 안에 답이 없습니다')
+          + ' <a href="#" onclick="pjOneLoad(\'' + pjEsc(proj) + '\', true);return false">🔄 다시</a></p>';
+        var l = document.getElementById('pjLeft');
+        if(l) l.innerHTML = '<div class="none">📋 정보를 못 받아 「지금 할 일」을 못 보여드립니다 — 위 «🔄 다시»</div>';
+        return;
+      }
+      if(d.role) PJ_ROLE = d.role;
+      PJ_ONE_CACHE[proj] = { at: Date.now(), data: d };
+      pjOnePaint(proj, d);
+    }, 25000);
+  }
+  window.pjOneLoad = pjOneLoad;
+
+  function pjOnePaint(proj, d){
+    try { if(d.days) pjDaysPaint(proj, d.days); } catch(e){}
+    try {
+      var box = document.getElementById('pjChk');
+      if(box && d.check) pjChkPaint(box, d.check);
+    } catch(e){}
+  }
+
   function pjCheck(proj){
     var box = document.getElementById('pjChk'); if(!box) return;
     var got = PJ_CHK_CACHE[proj];
@@ -2734,14 +2803,18 @@
       +   '</div></div>'
       + '</div>';
     document.getElementById('pjOneBody').innerHTML = h;
-    pjDaysShow(proj);                    /* 📅 회차별로 보여준다 (2026-08-26 대표 확정 ⓑ) */
-    pjCheck(proj);                       /* 🔴 1차 정보가 뭐가 빠졌나 물어본다 */
+    /* ⚡ 2026-08-26 — 회차·1차정보·등급을 «한 번에» 받는다(전에는 셋을 따로 불렀다).
+       기다림이 3번 → 1번이 되고, 타임아웃으로 실패할 자리도 그만큼 줄었다. */
+    pjOneLoad(proj);
     /* 🔴 2026-08-21 고침 ② — 등급을 «이 화면에서도» 물어본다.
        전에는 목록 화면(pjLoad)에서만 등급을 받아왔다. 그래서 프로젝트 주소(#p/이름)를
        새로고침하거나 폰에서 그 주소로 곧장 들어오면 등급이 비어 「확인 중」이 뜨고,
        대표인데도 「🧾 견적서」 카드가 통째로 안 보였다.
        받아온 뒤 이 화면을 «한 번 더» 그린다 — 그때 견적서 카드가 나타난다. */
-    if(!PJ_ROLE) pjAskRole(function(){ if(PJ_ROLE) pjOne(proj); });
+    /* 🔴 2026-08-26 — 등급을 «따로» 묻지 않는다. `?action=pjOne` 이 같이 준다.
+       전에는 등급을 물어보고 → 답이 오면 화면을 «통째로 다시» 그렸다.
+       그러면 회차·1차정보도 다시 물어봐 요청이 두 배가 됐다. */
+    if(!PJ_ROLE) pjAskRole(function(){ if(PJ_ROLE && !PJ_ONE_CACHE[proj]) pjOne(proj); });
   }
   /* 카드 한 장. act = 'field'(장비앱으로) / 'settle'(정산앱으로) */
   /* 🔴 pjCard() 는 2026-08-22 「두 칸 관리판」으로 바뀌면서 부르는 곳이 0이 되어 뺐다.
