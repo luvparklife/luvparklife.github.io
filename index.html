@@ -1823,6 +1823,16 @@
     if(da) da.onclick = pjDayAdd;
     pjDaysDraw();                       /* 적어둔 회차가 있으면 바로 보인다 */
     document.getElementById('nMk').onclick = pjNewMake;
+    /* 🔴 2026-08-26 — 노션을 «기다리는 동안»에도 바로 칠 수 있어야 한다.
+       전에는 답이 올 때까지 칸이 「불러오는 중…」 글자뿐이라 아무것도 못 쳤다
+       (대표: *"허브 이상해. 아무것도 안들어가져."*). 그래서 먼저 그리고, 오면 후보만 얹는다.
+       🔴 얹을 때 «치고 있던 글자»는 pjNewPicker 가 지켜 준다. */
+    pjNewPicker('pkCli',    null, null, null, 'cli');
+    pjNewPicker('pkPho',    null, '포토/감독', null, 'pho');
+    pjNewPicker('pkBrand',  null, '브랜드',    null, 'brand');
+    pjNewPicker('pkPeople', null, null, null, 'people');
+    pjNewMgrPicker(null);
+
     netAsk('거래처',   function(r){ pjNewPicker('pkCli',   r, null, null, 'cli');
                                    pjNewMgrPicker(r); });
     netAsk('인적자원', function(r){ pjNewPicker('pkPho',   r, '포토/감독', null, 'pho');
@@ -1937,6 +1947,11 @@
         (다시 그리면 커서가 튀고 한글이 조합 중에 끊긴다 — 오늘만 세 번 밟은 함정) */
   function pjNewPicker(boxId, rows, posName, subName, key){
     var box = document.getElementById(boxId); if(!box) return;
+    /* 🔴 노션이 늦게 와서 다시 그릴 때, «치고 있던 글자»가 날아가면 안 된다 (2026-08-26) */
+    var old = box.querySelector('.cboin');
+    var keepVal = old ? old.value : '';
+    var keepFocus = !!(old && document.activeElement === old);
+    var keepPos = keepFocus ? old.selectionStart : 0;
     /* 🔴 2026-08-26 — people·locs 를 빠뜨려서 「＋ 노션에 추가」가 안 먹었다.
        새 칸을 만들 때 여기 한 줄을 같이 더해야 한다. */
     var cat = { cli:'거래처', pho:'인적자원', brand:'인적자원', loc:'업체',
@@ -1956,6 +1971,8 @@
     /* 🔴 적어둔 것이 있으면 칸에 되살린다 (2026-08-26) */
     if(key === 'locs' || key === 'people'){ pjChips(key); }
     else if(PJ_NEW && PJ_NEW[key] && PJ_NEW[key].name) inp.value = PJ_NEW[key].name;
+    if(keepVal && !inp.value) inp.value = keepVal;
+    if(keepFocus){ try{ inp.focus(); inp.setSelectionRange(keepPos, keepPos); }catch(e){} }
     if(offline) st.innerHTML = '<span class="warn">🔑 노션을 못 불렀습니다 — 쳐서 넣으시면 그대로 저장됩니다.'
       + (NET_WHY ? ' <b>(' + NET_WHY + ')</b>' : '')
       + '</span> <a href="#" onclick="return netRetry()" style="font-size:12px">🔄 다시 불러오기</a>';
