@@ -1076,8 +1076,8 @@
        분 단위인 이유 = 초 단위면 뒤로가기·재클릭 때마다 매번 새로 받아 느려진다. */
     url += (url.indexOf('?') >= 0 ? '&' : '?') + '_=' + Math.floor(Date.now() / 60000);
     /* 세 번째 값(windowFeatures)을 주면 브라우저에 따라 탭이 아니라 팝업 창으로 뜬다 → 안 준다. */
-    var w = window.open(url, a.getAttribute('target') || '_blank');
-    if(w) { try { w.opener = null; } catch(e){} }
+    /* 🔴 2026-08-26 — 새 탭이 막히면 «이 창에서» 연다. 조용히 실패하지 않는다. */
+    openApp_(url);
   }
 
   function onGoogle(res){
@@ -1320,9 +1320,24 @@
     url += tokForOpen(base);
     return url;
   }
+  /* 🔴 2026-08-26 — 새 탭이 «막히면» 아무 일도 안 일어났다.
+     [무엇이 문제였나] window.open 이 막히면 null 을 돌려주는데 그걸 아무도 안 봤다.
+       대표 눈에는 **「눌러도 아무 반응이 없다」**로 보인다(그리고 앱 서버에는 기록조차 안 남는다 —
+       실제로 로그인 기록 파일이 비어 있어서 「앱까지 도달을 못 한다」를 알아냈다).
+     [고침] 막히면 «이 창에서» 연다. 허브는 뒤로가기로 돌아온다.
+       그래도 안 되면 주소를 화면에 띄워 직접 열 수 있게 한다 — 조용히 실패하지 않는다. */
   function pjOpen(base, proj, extra){
-    var w = window.open(pjUrl(base, proj, extra), '_blank');
-    if(w) w.opener = null;
+    openApp_(pjUrl(base, proj, extra));
+  }
+
+  function openApp_(url){
+    var w = null;
+    try{ w = window.open(url, '_blank'); }catch(e){ w = null; }
+    if(w){ try{ w.opener = null; }catch(e){} return true; }
+    /* 새 탭이 막혔다 → 이 창에서 연다 */
+    try{ location.href = url; return true; }catch(e2){}
+    try{ alert('앱을 여는 것이 막혔습니다.\n브라우저 주소창에 아래를 붙여넣어 주세요:\n\n' + url); }catch(e3){}
+    return false;
   }
 
   /* ── 목록 ── */
@@ -2549,7 +2564,7 @@
       if(act === 'folder'){
         var fu = el.getAttribute('data-pjurl');
         if(!fu){ alert('폴더 주소를 아직 못 받았습니다.'); return; }
-        var fw = window.open(fu, '_blank'); if(fw) fw.opener = null;
+        openApp_(fu);
         return;
       }
       pjOpen(FIELD_APP, el.getAttribute('data-pjproj'), el.getAttribute('data-pjextra') || '');
@@ -2576,7 +2591,7 @@
     var u = loadUser(), url = a.getAttribute('href');
     var tk2 = tokForOpen(url);
     if(tk2) url += (url.indexOf('?')>=0?'&':'?') + tk2.slice(1);
-    var w = window.open(url, '_blank'); if(w) w.opener = null;
+    openApp_(url);
   }
 
   /* ── 화면 갈아끼우기 ── */
