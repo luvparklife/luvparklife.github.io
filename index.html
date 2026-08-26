@@ -695,6 +695,19 @@
 
   /* 화면에 「9월 22일까지 로그인 유지」처럼 사람이 읽는 글자로 보여준다.
      「30일 뒤」라고만 쓰면 언제까진지 세어봐야 한다. */
+  /* ═══════════════════════════════════════════════════════════════
+     🔑 앱 통행증을 «실제로 받았나»를 눈에 보이게   (2026-08-26)
+     ═══════════════════════════════════════════════════════════════
+     🔴 왜 만들었나 — 통행증은 브라우저 안에 조용히 저장된다. 보이지 않으니
+        「올렸다」와 「됐다」를 구별할 방법이 없고, 1시간이 지나 막혀봐야 안다.
+        그래서 지금 손에 있는지를 상태줄에 한 줄로 띄운다.
+     🔴 2/2 = 장비앱 · 정산앱. 통행증은 앱마다 따로라 둘 다 있어야 한다. */
+  function tokText(){
+    var a = hubSessGet() ? 1 : 0, b = paySessGet() ? 1 : 0;
+    if(a && b) return ' · <span style="color:#2e9e5b">🔑 앱 통행증 ✅ 2/2</span>';
+    return ' · <span style="color:#e0a020">🔑 앱 통행증 ' + (a + b) + '/2 · 받는 중…</span>';
+  }
+
   function untilText(exp){
     var d = new Date(exp);
     return (d.getMonth() + 1) + '월 ' + d.getDate() + '일까지 로그인 유지';
@@ -852,7 +865,7 @@
           role === 'owner' ? '대표 · ' + untilText(u.exp) :
           role === 'admin' ? '관리자 · ' + untilText(u.exp) :
                              '로그인됨 · ' + untilText(u.exp)
-        );
+        ) + tokText();
         $('gbtn').hidden = true;
       }
       $('pfOut').hidden = false;
@@ -989,7 +1002,7 @@
     scheduleExpire(u.exp);
     /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 — 그러면 1시간 뒤에도 앱이 열린다 */
     hubSessFetch(function(){ paint(loadUser()); });
-    paySessFetch(null);
+    paySessFetch(function(){ paint(loadUser()); });
 
     /* 카드를 누르다 갱신한 경우 — 이제 열어준다 */
     if(PENDING_LINK){ var a = PENDING_LINK; PENDING_LINK = null; openWithToken(a); }
@@ -1156,7 +1169,10 @@
         var cur = loadUser();
         if(cur && !credLive(cur) && !hubSessGet()) refreshCred(null);
         /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 (2026-08-26) */
-        if(cur && credLive(cur)){ hubSessFetch(null); paySessFetch(null); }
+        if(cur && credLive(cur)){
+          hubSessFetch(function(){ paint(loadUser()); });
+          paySessFetch(function(){ paint(loadUser()); });
+        }
       }catch(e){
         say('⚠️ 구글 로그인 준비 중 오류 — ' + (e && e.message ? e.message : e));
       }
