@@ -855,10 +855,22 @@
   function hubSessGet(){
     try{
       var o = JSON.parse(localStorage.getItem(HUB_SESS) || 'null');
+      if(o) o.s = sessKey_(o.s);            /* 🔴 망가진 값은 없는 것으로 (2026-08-26) */
+      if(o && !o.s){ localStorage.removeItem(HUB_SESS); return null; }
       return (o && o.s && o.x && Date.now() < o.x) ? o : null;
     }catch(e){ return null; }
   }
+  /* 🔴 2026-08-26 — 통행증은 «글자 하나»여야 한다.
+     정산앱 쪽 발급기가 {key, until} 상자를 돌려주는 걸 몰라 상자째 저장했더니,
+     주소에 `t=[object Object]` 가 실려 앱이 **「권한 없음」**으로 거절했다.
+     → 여기서 한 번 더 거른다. 상자면 열쇠를 꺼내고, 글자가 아니면 «저장하지 않는다». */
+  function sessKey_(s){
+    if (s && typeof s === 'object') s = s.key || s.sess || '';
+    s = String(s || '');
+    return (s && s !== '[object Object]' && s !== 'undefined') ? s : '';
+  }
   function hubSessSave(s, days){
+    s = sessKey_(s); if(!s) return;
     try{ localStorage.setItem(HUB_SESS, JSON.stringify({
       s: s, x: Date.now() + (days || 30) * 24 * 60 * 60 * 1000
     })); }catch(e){}
@@ -903,10 +915,13 @@
   function paySessGet(){
     try{
       var o = JSON.parse(localStorage.getItem(PAY_SESS) || 'null');
+      if(o) o.s = sessKey_(o.s);            /* 🔴 망가진 값은 없는 것으로 (2026-08-26) */
+      if(o && !o.s){ localStorage.removeItem(PAY_SESS); return null; }
       return (o && o.s && o.x && Date.now() < o.x) ? o : null;
     }catch(e){ return null; }
   }
   function paySessSave(s, days){
+    s = sessKey_(s); if(!s) return;
     try{ localStorage.setItem(PAY_SESS, JSON.stringify({
       s: s, x: Date.now() + (days || 30) * 24 * 60 * 60 * 1000
     })); }catch(e){}
