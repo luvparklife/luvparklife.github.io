@@ -994,6 +994,7 @@
     var u = loadUser();
     if(!u || !GOOGLE_CLIENT_ID) return false;
     if(!(window.google && google.accounts && google.accounts.id)) return false;
+    if(!GSI_READY) return false;    /* 🔴 설정 전에 prompt() 를 부르면 client_id 오류 화면이 뜬다 */
     PENDING_LINK = link || null;
     if(REFRESHING) return true;
     REFRESHING = true;
@@ -1071,6 +1072,16 @@
     s.innerHTML = msg;
   }
 
+  /* 🔴 2026-08-26 — 「구글 라이브러리가 왔나」와 「우리 설정(initialize)이 끝났나」는 다르다.
+     [무엇이 일어났나] 라이브러리는 async 로 늦게 온다. 오면 google.accounts.id 는 «있지만»
+       우리 client_id 를 넣은 initialize() 는 아직 안 끝났을 수 있다.
+       그 사이에 renderButton()·prompt() 를 부르면 구글이
+       **「액세스 차단됨: Missing required parameter: client_id」** 화면을 띄운다.
+     [왜 오늘 터졌나] 통행증을 받는 «네트워크 콜백»에서 paint() 를 부르게 했는데,
+       그 시점이 initialize 보다 먼저일 수 있다. 전에는 부르는 자리가 적어 덜 걸렸다.
+     [고침] 설정이 끝났다는 표시를 세우고, 그 전에는 아예 안 부른다. */
+  var GSI_READY = false;
+
   function showButton(){
     if(!GOOGLE_CLIENT_ID){
       $('gbtn').hidden = true;
@@ -1081,6 +1092,7 @@
        로그인은 돼 있는데 통행증만 죽은 경우엔 버튼을 다시 보여줘야 한다(credLive 참고). */
     if(credLive(loadUser())) return;
     if(!(window.google && google.accounts && google.accounts.id)) return;
+    if(!GSI_READY) return;          /* 🔴 설정 전에는 그리지 않는다 */
     try{
       $('gbtn').innerHTML = '';
       google.accounts.id.renderButton($('gbtn'),
@@ -1219,6 +1231,7 @@
           auto_select: true,
           cancel_on_tap_outside: true
         });
+        GSI_READY = true;           /* 🔴 여기서부터만 로그인을 부를 수 있다 */
         showButton();
         /* 로그인은 살아 있는데 신분증만 만료된 상태면, 눌리기 전에 미리 조용히 받아둔다 */
         var cur = loadUser();
