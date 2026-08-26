@@ -690,6 +690,11 @@
      🔴 값은 «여기 한 곳»에만 있다(§1). 아래에는 다시 적지 않는다. */
   var FIELD_APP = 'https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec';
 
+  /* 🔴 고치는 중인 프로젝트 이름 (null 이면 «새로 만들기»).
+     🔴 여기서 정한다 — 아래로 내리면 안 된다. 2026-08-26에 FIELD_APP 을 아래에 두었다가
+        쓰는 코드가 «값이 들어가기 전»에 읽어 허브 전체가 죽었다. 같은 함정을 두 번 밟지 않는다. */
+  var PJ_EDIT = null;
+
   /* ── 누가 무엇을 보나 ────────────────────────────────────────
      🔴 2026-08-23 — 로그인 유지는 「모든 사람 30일」로 통일했다(대표 확정).
      대표   = 전부 보임 · 30일 뒤 자동 로그아웃
@@ -1917,6 +1922,7 @@
   var PJ_DRAFT = 'pa_pjdraft_v1', PJ_DT = null;
   function pjDraftVal(id){ var e = document.getElementById(id); return e ? e.value : ''; }
   function pjDraftSave(){
+    if(PJ_EDIT) return;      /* 🔴 고치는 중에는 초안을 안 남긴다 (2026-08-26) */
     if(!PJ_NEW) return;
     try{
       localStorage.setItem(PJ_DRAFT, JSON.stringify({
@@ -1944,14 +1950,19 @@
 
   function pjWireNew(){
     var b = document.getElementById('pjNew'); if(!b) return;
-    b.onclick = function(e){ e.preventDefault(); pjNewOpen(); };
+    b.onclick = function(e){
+      e.preventDefault();
+      PJ_EDIT = null;        /* 🔴 고치던 상태를 반드시 푼다 — 안 그러면 «새로 만들기»가 남의 것을 덮어쓴다 */
+      pjNewOpen();
+    };
   }
   var PJ_NEW = null;
   function pjNewOpen(){
     var box = document.getElementById('pjListBody');
     PJ_NEW = { cli:null, mgr:'', pho:null, brand:null, loc:null, locs:[], people:[], days:[] };
     /* 🔴 적다 만 것이 있으면 되살린다 — 나갔다 들어와도 그대로 */
-    var DR = pjDraftRead();
+    /* 🔴 고치는 중이면 «적다 만 것»을 되살리지 않는다 — 남의 프로젝트 값이 섞인다 */
+    var DR = PJ_EDIT ? null : pjDraftRead();
     if(DR){
       PJ_NEW.cli = DR.cli || null; PJ_NEW.mgr = DR.mgr || '';
       PJ_NEW.pho = DR.pho || null; PJ_NEW.brand = DR.brand || null; PJ_NEW.loc = DR.loc || null;
@@ -2061,7 +2072,11 @@
     var da = document.getElementById('nDayAdd');
     if(da) da.onclick = pjDayAdd;
     pjDaysDraw();                       /* 적어둔 회차가 있으면 바로 보인다 */
-    document.getElementById('nMk').onclick = pjNewMake;
+    /* 🔴 2026-08-26 — 같은 버튼이 «만들기»와 «저장» 둘 다 한다.
+       PJ_EDIT 가 있으면 고치는 중이다(폼을 새로 만들지 않으려고 이렇게 했다 §4-1). */
+    document.getElementById('nMk').onclick = function(){
+      if(PJ_EDIT) pjEditSave(); else pjNewMake();
+    };
     /* 🔴 2026-08-26 — 노션을 «기다리는 동안»에도 바로 칠 수 있어야 한다.
        전에는 답이 올 때까지 칸이 「불러오는 중…」 글자뿐이라 아무것도 못 쳤다
        (대표: *"허브 이상해. 아무것도 안들어가져."*). 그래서 먼저 그리고, 오면 후보만 얹는다.
@@ -2691,6 +2706,8 @@
       + '<a href="#" data-pjact="settle">💰 ' + (isMgr ? '정산 (관리)' : '내 청구') + '</a>'
       /* 🔴 2026-08-26 대표 지시 *"잘못만들었을때 … 삭제하거나 수정할 수 있게"*
          대표에게만 보인다 — 서버도 대표가 아니면 거절한다(화면만 감추는 게 아니다). */
+      /* ✏️ 정보 고치기 — 「관리」 이상 (2026-08-26 대표 지시 *"쌓인 정보 수정 및 추가"*) */
+      + (isMgr ? '<a href="#" data-pjact="edit" data-pjproj="' + p + '">✏️ 정보</a>' : '')
       + (isOwner
           ? '<a href="#" data-pjact="rename" data-pjproj="' + p + '">✏️ 이름</a>'
             + '<a href="#" class="danger" data-pjact="del" data-pjproj="' + p + '">🗑 지우기</a>'
@@ -2743,6 +2760,89 @@
           + '&from=' + encodeURIComponent(from) + payTok();
     if(to) u += '&to=' + encodeURIComponent(to);
     askCount(u, function(d){ done(d || { ok:false, error:'노션 쪽 답이 없습니다.' }); }, 25000);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     ✏️ 쌓인 정보 고치기·더하기   (2026-08-26 대표 지시)
+     ═══════════════════════════════════════════════════════════════
+     🔴 «＋ 새 프로젝트» 폼을 그대로 쓴다 — 새로 만들지 않는다(§4-1).
+        열 때 지금 값을 채워 넣고, 저장하면 «바뀐 칸만» 보낸다.
+     🔴 프로젝트 «이름»(폴더명)은 여기서 안 바꾼다 — 그건 `✏️ 이름` 이 맡는다.
+        두 길을 섞으면 열쇠가 조용히 바뀌어 시스템이 갈린다. */
+
+  function pjEdit(name){
+    if(!name) return;
+    var box = document.getElementById('pjListBody');
+    pjAdmin('info', name, '', function(c){
+      if(!c || !c.ok){
+        alert('🔴 정보를 못 읽었습니다.\n\n' + ((c && c.error) || '답이 없습니다'));
+        return;
+      }
+      /* 폼을 열고 지금 값을 채운다 */
+      location.hash = '#p';
+      PJ_EDIT = name;
+      pjNewOpen();
+      setTimeout(function(){ pjEditFill(c); }, 60);
+    });
+  }
+
+  function pjEditFill(c){
+    function set(id, v){ var e = document.getElementById(id); if(e && v) e.value = v; }
+    set('nFrom', c.from); set('nTo', c.to); set('nCall', c.title);
+    var nm = document.getElementById('nName');
+    if(nm){ nm.value = c.name; nm.dataset.touched = '1'; nm.disabled = true;
+            nm.style.background = '#f2f2f2'; }
+    if(PJ_NEW){
+      if(c.client) PJ_NEW.cli   = { id:'', name:c.client };
+      if(c.photo)  PJ_NEW.pho   = { id:'', name:c.photo  };
+      if(c.brand)  PJ_NEW.brand = { id:'', name:c.brand  };
+      PJ_NEW.mgr  = c.mgr || '';
+      PJ_NEW.days = (c.days || []).map(function(d){
+        return { date:d.date || '', loc:d.loc || '', locId:'', call:d.call || '', wrap:d.wrap || '' };
+      });
+    }
+    /* 칸에 글자를 되살린다 */
+    [['pkCli', c.client], ['pkPho', c.photo], ['pkBrand', c.brand], ['pkMgr', c.mgr]].forEach(function(x){
+      var i = document.querySelector('#' + x[0] + ' .cboin');
+      if(i && x[1]) i.value = x[1];
+    });
+    if(typeof pjDaysDraw === 'function') pjDaysDraw();
+
+    /* 머리글과 버튼을 «고치기»로 바꾼다 */
+    var gt = document.querySelector('.pjnew .gt');
+    if(gt) gt.textContent = '✏️ 정보 고치기 — ' + c.name;
+    var mk = document.getElementById('nMk');
+    if(mk){ mk.textContent = '저장'; mk.disabled = false; }
+    var will = document.getElementById('nWill');
+    if(will) will.innerHTML = '<b>저장하면</b><br>'
+      + '① 「프로젝트목록」 시트의 거래처·담당자·포토·브랜드·촬영일<br>'
+      + '② 「회차」 탭<br>'
+      + '🔴 <b>프로젝트 이름(폴더명)은 안 바뀝니다</b> — 그건 «✏️ 이름»으로 하세요.';
+  }
+
+  function pjEditSave(){
+    var name = PJ_EDIT; if(!name) return;
+    var info = {
+      title:  (document.getElementById('nCall').value || '').trim(),
+      from:   document.getElementById('nFrom').value || '',
+      to:     document.getElementById('nTo').value || '',
+      client: (PJ_NEW.cli   && PJ_NEW.cli.name)   || '',
+      mgr:    PJ_NEW.mgr || '',
+      photo:  (PJ_NEW.pho   && PJ_NEW.pho.name)   || '',
+      brand:  (PJ_NEW.brand && PJ_NEW.brand.name) || '',
+      days:   (PJ_NEW.days || []).filter(function(d){ return d.date || d.loc; })
+    };
+    var mk = document.getElementById('nMk');
+    if(mk){ mk.disabled = true; mk.textContent = '저장하는 중…'; }
+    pjAdmin('update', name, '&info=' + encodeURIComponent(JSON.stringify(info)), function(r){
+      if(mk){ mk.disabled = false; mk.textContent = '저장'; }
+      if(!r || !r.ok){ alert('🔴 못 고쳤습니다.\n\n' + ((r && r.error) || '답이 없습니다')); return; }
+      var msg = '✅ 고쳤습니다.\n\n' + (r.done || []).join(' · ');
+      if(r.failed && r.failed.length) msg += '\n\n🔴 못 고친 것\n · ' + r.failed.join('\n · ');
+      alert(msg);
+      PJ_EDIT = null; PJ_CACHE = null;
+      if(typeof pjLoad === 'function') pjLoad(true);
+    });
   }
 
   function pjDelete(name){
@@ -2864,6 +2964,7 @@
       if(!act) return;
       e.preventDefault();
       if(act === 'settle'){ pjSettle(); return; }
+      if(act === 'edit'){   pjEdit(el.getAttribute('data-pjproj')); return; }
       if(act === 'rename'){ pjRename(el.getAttribute('data-pjproj')); return; }
       if(act === 'del'){    pjDelete(el.getAttribute('data-pjproj')); return; }
       if(act === 'folder'){
