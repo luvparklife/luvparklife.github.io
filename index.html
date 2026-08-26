@@ -677,7 +677,14 @@
      앱이 이 주소로 열어주면, 여기서 기록을 지우고 구글 로그아웃까지 이어서 한다.
      → 어느 쪽에서 눌러도 양쪽이 함께 로그아웃된다. */
   if (location.search.indexOf('logout=1') >= 0) {
+    /* 🔴 2026-08-26 교차검증에서 잡힌 것 — 여기서 «앱 통행증»을 안 지웠다.
+       앱에서 로그아웃하면 서버의 통행증은 지워지는데 허브 서랍에는 남아,
+       허브는 「✅ 2/2」라고 하면서 **서버엔 없는 표**를 계속 내민다.
+       그러면 앱이 못 알아보고, 다시 받지도 않아 **영영 잠긴다.**
+       (이름을 직접 쓴다 — 이 줄은 hubSessClear 선언보다 «위»에서 돈다) */
     try { localStorage.removeItem(KEY); } catch (e) {}
+    try { localStorage.removeItem('pa_hubsess_v1'); } catch (e) {}
+    try { localStorage.removeItem('pa_paysess_v1'); } catch (e) {}
     /* 🔴 2026-08-16 — 구글 계정 전체 로그아웃은 하지 않는다 (지메일·드라이브가 같이 끊겼다).
        허브 기록만 지우고 주소에서 logout=1 을 떼어 낸다. 이유는 아래 logout() 주석 참고. */
     location.replace(location.pathname);
@@ -751,8 +758,8 @@
     }, 1000);
     function fin(){ if(--left <= 0) sessTickStop(); paint(loadUser()); }
     SESS_TRY = 0;
-    hubSessFetch(fin);
-    paySessFetch(fin);
+    hubSessFetch(fin, true);      /* 🔄 는 «버리고» 새로 받는다 */
+    paySessFetch(fin, true);
     setTimeout(sessEnsure, 3000);   /* 한 번에 안 되면 알아서 다시 시도한다 */
     return false;
   }
@@ -828,8 +835,11 @@
   /* 🔴 못 받았을 때 «왜» 를 담아둔다 (2026-08-26) — 안 보이면 원인을 못 찾는다.
      실제로 0/2 가 떴는데 화면엔 「받는 중…」만 있어 진단이 안 됐다. */
   var SESS_WHY = { field:'', pay:'' };
-  function hubSessFetch(done){
+  function hubSessFetch(done, force){
     var u = loadUser();
+    /* 🔴 force = 「버리고 새로 받아라」. 없으면 서버엔 없는 죽은 표를 영영 붙들고 있게 된다
+       (2026-08-26 교차검증 ①) */
+    if(force) hubSessClear();
     if(hubSessGet()){ SESS_WHY.field=''; if(done) done(hubSessGet()); return; }
     if(!u || !u.cred){ SESS_WHY.field='로그인 안 됨'; if(done) done(null); return; }
     if(!credLive(u)){ SESS_WHY.field='구글 신분증 만료 — 다시 로그인'; if(done) done(null); return; }
@@ -869,8 +879,9 @@
     })); }catch(e){}
   }
   function paySessClear(){ try{ localStorage.removeItem(PAY_SESS); }catch(e){} }
-  function paySessFetch(done){
+  function paySessFetch(done, force){
     var u = loadUser(), base = netBase();
+    if(force) paySessClear();
     if(paySessGet()){ SESS_WHY.pay=''; if(done) done(paySessGet()); return; }
     if(!base){ SESS_WHY.pay='정산앱 카드를 못 찾음'; if(done) done(null); return; }
     if(!u || !u.cred){ SESS_WHY.pay='로그인 안 됨'; if(done) done(null); return; }
@@ -966,6 +977,15 @@
   /* ask=true 일 때만 「구글 계정도 로그아웃?」을 묻는다.
      기간 만료 자동 로그아웃(scheduleExpire)에서는 사람이 없으므로 묻지 않는다. */
   function logout(ask){
+    /* 🔴 서버에 있는 통행증도 버린다 — 브라우저 것만 지우면 «복사본»이 30일간 살아 있다
+       (2026-08-26 교차검증 ⑥ — `drop=` 을 보내는 코드가 허브에 아예 없었다) */
+    try{
+      var _h = hubSessGet(), _u = loadUser();
+      if(_h && _u && _u.cred && credLive(_u)){
+        askCount(FIELD_APP + '?action=hubSess&t=' + encodeURIComponent(_u.cred)
+                 + '&drop=' + encodeURIComponent(_h.s), function(){});
+      }
+    }catch(e){}
     localStorage.removeItem(KEY);
     hubSessClear(); paySessClear(); /* 🔑 앱 통행증도 같이 버린다 (2026-08-26 · 앱마다 따로다) */
     PENDING_LINK = null;
