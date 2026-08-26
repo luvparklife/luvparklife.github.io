@@ -2705,11 +2705,32 @@
         ②무엇이 지워지는지 글자로 보여준다
         ③이름을 «똑같이» 다시 쳐야 지워진다
      🔴 노션 페이지는 안 건드린다 — 이 앱에 노션 열쇠가 없다. 화면에 그 사실을 적는다. */
+  /* 🔴 2026-08-26 — 이름 바꾸기·지우기는 «오래 걸린다».
+     소싱시트·수리시트·견적이력·정산앱 시트·드라이브 폴더와 그 «안 파일 이름»까지 훑는다.
+     25초로는 자주 잘렸다(대표: *"못바꿨다고해. 답이 없습니다라고해"*).
+     🔴 그리고 「답이 없다」와 「안 됐다」는 다르다 — 서버는 이미 끝냈을 수 있다.
+        그러니 조회(check)는 짧게, 실제로 바꾸는 것은 «넉넉히» 준다. */
   function pjAdmin(act, name, extra, done){
     var base = FIELD_APP + '?action=projAdmin&act=' + encodeURIComponent(act)
              + '&name=' + encodeURIComponent(name) + appTok();
     if(extra) base += extra;
-    askCount(base, function(d){ done(d || { ok:false, error:'답이 없습니다(느리거나 끊김).' }); }, 25000);
+    var slow = (act === 'rename' || act === 'delete' || act === 'selftest');
+    var ms = slow ? 150000 : 25000;          /* 바꾸는 것은 2분 반까지 기다린다 */
+    var t0 = Date.now(), tick = null;
+    if(slow){
+      tick = setInterval(function(){
+        var el = document.getElementById('pjWaitMsg');
+        if(el) el.textContent = ' … ' + Math.round((Date.now() - t0) / 1000) + '초 (최대 150초)';
+      }, 1000);
+    }
+    askCount(base, function(d){
+      if(tick) clearInterval(tick);
+      var el = document.getElementById('pjWaitMsg'); if(el) el.textContent = '';
+      done(d || { ok:false, timeout:true,
+                  error:'150초 안에 답을 못 받았습니다.\n\n'
+                      + '🔴 «안 됐다»는 뜻이 아닙니다 — 서버가 이미 끝냈을 수 있습니다.\n'
+                      + '목록을 새로고침해서 이름이 바뀌었는지 확인해 주세요.' });
+    }, ms);
   }
 
   /* 🔴 노션 프로젝트 제목도 «같이» 바꾸거나 보관한다 (2026-08-26 대표 지시
@@ -2770,7 +2791,17 @@
     if(!name) return;
     /* 🔴 먼저 «어디에 적혀 있나»를 물어본다 — 그래야 무엇이 같이 바뀌는지 보여줄 수 있다 */
     pjAdmin('check', name, '', function(c){
+      /* 🔴 2026-08-26 교차검증 — 조회가 실패해도 그대로 이름 프롬프트로 넘어갔다.
+         그러면 대표는 이름을 다시 치고 또 실패한다(*"계속 같은 창이 뜨고"*). */
+      if(!c || !c.ok){
+        alert('🔴 프로젝트를 확인하지 못했습니다.\n\n' + ((c && c.error) || '답이 없습니다')
+            + '\n\n잠시 뒤 다시 눌러보세요.');
+        return;
+      }
       var lk = (c && c.linked) || [];
+        var _wm = document.getElementById('pjTestMsg');
+      if(_wm && !document.getElementById('pjWaitMsg'))
+        _wm.insertAdjacentHTML('beforebegin', '<span id="pjWaitMsg"></span>');
       var to = prompt('✏️ 새 이름\n\n🔴 이 이름은 «모든 앱이 서로를 알아보는 열쇠»입니다.\n\n'
         + '같이 바뀌는 곳\n · 프로젝트목록\n'
         + ((c && c.days) ? ' · 회차 ' + c.days + '줄\n' : '')
@@ -2789,7 +2820,26 @@
     to = String(to).trim();
     if(!to || to === name) return;
     pjAdmin('rename', name, '&to=' + encodeURIComponent(to), function(r){
-      if(!r.ok){ alert('🔴 못 바꿨습니다.\n\n' + (r.error || '')); return; }
+      if(!r.ok){
+        /* 🔴 2026-08-26 — 「답이 없다」와 「안 됐다」는 다르다.
+           시간이 넘친 경우에는 «정말 안 바뀌었는지» 한 번 더 물어본다.
+           서버가 이미 끝냈는데 「못 바꿨습니다」라고 하면 대표가 또 시도하게 된다. */
+        if(r.timeout){
+          pjAdmin('check', to, '', function(c2){
+            if(c2 && c2.ok){
+              alert('✅ 사실은 «바뀌었습니다».\n\n' + name + '\n  ↓\n' + to
+                  + '\n\n답이 늦게 왔을 뿐입니다. 노션 제목도 이어서 바꾸겠습니다.');
+              pjNotion('rename', name, to, function(){});
+              PJ_CACHE = null; location.hash = '#p';
+              if(typeof pjLoad === 'function') pjLoad(true);
+            } else {
+              alert('🔴 못 바꿨습니다.\n\n' + (r.error || ''));
+            }
+          });
+          return;
+        }
+        alert('🔴 못 바꿨습니다.\n\n' + (r.error || '')); return;
+      }
       pjNotion('rename', name, to, function(nd){
         var extra = nd && nd.ok ? (nd.skipped ? '노션: ' + nd.why : (nd.done || '노션 제목도 바꿈'))
                                 : ('🔴 노션 제목은 그대로입니다 — ' + ((nd && nd.error) || '못 불렀습니다'));
