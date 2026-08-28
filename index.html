@@ -1811,7 +1811,15 @@
       J.push({ tx:'<b>' + find.join(' · ') + '</b> 이(가) 비었습니다 — '
         + '<b>나중에 찾을 때 쓰는 칸</b>입니다. 알게 되면 채워주세요', calm:1 });
     var eq = it['장비세부내역'] || {};
-    if(eq.state !== 'ok') J.push({ tx:'장비를 아직 안 넣었습니다', act:'field', lb:'🎬 장비' });
+    /* 🔴 2026-08-26 대표 지시 — *"장비를 아직 안넣었습니다는 장비앱이 아니라 소싱시트로 바로가기 되어야돼."*
+       장비를 «처음 넣는» 일은 시트에서 한다. 앱은 현장에서 확인·승인하는 자리다.
+       🔴 주소는 서버가 「관리」 이상에게만 보낸다(단가·마진). 안 오면 예전처럼 장비앱으로 간다. */
+    if(eq.state !== 'ok'){
+      J.push(d.sheetUrl
+        ? { tx:'장비를 아직 안 넣었습니다 — <b>소싱시트</b>에서 넣어주세요',
+            act:'sheet', url:d.sheetUrl, lb:'📊 소싱시트' }
+        : { tx:'장비를 아직 안 넣었습니다', act:'field', lb:'🎬 장비' });
+    }
     var w = (String(eq.text||'').match(/승인 대기\s*(\d+)/) || [])[1];
     if(w) J.push({ tx:'승인 안 한 장비가 <b>'+w+'건</b> 있습니다 — 승인해야 견적에 올라갑니다',
                    act:'field', lb:'🎬 장비' });
@@ -1845,7 +1853,8 @@
         L += '<div class="job"><span class="n' + (j.calm ? ' calm' : '') + '">' + (i+1) + '</span>'
           +  '<span class="tx">' + j.tx + '</span>'
           +  (j.act ? '<button data-pjact="' + pjEsc(j.act) + '" data-pjproj="' + pjEsc(PJ_NOW)
-                    + '" data-pjextra="">' + j.lb + '</button>' : '')
+                    + '" data-pjurl="' + pjEsc(j.url || '') + '"'
+                    + ' data-pjextra="">' + j.lb + '</button>' : '')
           +  '</div>';
       });
     } else {
@@ -2048,7 +2057,7 @@
     try{
       localStorage.setItem(PJ_DRAFT, JSON.stringify({
         from: pjDraftVal('nFrom'), to: pjDraftVal('nTo'),
-        hunt: pjDraftVal('nHunt'), call: pjDraftVal('nCall'),
+        hunt: pjDraftVal('nHunt'),
         /* 🔴 2026-08-26 — 폴더명은 «열쇠»다. 손으로 고친 것을 안 지키면
            나갔다 들어왔을 때 자동 제안이 덮어쓴다(교차검증 ⑧). */
         name: pjDraftVal('nName'),
@@ -2114,16 +2123,19 @@
       +   '<datalist id="locList"></datalist></div>'
       + '<div class="nf"><label>참여 인원 <span class="opt">— 여러 명이면 계속 고르세요</span></label>'
       +   '<div id="pkPeople">불러오는 중…</div><div class="chips" id="chPeople"></div></div>'
-      + '<div class="nf"><label>프로젝트명 <i>*</i> <span class="opt">— 실제로 부르는 이름</span></label>'
-      +   '<input id="nCall" placeholder="예: lalala 26FW · Lisa Press" autocomplete="off">'
-      +   '<div class="hint">🔴 <b>실제로 부르는 이름</b>입니다 — 노션 「프로젝트명」 칸에 그대로 저장됩니다.<br>'
-      +   '아래 <b>폴더명</b>은 여기서 만들어지지만 <b>따로 고칠 수 있습니다</b>.</div></div>'
-      + '<div class="namebox"><div class="t">프로젝트 이름</div>'
+      /* 🔴 2026-08-26 대표 확정 — 이름은 «하나»다. 「프로젝트명」 칸을 없앴다.
+         대표 원문: *"그냥 프로젝트명 없애고 폴더명을 프로젝트명 하나로 가는게 어때?"*
+         [왜] 이름이 둘(폴더명 + 프로젝트명)이면 두 군데가 되어 반드시 어긋난다(§1).
+              실제로 대표는 그 칸을 한 번도 안 쓰셨고(노션 5줄 전부 빈칸),
+              거래처 이름이 그 칸을 덮어쓰는 사고도 났다.
+              → 이 칸 하나가 «드라이브 폴더 이름 · 모든 앱의 열쇠 · 프로젝트명» 셋 다다.
+         되돌리기 = "프로젝트명 칸 되살려줘" */
+      + '<div class="namebox"><div class="t">프로젝트명</div>'
       +   '<input id="nName" spellcheck="false">'
       +   '<div class="hint">🔴 이 이름이 <b>드라이브 폴더 이름</b>이자 '
       +   '<b>모든 앱이 서로를 알아보는 열쇠</b>입니다.<br>'
-      +   '🔴 <b>짧게 다듬으셔도 됩니다</b> — 예: 프로젝트명이 <b>lalala 26FW</b> 라면 폴더명은 '
-      +   '<b>260910_lalala_킷튼프로덕션</b> 처럼 <b>26FW 를 빼도</b> 됩니다.</div></div>'
+      +   '🔴 위에서 날짜·브랜드·거래처를 고르시면 <b>저절로 만들어집니다</b> — '
+      +   '마음에 안 들면 <b>직접 고쳐도 됩니다</b>.</div></div>'
       /* 🔴 2026-08-22 대표 지시: *"프로젝트 이름 양식 설명 밑에 적어줘.
             다른사람이 만들어도 보고 같은 양식으로 쓰게."*
          🔴 규칙을 여기서 «새로 만들지» 않았다 — 회사 이름 규칙(CLAUDE.md §4)을 그대로 옮긴 것이다. */
@@ -2133,9 +2145,9 @@
       +   '<table class="rtb">'
       +     '<tr><td>① 날짜</td><td><b>촬영 첫날</b> · 260910 = 2026년 9월 10일'
       +       '<div class="rs">위 날짜 칸을 고르면 저절로 들어옵니다</div></td></tr>'
-      +     '<tr><td>② 가운데</td><td><b>브랜드</b> · 없으면 <b>프로젝트명</b>'
+      +     '<tr><td>② 가운데</td><td><b>브랜드</b>'
       +       '<div class="rs">브랜드를 고르면 저절로 들어옵니다. '
-      +       '프로젝트명이 <b>lalala 26FW</b> 라면 <b>lalala</b> 만 남겨도 됩니다</div></td></tr>'
+      +       '브랜드가 없으면 <b>직접 적으세요</b> — 짧을수록 좋습니다</div></td></tr>'
       +     '<tr><td>③ 뒤</td><td><b>거래처</b>'
       +       '<div class="rs">거래처를 고르면 저절로 들어옵니다</div></td></tr>'
       +     '<tr><td>사이</td><td>밑줄 <b>_</b> 하나 — 띄어쓰기 대신</td></tr>'
@@ -2159,10 +2171,10 @@
         var _ne = document.getElementById('nName');
         if(_ne){ _ne.value = DR.name; if(DR.nameT) _ne.dataset.touched = '1'; }
       }
-      ['nFrom','nTo','nHunt','nCall'].forEach(function(id, i){
-        var v = [DR.from, DR.to, DR.hunt, DR.call][i];
+      ['nFrom','nTo','nHunt'].forEach(function(id, i){
+        var v = [DR.from, DR.to, DR.hunt][i];
         var e = document.getElementById(id);
-        if(e && v){ e.value = v; if(id === 'nCall') e.dataset.touched = '1'; }
+        if(e && v) e.value = v;
       });
       var mb = document.getElementById('pkMgr');
       var banner = document.createElement('div');
@@ -2181,8 +2193,6 @@
     if(pjnew) pjnew.addEventListener('input', pjDraftTouch);
 
     document.getElementById('nFrom').addEventListener('input', pjNewName);
-    var call = document.getElementById('nCall');
-    call.addEventListener('input', function(){ this.dataset.touched='1'; pjNewName(); });
     /* 🔴 폴더명을 직접 고치면 그때부터 자동 제안을 멈춘다 (2026-08-26) */
     var nmEl = document.getElementById('nName');
     if(nmEl) nmEl.addEventListener('input', function(){
@@ -2634,24 +2644,20 @@
       PJ_NEW.mgr = m.value;
     }
     if(m && m.__status) m.__status();
-    /* 🔴 2026-08-26 — 여기서 「프로젝트명」 칸에 «거래처 이름»을 넣고 있었다.
-       그 칸이 예전엔 「이 촬영을 부르는 이름」이라 맞았지만,
-       지금은 «실제 프로젝트명»(lalala 26FW · Lisa Press)을 적는 자리다.
-       거래처를 고르면 폴더명에 저절로 들어가므로 여기서 넣을 이유가 없다.
-       (정보 고치기에서 `검사 26FW` 가 `키튼`으로 덮이는 것을 실측으로 잡았다) */
-    if(typeof pjNewName === 'function') pjNewName();   /* 폴더명 제안만 다시 만든다 */
+    /* 거래처를 고르면 «프로젝트명»(폴더명) 제안이 저절로 다시 만들어진다.
+       🔴 2026-08-26 — 예전엔 여기서 「부를 이름」 칸에 거래처를 넣었는데,
+          그 칸 자체를 없앴다(이름은 하나). 제안만 다시 만든다. */
+    if(typeof pjNewName === 'function') pjNewName();
   }
-  /* 🔴 2026-08-26 대표 확정 — 폴더명 양식 = 날짜_브랜드또는프로젝트명_거래처
+  /* 🔴 2026-08-26 대표 확정 — 프로젝트명 양식 = 날짜_브랜드_거래처
      대표 원문: *"이름 양식이 다른데 날짜_브랜드or프로젝트명_거래처로 바꿔줘."*
-     🔴 «제안»일 뿐이다 — 대표가 폴더명 칸을 직접 고치면 그것을 그대로 쓴다
-        (`lalala 26FW` 에서 `26FW` 를 빼는 것 같은 일은 사람만 판단할 수 있다). */
+     🔴 «제안»일 뿐이다 — 대표가 칸을 직접 고치면 그것을 그대로 쓴다. */
   function pjNewName(){
     var d = document.getElementById('nFrom').value;
-    var call = document.getElementById('nCall').value.trim();     /* 실제 프로젝트명 */
     var ymd = d ? d.slice(2).replace(/-/g,'') : '';
     var brand = (PJ_NEW && PJ_NEW.brand && PJ_NEW.brand.name) ? PJ_NEW.brand.name.trim() : '';
     var cli   = (PJ_NEW && PJ_NEW.cli   && PJ_NEW.cli.name)   ? PJ_NEW.cli.name.trim()   : '';
-    var mid   = brand || call;                                    /* 브랜드가 있으면 브랜드 */
+    var mid   = brand;                                            /* 가운데 = 브랜드 */
     var nameEl = document.getElementById('nName');
     /* 🔴 대표가 손으로 고쳤으면 덮어쓰지 않는다. 고치는 중이면 이름은 «열쇠»라 아예 안 건드린다 */
     if(!nameEl.dataset.touched && !PJ_EDIT){
@@ -2692,9 +2698,7 @@
     var base = netBase(), u = loadUser();
     if(!base || !u || !u.cred || !credLive(u)){ done(null); return; }
     var data = {
-      /* 🔴 2026-08-26 교차검증 ⑤ — 이 줄이 없어서 노션 「프로젝트명」 칸이 영영 비었다.
-         화면에는 *「노션 「프로젝트명」 칸에 그대로 저장됩니다」* 라고 적어놓고 안 보내고 있었다. */
-      title: ((document.getElementById('nCall') || {}).value || '').trim(),
+      /* 🔴 2026-08-26 — 이름은 하나다. `name` 이 곧 프로젝트명이자 노션 제목이다. */
       name:      name,
       brand:     (PJ_NEW.brand && PJ_NEW.brand.name) || '',
       dateStart: document.getElementById('nFrom').value || '',
@@ -2722,8 +2726,7 @@
     }
 
     var info = {
-      name:   name,                                              /* 폴더명 = 열쇠 */
-      title:  (document.getElementById('nCall').value || '').trim(),  /* 실제 프로젝트명 */
+      name:   name,                          /* 프로젝트명 = 폴더 이름 = 열쇠 (하나다) */
       date:   document.getElementById('nFrom').value || '',
       client: (PJ_NEW.cli   && PJ_NEW.cli.name)   || '',
       mgr:    PJ_NEW.mgr || '',
@@ -2966,7 +2969,7 @@
 
   function pjEditFill(c){
     function set(id, v){ var e = document.getElementById(id); if(e && v) e.value = v; }
-    set('nFrom', c.from); set('nTo', c.to); set('nCall', c.title);
+    set('nFrom', c.from); set('nTo', c.to);
     var nm = document.getElementById('nName');
     if(nm){ nm.value = c.name; nm.dataset.touched = '1'; nm.disabled = true;
             nm.style.background = '#f2f2f2'; }
@@ -2995,13 +2998,12 @@
     if(will) will.innerHTML = '<b>저장하면</b><br>'
       + '① 「프로젝트목록」 시트의 거래처·담당자·포토·브랜드·촬영일<br>'
       + '② 「회차」 탭<br>'
-      + '🔴 <b>프로젝트 이름(폴더명)은 안 바뀝니다</b> — 그건 «✏️ 이름»으로 하세요.';
+      + '🔴 <b>프로젝트명은 안 바뀝니다</b> — 그건 «✏️ 이름»으로 하세요.';
   }
 
   function pjEditSave(){
     var name = PJ_EDIT; if(!name) return;
     var info = {
-      title:  (document.getElementById('nCall').value || '').trim(),
       from:   document.getElementById('nFrom').value || '',
       to:     document.getElementById('nTo').value || '',
       client: (PJ_NEW.cli   && PJ_NEW.cli.name)   || '',
@@ -3157,9 +3159,14 @@
       if(act === 'edit'){   pjEdit(el.getAttribute('data-pjproj')); return; }
       if(act === 'rename'){ pjRename(el.getAttribute('data-pjproj')); return; }
       if(act === 'del'){    pjDelete(el.getAttribute('data-pjproj')); return; }
-      if(act === 'folder'){
+      if(act === 'folder' || act === 'sheet'){
         var fu = el.getAttribute('data-pjurl');
-        if(!fu){ alert('폴더 주소를 아직 못 받았습니다.'); return; }
+        if(!fu){
+          alert(act === 'sheet'
+            ? '소싱시트 주소를 못 받았습니다.\n\n「관리」 이상만 열 수 있습니다 — 단가·마진이 보이는 시트입니다.'
+            : '폴더 주소를 아직 못 받았습니다.');
+          return;
+        }
         openApp_(fu);
         return;
       }
