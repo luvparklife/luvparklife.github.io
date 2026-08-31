@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>장비매입 적는 법 — 담당자용</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1c2330; --sub:#5b6472;
+    --line:#e5e8ee; --accent:#3b6cff; --accent-soft:#eaf0ff;
+    --warn-bg:#fff6e6; --warn-line:#f2c56b; --warn-ink:#7a5200;
+    --ok-bg:#e9f8ee; --ok-line:#8fd6a6; --ok-ink:#1e6b3a;
+    --bad-bg:#fdeeec; --bad-line:#e9a9a0; --bad-ink:#a3352a;
+    --chip:#eef1f6; --code:#f0f2f7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1420; --card:#171d2b; --ink:#e8ecf4; --sub:#a2acbe;
+      --line:#28303f; --accent:#7aa2ff; --accent-soft:#1b2540;
+      --warn-bg:#2c2413; --warn-line:#7a5f22; --warn-ink:#e9c877;
+      --ok-bg:#12271a; --ok-line:#2f6b45; --ok-ink:#8fd6a6;
+      --bad-bg:#2b1614; --bad-line:#7a3a32; --bad-ink:#f0a89e;
+      --chip:#232b3a; --code:#1d2433;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1420; --card:#171d2b; --ink:#e8ecf4; --sub:#a2acbe;
+    --line:#28303f; --accent:#7aa2ff; --accent-soft:#1b2540;
+    --warn-bg:#2c2413; --warn-line:#7a5f22; --warn-ink:#e9c877;
+    --ok-bg:#12271a; --ok-line:#2f6b45; --ok-ink:#8fd6a6;
+    --bad-bg:#2b1614; --bad-line:#7a3a32; --bad-ink:#f0a89e;
+    --chip:#232b3a; --code:#1d2433;
+  }
+  :root[data-theme="light"]{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1c2330; --sub:#5b6472;
+    --line:#e5e8ee; --accent:#3b6cff; --accent-soft:#eaf0ff;
+    --warn-bg:#fff6e6; --warn-line:#f2c56b; --warn-ink:#7a5200;
+    --ok-bg:#e9f8ee; --ok-line:#8fd6a6; --ok-ink:#1e6b3a;
+    --bad-bg:#fdeeec; --bad-line:#e9a9a0; --bad-ink:#a3352a;
+    --chip:#eef1f6; --code:#f0f2f7;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Malgun Gothic",sans-serif;
+    line-height:1.8; font-size:17px; padding-bottom:40px}
+  .wrap{max-width:920px; margin:0 auto; padding:0 18px}
+  header.hero{padding:40px 18px 28px; text-align:center;
+    background:linear-gradient(180deg,var(--accent-soft),transparent); border-bottom:1px solid var(--line)}
+  header.hero h1{font-size:29px; margin:0 0 10px; letter-spacing:-.5px; text-wrap:balance}
+  header.hero p{margin:0; color:var(--sub); font-size:16px}
+  header.hero .who{display:inline-block; margin-top:12px; background:var(--accent); color:#fff;
+    border-radius:999px; padding:5px 16px; font-size:14px; font-weight:700}
+  section{background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:24px 26px; margin:20px 0}
+  section h2{font-size:21px; margin:0 0 14px; display:flex; align-items:center; gap:12px; letter-spacing:-.3px}
+  .num{flex:0 0 36px; height:36px; border-radius:50%; background:var(--accent); color:#fff;
+    display:inline-flex; align-items:center; justify-content:center; font-size:18px; font-weight:700}
+  h3{font-size:17px; margin:22px 0 8px}
+  p,li{color:var(--ink)}
+  ul,ol{padding-left:22px} li{margin:6px 0}
+  code{background:var(--code); padding:2px 7px; border-radius:6px; font-size:14.5px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .box{border-radius:12px; padding:14px 16px; margin:14px 0; font-size:16px}
+  .warn{background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--warn-ink)}
+  .ok{background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--ok-ink)}
+  .bad{background:var(--bad-bg); border:1px solid var(--bad-line); color:var(--bad-ink)}
+  .box b{color:inherit}
+  .quote{border-left:4px solid var(--accent); background:var(--accent-soft);
+    padding:14px 18px; border-radius:0 12px 12px 0; margin:16px 0; font-size:17px}
+  .tblwrap{overflow-x:auto; margin:14px 0}
+  table{width:100%; border-collapse:collapse; font-size:15.5px}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left; vertical-align:top}
+  th{background:var(--accent-soft); font-weight:700; white-space:nowrap}
+  .steps{list-style:none; padding:0; counter-reset:s; margin:16px 0}
+  .steps>li{position:relative; padding:16px 16px 16px 60px; margin:12px 0;
+    background:var(--bg); border:1px solid var(--line); border-radius:12px; counter-increment:s}
+  .steps>li::before{content:counter(s); position:absolute; left:16px; top:14px;
+    width:30px; height:30px; border-radius:50%; background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px}
+  .steps>li b{font-size:17px}
+  .steps>li .d{color:var(--sub); font-size:15px; display:block; margin-top:4px}
+  .yn{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0}
+  .yn>div{border-radius:12px; padding:14px 16px; font-size:15.5px}
+  .yn ul{margin:8px 0 0; padding-left:20px}
+
+  /* ===== 구글시트 화면 재현 — 실제와 같게 «항상 흰 종이» ===== */
+  .sheetwrap{overflow-x:auto; margin:16px 0; -webkit-overflow-scrolling:touch}
+  .sheet{min-width:720px; border:1px solid #c0c4cc; border-radius:6px; overflow:hidden;
+    background:#fff; color:#202124; font-size:13px; line-height:1.5;
+    font-family:-apple-system,"Apple SD Gothic Neo",Arial,sans-serif;
+    box-shadow:0 1px 4px rgba(0,0,0,.10)}
+  .sheet .r{display:flex}
+  .sheet .rn{flex:0 0 32px; background:#f8f9fa; color:#5f6368; font-size:11px;
+    text-align:center; padding:7px 0; border-right:1px solid #c0c4cc; border-bottom:1px solid #e1e3e6}
+  .sheet .c{flex:1 1 0; min-width:0; padding:7px 9px; border-right:1px solid #e1e3e6;
+    border-bottom:1px solid #e1e3e6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .sheet .colrow .c{background:#f8f9fa; color:#5f6368; text-align:center; font-size:11px; font-weight:700}
+  .sheet .banner{background:#eaf0ff; font-weight:700; padding:11px 12px; white-space:normal;
+    border-bottom:1px solid #c0c4cc; color:#1c2330}
+  .sheet .hgray{background:#dfe3ea; font-weight:700}
+  .sheet .hgreen{background:#e9f8ee; font-weight:700}
+  .sheet .cgreen{background:#f2fbf5}
+  .sheet .muted{color:#80868b}
+  .sheet .tabs{display:flex; gap:2px; background:#f1f3f4; padding:6px 8px; border-top:1px solid #c0c4cc}
+  .sheet .tab{background:#fff; border:1px solid #dadce0; border-bottom:none;
+    border-radius:5px 5px 0 0; padding:5px 13px; font-size:12px; color:#3c4043}
+  .sheet .tab.on{font-weight:700; box-shadow:inset 0 -3px 0 #3b6cff}
+  .cap{color:var(--sub); font-size:14px; margin:6px 2px 0; text-align:center}
+  .point{display:inline-block; background:#fff3cd; border:1px solid #f2c56b; color:#7a5200;
+    border-radius:6px; padding:1px 8px; font-size:13px; font-weight:700; margin:0 2px}
+
+  footer{color:var(--sub); text-align:center; font-size:14px; padding:24px 18px 40px; line-height:1.9}
+  @media (max-width:760px){
+    body{font-size:16px}
+    section{padding:20px 16px}
+    .yn{grid-template-columns:1fr}
+    header.hero h1{font-size:24px}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>🧾 장비매입 적는 법</h1>
+  <p>물건 먼저 받고 결제는 나중일 때 · <b>중요한 건 6번 항목</b>입니다</p>
+  <div class="who">PA 담당자용 (관리 등급)</div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <h2><span class="num">1</span>딱 하나만 외우면 됩니다</h2>
+  <div class="quote"><b>「물건 받은 날」과 「돈 낸 날」은 다른 칸입니다.</b><br>
+     물건을 받으면 <b>그날 바로</b> 적습니다. 돈은 나중에 내도 됩니다.</div>
+  <div class="tblwrap"><table>
+    <tr><th>칸</th><th>무엇을 적나</th><th>아직 안 냈으면</th></tr>
+    <tr><td><b>수령일</b></td><td>📦 물건 받은 날</td><td>오늘 날짜를 적습니다</td></tr>
+    <tr><td><b>결제일</b></td><td>💸 돈이 나간 날</td><td><b>비웁니다</b></td></tr>
+    <tr><td><b>지급상태</b></td><td>완료 / 일부 / 미지급</td><td><b>미지급</b>을 고릅니다</td></tr>
+  </table></div>
+  <div class="box ok"><b>✅ 「결제일이 비었음」 경고는 안 뜹니다.</b>
+     지급상태를 <b>미지급</b>으로 해두면 시스템이 「아직 안 낸 게 정상」으로 알아봅니다.
+     대신 <b>「지급이 안 끝났음」</b>이 계속 떠 있는데, 그건 <b>잔금을 잊지 말라는 표시</b>라 정상입니다.</div>
+</section>
+
+<section>
+  <h2><span class="num">2</span>화면이 이렇게 생겼습니다</h2>
+  <p>마스터 장비시트 아래쪽 <b>「장비매입」 탭</b>입니다.
+     1행은 칸 이름, 2행은 설명, <b>3행부터 실제 내용</b>입니다.</p>
+  <div class="sheetwrap"><div class="sheet">
+<div class="r colrow"><div class="rn"></div><div class="c">A</div><div class="c">B</div><div class="c">C</div><div class="c">D</div><div class="c">E</div><div class="c">F</div><div class="c">G</div><div class="c">H</div></div>
+<div class="r"><div class="rn">1</div><div class="c hgray">매입ID</div><div class="c hgray">거래구분</div><div class="c hgray">결제일</div><div class="c hgray">수령일</div><div class="c hgray">거래처</div><div class="c hgray">품목</div><div class="c hgray">금액</div><div class="c hgray">지급상태</div></div>
+<div class="r"><div class="rn">2</div><div class="c muted">🤖 저절로</div><div class="c muted">🔽</div><div class="c muted">📅 돈 나간 날</div><div class="c muted">📅 받은 날</div><div class="c muted">🔽</div><div class="c muted">✍️</div><div class="c muted">✍️</div><div class="c muted">🔽</div></div>
+<div class="r"><div class="rn">3</div><div class="c ">P-0101</div><div class="c ">매입</div><div class="c ">2026. 8. 3</div><div class="c ">2026. 8. 3</div><div class="c ">○○렌탈</div><div class="c ">조명 본체</div><div class="c ">1,200,000</div><div class="c ">완료</div></div>
+<div class="r"><div class="rn">4</div><div class="c cgreen">P-0102</div><div class="c cgreen">매입</div><div class="c cgreen"></div><div class="c cgreen">2026. 9. 1</div><div class="c cgreen">△△툴즈</div><div class="c cgreen">파워팩</div><div class="c cgreen">5,000,000</div><div class="c cgreen">미지급</div></div>
+<div class="r"><div class="rn">5</div><div class="c cgreen">P-0102</div><div class="c cgreen"></div><div class="c cgreen"></div><div class="c cgreen"></div><div class="c cgreen"><span class="muted">(비움)</span></div><div class="c cgreen">└ 헤드</div><div class="c cgreen"><span class="muted">(비움)</span></div><div class="c cgreen"></div></div>
+<div class="tabs"><div class="tab">소싱시트</div><div class="tab">장비DB</div><div class="tab on">장비매입</div><div class="tab">📖 매입 사용법</div></div>
+</div></div>
+  <p class="cap">↑ 초록으로 칠한 줄이 「오늘 새로 적는 줄」 예시입니다</p>
+  <div class="box warn"><b>⚠️ 칸이 28개라 화면 밖으로 나갑니다.</b>
+     옆으로 밀어야 다 보입니다. 자주 쓰는 칸은 대부분 <b>왼쪽 절반</b>에 있습니다.</div>
+</section>
+
+<section>
+  <h2><span class="num">3</span>물건을 받았을 때 — 따라 하세요</h2>
+  <ol class="steps">
+    <li><b>「장비매입」 탭에서 맨 아래 빈 줄을 찾습니다</b>
+      <span class="d">내용이 적힌 마지막 줄 바로 아래입니다.</span></li>
+    <li><b>왼쪽부터 채워 나갑니다</b>
+      <span class="d">거래구분=<b>매입</b> · 사업자=<b>PA</b> · 수령일=<b>오늘</b> · 거래처 · 품목 · 수량 · 금액</span></li>
+    <li><b>결제일은 비워두고, 지급상태를 <span class="point">미지급</span>으로 고릅니다</b>
+      <span class="d">아직 돈을 안 냈다면 이게 맞습니다.</span></li>
+    <li><b>결제방법을 고릅니다</b>
+      <span class="d">카드 / 현금이체 / 계산서(이체) / 현금영수증(이체) 중에서.
+      아직 안 냈어도 <b>어떻게 낼지</b>는 보통 정해져 있습니다.</span></li>
+    <li><b>매입ID는 신경 쓰지 않습니다</b>
+      <span class="d">품목을 적는 순간 <code>P-0101</code> 같은 번호가 <b>저절로</b> 붙습니다.</span></li>
+  </ol>
+  <div class="box ok"><b>✅ 「금액」은 부가세를 포함한 총액입니다.</b>
+     공급가액과 부가세는 시스템이 알아서 나눕니다 — <b>그 칸은 손대지 마세요.</b></div>
+</section>
+
+<section>
+  <h2><span class="num">4</span>한 번에 여러 품목을 샀을 때</h2>
+  <p>파워팩 하나에 헤드·리플렉터가 딸려오는 경우입니다.</p>
+  <div class="quote"><b>줄은 품목 수만큼 나누고, 2번째 줄부터 「거래처」와 「금액」을 비웁니다.</b></div>
+  <p>그러면 시스템이 <b>「윗줄과 같은 거래」</b>로 알아보고 매입ID를 그대로 물려줍니다
+     (위 그림의 4·5행이 그 모양입니다).</p>
+  <div class="box bad"><b>❌ 금액을 아래 줄에도 적으면 안 됩니다.</b>
+     같은 돈을 여러 번 쓴 것이 되어 <b>회사 자산이 부풀어 오릅니다.</b>
+     세무사·거래처에게 보내는 파일에도 그대로 나갑니다.</div>
+</section>
+
+<section>
+  <h2><span class="num">5</span>계속 쓸 장비면 — 장비DB가 먼저입니다</h2>
+  <ol class="steps">
+    <li><b>메뉴 <code>⚙ 장비 시스템</code> → <code>🎒 장비 늘리고 고칠 때</code> → <code>➕ 장비 추가</code></b>
+      <span class="d">오른쪽에 입력 폼이 뜹니다. 카테고리를 고르면 EQ 번호가 미리 보입니다.</span></li>
+    <li><b>폼 아래쪽 <span class="point">🧾 매입탭에도 한 줄 만들기</span>를 체크합니다</b>
+      <span class="d">거래처·금액만 적으면 <b>매입탭 줄이 저절로 만들어집니다</b>(미지급으로).
+      같은 내용을 두 번 치지 않아도 됩니다.</span></li>
+    <li><b>장비로 관리 안 할 것은 <code>EQ ID</code> 칸에 <code>등록안함</code>이라고 적습니다</b>
+      <span class="d">소모품·수리비처럼 재고로 세지 않는 것들입니다.</span></li>
+  </ol>
+  <div class="box warn"><b>⚠️ 순서를 거꾸로 하면 안 됩니다.</b>
+     매입탭 <code>EQ ID</code> 목록은 <b>장비DB에서 가져옵니다.</b>
+     장비DB에 없으면 그 장비가 목록에 안 뜹니다.</div>
+  <div class="box bad"><b>❌ <code>UNIT PRICE</code>를 비워두지 마세요.</b>
+     비우면 나중에 <b>견적서에 0원으로 나갑니다.</b><br>
+     그리고 이 값은 <b>렌탈가</b>입니다 — 매입할 때 준 돈과 <b>다릅니다.</b>
+     매입 금액은 매입탭 <code>금액</code> 칸에 따로 적습니다.</div>
+</section>
+
+<section>
+  <h2><span class="num">6</span>🔴 어디까지 내가 하고, 어디부터 물어보나</h2>
+  <p>제일 중요한 부분입니다. <b>애매하면 적지 말고 물어보는 편이 낫습니다</b> —
+     매입 기록은 <b>세무 증빙</b>이라 틀리면 나중에 찾기 어렵습니다.</p>
+  <div class="yn">
+    <div class="ok"><b>✅ 그냥 하시면 됩니다</b>
+      <ul>
+        <li>물건을 받고 <b>새 줄을 적는 것</b></li>
+        <li>내가 적은 줄을 <b>고치는 것</b></li>
+        <li>장비DB에 새 장비를 <b>등록하는 것</b></li>
+        <li>비어 있는 칸을 채우는 것</li>
+      </ul>
+    </div>
+    <div class="warn"><b>🟡 먼저 물어보세요</b>
+      <ul>
+        <li><b>이미 적혀 있는 남의 줄</b>을 고쳐야 할 때</li>
+        <li><b>줄을 지워야</b> 할 것 같을 때</li>
+        <li>금액을 <b>모를 때</b> (0으로 적지 마세요)</li>
+        <li><b>빌린 건지 산 건지</b> 헷갈릴 때</li>
+        <li>거래처가 <b>개인</b>일 때 (증빙 방법이 다릅니다)</li>
+        <li>같은 물건이 <b>이미 적혀 있는 것 같을 때</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="box bad"><b>❌ 빌린 장비를 매입탭에 적지 마세요.</b>
+     매입탭은 <b>우리가 산 것만</b> 적는 곳입니다.
+     빌린 것은 <b>소싱시트</b>에서 다룹니다. 여기 적으면 회사 자산이 부풀고 세무사에게 그대로 나갑니다.</div>
+</section>
+
+<section>
+  <h2><span class="num">7</span>점검에 이런 게 뜨면</h2>
+  <div class="tblwrap"><table>
+    <tr><th>뜨는 것</th><th>무슨 뜻</th><th>어떻게</th></tr>
+    <tr><td>🔴 지급이 안 끝났음</td><td><b>정상입니다</b> — 잔금을 잊지 말라는 표시</td><td>돈을 내면 「완료」로 바꿉니다</td></tr>
+    <tr><td>🔴 결제방법이 비었음</td><td>카드인지 계산서인지 안 적힘</td><td>드롭다운에서 고릅니다</td></tr>
+    <tr><td>🔴 계산서가 안 왔음</td><td>계산서로 샀는데 발행일이 없음</td><td>거래처에 요청합니다</td></tr>
+    <tr><td>🔴 금액/거래처가 비었음</td><td>말 그대로</td><td>채웁니다. 모르면 <b>물어봅니다</b></td></tr>
+    <tr><td>🟡 장비DB에 넣을지 안 정함</td><td>EQ ID 칸이 비었음</td><td>EQ 번호 또는 <code>등록안함</code></td></tr>
+    <tr><td>🔴 렌탈 업체인데 매입탭에 있음</td><td>빌린 것을 산 것으로 적음</td><td><b>물어봅니다</b> (지울지 고칠지)</td></tr>
+    <tr><td>🔴 장비는 들어왔는데<br>매입 기록이 없음</td><td>장비DB엔 있는데 매입탭에 없음</td><td>그 장비를 매입탭에 적습니다</td></tr>
+    <tr><td>매입ID가 안 붙는다</td><td>품목 칸이 비어 있음</td><td>품목을 적으면 붙습니다</td></tr>
+  </table></div>
+  <div class="box ok"><b>✅ 점검은 어디서 보나요?</b>
+     시트 아래 <b>「📋 매입 점검」 탭</b>입니다. 없으면 대표님께 말씀드리면 만들어 드립니다.</div>
+</section>
+
+</div>
+
+<footer>
+PA 내부 문서입니다. 애매한 것은 <b>적기 전에 대표님께 물어보세요</b> — 매입 기록은 세무 증빙이라 틀리면 나중에 찾기 어렵습니다. · 2026-09-01
+</footer>
+
+</body>
+</html>
