@@ -1887,6 +1887,28 @@
       var a = qk.querySelector('a[data-pjfolder]');
       if(a){ a.className=''; a.setAttribute('data-pjact','folder'); a.setAttribute('data-pjurl', fd.link); }
     }
+    /* 📊 소싱시트 · 🌐 공유파일 살리기 (2026-08-31 대표 지시)
+       🔴 주소를 코드에 안 적는다 — 서버가 방금 보낸 것만 쓴다(폴더와 «같은 방식» · §1).
+       🔴 「없음」이라고 «단정»하려면 서버가 «봤다»고 말해야 한다(shareState).
+          그 말이 없으면 옛 배포라 아직 물어보지도 못한 것이다 — 회색으로 두고 그렇게 말한다.
+          안 그러면 공유파일이 «있는데» 「없음」이라고 거짓말한다. */
+    if(qk){
+      var aS = qk.querySelector('a[data-pjsheet]');
+      if(aS && d.sheetUrl){
+        aS.className=''; aS.setAttribute('data-pjact','sheet'); aS.setAttribute('data-pjurl', d.sheetUrl);
+      }
+      var aH = qk.querySelector('a[data-pjshare]');
+      if(aH){
+        if(d.shareUrl){
+          aH.className=''; aH.setAttribute('data-pjact','share'); aH.setAttribute('data-pjurl', d.shareUrl);
+          /* 「🔄 갱신 필요」 = 소싱시트가 바뀐 뒤 아직 공유파일에 안 옮겼다는 뜻 */
+          aH.textContent = (d.shareState === 'dirty') ? '🌐 공유파일 (갱신 필요)' : '🌐 공유파일';
+        }else if(d.shareState === 'none'){
+          aH.className='off'; aH.removeAttribute('data-pjact'); aH.removeAttribute('data-pjurl');
+          aH.textContent = '🌐 공유파일 없음';
+        }
+      }
+    }
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -2805,6 +2827,8 @@
       +     '<p class="fn">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.'
       +     (!PJ_ROLE && !canAsk ? '<br>🔑 <b>다시 로그인해주세요</b> — 구글 통행증이 1시간마다 만료돼서 등급을 못 물어봅니다.' : '')
       +     (isOwner ? '' : '<br>견적서는 단가·마진이 그대로 보여서 <b>대표님만</b> 열립니다.')
+      +     (isMgr ? '' : '<br>📊 소싱시트도 단가·마진이 보여서 <b>「관리」 이상만</b> 열립니다.')
+      +     '<br>🌐 <b>공유파일</b>이 회색이면 그 프로젝트는 <b>아직 안 만든 것</b>입니다 — 장비시트 메뉴 「🌐 팀 공유파일 만들기」.'
       +     '<br>⚪ <b>아직 안 봄</b> = 노션·정산앱에 있는 것이라 이 화면이 아직 못 물어봅니다.'
       +     '<br>📝 노션 페이지 · ✅ 끝내기는 <b>아직 안 만들었습니다.</b></p>'
       +   '</div></div>'
@@ -2826,7 +2850,11 @@
   /* 카드 한 장. act = 'field'(장비앱으로) / 'settle'(정산앱으로) */
   /* 🔴 pjCard() 는 2026-08-22 「두 칸 관리판」으로 바뀌면서 부르는 곳이 0이 되어 뺐다.
      되살리려면 백업 hub_index_260822_두칸전.html 에 있다. */
-  /* 바로가기 5개. 🔴 폴더는 «주소를 받은 뒤»에 살아난다(pjChkPaint) — 코드에 주소를 안 적는다 §1 */
+  /* 바로가기. 🔴 폴더·소싱시트·공유파일은 «주소를 받은 뒤»에 살아난다(pjChkPaint)
+     — 코드에 주소를 안 적는다(§1). 주소가 안 오면 회색으로 남고, 누르면 «왜» 못 여는지 말한다.
+     🆕 2026-08-31 대표 지시 — *"소싱시트, 해당 프로젝트 공유파일(없으면 없다라고 되어있어야됨)"*
+     🔴 소싱시트는 「관리」 이상만 열린다(단가·마진이 보인다) — 서버도 그 등급에만 주소를 준다.
+        회색으로 «보여는 준다» — 없는 것처럼 감추면 「왜 없지」를 대표가 물어야 한다. */
   function pjLinks(proj, isOwner, isMgr){
     var p = pjEsc(proj);
     return '<div class="qk" id="pjQk">'
@@ -2834,8 +2862,10 @@
       + (isOwner
           ? '<a href="#" data-pjact="field" data-pjproj="' + p + '" data-pjextra="page=quote">🧾 견적서</a>'
           : '<a href="#" class="off">🧾 견적서</a>')
+      + '<a href="#" class="off" data-pjsheet="1">📊 소싱시트</a>'
+      + '<a href="#" class="off" data-pjshare="1">🌐 공유파일</a>'
       + '<a href="#" class="off" data-pjfolder="1">📁 폴더</a>'
-      + '<a href="#" data-pjact="settle">💰 ' + (isMgr ? '정산 (관리)' : '내 청구') + '</a>'
+      + '<a href="#" data-pjact="settle" data-pjproj="' + p + '">💰 ' + (isMgr ? '정산 (관리)' : '내 청구') + '</a>'
       /* 🔴 2026-08-26 대표 지시 *"잘못만들었을때 … 삭제하거나 수정할 수 있게"*
          대표에게만 보인다 — 서버도 대표가 아니면 거절한다(화면만 감추는 게 아니다). */
       /* ✏️ 정보 고치기 — 「관리」 이상 (2026-08-26 대표 지시 *"쌓인 정보 수정 및 추가"*) */
@@ -3155,15 +3185,17 @@
       }
       if(!act) return;
       e.preventDefault();
-      if(act === 'settle'){ pjSettle(); return; }
+      if(act === 'settle'){ pjSettle(el.getAttribute('data-pjproj') || PJ_NOW); return; }
       if(act === 'edit'){   pjEdit(el.getAttribute('data-pjproj')); return; }
       if(act === 'rename'){ pjRename(el.getAttribute('data-pjproj')); return; }
       if(act === 'del'){    pjDelete(el.getAttribute('data-pjproj')); return; }
-      if(act === 'folder' || act === 'sheet'){
+      if(act === 'folder' || act === 'sheet' || act === 'share'){
         var fu = el.getAttribute('data-pjurl');
         if(!fu){
           alert(act === 'sheet'
             ? '소싱시트 주소를 못 받았습니다.\n\n「관리」 이상만 열 수 있습니다 — 단가·마진이 보이는 시트입니다.'
+            : act === 'share'
+            ? '공유파일 주소를 아직 못 받았습니다.\n\n장비시트 메뉴 「🌐 팀 공유파일 만들기」로 만들 수 있습니다.'
             : '폴더 주소를 아직 못 받았습니다.');
           return;
         }
@@ -3187,11 +3219,16 @@
       after();
     });
   }
-  /* 정산앱은 아직 ?proj= 를 못 받는다 — 프로젝트 없이 그냥 연다(거짓말하지 않는다) */
-  function pjSettle(){
+  /* 💰 정산 — 그 프로젝트로 연다 (2026-08-31 대표 지시 *"장비,견적서,정산은 해당 프로젝트 페이지로"*)
+     🔴 앞에는 프로젝트를 «안 보냈다» — 정산앱에 받을 자리가 없었기 때문이다. 그 자리를 만들어 붙였다.
+        · 「관리」 이상 → 지급명세서에서 그 프로젝트만 걸러 보여준다
+        · 그 아래 등급 → 청구 폼의 프로젝트 칸이 미리 채워진다
+     🔴 정산앱이 옛 판이면 proj 를 «그냥 무시»한다 — 예전처럼 열릴 뿐 깨지지 않는다. */
+  function pjSettle(proj){
     var a = document.querySelector('a[data-badge]');
     if(!a){ alert('정산앱 링크를 못 찾았습니다.'); return; }
     var u = loadUser(), url = a.getAttribute('href');
+    if(proj) url += (url.indexOf('?')>=0?'&':'?') + 'proj=' + encodeURIComponent(proj);
     var tk2 = tokForOpen(url);
     if(tk2) url += (url.indexOf('?')>=0?'&':'?') + tk2.slice(1);
     openApp_(url);
