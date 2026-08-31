@@ -61,10 +61,36 @@
     .group.etc .gt{color:var(--etc)}
     .group.etc a.card{border-left:4px solid var(--etc-line)}
 
-    /* ═══ ✥ 배치 바꾸기 (2026-08-21 신설) ═══════════════════════
+    /* ═══ ⬅ ➡ 🏠 맨 위 이동바 (2026-08-31 대표 지시) ═══════════════
+       대표 원문: *"어느 최상단에는 뒤로가기 앞으로가기 그리고 홈으로 가기"*
+       🔴 왜 필요한가 — 아이폰 홈 화면에 추가해 열면 «주소창이 없어» 브라우저 뒤로가기가 없다.
+          그러면 프로젝트 화면에 들어간 뒤 돌아올 길이 화면 안에만 있어야 한다.
+          (정산앱이 2026-08-01에 같은 이유로 자기 발자국을 만들었다 — 새로 발명한 게 아니다)
+       🔴 스크롤해도 «따라온다»(sticky) — 프로젝트 화면은 길어서, 안 그러면
+          돌아가려고 매번 맨 위까지 올려야 한다. 고정을 풀려면 position:sticky 한 줄만 빼면 된다. */
+    .navbar{
+      position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:6px;
+      padding:8px 0 10px; margin:0 0 6px; background:var(--bg);
+      border-bottom:1px solid var(--line);
+    }
+    .navbar button{
+      font:inherit; font-size:13px; font-weight:700; cursor:pointer;
+      border:1px solid var(--line); background:var(--card); color:var(--sub);
+      border-radius:9px; padding:7px 13px; line-height:1;
+    }
+    .navbar button:hover:not(:disabled){border-color:var(--daily); color:var(--daily)}
+    /* 🔴 갈 곳이 없으면 «못 누르게» 한다 — 안 그러면 뒤로가 허브 «밖»으로 나가버린다 */
+    .navbar button:disabled{opacity:.34; cursor:default}
+    .navbar .navsp{flex:1}
+    .navbar .navwh{font-size:12px; color:var(--faint); white-space:nowrap;
+      overflow:hidden; text-overflow:ellipsis; max-width:52%}
+
+    /* ═══ ✥ 배치 바꾸기 (2026-08-21 신설 · 🔴 2026-08-31 «맨 아래»로 옮김) ═══
        대표가 카드를 끌어서 순서·그룹을 바꾼다. 저장은 이 브라우저에만 한다.
-       🔴 남의 화면은 안 바뀐다 — 허브는 서버가 없는 정적 사이트다. */
-    .editbar{display:flex; align-items:center; gap:8px; margin:-14px 0 20px; flex-wrap:wrap}
+       🔴 남의 화면은 안 바뀐다 — 허브는 서버가 없는 정적 사이트다.
+       🔴 자주 쓰는 것이 아니라 맨 위 자리를 차지할 이유가 없다(2026-08-31 대표 지시). */
+    .editbar{display:flex; align-items:center; gap:8px; margin:22px 0 4px;
+      padding-top:16px; border-top:1px solid var(--line); flex-wrap:wrap}
     .editbar button{
       font:inherit; font-size:12.5px; font-weight:700; cursor:pointer;
       border:1px solid var(--line); background:var(--card); color:var(--sub);
@@ -337,16 +363,19 @@
 </head>
 <body>
   <div class="wrap">
+    <!-- ⬅ ➡ 🏠 맨 위 이동바 (2026-08-31 대표 지시 — *"최상단에는 뒤로가기 앞으로가기 그리고 홈으로 가기"*)
+         🔴 브라우저 발자국을 «그대로» 쓴다(#p · #p/이름 이 이미 발자국을 남긴다) — 새로 만들지 않았다.
+         🔴 갈 곳이 없으면 못 누르게 막는다 — 안 그러면 뒤로가 허브 «밖»(전에 보던 사이트)으로 나간다. -->
+    <div class="navbar" id="navBar">
+      <button id="navBack" type="button" title="뒤로" disabled>‹ 뒤로</button>
+      <button id="navFwd"  type="button" title="앞으로" disabled>앞으로 ›</button>
+      <button id="navHome" type="button" title="도구 전체(홈)로">🏠 홈</button>
+      <span class="navsp"></span>
+      <span class="navwh" id="navWhere">도구 전체</span>
+    </div>
+
     <h1>🎬 프로덕션 허브</h1>
     <p class="sub">필요한 앱을 눌러 들어가세요. 이 페이지 하나만 북마크하면 됩니다.</p>
-
-    <!-- ✥ 배치 바꾸기 (2026-08-21 신설 · 대표 지시)
-         🔴 대표 전용이다 — 저장이 「이 브라우저」에만 되므로 남이 눌러도 남만 바뀐다. -->
-    <div class="editbar" data-see="owner" hidden>
-      <button id="edToggle" type="button">✥ 배치 바꾸기</button>
-      <button id="edReset" type="button" hidden>↩ 원래대로</button>
-      <span class="msg" id="edMsg"></span>
-    </div>
 
     <!-- ============ 프로필 · 구글 로그인 상태 ============
          디폴트는 「로그아웃」이다. 구글이 자동으로 로그인시키지 않도록 auto_select를 끄고
@@ -639,6 +668,15 @@
       <div id="pjOneBody"></div>
     </div>
 
+    <!-- ✥ 배치 바꾸기 (2026-08-21 신설 · 🔴 2026-08-31 대표 지시로 «맨 아래»로 내렸다)
+         🔴 대표 전용이다 — 저장이 「이 브라우저」에만 되므로 남이 눌러도 남만 바뀐다.
+         🔴 홈에서만 보인다(pjRoute가 감춘다) — 프로젝트 화면에서는 끌어다 놓을 카드가 없다. -->
+    <div class="editbar" data-see="owner" id="edBar" hidden>
+      <button id="edToggle" type="button">✥ 배치 바꾸기</button>
+      <button id="edReset" type="button" hidden>↩ 원래대로</button>
+      <span class="msg" id="edMsg"></span>
+    </div>
+
     <p class="foot">각 앱은 서로 독립적으로 작동합니다.<br>앱 링크가 바뀌면 이 페이지(index.html)만 갱신하면 됩니다.</p>
   </div>
 
@@ -851,6 +889,17 @@
       var need = els[i].getAttribute('data-see');
       els[i].hidden = !( role === 'owner' || (role === 'admin' && need === 'admin') );
     }
+    /* 🔴 2026-08-31 — 이 함수는 «화면이 어디인지»를 모르고 [data-see] 를 전부 켠다.
+       그래서 프로젝트 화면에서 로그인하면 홈 카드가 그 아래 «딸려 나왔다».
+       (원래 있던 것인데, ✥ 배치 바꾸기를 맨 아래로 내리면서 눈에 띄었다)
+       → 홈이 아니면 홈 것들을 다시 감춘다. 홈에서는 아무 일도 안 한다. */
+    try{
+      if(location.hash){
+        var hs = document.querySelectorAll('.group:not(.pjview)');
+        for(var k = 0; k < hs.length; k++) hs[k].hidden = true;
+        var eb2 = document.getElementById('edBar'); if(eb2) eb2.hidden = true;
+      }
+    }catch(e){}
     /* 🗂 로그인이 끝난 뒤 구글에 저장해 둔 카드 배치를 받아온다 (2026-08-21).
        안에서 한 번만 돌게 막아둬서 여러 번 불려도 괜찮다. 실패하면 조용히 넘어간다. */
     try { if (window.hubPullLayout) window.hubPullLayout(); } catch(e){}
@@ -3234,29 +3283,92 @@
     openApp_(url);
   }
 
+  /* ═══════ ⬅ ➡ 🏠 맨 위 이동바 (2026-08-31 대표 지시) ═══════════════
+     🔴 브라우저 발자국을 «그대로» 쓴다 — 이 페이지는 주소(#p · #p/이름)로 화면을 갈아끼우므로
+        history 에 이미 정확히 쌓인다. 정산앱처럼 «자기 발자국»을 새로 만들 이유가 없다(§1).
+     🔴 다만 «지금이 몇 번째 발자국인지»는 브라우저가 안 알려준다(보안).
+        그래서 발자국마다 번호를 적어둔다(history.replaceState). 그 번호로 판단한다:
+          · 번호가 1이면  → 뒤로 갈 곳이 «허브 안에» 없다 → 못 누르게 막는다
+            (안 막으면 뒤로가 허브 «밖», 전에 보던 사이트로 나가버린다)
+          · 번호 < 최대치 → 앞으로 갈 곳이 있다
+     🔴 새로고침하면 최대치를 잃는다 → 「앞으로」는 «안전한 쪽»(못 누름)으로 둔다.
+        잘못 열리는 것보다 안 열리는 게 낫다.
+     되돌리기 = "허브 이동바 빼줘" */
+  var NAV_AT = 0, NAV_MAX = 0;
+  function navMark(){
+    var st = null; try{ st = history.state; }catch(e){}
+    if(st && typeof st.hub === 'number'){
+      NAV_AT = st.hub;                                  /* 뒤로·앞으로로 온 것 */
+      if(NAV_AT > NAV_MAX) NAV_MAX = NAV_AT;
+    }else{
+      NAV_AT = NAV_AT + 1;                              /* 새로 온 것 */
+      NAV_MAX = NAV_AT;                                 /* 🔴 앞쪽 발자국은 잘렸다 */
+      try{ history.replaceState({ hub: NAV_AT }, ''); }catch(e){}
+    }
+    navPaint();
+  }
+  function navPaint(){
+    var b = document.getElementById('navBack'),
+        f = document.getElementById('navFwd'),
+        hm= document.getElementById('navHome'),
+        w = document.getElementById('navWhere');
+    if(!b) return;
+    b.disabled = (NAV_AT <= 1);
+    f.disabled = (NAV_AT >= NAV_MAX);
+    var h = location.hash || '';
+    if(hm) hm.disabled = !h;                            /* 이미 홈이면 못 누른다 */
+    if(w){
+      var t = '도구 전체';
+      if(h === '#p') t = '📁 프로젝트 목록';
+      else if(h.indexOf('#p/') === 0){
+        try{ t = '📁 ' + decodeURIComponent(h.slice(3)); }catch(e){ t = '📁 ' + h.slice(3); }
+      }
+      w.textContent = t;
+    }
+  }
+  (function(){
+    var b = document.getElementById('navBack'),
+        f = document.getElementById('navFwd'),
+        hm= document.getElementById('navHome');
+    if(b) b.addEventListener('click', function(){ if(!b.disabled) history.back(); });
+    if(f) f.addEventListener('click', function(){ if(!f.disabled) history.forward(); });
+    /* 🏠 홈 — 발자국을 «남긴다»(뒤로 누르면 보던 프로젝트로 돌아온다) */
+    if(hm) hm.addEventListener('click', function(){
+      if(hm.disabled) return;
+      if(location.hash) location.hash = '';
+      else { pjRoute(); }
+    });
+  })();
+
   /* ── 화면 갈아끼우기 ── */
   function pjRoute(){
     var h = location.hash || '';
     var list = document.getElementById('vProjList');
     var one  = document.getElementById('vProjOne');
     var home = document.querySelectorAll('.group:not(.pjview)');
+    /* ✥ 배치 바꾸기는 «홈에서만» 보인다 — 프로젝트 화면엔 끌어다 놓을 카드가 없다 */
+    var eb = document.getElementById('edBar');
     if(h.indexOf('#p/') === 0){
       var proj = '';
       try { proj = decodeURIComponent(h.slice(3)); } catch(e){ proj = h.slice(3); }
       for(var i=0;i<home.length;i++) home[i].hidden = true;
       list.hidden = true; one.hidden = false;
+      if(eb) eb.hidden = true;
       pjOne(proj);
     } else if(h === '#p'){
       for(var j=0;j<home.length;j++) home[j].hidden = true;
       one.hidden = true; list.hidden = false;
+      if(eb) eb.hidden = true;
       pjLoad(false);
     } else {
       list.hidden = true; one.hidden = true;
       for(var k=0;k<home.length;k++) home[k].hidden = false;
       /* 🔴 홈으로 돌아오면 등급별 감추기를 «다시» 건다 —
-         안 그러면 대표 전용 그룹이 손님에게 열린 채로 남는다. */
+         안 그러면 대표 전용 그룹이 손님에게 열린 채로 남는다.
+         (edBar 도 data-see="owner" 라 여기서 «대표에게만» 다시 켜진다) */
       try { applyRole(roleOf(loadUser())); } catch(e){}
     }
+    try { navMark(); } catch(e){}
     window.scrollTo(0,0);
   }
   window.addEventListener('hashchange', pjRoute);
