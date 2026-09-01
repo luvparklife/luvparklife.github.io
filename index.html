@@ -1153,6 +1153,7 @@
   function paint(u){
     var role = roleOf(u);
     applyRole(role);
+    if(u) { try{ pjWarm(); }catch(e){} }   /* ⚡ 2026-09-02 — 목록을 미리 받아둔다 (속도 ②) */
     if(u){
       $('pf').className = 'pf on';
       $('pfAv').innerHTML = u.picture ? '<img src="'+u.picture+'" alt="" referrerpolicy="no-referrer">' : '🙂';
@@ -1208,6 +1209,7 @@
     }catch(e){}
     localStorage.removeItem(KEY);
     hubSessClear(); paySessClear(); /* 🔑 앱 통행증도 같이 버린다 (2026-08-26 · 앱마다 따로다) */
+    pjLsClear();                    /* 🔴 저장해둔 프로젝트 목록도 (2026-09-02 — 거래처 이름이 들어 있다) */
     PENDING_LINK = null;
     REFRESHING   = false;
     /* 🔴 이게 있어야 「로그아웃하면 진짜 로그아웃」이 된다.
@@ -1316,7 +1318,7 @@
     localStorage.setItem(KEY, JSON.stringify(u));
     REFRESHING = false;
     /* 🔑 2026-08-26 — 사람이 바뀌었으면 옛 통행증은 버린다(남의 표를 쓰면 안 된다) */
-    if(!prev || prev.email !== u.email){ hubSessClear(); paySessClear(); }
+    if(!prev || prev.email !== u.email){ hubSessClear(); paySessClear(); pjLsClear(); }
     paint(u);
     scheduleExpire(u.exp);
     /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 — 그러면 1시간 뒤에도 앱이 열린다 */
@@ -1545,6 +1547,70 @@
   /* 🔴 FIELD_APP 은 맨 위에서 정한다 (2026-08-26 — 여기 있으면 paint() 보다 늦어 깨진다) */
   var PJ_CACHE = null, PJ_AT = 0, PJ_ROLE = '';
 
+  /* ⚡ 2026-09-02 — 목록을 «브라우저 서랍»에도 둔다 (대표 확정: 속도 ①)
+     ═══════════════════════════════════════════════════════════════
+     [무엇이 문제였나] PJ_CACHE 는 «메모리»에만 산다. 그래서 새로고침하거나
+       탭을 닫으면 사라지고, 아침마다·폰에서 열 때마다 다시 3.7초를 기다린다
+       (실측 10회: 최소 3.20 · 중간 3.68 · 최대 3.90초. 가끔 39초라 25초 시계에 걸려
+        「목록을 못 받았습니다」가 뜬다).
+     [고침] 받은 목록을 브라우저에 남겨, 다음에는 «먼저 그려놓고» 뒤에서 조용히 갱신한다.
+     🔴 이메일을 같이 담는다 — 안 담으면 한 브라우저를 두 사람이 쓸 때 «남의 목록»이 보인다.
+     🔴 로그아웃·계정 바뀜에 반드시 지운다(통행증과 같은 자리에서 같이 지운다).
+        프로젝트 이름에는 거래처가 들어 있다 — 남기면 안 된다.
+     🔴 3일이 지난 것은 안 쓴다 — 서버가 죽어도 옛 목록을 영영 보여주면 안 된다.
+     되돌리기 = "목록 저장 되돌려줘" (PJ_LS 관련 3곳을 빼면 예전과 100% 같다) */
+  var PJ_LS = 'pa_pjlist_v1';
+  var PJ_LS_DAYS = 3;
+  function pjLsGet(){
+    try{
+      var o = JSON.parse(localStorage.getItem(PJ_LS) || 'null');
+      if(!o || !o.rows || !o.at) return null;
+      if(Date.now() - o.at > PJ_LS_DAYS*24*60*60*1000){ pjLsClear(); return null; }
+      var u = loadUser();
+      /* 🔴 «다른 계정»이면 안 쓴다. 지우기까지 한다 — 남의 거래처 이름이 남아 있으면 안 된다 */
+      if(!u || !u.email || String(o.em||'') !== String(u.email)){ pjLsClear(); return null; }
+      return o;
+    }catch(e){ return null; }
+  }
+  function pjLsSave(rows, role){
+    try{
+      var u = loadUser(); if(!u || !u.email) return;
+      localStorage.setItem(PJ_LS, JSON.stringify({
+        rows: rows || [], role: role || '', at: Date.now(), em: u.email }));
+    }catch(e){}          /* 저장 못 해도 앱은 그대로 굴러가야 한다 */
+  }
+  function pjLsClear(){ try{ localStorage.removeItem(PJ_LS); }catch(e){} }
+
+  /* ⚡ 2026-09-02 — 허브를 열면 목록을 «미리» 받아둔다 (대표 확정: 속도 ②)
+     ═══════════════════════════════════════════════════════════════
+     [왜] 「프로젝트」를 누른 «다음»에 물어보면 3.7초를 눈앞에서 기다린다.
+       대표님이 카드를 고르시는 그 몇 초 사이에 미리 받아두면 누를 때 이미 있다.
+       🔴 이건 「서버만 깨우기」보다 낫다 — 같은 요청 한 번으로 «깨우기 + 목록»을 다 얻는다.
+     🔴 [낭비를 막는 조건 3개] 안 그러면 프로젝트를 안 볼 때도 매번 요청이 나간다.
+        ①로그인·통행증이 있을 때만 ②서랍이 10분보다 오래됐을 때만 ③한 번만.
+     🔴 [화면을 절대 안 건드린다] 조용히 받아 서랍에만 넣는다. 실패해도 아무 일도 안 일어난다.
+     되돌리기 = "미리받기 빼줘" (pjWarm 정의와 paint 안의 호출 한 줄) */
+  var PJ_WARMED = false;
+  function pjWarm(){
+    if(PJ_WARMED) return;
+    if(!canApp()) return;                       /* 로그인·통행증 없으면 의미 없다 */
+    var ls = pjLsGet();
+    if(ls && Date.now() - ls.at < 600000) return;   /* 10분 이내면 이미 신선하다 */
+    PJ_WARMED = true;
+    /* 🔴 조금 늦게 — 화면 그리기가 먼저 끝나야 한다. 통행증도 그 사이 준비된다 */
+    setTimeout(function(){
+      try{
+        askCount(FIELD_APP + '?list=projects' + appTok(), function(d){
+          if(d && d.ok){
+            PJ_CACHE = d.rows || []; PJ_AT = Date.now(); PJ_ROLE = d.role || '';
+            pjLsSave(PJ_CACHE, PJ_ROLE);
+          }
+          /* 🔴 실패해도 아무것도 안 한다 — 대표는 이게 도는 줄도 모르셔야 한다 */
+        }, 25000);
+      }catch(e){}
+    }, 1500);
+  }
+
   function pjEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(m){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); }
 
@@ -1672,7 +1738,24 @@
       return;
     }
     if(!force && PJ_CACHE && Date.now()-PJ_AT < 600000){ pjPaint(PJ_CACHE); return; }
-    pjShowNewCardNow();                 /* 🔴 목록을 기다리지 않는다 */
+    /* ⚡ 2026-09-02 — 서랍에 있으면 «먼저 그리고» 뒤에서 조용히 갱신한다 (대표 확정: 속도 ①)
+       🔴 force(🔄 다시 읽기)일 때는 서랍을 안 쓴다 — 대표가 «지금 것»을 보려고 누른 것이다 */
+    var _had = false;
+    if(!force){
+      var _ls = pjLsGet();
+      if(_ls && _ls.rows && _ls.rows.length){
+        /* 🔴 2026-09-02 — «줄»을 그리는 pjRowsPaint 는 인자가 아니라 PJ_CACHE 를 읽는다.
+           그래서 여기에 반드시 담아야 한다. 안 담으면 「해당하는 것이 없습니다」만 뜬다.
+           (처음에 이걸 빠뜨려 검사는 통과했는데 화면엔 한 줄도 안 그려졌다 — §3-0-B) */
+        PJ_CACHE = _ls.rows;
+        PJ_AT    = _ls.at || Date.now();
+        PJ_ROLE  = _ls.role || PJ_ROLE;
+        pjPaint(_ls.rows);
+        pjStale(true);                  /* 🔴 «저장해둔 것»임을 반드시 밝힌다 */
+        _had = true;
+      }
+    }
+    if(!_had) pjShowNewCardNow();       /* 🔴 목록을 기다리지 않는다 */
     /* 🔴 2026-08-26 — 기다리는 «초»를 보여준다. 그냥 「불러오는 중…」이면
        멈춘 건지 도는 건지 알 수가 없어 대표가 「답이 없다」고 판단하게 된다. */
     var _t0 = Date.now();
@@ -1686,6 +1769,15 @@
     askCount(FIELD_APP + '?list=projects' + appTok(), function(d){
       clearInterval(_tick);
       if(!d || !d.ok){
+        /* ⚡ 2026-09-02 — 서랍으로 이미 그렸으면 «덮지 않는다».
+           덮으면 대표 눈앞에서 목록이 오류 문구로 «사라진다» — 있던 것이 없어지는 게 제일 나쁘다.
+           대신 「지금 보는 건 저장해둔 것」이라고 띠만 바꿔 준다. */
+        if(_had){
+          pjStale(true, '🔴 최신을 못 받았습니다 — 저장해둔 목록을 보여드립니다  ·  ' +
+            (!d ? '25초 안에 답이 없음(앱이 깨어나는 중일 수 있음)'
+                : (d.why==='no_auth' ? '직원명단에 없는 계정' : pjEsc(d.why||'알 수 없음'))));
+          return;
+        }
         /* 🔴 카드는 지우지 않는다 — 목록이 안 와도 «만들기»는 되어야 한다 */
         box.innerHTML = pjNewCardHtml() +
           '<p class="foot">🔴 목록을 못 받았습니다' +
@@ -1698,8 +1790,25 @@
         return;
       }
       PJ_CACHE = d.rows || []; PJ_AT = Date.now(); PJ_ROLE = d.role || '';
-      pjPaint(PJ_CACHE);
+      pjLsSave(PJ_CACHE, PJ_ROLE);      /* ⚡ 2026-09-02 — 다음에 즉시 뜨도록 서랍에 남긴다 */
+      pjPaint(PJ_CACHE);                /* 🔴 여기서 다시 그리므로 「저장해둔 것」 띠는 저절로 사라진다 */
     }, 25000);
+  }
+
+  /* ⏳ 「지금 보는 것이 저장해둔 목록」임을 밝힌다 (2026-09-02)
+     🔴 안 밝히면 옛 목록을 «지금 것»으로 믿게 된다 — 2026-08-31 환율에서 겪은 바로 그 자리다.
+        (그때 화면에 8/21 환율이 떠 있는데 아무 표시가 없어 오늘 값인 줄 알았다) */
+  function pjStale(on, msg){
+    var box = document.getElementById('pjListBody'); if(!box) return;
+    var el = document.getElementById('pjStale');
+    if(!on){ if(el && el.parentNode) el.parentNode.removeChild(el); return; }
+    if(!el){
+      el = document.createElement('p');
+      el.id = 'pjStale'; el.className = 'foot';
+      el.style.cssText = 'margin:0 0 10px; font-size:12.5px; opacity:.85';
+      box.insertBefore(el, box.firstChild);
+    }
+    el.textContent = msg || '⏳ 저장해둔 목록입니다 — 최신을 확인하는 중…';
   }
   function pjPaint(rows){
     if(PJ_EDIT) return;        /* 🔴 고치는 중이면 폼을 덮지 않는다 (2026-08-26) */
@@ -3249,7 +3358,7 @@
           if(nd && nd.ok && nd.url) msg += '\n📝 노션: ' + nd.url;
           alert(msg);
           pjDraftClear();                       /* 🔴 성공했으니 적어둔 것을 지운다 */
-          PJ_CACHE = null;                      /* 목록을 다시 읽게 */
+          PJ_CACHE = null; pjLsClear();         /* 목록을 다시 읽게 (서랍도 비운다 · 2026-09-02) */
           location.hash = '#p/' + encodeURIComponent(d.name);
         });
       }, 60000);
@@ -3978,7 +4087,7 @@
         if(r.failed && r.failed.length) msg += '\n🔴 시트에서 못 고친 것 — ' + r.failed.join(' · ');
         msg += '\n\n' + nres.text;
         alert(msg);
-        PJ_EDIT = null; PJ_CACHE = null;
+        PJ_EDIT = null; PJ_CACHE = null; pjLsClear();
         if(typeof pjLoad === 'function') pjLoad(true);
       });
     });
@@ -4069,7 +4178,7 @@
           var extra = nd && nd.ok ? (nd.skipped ? '노션: ' + nd.why : (nd.done || '노션 보관함'))
                                   : ('🔴 노션은 그대로입니다 — ' + ((nd && nd.error) || '못 불렀습니다'));
           alert('✅ 지웠습니다.\n\n' + (r.done || []).join('\n') + '\n · ' + extra);
-          PJ_CACHE = null; location.hash = '#p';
+          PJ_CACHE = null; pjLsClear(); location.hash = '#p';
           if(typeof pjLoad === 'function') pjLoad(true);
         });
       });
@@ -4121,7 +4230,7 @@
               alert('✅ 사실은 «바뀌었습니다».\n\n' + name + '\n  ↓\n' + to
                   + '\n\n답이 늦게 왔을 뿐입니다. 노션 제목도 이어서 바꾸겠습니다.');
               pjNotion('rename', name, to, function(){});
-              PJ_CACHE = null; location.hash = '#p';
+              PJ_CACHE = null; pjLsClear(); location.hash = '#p';
               if(typeof pjLoad === 'function') pjLoad(true);
             } else {
               alert('🔴 못 바꿨습니다.\n\n' + (r.error || ''));
@@ -4136,7 +4245,7 @@
                                 : ('🔴 노션 제목은 그대로입니다 — ' + ((nd && nd.error) || '못 불렀습니다'));
         alert('✅ 바꿨습니다.\n\n' + name + '\n  ↓\n' + to + '\n\n'
               + (r.done || []).join(' · ') + '\n · ' + extra);
-        PJ_CACHE = null; location.hash = '#p';
+        PJ_CACHE = null; pjLsClear(); location.hash = '#p';
         if(typeof pjLoad === 'function') pjLoad(true);
       });
     });
