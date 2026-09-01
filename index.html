@@ -276,6 +276,12 @@
     .kvpop .msg .add{background:#ffb020; color:#3a2a00; font-weight:700;
                      padding:4px 10px; font-size:11.5px; margin-left:2px}
     .kvpop .msg .add:disabled{background:#e6dfc6; color:#8b8267; cursor:default}
+    /* 🔴 2026-09-01 대표 지시 — 「노션 없이 저장」. 등록 버튼과 달리 «눈에 덜 띄게» 둔다:
+       기본 길은 등록이고 이건 «막히셨을 때의 비상구»다. */
+    .kvpop .msg .skip{background:var(--chip); color:#5b6472; padding:4px 10px;
+                      font-size:11.5px; margin-left:4px}
+    /* 속성 칸이 작은 창 안에 들어가면 길어질 수 있다 — 창을 밀어내지 않게 스크롤 */
+    .kvpop .npbox{margin-top:8px; max-height:46vh; overflow-y:auto}
     .pj2 .qk{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:11px}
     .pj2 .qk a{text-align:center; border:1px solid var(--line); border-radius:7px; padding:9px 0;
       font-size:12px; font-weight:700; color:var(--sub); text-decoration:none; background:var(--card)}
@@ -1397,7 +1403,9 @@
 
   function loadCounts(force){
     var u = loadUser();
-    if(!u || !credLive(u)) return;                 /* 로그인 안 했으면 안 물어본다 */
+    /* 🔴 2026-09-01 — 배지도 `tokFor()` 로 통행증을 싣는다. 신분증만 보면
+       한 시간 뒤 카드 숫자가 조용히 사라진다. */
+    if(!u || !canApp()) return;                    /* 로그인 안 했으면 안 물어본다 */
     if(!force && Date.now() - BADGE_LAST < 30000) return;   /* 30초에 한 번까지만 */
     BADGE_LAST = Date.now();
     var cards = document.querySelectorAll('a[data-badge]');
@@ -2497,7 +2505,15 @@
   /* 노션에 «새로» 추가한다 — 없는 이름을 쳤을 때만 부른다 */
   function netAdd(cat, name, posName, subName, extra, done, parentId){
     var base = netBase(), u = loadUser();
-    if(!base || !u || !credLive(u)){ done({ ok:false, why:'로그인이 풀렸습니다' }); return; }
+    /* 🔴 2026-09-01 — «구글 신분증»이 아니라 payOK() 로 본다. 대표 신고로 잡았다:
+         *"🔴 못 넣었습니다 — 로그인이 풀렸습니다"*
+       [무엇이 잘못돼 있었나] 구글 신분증(cred)은 «1시간»이 상한이라, 로그인하고 한 시간이
+         지나면 «노션에 등록»만 영영 막혔다. 목록 읽기(netAsk)는 payOK() 를 써서 30일 통행증으로
+         잘 돌아갔다 — 그래서 「목록은 보이는데 등록만 안 되는」 상태가 됐다.
+       [왜 안전한가] payTok() 이 통행증을 «t 자리»에 실어 보내고, 정산앱 whoAmI_ 가 그것을
+         알아본 뒤 canManage_ 로 권한을 다시 본다. 서버 검사는 그대로다 — 느슨해지지 않는다.
+       🔴 2026-08-26에 「1시간 뒤 노션 만들기가 막힌다」를 고쳤는데 «읽기»만 고쳤다. 그 나머지다. */
+    if(!base || !payOK()){ done({ ok:false, why:'로그인이 풀렸습니다 — 허브에서 다시 로그인해 주세요' }); return; }
     askCount(base + '?add=network'
              + '&name=' + encodeURIComponent(name)
              + '&cat='  + encodeURIComponent(cat)
@@ -2829,10 +2845,12 @@
           panel.querySelector('.npno').onclick = function(){ status(); };
           panel.querySelector('.npok').onclick = function(){
             var ok = this; ok.disabled = true; ok.textContent = '넣는 중…';
-            var base = netBase(), u = loadUser();
-            if(!base || !u || !credLive(u)){
+            var base = netBase();
+            /* 🔴 2026-09-01 — netAdd 와 «같은 이유»로 payOK() 로 본다(구글 신분증은 1시간 상한) */
+            if(!base || !payOK()){
               ok.disabled = false; ok.textContent = '다시 넣기';
-              panel.insertAdjacentHTML('beforeend','<div class="hint warn">로그인이 풀렸습니다.</div>'); return;
+              panel.insertAdjacentHTML('beforeend',
+                '<div class="hint warn">로그인이 풀렸습니다 — 허브에서 다시 로그인해 주세요.</div>'); return;
             }
             /* ① 담당자 페이지를 만든다 */
             /* 🔴 2026-08-23 실측 — 포지션에 「클라이언트」가 «이미» 있다. 새 값을 안 만든다.
@@ -2962,8 +2980,11 @@
     return out;
   }
   function pjNewNotion(name, done){
-    var base = netBase(), u = loadUser();
-    if(!base || !u || !u.cred || !credLive(u)){ done(null); return; }
+    var base = netBase();
+    /* 🔴 2026-09-01 — netAdd 와 «같은 이유»로 payOK() 로 본다.
+       그전에는 로그인하고 1시간이 지나면 «노션 페이지 만들기»가 조용히 걸러졌다
+       (done(null) 이라 화면엔 「노션은 안 됐습니다」로만 보였다). */
+    if(!base || !payOK()){ done(null); return; }
     var data = {
       /* 🔴 2026-08-26 — 이름은 하나다. `name` 이 곧 프로젝트명이자 노션 제목이다. */
       name:      name,
@@ -3023,8 +3044,14 @@
     var badPick = pjMustPick();
     if(badPick.length){ pjMustPickStop(badPick); return; }
 
-    var u = loadUser();
-    if(!u || !u.cred || !credLive(u)){
+    /* 🔴 2026-09-01 — 여기가 «구글 신분증(1시간)»만 보고 있었다.
+       [무엇이 잘못됐나] 바로 아래에서 부르는 `appTok()` 은 «장비앱 통행증(30일)»을 먼저 쓴다.
+         즉 «보낼 수 있는데 문 앞에서 막는» 상태였다 — 로그인하고 한 시간이 지나면
+         프로젝트를 만들 수가 없다(대표님이 오늘 노션 등록에서 겪으신 것과 «같은 뿌리»).
+       [고침] `canApp()` 을 쓴다 — 통행증이 있으면 신분증이 죽어도 된다.
+         `appTok()` 과 «같은 기준»이라 두 곳이 어긋나지 않는다(§1).
+       🔴 [느슨해지지 않는다] 서버(장비앱 `projMake`)가 통행증을 다시 확인한다. */
+    if(!canApp()){
       alert('로그인이 필요합니다.\n허브에서 구글 로그인을 다시 해주세요.');
       return;
     }
@@ -3098,7 +3125,9 @@
        700px 아래(폰)에서는 CSS가 «저절로» 위아래로 접는다 — 화면을 두 벌 만들지 않았다.
        되돌리기 = **"프로젝트 화면 카드로 되돌려줘"** · 백업 hub_index_260822_두칸전.html */
     PJ_NOW = proj;
-    var canAsk = !!(function(){ var u = loadUser(); return u && credLive(u); })();
+    /* 🔴 2026-09-01 — 통행증이 있으면 등급을 물어볼 수 «있다». 신분증만 보면
+       「다시 로그인해주세요」라고 «거짓말»한다(§3-5 ⑤ — 글자가 사실과 맞나). */
+    var canAsk = canApp();
     h += '<div class="pj2">'
       +   '<div class="pane"><div class="ph">진행 · 지금 할 일</div>'
       +     '<div class="pb" id="pjLeft"><p class="foot" style="margin:0">불러오는 중…</p></div></div>'
@@ -3366,40 +3395,69 @@
          마지막 글자가 잘린 채 저장된다 */
       else if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); save(); }
     });
-    btnOk.addEventListener('click', save);
+    /* 🔴 save 를 «그대로» 넘기면 안 된다 — 클릭 이벤트 객체가 첫 인자(skipNotion)로 들어가
+       truthy 가 되므로, 저장 버튼이 늘 「노션 없이 저장」으로 동작한다(2026-09-01 검사로 잡았다). */
+    btnOk.addEventListener('click', function(){ save(); });
     setTimeout(function(){ try{ inp.focus(); inp.select(); }catch(e){} }, 30);
 
     /* 🔴 노션에 없는 이름일 때 — «막기만» 하지 않고 그 자리에서 등록할 길을 준다.
        대표 원문: *"손입력 없애고 «그자리에서 노션에 등록»"* — 막기만 하면 대표님이
        노션을 따로 열어야 해서 그게 두 번 일이다(§3-0). */
     function kvNeedPick(val){
-      msg.innerHTML = '🔴 노션에 없는 이름입니다 — 위에서 고르시거나 '
-                    + '<button type="button" class="add">＋ 노션에 등록</button>';
+      msg.innerHTML = '🔴 노션에 없는 이름입니다 '
+                    + '<button type="button" class="add">＋ 노션에 등록</button>'
+                    + '<button type="button" class="skip">노션 없이 저장</button>';
+      /* 🔴 [② 일단 저장] 규칙을 끄는 게 아니라 «이번만» 넘어간다. 그 줄에 🟠 표시가 남는다. */
+      msg.querySelector('.skip').onclick = function(){ save(true); };
       msg.querySelector('.add').onclick = function(){
-        var b = this; b.disabled = true; b.textContent = '넣는 중…';
-        /* 🔴 [이름만 넣는다] 이 작은 창엔 속성 칸이 다 안 들어간다. 나머지는 나중에
-           노션에서 채우면 된다 — 「＋ 새 프로젝트」 폼은 속성까지 받는다(그쪽은 그대로).
-           🔴 [만드는 코드를 새로 안 짠다] netAdd 가 이미 그 일을 한다(§1). 서버에
-           이메일·이름 중복 막기가 걸려 있어 같은 것이 두 줄로 안 생긴다. */
-        netAdd(src.cat, val, src.pos || '', null, null, function(d){
-          if(!d || !d.ok || !d.row){
-            b.disabled = false; b.textContent = '＋ 다시 넣기';
-            msg.insertAdjacentHTML('beforeend',
-              '<br>🔴 못 넣었습니다 — ' + pjEsc((d && d.why) || '알 수 없음'));
-            return;
-          }
-          picked = { id: d.row.id, name: d.row.name };
-          inp.value = d.row.name;
-          if(rows) rows.push(d.row);
-          if(typeof NET_CACHE !== 'undefined' && NET_CACHE[src.cat]) NET_CACHE[src.cat].push(d.row);
-          msg.textContent = '✅ ' + (d.already ? '이미 있어서 그것을 씁니다' : '노션에 등록했습니다')
-                          + ' — 이어서 저장합니다…';
-          save();                       /* 이제 picked 가 있으므로 통과한다 */
+        var b = this; b.disabled = true; b.textContent = '칸 불러오는 중…';
+        /* 🔴 [① 속성까지 받는다] 칸을 새로 만들지 않는다 — netProps/netPropHtml/netPropRead 가
+           이미 그 일을 한다(§1). 「＋ 새 프로젝트」 폼과 «같은 칸»이 떠야 대표가 안 헷갈리신다.
+           🔴 넣는 것도 netAdd 하나다 — 서버에 이메일·이름 중복 막기가 걸려 있어
+              같은 거래처가 노션에 두 줄로 안 생긴다. */
+        netProps(function(props){
+          var panel = document.createElement('div');
+          panel.className = 'npbox';
+          panel.innerHTML =
+            '<div class="npt">🆕 노션에 「<b>' + pjEsc(val) + '</b>」 추가 <span class="npc">'
+            + pjEsc(src.cat) + (src.pos ? ' · ' + pjEsc(src.pos) : '') + '</span></div>'
+            + (props.length ? netPropHtml(props, src.cat)
+                 : '<p class="hint">적을 칸이 없거나 노션을 못 불렀습니다 — 이름만 넣습니다.</p>')
+            + '<p class="hint">🔴 <b>비워두셔도 됩니다</b> — 나중에 노션에서 채우면 됩니다. '
+            + '계좌·사업자번호는 여기서 못 적습니다(노션에서 직접).</p>'
+            + '<div class="npb"><button type="button" class="npok">노션에 넣기</button>'
+            + '<button type="button" class="npno">그만두기</button></div>';
+          msg.innerHTML = '';
+          pop.appendChild(panel);          /* msg 는 좁아서 창에 직접 붙인다 */
+          panel.querySelector('.npno').onclick = function(){ panel.remove(); kvNeedPick(val); };
+          panel.querySelector('.npok').onclick = function(){
+            var ok2 = this; ok2.disabled = true; ok2.textContent = '넣는 중…';
+            netAdd(src.cat, val, src.pos || '', null, netPropRead(panel), function(d){
+              if(!d || !d.ok || !d.row){
+                ok2.disabled = false; ok2.textContent = '다시 넣기';
+                /* 🔴 실패해도 «길이 막히지 않게» 다음 수를 알려준다 — 대표가 실제로
+                   여기서 막히셨다(*"못 넣었습니다 — 로그인이 풀렸습니다"*). */
+                panel.insertAdjacentHTML('beforeend',
+                  '<div class="hint warn">🔴 못 넣었습니다 — ' + pjEsc((d && d.why) || '알 수 없음')
+                  + '<br>🔴 <b>그래도 저장은 하실 수 있습니다</b> — 「그만두기」 → 「노션 없이 저장」.'
+                  + ' 나중에 이 칸을 다시 눌러 등록하시면 됩니다.</div>');
+                return;
+              }
+              picked = { id: d.row.id, name: d.row.name };
+              inp.value = d.row.name;
+              if(rows) rows.push(d.row);
+              if(typeof NET_CACHE !== 'undefined' && NET_CACHE[src.cat]) NET_CACHE[src.cat].push(d.row);
+              panel.remove();
+              msg.textContent = '✅ ' + (d.already ? '이미 있어서 그것을 씁니다' : '노션에 등록했습니다')
+                              + ' — 이어서 저장합니다…';
+              save();                     /* 이제 picked 가 있으므로 통과한다 */
+            });
+          };
         });
       };
     }
 
-    function save(){
+    function save(skipNotion){
       var val = String(inp.value || '').trim();
       /* 고른 뒤 글자를 바꿨으면 «고른 것»으로 안 친다 — 엉뚱한 노션 페이지에 붙는다 */
       if(picked && picked.name !== val) picked = null;
@@ -3409,8 +3467,10 @@
             없다 — 그때까지 막으면 노션이 잠깐 안 열리는 날 아무것도 못 적으신다.
          🔴 [빈 값은 «안» 막는다] 비우는 것은 지우는 뜻이라 노션 연결과 상관없다.
          🔴 [여기서 창을 닫지 않는다] kvPopClose() 를 부르면 그 줄이 «저장된 것처럼»
-            다시 그려진다 — 안 저장했는데 저장된 줄 아시게 된다. */
-      if(mustPick && val && !picked && rows){ kvNeedPick(val); return; }
+            다시 그려진다 — 안 저장했는데 저장된 줄 아시게 된다.
+         🔴 [skipNotion] 대표가 「노션 없이 저장」을 누르면 이번만 넘어간다 — 그때는
+            아래에서 그 줄에 «🟠 노션 미등록»을 남겨 나중에 다시 등록하실 수 있게 한다. */
+      if(mustPick && val && !picked && rows && !skipNotion){ kvNeedPick(val); return; }
 
       var MAP = { '거래처':'client', '담당자':'mgr', '포토그래퍼':'photo', '브랜드':'brand' };
       var info = {}; info[MAP[key]] = val;
@@ -3432,7 +3492,11 @@
              통째로 그리면 스크롤이 맨 위로 튀어 「어디였지」가 된다. */
           var mk = kv.querySelector('.m'), vv = kv.querySelector('.v'),
               fb = kv.querySelector('.fill');
-          if(vv){ vv.textContent = val || '아직 없음';
+          /* 🔴 2026-09-01 — 노션에 «안 간» 채 저장했으면 그 사실을 그 줄에 남긴다.
+             안 남기면 대표님이 「노션에도 들어갔겠지」로 아시고 영영 안 고치신다(§3-5 ⑤).
+             그 칸을 다시 누르면 그때 등록하실 수 있다 — 잊히지 않는다. */
+          var noNotion = mustPick && val && !picked;
+          if(vv){ vv.textContent = (val || '아직 없음') + (noNotion ? ' · 🟠 노션 미등록' : '');
                   vv.className = 'v' + (val ? '' : ' no'); }
           if(mk) mk.textContent = val ? '✅' : (kvKind(key) === '필수' ? '🔴' : '🟠');
           if(fb) fb.textContent = val ? '고치기' : '＋ 채우기';
@@ -3812,7 +3876,12 @@
   function pjAskRole(after){
     if(PJ_ROLE){ after(); return; }
     var u = loadUser();
-    if(!u || !credLive(u)){ after(); return; }   /* 로그인 전이면 그냥 둔다 */
+    /* 🔴 2026-09-01 — 여기가 «구글 신분증(1시간)»만 봤다. 아래에서 부르는 `appTok()` 은
+       «장비앱 통행증(30일)»을 먼저 쓰는데, 문 앞에서 막아 «보낼 수 있는데 안 보내는» 상태였다.
+       [무엇이 깨졌나] 등급(PJ_ROLE)을 못 받으면 「＋ 채우기」 버튼이 통째로 안 보인다 —
+         로그인하고 한 시간이 지나면 «어제까지 되던 것이 조용히 사라진다».
+       [고침] `canApp()` — `appTok()` 과 «같은 기준»이라 두 곳이 안 어긋난다(§1). */
+    if(!canApp()){ after(); return; }   /* 로그인 전이면 그냥 둔다 */
     if(PJ_ROLE_ASKING) return;                   /* 이미 물어보는 중이면 두 번 안 묻는다 */
     PJ_ROLE_ASKING = true;
     askCount(FIELD_APP + '?list=projects' + appTok(), function(d){
