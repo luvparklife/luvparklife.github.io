@@ -234,6 +234,15 @@
     .pj2 .kv .v{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
     .pj2 .kv .v.no{color:var(--faint)}
     .pj2 .kv a{flex:0 0 auto; font-size:11.5px}
+    /* ✏️ 2026-09-01 대표 지시 — «비어 있는 줄 옆에서 바로» 채우는 버튼.
+       대표 원문: *"쌓인 정보들 중 업는 것들은 옆에 버튼 클릭해서 채우고"*
+       🔴 [기능은 이미 있었다] 아래 「✏️ 정보」가 8/26부터 있었는데, 자리가 멀어
+          「비었다」를 본 그 자리에서 바로 손이 안 갔다. 그래서 «길만» 하나 더 낸다 —
+          누르면 같은 폼(pjEdit)이 열리고 «그 칸»으로 바로 간다. 폼을 새로 만들지 않는다(§4-1). */
+    .pj2 .kv .fill{flex:0 0 auto; font-size:11px; padding:1px 7px; border-radius:999px;
+                   border:1px solid var(--line2); color:var(--sub); text-decoration:none;
+                   background:#fff; line-height:1.7}
+    .pj2 .kv .fill:hover{border-color:#3b6cff; color:#3b6cff; background:#f4f7ff}
     .pj2 .qk{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:11px}
     .pj2 .qk a{text-align:center; border:1px solid var(--line); border-radius:7px; padding:9px 0;
       font-size:12px; font-weight:700; color:var(--sub); text-decoration:none; background:var(--card)}
@@ -331,6 +340,12 @@
     .dayrow input[type=time]{width:96px}
     .dayrow input[list]{flex:1;min-width:130px}
     .dayrow .dx{border:none;background:none;color:#b23b3b;font-size:17px;cursor:pointer;padding:0 4px}
+    /* 📍 한 회차에 로케 여러 곳 (2026-09-01 대표 확정) */
+    .dayrow .locs{display:flex;gap:4px;align-items:center;flex-wrap:wrap;flex:1;min-width:150px}
+    .dayrow .locbit{display:inline-flex;align-items:center;gap:2px;flex:1;min-width:130px}
+    .dayrow .locbit input[list]{flex:1;min-width:110px}
+    .dayrow .lx{border:none;background:none;color:#b23b3b;font-size:14px;cursor:pointer;padding:0 2px}
+    .dayrow .la{padding:2px 7px;font-size:11.5px;white-space:nowrap}
     button.mini{font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border-radius:7px;
       padding:5px 11px;border:1.5px solid var(--accent,#3b6cff);background:#fff;color:var(--accent,#3b6cff)}
     .chips .chip.ro{background:var(--chip,#eef1f6);color:var(--sub,#5b6472);padding:3px 11px}
@@ -732,6 +747,8 @@
      🔴 여기서 정한다 — 아래로 내리면 안 된다. 2026-08-26에 FIELD_APP 을 아래에 두었다가
         쓰는 코드가 «값이 들어가기 전»에 읽어 허브 전체가 죽었다. 같은 함정을 두 번 밟지 않는다. */
   var PJ_EDIT = null;
+  /* ✏️ 「그 줄 옆 ＋채우기」로 열었을 때 «어느 칸으로 갈지» (2026-09-01 대표 지시) */
+  var PJ_EDIT_FOCUS = '';
 
   /* 🔴 2026-08-26 — 시간 칸이 «Sun Dec 31 1899 …» 로 보이던 것을 화면에서도 막는다.
      서버를 고쳤지만 «이미 저장된» 값이 그 모양이라, 여기서 한 번 더 시:분만 뽑는다.
@@ -1953,14 +1970,32 @@
     /* ── 오른쪽 칸 · 쌓인 정보 ── */
     var need = (d.items||[]).filter(function(x){ return x.state==='no' && x.kind==='필수'; }).length;
     var h = '';
+    /* ✏️ 2026-09-01 대표 지시 — 「그 줄 옆에서 바로 채우기」
+       🔴 여기 있는 넷만 «화면에서 채울 수 있다» — 프로젝트목록 시트의 글자 칸이기 때문이다.
+          나머지(장비세부내역·견적서·정산서 …)는 «다른 데서 일이 끝나야» 생기는 결과물이라
+          여기서 손으로 채우면 «없는 사실»을 적는 것이 된다. 그래서 버튼을 안 붙인다.
+       🔴 값 → 폼 칸 id. 「＋ 새 프로젝트」 폼의 칸을 그대로 쓴다(§4-1 — 폼을 새로 안 만든다). */
+    var PJ_FILLABLE = { '거래처':'pkCli', '담당자':'pkMgr', '포토그래퍼':'pkPho', '브랜드':'pkBrand' };
     (d.items||[]).forEach(function(x){
       var mark = (x.state==='ok') ? '✅'
                : (x.state==='no') ? (x.kind==='필수' ? '🔴' : '🟠') : '⚪';
       var txt = (x.state==='unknown') ? '아직 안 봄' : (x.text || (x.state==='ok' ? '있음' : '아직 없음'));
+      /* 🔴 「관리」 이상에게만 — 서버(projUpdate_ 의 PROJ_EDIT_ROLE)와 «같은 기준»이다.
+         화면에서만 감추면 콘솔로 부를 수 있으므로 둘 다 건다.
+         🔴 등급을 «아직 모를 때»(PJ_ROLE 이 빈 값)는 안 보여준다 — 눌러도 서버가 거절해
+            「눌렀는데 아무 일이 없다」가 된다. 등급이 오면 다시 그려진다. */
+      var canFill = PJ_FILLABLE[x.key] && (PJ_ROLE === '대표' || PJ_ROLE === '관리');
       h += '<div class="kv"><span class="m">' + mark + '</span>'
         +  '<span class="k">' + pjEsc(x.key) + '</span>'
         +  '<span class="v' + (x.state==='ok' ? '' : ' no') + '">' + pjEsc(txt) + '</span>'
         +  (x.link ? '<a href="' + pjEsc(x.link) + '" target="_blank" rel="noopener">열기 ›</a>' : '')
+        /* 🔴 이미 있는 줄에도 붙인다 — 「고치기」로 글자만 바꾼다.
+           비었을 때만 붙이면 «잘못 적은 것»을 그 자리에서 못 고친다. */
+        +  (canFill
+              ? '<a href="#" class="fill" data-pjact="edit" data-pjproj="' + pjEsc(d.proj || '')
+                + '" data-pjfocus="' + PJ_FILLABLE[x.key] + '">'
+                + (x.state==='ok' ? '고치기' : '＋ 채우기') + '</a>'
+              : '')
         +  '</div>';
     });
     if(need) h = '<div class="stg" style="color:#c0392b;margin-bottom:6px">🔴 꼭 필요한 것 '
@@ -2079,14 +2114,47 @@
      회차마다 날짜·로케이션·콜·랩. 원본은 «시트」의 「회차」 탭이다(노션 아님).
      🔴 프로젝트 전체 로케 목록은 «회차에서 모은 것»이다 — 따로 안 적는다(§1). */
   var PJ_LOCS = [];
+  /* 🔴 2026-09-01 대표 확정 — 한 회차에 로케가 «여러 곳»일 수 있다.
+     대표 지적: *"쉼표로 하게되면 … 첫번째 로케만 DB에 등록하고싶은데 그게 안되지 않아?"*
+     → 맞다. 한 칸에 쉼표로 적으면 견적앱 「＋DB」가 그 «통짜 글자»를 이름으로 노션에 넣어
+       가짜 로케가 생기고, 노션 연결도 한 곳만 붙는다.
+     → 그래서 회차마다 «로케 칸을 여러 개» 두고, 시트 「회차」 탭에도 «줄이 여러 개»로 들어간다.
+     🔴 회차 번호는 안 늘어난다 — 인건비(데이페이 × 회차 수)가 안 틀어진다. */
+  function pjLocsOf(d){
+    if(!d) return [];
+    if(!Object.prototype.toString.call(d.locs).match(/Array/)){
+      /* 옛 형식(loc 한 칸)에서 «한 번만» 옮긴다 */
+      d.locs = [{ n: String(d.loc||''), id: String(d.locId||'') }];
+    }
+    if(!d.locs.length) d.locs = [{ n:'', id:'' }];
+    return d.locs;
+  }
+  /* 화면의 locs → 서버가 알아듣는 옛 이름(loc·locId)도 같이 채운다 */
+  function pjLocSync(d){
+    var L = pjLocsOf(d).filter(function(x){ return String(x.n||'').trim(); });
+    d.loc   = L.map(function(x){ return x.n; }).join(' · ');
+    d.locId = L.length ? (L[0].id||'') : '';
+  }
   function pjDaysDraw(){
     var box = document.getElementById('dayRows'); if(!box || !PJ_NEW) return;
     var ds = PJ_NEW.days || (PJ_NEW.days = []);
     box.innerHTML = ds.map(function(d, i){
+      var L = pjLocsOf(d);
+      var locBits = L.map(function(x, j){
+        return '<span class="locbit">'
+          + '<input list="locList" data-d="' + i + '" data-f="loc" data-l="' + j + '" '
+          +   'placeholder="로케이션' + (j ? ' ' + (j+1) : '') + '" value="' + pjEsc(x.n||'') + '">'
+          + (L.length > 1
+              ? '<button type="button" class="lx" data-dl="' + i + '.' + j + '" title="이 로케 빼기">×</button>'
+              : '')
+          + '</span>';
+      }).join('');
       return '<div class="dayrow">'
         + '<span class="dn">' + (i+1) + '회차</span>'
         + '<input type="date" data-d="' + i + '" data-f="date" value="' + pjEsc(d.date||'') + '">'
-        + '<input list="locList" data-d="' + i + '" data-f="loc" placeholder="로케이션" value="' + pjEsc(d.loc||'') + '">'
+        + '<span class="locs">' + locBits
+        +   '<button type="button" class="mini la" data-la="' + i + '" title="이 회차에 로케 추가">＋ 로케</button>'
+        + '</span>'
         + '<input type="time" data-d="' + i + '" data-f="call" value="' + pjEsc(pjHm(d.call)) + '" title="콜">'
         + '<input type="time" data-d="' + i + '" data-f="wrap" value="' + pjEsc(pjHm(d.wrap)) + '" title="랩">'
         + '<button type="button" class="dx" data-dd="' + i + '" title="이 회차 빼기">×</button>'
@@ -2099,8 +2167,10 @@
     var box = document.getElementById('chLoc'); if(!box || !PJ_NEW) return;
     var seen = {}, out = [];
     (PJ_NEW.days||[]).forEach(function(d){
-      var nm = String(d.loc||'').trim(); if(!nm || seen[nm]) return;
-      seen[nm] = 1; out.push(nm);
+      pjLocsOf(d).forEach(function(x){
+        var nm = String(x.n||'').trim(); if(!nm || seen[nm]) return;
+        seen[nm] = 1; out.push(nm);
+      });
     });
     box.innerHTML = out.length
       ? out.map(function(nm){ return '<span class="chip ro">' + pjEsc(nm) + '</span>'; }).join('')
@@ -2112,25 +2182,55 @@
     var nd = '';
     if(lastD){ var x = new Date(lastD); x.setDate(x.getDate() + (ds.length ? 1 : 0));
       nd = x.getFullYear() + '-' + ('0'+(x.getMonth()+1)).slice(-2) + '-' + ('0'+x.getDate()).slice(-2); }
-    ds.push({ date: nd, loc:'', locId:'', call:'08:00', wrap:'20:00' });
+    ds.push({ date: nd, loc:'', locId:'', locs:[{n:'',id:''}], call:'08:00', wrap:'20:00' });
     pjDaysDraw(); pjDraftTouch();
   }
   document.addEventListener('input', function(e){
     var el = e.target; if(!el || el.getAttribute == null) return;
     var i = el.getAttribute('data-d'); if(i === null) return;
     if(!PJ_NEW || !PJ_NEW.days || !PJ_NEW.days[+i]) return;
-    var f = el.getAttribute('data-f');
-    PJ_NEW.days[+i][f] = el.value;
+    var f = el.getAttribute('data-f'), d = PJ_NEW.days[+i];
     if(f === 'loc'){
+      /* 🔴 글자를 치는 칸이다 — 여기서 pjDaysDraw() 를 부르면 «안 된다».
+         한 글자마다 다시 그리면 커서가 튀고 한글 조합이 끊긴다(§3-5 ⑧).
+         값과 «칩»만 고친다. */
+      var j = +(el.getAttribute('data-l') || 0);
+      var L = pjLocsOf(d);
+      if(!L[j]) L[j] = { n:'', id:'' };
+      L[j].n = el.value;
       var hit = null;
       for(var k=0;k<PJ_LOCS.length;k++){ if(PJ_LOCS[k].name === el.value){ hit = PJ_LOCS[k]; break; } }
-      PJ_NEW.days[+i].locId = hit ? hit.id : '';
+      L[j].id = hit ? hit.id : '';
+      pjLocSync(d);                 /* 서버가 읽는 옛 이름(loc·locId)도 같이 채운다 */
       pjLocChips();
+    } else {
+      d[f] = el.value;
     }
     pjDraftTouch();
   });
   document.addEventListener('click', function(e){
     var b = e.target; if(!b || b.getAttribute == null) return;
+    /* ＋ 로케 — 이 회차에 로케 칸을 하나 더 (2026-09-01 대표 확정) */
+    var la = b.getAttribute('data-la');
+    if(la !== null){
+      e.preventDefault();
+      if(PJ_NEW && PJ_NEW.days && PJ_NEW.days[+la]) pjLocsOf(PJ_NEW.days[+la]).push({ n:'', id:'' });
+      pjDaysDraw(); pjDraftTouch();
+      return;
+    }
+    /* 로케 하나 빼기 — data-dl="회차.로케" */
+    var dl = b.getAttribute('data-dl');
+    if(dl !== null){
+      e.preventDefault();
+      var p = String(dl).split('.'), di = +p[0], li = +p[1];
+      if(PJ_NEW && PJ_NEW.days && PJ_NEW.days[di]){
+        var L2 = pjLocsOf(PJ_NEW.days[di]);
+        if(L2.length > 1) L2.splice(li, 1);      /* 마지막 한 칸은 남긴다 */
+        pjLocSync(PJ_NEW.days[di]);
+      }
+      pjDaysDraw(); pjDraftTouch();
+      return;
+    }
     var i = b.getAttribute('data-dd'); if(i === null) return;
     e.preventDefault();
     if(PJ_NEW && PJ_NEW.days) PJ_NEW.days.splice(+i, 1);
@@ -2815,8 +2915,12 @@
       /* 🔴 여러 명·여러 곳을 그대로 보낸다. 포토그래퍼(대표 한 명)도 참여인원에 같이 넣는다 —
          노션에는 「포토그래퍼」 칸이 따로 없고 「참여 인력」 하나다(2026-08-22 대표 확정). */
       people:    ids([PJ_NEW.pho].concat(PJ_NEW.people || [])),
-      /* 🔴 로케이션은 «회차에서» 모은다 — 따로 적어두면 두 군데가 되어 어긋난다(§1) */
-      locations: ids((PJ_NEW.days || []).map(function(d){ return { id:d.locId, name:d.loc }; }))
+      /* 🔴 로케이션은 «회차에서» 모은다 — 따로 적어두면 두 군데가 되어 어긋난다(§1)
+         🔴 2026-09-01 — 한 회차에 여러 곳일 수 있어 «회차마다 로케 전부»를 편다.
+            전에는 d.locId·d.loc 하나만 봐서 «둘째 로케부터 노션에 안 이어졌다». */
+      locations: ids([].concat.apply([], (PJ_NEW.days || []).map(function(d){
+        return pjLocsOf(d).map(function(x){ return { id:x.id, name:x.n }; });
+      })))
     };
     askCount(base + '?action=projCreate'
              + payTok()
@@ -3037,12 +3141,16 @@
   /* 🔴 노션 프로젝트 제목도 «같이» 바꾸거나 보관한다 (2026-08-26 대표 지시
      *"다 바뀌게 할수 없어? 안그럼 다 뒤틀리잖아."*)
      노션 열쇠는 정산앱에만 있으므로 그 앱 창구를 부른다(열쇠를 두 군데 두지 않는다 §1). */
-  function pjNotion(act, from, to, done){
+  /* extra = act 마다 더 실을 것.
+       rename → 새 이름(글자)      fill → 채울 값(상자 · 2026-09-01 대표 지시 🅑) */
+  function pjNotion(act, from, extra, done){
     var base = netBase();
     if(!base){ done({ ok:false, error:'정산앱을 못 찾았습니다.' }); return; }
     var u = base + '?action=projNotion&act=' + encodeURIComponent(act)
           + '&from=' + encodeURIComponent(from) + payTok();
-    if(to) u += '&to=' + encodeURIComponent(to);
+    /* 🔴 옛 부르는 곳(rename)은 «글자»를 준다 — 그대로 to= 로 간다. 안 깨진다. */
+    if(typeof extra === 'string' && extra) u += '&to=' + encodeURIComponent(extra);
+    else if(extra && typeof extra === 'object') u += '&info=' + encodeURIComponent(JSON.stringify(extra));
     askCount(u, function(d){ done(d || { ok:false, error:'노션 쪽 답이 없습니다.' }); }, 25000);
   }
 
@@ -3054,8 +3162,10 @@
      🔴 프로젝트 «이름»(폴더명)은 여기서 안 바꾼다 — 그건 `✏️ 이름` 이 맡는다.
         두 길을 섞으면 열쇠가 조용히 바뀌어 시스템이 갈린다. */
 
-  function pjEdit(name){
+  /* focus = 폼을 열고 «그 칸으로 바로 갈» 칸의 id (예: 'pkCli'). 없으면 예전 그대로. */
+  function pjEdit(name, focus){
     if(!name || PJ_BUSY) return;
+    PJ_EDIT_FOCUS = focus || '';
     pjBusy(true, '📋 정보 불러오는 중…');
     pjAdmin('info', name, '', function(c){
       pjBusy(false);
@@ -3096,7 +3206,13 @@
       if(c.brand)  PJ_NEW.brand = { id:'', name:c.brand  };
       PJ_NEW.mgr  = c.mgr || '';
       PJ_NEW.days = (c.days || []).map(function(d){
-        return { date:d.date || '', loc:d.loc || '', locId:'', call:pjHm(d.call), wrap:pjHm(d.wrap) };
+        /* 🔴 2026-09-01 — 서버가 회차마다 로케를 «여러 개»(locs) 준다.
+           옛 형식(loc 한 칸)만 온 경우도 그대로 읽힌다. */
+        var L = (Object.prototype.toString.call(d.locs).match(/Array/) && d.locs.length)
+          ? d.locs.map(function(x){ return { n:String(x.n||''), id:String(x.id||'') }; })
+          : [{ n:String(d.loc||''), id:String(d.locId||'') }];
+        return { date:d.date || '', loc:d.loc || '', locId:d.locId || '', locs:L,
+                 call:pjHm(d.call), wrap:pjHm(d.wrap) };
       });
     }
     /* 칸에 글자를 되살린다 */
@@ -3115,7 +3231,29 @@
     if(will) will.innerHTML = '<b>저장하면</b><br>'
       + '① 「프로젝트목록」 시트의 거래처·담당자·포토·브랜드·촬영일<br>'
       + '② 「회차」 탭<br>'
-      + '🔴 <b>프로젝트명은 안 바뀝니다</b> — 그건 «✏️ 이름»으로 하세요.';
+      + '🔴 <b>프로젝트명은 안 바뀝니다</b> — 그건 «✏️ 이름»으로 하세요.<br>'
+      /* 🔴 2026-09-01 — 사실대로 적는다. 노션에는 «안» 간다(§3-5 ⑤ 글자가 사실과 맞나).
+         적어두지 않으면 대표님이 「노션에도 들어갔겠지」로 믿으신다. */
+      + '🔴 <b>노션에는 안 들어갑니다</b> — 시트에만 저장됩니다.';
+
+    /* ✏️ 2026-09-01 — 「그 줄 옆 ＋채우기」로 왔으면 «그 칸»으로 데려간다.
+       🔴 폼이 그려진 «뒤»라야 한다 — 위 setTimeout(60) 다음에 도는 자리다.
+       🔴 화면 밖이면 스크롤해서 보여준다 — 폼이 길어 아래 칸은 안 보인다.
+       🔴 못 찾으면 «아무 일도 안 한다» — 폼은 이미 열려 있으니 손으로 채우시면 된다. */
+    if(PJ_EDIT_FOCUS){
+      var fid = PJ_EDIT_FOCUS; PJ_EDIT_FOCUS = '';
+      setTimeout(function(){
+        var wrap = document.getElementById(fid);
+        var inp  = wrap && wrap.querySelector('.cboin');
+        if(!inp) return;
+        try{ wrap.scrollIntoView({block:'center', behavior:'smooth'}); }catch(e){}
+        try{ inp.focus(); inp.select && inp.select(); }catch(e){}
+        /* 어느 칸으로 왔는지 눈에 보이게 — 1.6초 뒤 원래대로 */
+        var old = wrap.style.boxShadow;
+        wrap.style.boxShadow = '0 0 0 2px #3b6cff';
+        setTimeout(function(){ wrap.style.boxShadow = old; }, 1600);
+      }, 140);
+    }
   }
 
   function pjEditSave(){
@@ -3127,6 +3265,11 @@
       mgr:    PJ_NEW.mgr || '',
       photo:  (PJ_NEW.pho   && PJ_NEW.pho.name)   || '',
       brand:  (PJ_NEW.brand && PJ_NEW.brand.name) || '',
+      /* 🅑 2026-09-01 — 노션 «연결»에 쓸 id. 후보에서 «고른» 것만 값이 있다.
+         🔴 시트(projUpdate_)는 이 둘을 «안 본다» — MAP 에 없는 칸은 그냥 지나간다.
+            그래서 여기 담아도 시트 쪽 동작은 하나도 안 바뀐다(회귀 없음). */
+      clientId: (PJ_NEW.cli && PJ_NEW.cli.id) || '',
+      photoId:  (PJ_NEW.pho && PJ_NEW.pho.id) || '',
       days:   (PJ_NEW.days || []).filter(function(d){ return d.date || d.loc; })
     };
     /* 🔴 2026-08-26 — 회차가 있는데 촬영일이 비면 「촬영일 아직 없음」으로 남는다
@@ -3140,13 +3283,74 @@
     var mk = document.getElementById('nMk');
     if(mk){ mk.disabled = true; mk.textContent = '저장하는 중…'; }
     pjAdmin('update', name, '&info=' + encodeURIComponent(JSON.stringify(info)), function(r){
-      if(mk){ mk.disabled = false; mk.textContent = '저장'; }
-      if(!r || !r.ok){ alert('🔴 못 고쳤습니다.\n\n' + ((r && r.error) || '답이 없습니다')); return; }
-      var msg = '✅ 고쳤습니다.\n\n' + (r.done || []).join(' · ');
-      if(r.failed && r.failed.length) msg += '\n\n🔴 못 고친 것\n · ' + r.failed.join('\n · ');
-      alert(msg);
-      PJ_EDIT = null; PJ_CACHE = null;
-      if(typeof pjLoad === 'function') pjLoad(true);
+      if(!r || !r.ok){
+        if(mk){ mk.disabled = false; mk.textContent = '저장'; }
+        alert('🔴 못 고쳤습니다.\n\n' + ((r && r.error) || '답이 없습니다')); return;
+      }
+      /* ── 🅑 노션에도 채운다 (2026-09-01 대표 확정 «B하고 A 한번에 같이») ──
+         🔴 [시트가 «먼저»다] 노션이 실패해도 시트는 이미 저장돼 있다.
+            거꾸로 하면 노션만 바뀌고 시트가 비어 두 곳이 어긋난다.
+         🔴 [노션이 못 해도 「고쳤습니다」는 그대로다] 시트가 진짜 원본이고,
+            노션은 «비추는 곳»이다. 다만 못 한 것은 «반드시 말한다»(§3-0-B ④).
+         🔴 [노션은 «고른 것»만 간다] 손으로 친 이름은 노션 id 가 없어 못 잇는다 —
+            그것도 화면에 그대로 적는다. 조용히 빠지면 「들어간 줄」 아신다. */
+      pjNotionFill(name, info, function(nres){
+        if(mk){ mk.disabled = false; mk.textContent = '저장'; }
+        var msg = '✅ 고쳤습니다.\n\n📄 시트 — ' + ((r.done || []).join(' · ') || '바뀐 것 없음');
+        if(r.failed && r.failed.length) msg += '\n🔴 시트에서 못 고친 것 — ' + r.failed.join(' · ');
+        msg += '\n\n' + nres.text;
+        alert(msg);
+        PJ_EDIT = null; PJ_CACHE = null;
+        if(typeof pjLoad === 'function') pjLoad(true);
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     🅑 노션 프로젝트 페이지에도 채운다   (2026-09-01 대표 확정)
+     ═══════════════════════════════════════════════════════════════
+     대표 원문: *"쌓인 정보들 중 업는 것들은 옆에 버튼 클릭해서 채우고 «노션에 추가도 되고»"*
+
+     🔴 [무엇이 노션에 들어가고 무엇이 안 들어가나]
+        · 거래처   → 노션 「거래처」(연결)      ← 노션에서 «고른» 것만
+        · 포토그래퍼 → 노션 「참여 인력」(연결)   ← 노션에서 «고른» 것만
+        · 브랜드   → 노션 「브랜드」(글자)       ← 친 글자 그대로 간다
+        · 담당자   → 🔴 **노션에 자리가 없다.** 프로젝트 DB 에 「담당자」 속성이 아예 없어서
+                     시트에만 남는다. 이건 «못 하는 것»이므로 화면에 그대로 적는다(§3-0-D ③).
+     🔴 [「연결」과 「글자」는 다르다] 노션의 거래처 칸은 글자를 «못 받는다» —
+        거래처 페이지를 가리켜야 한다. 그래서 손으로 친 이름은 노션에 못 넣는다.
+        그때는 조용히 빠뜨리지 않고 「노션에는 안 갔다」고 말한다.
+     🔴 [노션에 «새로 만들지» 않는다] 대표가 🅑(있는 것만 잇기)를 고르셨다 —
+        새로 만들면 오타 하나로 같은 거래처가 노션에 두 개가 된다. */
+  function pjNotionFill(name, info, done){
+    var payload = {};
+    if(info.clientId) payload.clientId = info.clientId;
+    if(info.photoId)  payload.people   = [info.photoId];
+    /* 🔴 [빈 글자는 «안» 보낸다] 이 폼은 브랜드를 안 건드려도 늘 값을 보낸다.
+       빈 글자를 그대로 넘기면 «시트엔 없고 노션엔 있던» 브랜드가
+       폼을 열고 저장만 해도 조용히 지워진다(검산에서 잡았다). 서버에서도 한 번 더 막는다. */
+    if(info.brand)    payload.brand    = info.brand;
+
+    /* 손으로 친 것(=노션 id 가 없는 것)을 모아 둔다 — 화면에 그대로 알린다 */
+    var typed = [];
+    if(info.client && !info.clientId) typed.push('거래처');
+    if(info.photo  && !info.photoId)  typed.push('포토그래퍼');
+
+    var note = '';
+    if(info.mgr) note = '\n🔴 담당자는 노션에 «자리가 없어» 시트에만 저장됩니다.';
+    if(typed.length) note += '\n🔴 ' + typed.join(' · ') + ' — 노션 후보에서 «고르지» 않아 노션에는 안 갔습니다.'
+                          + '\n   (그 칸을 다시 눌러 목록에서 고르시면 노션에도 들어갑니다)';
+
+    if(!Object.keys(payload).length){
+      done({ ok:true, text:'🗒 노션 — 넣을 것이 없었습니다.' + note });
+      return;
+    }
+    pjNotion('fill', name, payload, function(d){
+      var t;
+      if(!d || !d.ok)          t = '🔴 노션 — 못 채웠습니다 (' + ((d && d.error) || '답이 없습니다') + ')';
+      else if(d.skipped)       t = '🗒 노션 — 건너뛰었습니다 (' + (d.why || '') + ')';
+      else                     t = '🗒 노션 — ' + ((d.done || []).join(' · ') || '바뀐 것 없음');
+      done({ ok:true, text:t + note });
     });
   }
 
@@ -3273,7 +3477,10 @@
       if(!act) return;
       e.preventDefault();
       if(act === 'settle'){ pjSettle(el.getAttribute('data-pjproj') || PJ_NOW); return; }
-      if(act === 'edit'){   pjEdit(el.getAttribute('data-pjproj')); return; }
+      /* ✏️ 2026-09-01 — 「그 줄 옆 채우기」는 «어느 칸»인지도 같이 온다(data-pjfocus).
+         없으면(아래쪽 「✏️ 정보」) 예전 그대로 폼만 열린다. */
+      if(act === 'edit'){   pjEdit(el.getAttribute('data-pjproj'),
+                                   el.getAttribute('data-pjfocus') || ''); return; }
       if(act === 'rename'){ pjRename(el.getAttribute('data-pjproj')); return; }
       if(act === 'del'){    pjDelete(el.getAttribute('data-pjproj')); return; }
       if(act === 'folder' || act === 'sheet' || act === 'share'){
