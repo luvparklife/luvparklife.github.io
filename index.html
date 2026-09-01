@@ -391,6 +391,11 @@
     .dayline b{min-width:44px}
     .dayline .dt{color:var(--sub,#5b6472)}
     .dayline .lc{flex:1;min-width:90px;font-weight:700}
+    /* 📍 2026-09-01 — 회차 줄의 로케를 «그 자리에서» 고친다(대표 지시).
+       점선 밑줄로 「누를 수 있다」를 알린다 — 아무 표시가 없으면 아무도 안 누른다. */
+    .dayline a.lc{color:inherit;text-decoration:none;border-bottom:1px dashed #b9c2d0;cursor:pointer}
+    .dayline a.lc:hover{color:#3b6cff;border-bottom-color:#3b6cff}
+    .dayline a.lc.empty{color:#c07000;border-bottom-color:#e8b25a;font-weight:600}
     .dayline .tm{color:var(--sub,#5b6472);white-space:nowrap}
     .dayrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
     .dayrow .dn{font-weight:800;font-size:12.5px;min-width:44px;color:var(--sub,#5b6472)}
@@ -1848,17 +1853,50 @@
                                : '「관리」 이상만 넣을 수 있습니다.') + '</p>';
       return;
     }
+    /* 📍 2026-09-01 — 저장할 때 «회차 목록 전부»를 되돌려 보내야 하므로 들고 있는다.
+       서버가 회차를 통째로 갈아끼우기 때문에, 한 회차만 보내면 나머지가 지워진다. */
+    PJ_DAY_ROWS = rows; PJ_DAY_PROJ = proj;
     box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 <span class="fn">'
                   + rows.length + '회차</span> ' + addBtn + '</div>'
-      + rows.map(function(r){
+      + rows.map(function(r, i){
           /* 📍 로케가 여러 곳이면 «전부» 보여준다 — `loc` 은 서버가 ' · ' 로 이어 준다 */
+          /* 📍 2026-09-01 대표 지시 — *"로케도 담당자나 포토그래퍼처럼 수정 페이지로 안들어가고
+             프로젝트정보에서 바로 추가 수정할 수 있게. 그리고 노션 저장도 가능하게."*
+             🔴 [왜 「쌓인 정보」의 로케이션 줄이 아니라 «여기»인가] 로케는 프로젝트에 하나가
+                아니라 «회차마다» 다르다. 값 하나를 받는 작은 창에 회차를 안 알려주면
+                어느 줄에 저장할지 알 수가 없다 — 이 줄에서 열면 그 물음이 아예 안 생긴다. */
+          var has = !!r.loc;
+          var locTxt = has ? r.loc : (canEdit ? '＋ 로케 넣기' : '—');
           return '<div class="dayline"><b>' + r.no + '회차</b>'
                + '<span class="dt">' + pjEsc(r.date || '—') + '</span>'
-               + '<span class="lc">' + pjEsc(r.loc || '—') + '</span>'
+               + (canEdit
+                   ? '<a href="#" class="lc' + (has ? '' : ' empty') + '" data-pjloc="' + i + '"'
+                     + ' title="이 회차의 로케를 그 자리에서 고칩니다">' + pjEsc(locTxt) + '</a>'
+                   : '<span class="lc">' + pjEsc(locTxt) + '</span>')
                + '<span class="tm">' + pjEsc(pjHm(r.call)) + (pjHm(r.wrap) ? ' ~ ' + pjEsc(pjHm(r.wrap)) : '') + '</span></div>';
         }).join('')
       + '<div style="height:10px"></div>';
   }
+
+  /* 📍 회차 줄의 로케를 누르면 «그 자리에서» 작은 창을 연다 (2026-09-01)
+     🔴 위임으로 한 번만 건다 — pjDaysPaint 안에서 걸면 다시 그릴 때마다 쌓인다. */
+  var PJ_DAY_ROWS = [], PJ_DAY_PROJ = '';
+  document.addEventListener('click', function(e){
+    var el = e.target, n = 0, idx = null;
+    while(el && n++ < 4){
+      if(el.getAttribute){ idx = el.getAttribute('data-pjloc'); if(idx !== null) break; }
+      el = el.parentElement;
+    }
+    if(idx === null) return;
+    e.preventDefault();
+    var i = +idx, r = PJ_DAY_ROWS[i];
+    if(!r) return;
+    /* 🔴 창을 «회차 줄 아래»에 연다 — 로케 글자 옆(flex 안)에 넣으면 줄이 찌그러진다 */
+    var line = el; while(line && !line.classList.contains('dayline')) line = line.parentElement;
+    /* 🔴 이 창은 «회차 하나»에 붙는다 — 저장할 때 나머지 회차는 받은 그대로 되돌려 보낸다 */
+    kvPopOpen(PJ_DAY_PROJ, '로케이션', line || el, r.loc || '',
+              { day: { idx: i, no: r.no, rows: PJ_DAY_ROWS } });
+  });
 
   var PJ_CHK_CACHE = {};
   var PJ_NOW = '';                 /* 지금 보고 있는 프로젝트 (할 일 버튼이 쓴다) */
@@ -3425,9 +3463,15 @@
   }
 
   /* key = '거래처'|'담당자'|'포토그래퍼'|'브랜드' · kv = 그 줄의 DOM */
-  function kvPopOpen(proj, key, kv, curText){
+  function kvPopOpen(proj, key, kv, curText, opt){
     kvPopClose();
     KV_NOTION_DONE = '';
+    /* 📍 2026-09-01 대표 지시 — *"로케도 담당자나 포토그래퍼처럼 수정 페이지로 안들어가고
+       프로젝트정보에서 바로 추가 수정할 수 있게. 그리고 노션 저장도 가능하게."*
+       🔴 [로케만 «회차»가 붙는다] 다른 칸은 프로젝트에 값이 하나지만 로케는 회차마다 다르다.
+          그래서 «어느 회차인가»(opt.day)를 같이 받는다 — 없으면 저장할 줄을 모른다.
+       🔴 [창을 새로 만들지 않는다] 담당자·포토그래퍼와 «같은 창»이라야 대표가 안 헷갈리신다(§1). */
+    var day = (opt && opt.day) || null;      /* {idx, no, rows} — 로케일 때만 */
     /* 노션 후보를 어디서 받나. 담당자는 노션에 자리가 없어 «직접 입력만» 받는다. */
     /* 👥 2026-09-01 대표 지시 — *"대표님만 보는 목록에 참여인원 넣어서 해외팀이던
        새롭게 알게된 사람들 다 등록할 수 있게 해줘"*
@@ -3441,7 +3485,12 @@
                    등록 버튼도 아예 없었다. 큰 폼(`pjNewMgrPicker`)에는 있는데 여기만 없었다.
                    🔴 [막지는 «않는다»] MUST_PICK 에 안 넣는다 — 노션 «프로젝트»에는 담당자 칸이
                       아예 없어서, 막으면 노션에 못 넣는 사람은 시트에도 못 적게 된다. */
-                '담당자':{cat:'인적자원', pos:'클라이언트'} };
+                '담당자':{cat:'인적자원', pos:'클라이언트'},
+                /* 📍 로케 — 노션 「업체」 분류 안에서 소속이 「로케이션」인 것.
+                   🔴 폼의 자동완성(PJ_LOCS)과 «같은 규칙»이다 — 두 군데가 다른 목록을 보면
+                      폼에서는 뜨는데 여기서는 안 뜨는 일이 난다(§1).
+                   🔴 many = 한 회차에 로케가 여러 곳일 수 있다(2026-09-01 대표가 짚으신 자리). */
+                '로케이션':{cat:'업체', sub:'로케이션', many:true} };
     var src = SRC[key];
     /* 🔴 2026-09-01 대표 확정 — 거래처·포토그래퍼는 «노션이 원본»이다.
        대표 원문: *"거래처 포토그래퍼는 손입력 없애고 그자리에서 노션에 등록.
@@ -3461,8 +3510,13 @@
     var pop = document.createElement('div');
     pop.className = 'kvpop';
     pop.innerHTML =
-      '<div class="t"><b>' + pjEsc(key) + '</b> — '
-      + (key === '담당자'
+      '<div class="t"><b>' + pjEsc(day ? (day.no + '회차 로케') : key) + '</b> — '
+      + (day
+           /* 📍 이 창이 «그 회차만» 고친다는 것을 분명히 적는다 —
+              안 적으면 프로젝트 전체 로케를 바꾸는 줄 아신다. */
+           ? '이 회차의 로케입니다 · 치면 노션 후보가 뜹니다 · 여러 곳이면 하나씩 <b>Enter</b>'
+             + ' · 없으면 <b>＋ 노션에 등록</b>'
+         : key === '담당자'
            /* 🔴 노션 «네트워크»에는 등록되지만 노션 «프로젝트»에는 담당자 칸이 없다.
               둘을 뭉뚱그리면 대표가 「노션에 들어갔겠지」로 믿으신다(§3-5 ⑤). */
            ? '치면 노션 후보가 뜹니다 · 없으면 <b>＋ 노션에 등록</b> · '
