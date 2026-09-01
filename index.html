@@ -243,6 +243,31 @@
                    border:1px solid var(--line2); color:var(--sub); text-decoration:none;
                    background:#fff; line-height:1.7}
     .pj2 .kv .fill:hover{border-color:#3b6cff; color:#3b6cff; background:#f4f7ff}
+    /* ✏️ 2026-09-01 대표 지시 — «그 자리에서» 채운다. 페이지를 안 넘긴다.
+       대표 원문: *"페이지 안넘어가고 그냥 담당자만 선택하거나 추가할 수 있게"*
+       🔴 [왜 고쳤나] 처음엔 정보 폼 «전체»를 열었다. 대표님은 칸 하나만 채우려는데
+          화면이 통째로 바뀌어 「어디로 온 거지」가 된다. 폼 전체를 여는 길(「✏️ 정보」)은 그대로 남긴다. */
+    .kvpop{position:relative; margin:2px 0 6px 22px; border:1px solid #3b6cff; border-radius:10px;
+           background:#fff; box-shadow:0 4px 16px rgba(20,30,60,.13); padding:9px 10px}
+    .kvpop .t{font-size:11.5px; color:#5b6472; margin-bottom:6px}
+    .kvpop .t b{color:#1c2330}
+    .kvpop input{width:100%; box-sizing:border-box; border:1px solid var(--line2); border-radius:8px;
+                 padding:7px 9px; font-size:13px; font-family:inherit}
+    .kvpop input:focus{outline:none; border-color:#3b6cff}
+    .kvpop .hits{max-height:148px; overflow-y:auto; margin-top:5px; border:1px solid var(--line2);
+                 border-radius:8px; display:none}
+    .kvpop .hits.on{display:block}
+    .kvpop .hit{padding:6px 9px; font-size:12.5px; cursor:pointer; border-top:1px solid var(--line2)}
+    .kvpop .hit:first-child{border-top:0}
+    .kvpop .hit:hover,.kvpop .hit.sel{background:#f4f7ff}
+    .kvpop .hit .sub{color:#8b93a3; font-size:11.5px}
+    .kvpop .row{display:flex; gap:6px; margin-top:8px; align-items:center}
+    .kvpop .row .msg{flex:1; font-size:11px; color:#8b93a3; line-height:1.45}
+    .kvpop button{border:0; border-radius:8px; padding:6px 13px; font-size:12.5px; cursor:pointer;
+                  font-family:inherit}
+    .kvpop .ok{background:#3b6cff; color:#fff; font-weight:700}
+    .kvpop .ok:disabled{background:#c9d2e6; cursor:default}
+    .kvpop .no{background:var(--chip); color:#5b6472}
     .pj2 .qk{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:11px}
     .pj2 .qk a{text-align:center; border:1px solid var(--line); border-radius:7px; padding:9px 0;
       font-size:12px; font-weight:700; color:var(--sub); text-decoration:none; background:var(--card)}
@@ -1991,9 +2016,12 @@
         +  (x.link ? '<a href="' + pjEsc(x.link) + '" target="_blank" rel="noopener">열기 ›</a>' : '')
         /* 🔴 이미 있는 줄에도 붙인다 — 「고치기」로 글자만 바꾼다.
            비었을 때만 붙이면 «잘못 적은 것»을 그 자리에서 못 고친다. */
+        /* 🔴 data-pjkey = «그 자리에서» 여는 작은 창용 (2026-09-01 대표 지시).
+           data-pjfocus 는 남겨둔다 — 작은 창을 못 열 때 폼 전체로 떨어지는 길이다. */
         +  (canFill
               ? '<a href="#" class="fill" data-pjact="edit" data-pjproj="' + pjEsc(d.proj || '')
-                + '" data-pjfocus="' + PJ_FILLABLE[x.key] + '">'
+                + '" data-pjkey="' + pjEsc(x.key) + '"'
+                + ' data-pjfocus="' + PJ_FILLABLE[x.key] + '">'
                 + (x.state==='ok' ? '고치기' : '＋ 채우기') + '</a>'
               : '')
         +  '</div>';
@@ -3162,6 +3190,155 @@
      🔴 프로젝트 «이름»(폴더명)은 여기서 안 바꾼다 — 그건 `✏️ 이름` 이 맡는다.
         두 길을 섞으면 열쇠가 조용히 바뀌어 시스템이 갈린다. */
 
+  /* ═══════════════════════════════════════════════════════════════
+     ✏️ 그 자리에서 채우기 — 페이지를 안 넘긴다   (2026-09-01 대표 지시)
+     ═══════════════════════════════════════════════════════════════
+     대표 원문: *"채우기하면 그냥 정보수정 페이지로 넘어가는데.
+                 내가 원한건 페이지 안넘어가고 그냥 담당자만 선택하거나 추가할 수 있게"*
+
+     🔴 [무엇이 잘못됐나] 제가 처음엔 정보 폼 «전체»를 열었다. 칸 하나 채우려는데
+        화면이 통째로 바뀌니 「어디로 온 거지」가 된다.
+     🔴 [폼 전체를 여는 길은 «남긴다»] 아래 「✏️ 정보」는 그대로다 —
+        여러 칸을 한 번에 고칠 때는 그게 낫다. 길을 «없애지» 않고 «하나 더» 냈다.
+     🔴 [새 부품을 안 만들었다] 후보는 `netAsk`(노션·캐시됨), 저장은 `pjAdmin('update')`,
+        노션은 `pjNotionFill` — 전부 이미 있는 것을 그대로 쓴다(§3-0·§4-1).
+     🔴 [한 글자마다 다시 그리지 않는다] 입력칸은 그대로 두고 «후보 줄만» 바꾼다.
+        안 그러면 한글이 조합 중에 끊긴다(§3-5 ⑧ — 오늘 견적앱에서 겪은 함정). */
+
+  var KVPOP = null;   /* 지금 열린 작은 창 (하나만 연다) */
+
+  function kvPopClose(){
+    if(KVPOP && KVPOP.parentNode) KVPOP.parentNode.removeChild(KVPOP);
+    KVPOP = null;
+  }
+
+  /* key = '거래처'|'담당자'|'포토그래퍼'|'브랜드' · kv = 그 줄의 DOM */
+  function kvPopOpen(proj, key, kv, curText){
+    kvPopClose();
+    /* 노션 후보를 어디서 받나. 담당자는 노션에 자리가 없어 «직접 입력만» 받는다. */
+    var SRC = { '거래처':{cat:'거래처'},
+                '포토그래퍼':{cat:'인적자원', pos:'포토/감독'},
+                '브랜드':{cat:'인적자원', pos:'브랜드'},
+                '담당자':null };
+    var src = SRC[key];
+    var cur = (curText === '아직 없음' || curText === '아직 안 봄') ? '' : (curText || '');
+
+    var pop = document.createElement('div');
+    pop.className = 'kvpop';
+    pop.innerHTML =
+      '<div class="t"><b>' + pjEsc(key) + '</b> — '
+      + (src ? '치면 노션 후보가 뜹니다 · 없으면 그대로 적으셔도 됩니다'
+             : '🔴 노션에 「담당자」 칸이 없어 <b>시트에만</b> 저장됩니다') + '</div>'
+      + '<input type="text" placeholder="' + pjEsc(key) + ' 이름">'
+      + '<div class="hits"></div>'
+      + '<div class="row"><span class="msg"></span>'
+      +   '<button class="no">닫기</button><button class="ok">저장</button></div>';
+    kv.parentNode.insertBefore(pop, kv.nextSibling);
+    KVPOP = pop;
+
+    var inp  = pop.querySelector('input');
+    var hits = pop.querySelector('.hits');
+    var msg  = pop.querySelector('.msg');
+    var btnOk= pop.querySelector('.ok');
+    inp.value = cur;
+    var picked = null;          /* 후보에서 «고른» 것 {id,name} — 노션 연결에 쓴다 */
+    var rows = null;
+
+    function drawHits(){
+      if(!rows){ hits.className = 'hits'; return; }
+      var v = String(inp.value || '').trim().toLowerCase();
+      var f = rows.filter(function(x){
+        return !v || String(x.name).toLowerCase().indexOf(v) >= 0; }).slice(0, 30);
+      if(!f.length){ hits.className = 'hits'; hits.innerHTML = ''; return; }
+      hits.innerHTML = f.map(function(x){
+        return '<div class="hit" data-id="' + pjEsc(x.id) + '" data-nm="' + pjEsc(x.name) + '">'
+             + pjEsc(x.name) + (x.mgr ? ' <span class="sub">· ' + pjEsc(x.mgr) + '</span>' : '')
+             + '</div>'; }).join('');
+      hits.className = 'hits on';
+    }
+    if(src){
+      msg.textContent = '노션 목록 불러오는 중…';
+      netAsk(src.cat, function(r){
+        if(!r){ msg.textContent = '🔴 노션 목록을 못 받았습니다 — 직접 적으시면 시트에만 저장됩니다'; return; }
+        /* 🔴 좁히는 계산을 새로 쓰지 않는다 — `netPick` 이 이미 그 일을 한다(§1).
+           x.pos·x.sub 는 «배열»이라 글자로 비교하면 하나도 안 걸린다(실제로 그렇게 짰다가 고쳤다). */
+        rows = src.pos ? netPick(r, src.pos, null) : r;
+        if(!rows.length && src.pos) rows = r;   /* 좁혔더니 0개면 전체를 보여준다 */
+        msg.textContent = '노션 ' + rows.length + '곳 · 골라야 노션에도 들어갑니다';
+        drawHits();
+      });
+    } else {
+      msg.textContent = '';
+    }
+
+    /* 🔴 한 글자마다 입력칸을 다시 그리지 않는다 — 후보 줄만 바꾼다 */
+    inp.addEventListener('input', function(){ picked = null; drawHits(); });
+    hits.addEventListener('click', function(e){
+      var el = e.target; while(el && el !== hits && !el.classList.contains('hit')) el = el.parentElement;
+      if(!el || el === hits) return;
+      picked = { id: el.getAttribute('data-id'), name: el.getAttribute('data-nm') };
+      inp.value = picked.name;
+      hits.className = 'hits';
+      msg.textContent = '✅ 노션에서 골랐습니다 — 시트와 노션 둘 다 들어갑니다';
+    });
+    pop.querySelector('.no').addEventListener('click', kvPopClose);
+    inp.addEventListener('keydown', function(e){
+      if(e.key === 'Escape'){ kvPopClose(); }
+      /* 🔴 한글을 조합하는 중(isComposing)에는 Enter 를 «저장»으로 읽지 않는다 —
+         마지막 글자가 잘린 채 저장된다 */
+      else if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); save(); }
+    });
+    btnOk.addEventListener('click', save);
+    setTimeout(function(){ try{ inp.focus(); inp.select(); }catch(e){} }, 30);
+
+    function save(){
+      var val = String(inp.value || '').trim();
+      /* 고른 뒤 글자를 바꿨으면 «고른 것»으로 안 친다 — 엉뚱한 노션 페이지에 붙는다 */
+      if(picked && picked.name !== val) picked = null;
+      var MAP = { '거래처':'client', '담당자':'mgr', '포토그래퍼':'photo', '브랜드':'brand' };
+      var info = {}; info[MAP[key]] = val;
+      if(picked && key === '거래처')     info.clientId = picked.id;
+      if(picked && key === '포토그래퍼') info.photoId  = picked.id;
+
+      btnOk.disabled = true; btnOk.textContent = '저장 중…';
+      msg.textContent = '';
+      pjAdmin('update', proj, '&info=' + encodeURIComponent(JSON.stringify(info)), function(r){
+        if(!r || !r.ok){
+          btnOk.disabled = false; btnOk.textContent = '저장';
+          msg.innerHTML = '🔴 못 저장했습니다 — ' + pjEsc((r && r.error) || '답이 없습니다');
+          return;
+        }
+        pjNotionFill(proj, info, function(n){
+          kvPopClose();
+          PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {};    /* 다음에 열 때 새로 읽는다 */
+          /* 🔴 화면을 통째로 새로 그리지 않는다 — 그 «줄만» 고친다.
+             통째로 그리면 스크롤이 맨 위로 튀어 「어디였지」가 된다. */
+          var mk = kv.querySelector('.m'), vv = kv.querySelector('.v'),
+              fb = kv.querySelector('.fill');
+          if(vv){ vv.textContent = val || '아직 없음';
+                  vv.className = 'v' + (val ? '' : ' no'); }
+          if(mk) mk.textContent = val ? '✅' : (kvKind(key) === '필수' ? '🔴' : '🟠');
+          if(fb) fb.textContent = val ? '고치기' : '＋ 채우기';
+          pjToast('✅ ' + key + ' 저장 — ' + (n.text || '').split('\n')[0]);
+        });
+      });
+    }
+  }
+  /* 그 항목이 「필수」인가 — 저장 뒤 동그라미 색을 되돌릴 때 쓴다 */
+  function kvKind(key){ return (key === '담당자' || key === '촬영일') ? '필수' : '결과물'; }
+
+  /* 화면 아래 잠깐 뜨는 알림 — alert 는 페이지를 막아서 「그 자리에서」와 안 어울린다 */
+  function pjToast(text){
+    var t = document.getElementById('pjToast');
+    if(!t){ t = document.createElement('div'); t.id = 'pjToast';
+      t.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);'
+        + 'background:#1c2330;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;'
+        + 'z-index:120;box-shadow:0 6px 22px rgba(0,0,0,.28);max-width:88vw;line-height:1.5';
+      document.body.appendChild(t); }
+    t.textContent = text; t.style.display = 'block';
+    clearTimeout(t.__h); t.__h = setTimeout(function(){ t.style.display = 'none'; }, 4200);
+  }
+
   /* focus = 폼을 열고 «그 칸으로 바로 갈» 칸의 id (예: 'pkCli'). 없으면 예전 그대로. */
   function pjEdit(name, focus){
     if(!name || PJ_BUSY) return;
@@ -3477,10 +3654,21 @@
       if(!act) return;
       e.preventDefault();
       if(act === 'settle'){ pjSettle(el.getAttribute('data-pjproj') || PJ_NOW); return; }
-      /* ✏️ 2026-09-01 — 「그 줄 옆 채우기」는 «어느 칸»인지도 같이 온다(data-pjfocus).
-         없으면(아래쪽 「✏️ 정보」) 예전 그대로 폼만 열린다. */
-      if(act === 'edit'){   pjEdit(el.getAttribute('data-pjproj'),
-                                   el.getAttribute('data-pjfocus') || ''); return; }
+      /* ✏️ 2026-09-01 — 「그 줄 옆 채우기」는 «그 자리»에서 작은 창으로 연다.
+         대표 지시: *"페이지 안넘어가고 그냥 담당자만 선택하거나 추가할 수 있게"*
+         🔴 data-pjkey 가 있으면 작은 창, 없으면(아래쪽 「✏️ 정보」) 예전대로 폼 전체. */
+      if(act === 'edit'){
+        var _k = el.getAttribute('data-pjkey');
+        if(_k){
+          var _kv = el; while(_kv && !_kv.classList.contains('kv')) _kv = _kv.parentElement;
+          if(_kv){
+            var _v = _kv.querySelector('.v');
+            kvPopOpen(el.getAttribute('data-pjproj'), _k, _kv, _v ? _v.textContent : '');
+            return;
+          }
+        }
+        pjEdit(el.getAttribute('data-pjproj'), el.getAttribute('data-pjfocus') || ''); return;
+      }
       if(act === 'rename'){ pjRename(el.getAttribute('data-pjproj')); return; }
       if(act === 'del'){    pjDelete(el.getAttribute('data-pjproj')); return; }
       if(act === 'folder' || act === 'sheet' || act === 'share'){
