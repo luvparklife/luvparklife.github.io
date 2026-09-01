@@ -2328,14 +2328,22 @@
     if(qk){
       var aE = qk.querySelector('a[data-pjeqd]');
       if(aE){
-        var eq = _byKey('장비세부내역');
+        /* 📋 2026-09-02 대표 지시 — *"갯수 보일필요없어. 세부내역은 카드에서 대표만 보고 들어갈 수 있게."*
+           [무엇이 바뀌나] ①「(119건)」을 «지웠다» ②주소를 못 받는 사람에겐 «버튼 자체를 감춘다».
+           🔴 [왜 개수를 지우나] 회색 버튼에 개수만 남으면 «몇 건인지»는 그대로 새어 나간다.
+              못 여는 사람에게 「119건」을 보여줄 이유가 없다.
+           🔴 [자물쇠는 그대로다] sheetUrl 은 서버가 «관리 이상»에게만 준다(소싱시트와 같은 자물쇠).
+              여기서 「대표만」으로 좁히면 명진님이 못 보게 된다 — 2026-08-20 대표 결정을 뒤집는 것이라
+              «화면»만 맞추고 자물쇠는 안 건드린다.
+           🔴 [hidden 속성으로는 안 감춰진다] 버튼에 걸린 display 규칙이 이긴다(2026-08-31에 겪음)
+              → style.display 를 직접 쓴다. */
         if(d.sheetUrl){
-          aE.className=''; aE.setAttribute('data-pjact','sheet'); aE.setAttribute('data-pjurl', d.sheetUrl);
-          /* 몇 건인지 버튼에 그대로 — 「있나 없나」를 카드에서 바로 안다 */
-          aE.textContent = '📋 장비세부내역' + (eq && eq.text ? ' (' + eq.text + ')' : '');
+          aE.style.display=''; aE.className='';
+          aE.setAttribute('data-pjact','sheet'); aE.setAttribute('data-pjurl', d.sheetUrl);
+          aE.textContent = '📋 장비세부내역';
         }else{
-          aE.className='off'; aE.removeAttribute('data-pjact'); aE.removeAttribute('data-pjurl');
-          aE.textContent = '📋 장비세부내역' + (eq && eq.text ? ' (' + eq.text + ')' : '');
+          aE.style.display='none';
+          aE.removeAttribute('data-pjact'); aE.removeAttribute('data-pjurl');
         }
       }
     }
