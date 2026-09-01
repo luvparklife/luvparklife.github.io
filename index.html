@@ -244,6 +244,10 @@
                    background:#fff; line-height:1.7}
     .pj2 .kv .fill:hover{border-color:#3b6cff; color:#3b6cff; background:#f4f7ff}
     /* 🔒 2026-09-01 — 「여기부터 대표님만」 띠. 대표에게만 보인다(팀원은 아래 줄 자체가 없다). */
+    /* 🟠 「노션 등록 필요」 딱지 (2026-09-01 대표 지시) */
+    .pj2 .kv .nno{font-size:10.5px; color:#8a6d1f; background:#fff8e6; border:1px solid #f0dda8;
+                  border-radius:999px; padding:0 6px; white-space:nowrap}
+    .pj2 .kv .nno.gray{color:#7a8290; background:var(--chip); border-color:var(--line2)}
     .pj2 .kvsec{margin:9px 0 1px; padding:5px 8px; border-radius:7px; background:#f5f3ea;
                 border:1px solid #e6dfc6; color:#7a6a2f; font-size:11px; line-height:1.5}
     /* ✏️ 2026-09-01 대표 지시 — «그 자리에서» 채운다. 페이지를 안 넘긴다.
@@ -2077,6 +2081,52 @@
     if(need) h = '<div class="stg" style="color:#c0392b;margin-bottom:6px">🔴 꼭 필요한 것 '
                + need + '개가 비었습니다</div>' + h;
     box.innerHTML = h;
+    /* ══════════════════════════════════════════════════════════════
+       🟠 노션에 있나 없나를 «화면을 열 때» 알려준다   (2026-09-01 대표 지시)
+       ══════════════════════════════════════════════════════════════
+       대표 원문: *"근복적문제는 내가 등록한게 노션에 제대로 등록이 되어있는지 아닌지 모른다는거야."*
+       🔴 [무엇이 없었나] 시트에는 «이름만» 저장한다. 그래서 나중에 화면을 열면
+          그 이름이 노션에 있는 사람인지 «알 길이 없었다». 저장 직후에만 표시가 붙었다.
+       🔴 [고친 법 = 새로 저장하지 않는다] 노션 목록(`netAsk`·캐시됨)을 받아 «이름으로 대조»한다.
+          시트에 id 를 넣는 방법도 있지만, 그러면 노션에서 이름을 바꿨을 때 어긋난다(§1).
+       🔴 [못 물어봤으면 «아무 말도 안 한다»] 「없다」와 「모른다」는 다르다 —
+          목록을 못 받았는데 「등록 필요」라고 하면 거짓말이다(§3-5 ⑤). */
+    (function(){
+      var CHK = { '거래처':'거래처', '포토그래퍼':'인적자원',
+                  '브랜드':'인적자원', '참여인원':'인적자원' };
+      Object.keys(CHK).forEach(function(k){
+        var it = (d.items||[]).filter(function(x){ return x.key===k; })[0];
+        if(!it || it.state!=='ok' || !it.text) return;
+        var kv = [].slice.call(box.querySelectorAll('.kv')).filter(function(e){
+          var kk = e.querySelector('.k'); return kk && kk.textContent===k; })[0];
+        if(!kv) return;
+        netAsk(CHK[k], function(rows){
+          if(!rows) return;                       /* 못 물어봤으면 아무 말도 안 한다 */
+          var have = {}; rows.forEach(function(x){
+            have[String(x.name).trim().toLowerCase()] = 1; });
+          /* 참여인원은 쉼표로 여러 명 — 한 명이라도 없으면 알린다 */
+          var miss = String(it.text).split(',').map(function(x){ return x.trim(); })
+                       .filter(function(x){ return x && !have[x.toLowerCase()]; });
+          if(!miss.length) return;
+          var vv = kv.querySelector('.v'); if(!vv) return;
+          if(vv.textContent.indexOf('노션') >= 0) return;   /* 이미 붙어 있으면 두 번 안 붙인다 */
+          vv.innerHTML = pjEsc(it.text)
+            + ' <span class="nno" title="' + pjEsc(miss.join(', ')) + ' — 노션에 없습니다">'
+            + '🟠 노션 등록 필요' + (miss.length>1 ? ' ('+miss.length+')' : '') + '</span>';
+        });
+      });
+      /* 🗒 담당자는 «노션 프로젝트에 칸이 없다» — 「등록 필요」가 아니라 «원래 그렇다»고 말한다 */
+      var mg = (d.items||[]).filter(function(x){ return x.key==='담당자'; })[0];
+      if(mg && mg.state==='ok' && mg.text){
+        var kvm = [].slice.call(box.querySelectorAll('.kv')).filter(function(e){
+          var kk = e.querySelector('.k'); return kk && kk.textContent==='담당자'; })[0];
+        var vvm = kvm && kvm.querySelector('.v');
+        if(vvm && vvm.textContent.indexOf('시트') < 0){
+          vvm.innerHTML = pjEsc(mg.text)
+            + ' <span class="nno gray" title="노션 프로젝트에는 담당자 칸이 없습니다">🗒 시트에만</span>';
+        }
+      }
+    })();
 
     /* 📁 내부폴더 버튼 살리기 — 주소는 방금 받은 것을 쓴다(코드에 안 적는다 §1)
        🔴 2026-09-01 — 서버가 `내부폴더`(프로젝트 폴더 안 `내부_…`)를 보내면 그것을,
@@ -3341,6 +3391,9 @@
         안 그러면 한글이 조합 중에 끊긴다(§3-5 ⑧ — 오늘 견적앱에서 겪은 함정). */
 
   var KVPOP = null;   /* 지금 열린 작은 창 (하나만 연다) */
+  /* 🟢 이번 창에서 «노션에 등록한 결과» — 저장이 끝난 뒤 띠에 같이 적는다.
+     대표 신고: *"등록을 했으면 해당창에 완료 표시가 뜨고 꺼져야하는데"* */
+  var KV_NOTION_DONE = '';
 
   function kvPopClose(){
     if(KVPOP && KVPOP.parentNode) KVPOP.parentNode.removeChild(KVPOP);
@@ -3350,6 +3403,7 @@
   /* key = '거래처'|'담당자'|'포토그래퍼'|'브랜드' · kv = 그 줄의 DOM */
   function kvPopOpen(proj, key, kv, curText){
     kvPopClose();
+    KV_NOTION_DONE = '';
     /* 노션 후보를 어디서 받나. 담당자는 노션에 자리가 없어 «직접 입력만» 받는다. */
     /* 👥 2026-09-01 대표 지시 — *"대표님만 보는 목록에 참여인원 넣어서 해외팀이던
        새롭게 알게된 사람들 다 등록할 수 있게 해줘"*
@@ -3587,8 +3641,17 @@
               if(rows) rows.push(d.row);
               if(typeof NET_CACHE !== 'undefined' && NET_CACHE[src.cat]) NET_CACHE[src.cat].push(d.row);
               closePanel();
-              msg.textContent = '✅ ' + (d.already ? '이미 있어서 그것을 씁니다' : '노션에 등록했습니다')
-                              + ' — 이어서 저장합니다…';
+              /* 🔴 2026-09-01 대표 신고 — *"이게 노션에 제대로 등록된건지 아닌지 몰라"*
+                 [무엇이 문제였나] 「이어서 저장합니다…」로 끝나서, 저장이 느리거나 실패하면
+                   그 글자만 남는다. 대표는 «등록이 된 건지»를 알 수 없다.
+                 [고침] ①등록 «자체»를 초록 글씨로 분명히 말하고 ②중복이면 그 사실을 따로 말한다
+                        ③저장까지 끝나면 창이 닫히며 아래 띠에 «둘 다» 적는다. */
+              KV_NOTION_DONE = d.already
+                ? ('🟢 노션에 «이미 있어서» 그것을 연결했습니다 — ' + d.row.name)
+                : ('🟢 노션에 새로 등록했습니다 — ' + d.row.name);
+              msg.innerHTML = '<b style="color:#1e7a46">' + pjEsc(KV_NOTION_DONE) + '</b>'
+                            + '<br>저장하는 중…';
+              if(many){ addPick({ id:d.row.id, name:d.row.name }); }
               save();                     /* 이제 picked 가 있으므로 통과한다 */
             });
           };
@@ -3650,12 +3713,25 @@
           /* 🔴 2026-09-01 — 노션에 «안 간» 채 저장했으면 그 사실을 그 줄에 남긴다.
              안 남기면 대표님이 「노션에도 들어갔겠지」로 아시고 영영 안 고치신다(§3-5 ⑤).
              그 칸을 다시 누르면 그때 등록하실 수 있다 — 잊히지 않는다. */
-          var noNotion = mustPick && val && !picked;
-          if(vv){ vv.textContent = (val || '아직 없음') + (noNotion ? ' · 🟠 노션 미등록' : '');
+          /* 🔴 2026-09-01 대표 신고 — *"노션에 없는것들은 고치기나 여튼 그쪽에 노션 등록 필요하다고 해줘"*
+             [무엇이 문제였나] 이 표시가 `mustPick`(거래처·포토그래퍼)일 때만 붙어,
+               **담당자·참여인원은 영영 안 붙었다.** 그래서 노션에 있는지 «볼 방법이 없었다».
+             [고침] 값이 있는데 노션에서 «고른 게 아니면» 언제나 붙인다.
+             🔴 [담당자는 «다르게» 적는다] 노션 «프로젝트»에는 담당자 칸이 아예 없다 —
+                「미등록」이라 하면 «고칠 수 있는 것»으로 읽혀 계속 시도하시게 된다. */
+          var noNotion = !!val && !picked && !(many && picks.some(function(x){ return x.id; }));
+          if(many) noNotion = picks.some(function(x){ return !x.id; });
+          var tail = '';
+          if(noNotion) tail = (key === '담당자') ? ' · 🗒 시트에만' : ' · 🟠 노션 등록 필요';
+          if(vv){ vv.textContent = (val || '아직 없음') + tail;
                   vv.className = 'v' + (val ? '' : ' no'); }
           if(mk) mk.textContent = val ? '✅' : (kvKind(key) === '필수' ? '🔴' : '🟠');
           if(fb) fb.textContent = val ? '고치기' : '＋ 채우기';
-          pjToast('✅ ' + key + ' 저장 — ' + (n.text || '').split('\n')[0]);
+          /* 🔴 대표 신고 — 「등록됐는지 모르겠다」. 그래서 «둘 다» 적는다:
+             ①노션에 등록/연결했나 ②시트에 저장했나. 5초쯤 떠 있어 읽을 시간이 있다. */
+          pjToast((KV_NOTION_DONE ? KV_NOTION_DONE + '\n' : '')
+                  + '✅ ' + key + ' 저장 — ' + (n.text || '').split('\n')[0]);
+          KV_NOTION_DONE = '';
         });
       });
     }
