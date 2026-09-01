@@ -257,6 +257,16 @@
     .kvpop input{width:100%; box-sizing:border-box; border:1px solid var(--line2); border-radius:8px;
                  padding:7px 9px; font-size:13px; font-family:inherit}
     .kvpop input:focus{outline:none; border-color:#3b6cff}
+    /* 👥 2026-09-01 — 여러 명을 «칩»으로 쌓는다 (참여인원) */
+    .kvpop .hint2{color:#9aa3b2; font-size:10.5px}
+    .kvpop .chips{display:none; flex-wrap:wrap; gap:5px; margin-bottom:6px}
+    .kvpop .chips.on{display:flex}
+    .kvpop .chip{display:inline-flex; align-items:center; gap:5px; font-size:11.5px;
+                 background:var(--chip); border:1px solid var(--line2); border-radius:999px;
+                 padding:2px 4px 2px 9px; color:#5b6472}
+    .kvpop .chip.has{border-color:#9db6ff; background:#f4f7ff; color:#2f4fa8}
+    .kvpop .chip b{cursor:pointer; font-weight:700; padding:0 4px; color:#9aa3b2}
+    .kvpop .chip b:hover{color:#c0392b}
     .kvpop .hits{max-height:148px; overflow-y:auto; margin-top:5px; border:1px solid var(--line2);
                  border-radius:8px; display:none}
     .kvpop .hits.on{display:block}
@@ -2026,9 +2036,14 @@
           나머지(장비세부내역·견적서·정산서 …)는 «다른 데서 일이 끝나야» 생기는 결과물이라
           여기서 손으로 채우면 «없는 사실»을 적는 것이 된다. 그래서 버튼을 안 붙인다.
        🔴 값 → 폼 칸 id. 「＋ 새 프로젝트」 폼의 칸을 그대로 쓴다(§4-1 — 폼을 새로 안 만든다). */
-    var PJ_FILLABLE = { '거래처':'pkCli', '담당자':'pkMgr', '포토그래퍼':'pkPho', '브랜드':'pkBrand' };
+    var PJ_FILLABLE = { '거래처':'pkCli', '담당자':'pkMgr', '포토그래퍼':'pkPho', '브랜드':'pkBrand',
+                        '참여인원':'pkPeople' };
     var opened = false;      /* 「🔒 대표만」 띠를 아직 안 넣었나 */
     (d.items||[]).forEach(function(x){
+      /* 📋 2026-09-01 대표 지시 — 카드에 있는 것은 목록에 «안» 그린다(같은 것을 두 번 보게 된다).
+         🔴 [값은 «버리지 않는다»] 카드 버튼이 「(119건)」·폴더 주소로 쓴다.
+            서버에서 지우면 카드가 몇 건인지·어느 폴더인지 모른다. */
+      if(x.who === '카드') return;
       var mine = (x.who === '대표');
       if(mine && !IS_OWNER){ secretN++; return; }        /* 팀원에게는 아예 안 그린다 */
       if(mine && !opened){                                /* 대표에게는 «여기부터» 라고 알린다 */
@@ -2063,12 +2078,33 @@
                + need + '개가 비었습니다</div>' + h;
     box.innerHTML = h;
 
-    /* 📁 폴더 버튼 살리기 — 주소는 방금 받은 것을 쓴다(코드에 안 적는다 §1) */
-    var fd = (d.items||[]).filter(function(x){ return x.key==='폴더'; })[0];
+    /* 📁 내부폴더 버튼 살리기 — 주소는 방금 받은 것을 쓴다(코드에 안 적는다 §1)
+       🔴 2026-09-01 — 서버가 `내부폴더`(프로젝트 폴더 안 `내부_…`)를 보내면 그것을,
+          없으면(옛 배포·그 폴더가 없는 옛 프로젝트) `공유폴더`/`폴더`로 떨어진다.
+          이름을 「내부폴더」로 바꿨으니 «가리키는 곳»도 같이 바꾼다 — 안 그러면 글자가 거짓말한다. */
+    var _it = (d.items||[]);
+    function _byKey(k){ return _it.filter(function(x){ return x.key===k; })[0]; }
+    var fd = _byKey('내부폴더') || _byKey('공유폴더') || _byKey('폴더');
     var qk = document.getElementById('pjQk');
     if(qk && fd && fd.link){
       var a = qk.querySelector('a[data-pjfolder]');
       if(a){ a.className=''; a.setAttribute('data-pjact','folder'); a.setAttribute('data-pjurl', fd.link); }
+    }
+    /* 📋 2026-09-01 대표 지시 — 「장비세부내역」을 카드로. 소싱시트 주소로 간다
+       (거기가 장비 «세부»의 원본이다). 🔴 「관리」 이상만 주소를 받는다 — 소싱시트와 같은 자물쇠. */
+    if(qk){
+      var aE = qk.querySelector('a[data-pjeqd]');
+      if(aE){
+        var eq = _byKey('장비세부내역');
+        if(d.sheetUrl){
+          aE.className=''; aE.setAttribute('data-pjact','sheet'); aE.setAttribute('data-pjurl', d.sheetUrl);
+          /* 몇 건인지 버튼에 그대로 — 「있나 없나」를 카드에서 바로 안다 */
+          aE.textContent = '📋 장비세부내역' + (eq && eq.text ? ' (' + eq.text + ')' : '');
+        }else{
+          aE.className='off'; aE.removeAttribute('data-pjact'); aE.removeAttribute('data-pjurl');
+          aE.textContent = '📋 장비세부내역' + (eq && eq.text ? ' (' + eq.text + ')' : '');
+        }
+      }
     }
     /* 📊 소싱시트 · 🌐 공유파일 살리기 (2026-08-31 대표 지시)
        🔴 주소를 코드에 안 적는다 — 서버가 방금 보낸 것만 쓴다(폴더와 «같은 방식» · §1).
@@ -3173,9 +3209,16 @@
       + (isOwner
           ? '<a href="#" data-pjact="field" data-pjproj="' + p + '" data-pjextra="page=quote">🧾 견적서</a>'
           : '<a href="#" class="off">🧾 견적서</a>')
+      /* 📋 2026-09-01 대표 지시 — *"장비세부내역은 정보에서 지우고 카드에 넣어주고"*
+         🔴 소싱시트로 간다 — 장비 «세부»는 거기가 원본이다(장비앱은 현장 확인·승인용).
+            「관리」 이상만 주소를 받는다(단가·마진) — 소싱시트 버튼과 «같은 자물쇠». */
+      + '<a href="#" class="off" data-pjeqd="1">📋 장비세부내역</a>'
       + '<a href="#" class="off" data-pjsheet="1">📊 소싱시트</a>'
       + '<a href="#" class="off" data-pjshare="1">🌐 공유파일</a>'
-      + '<a href="#" class="off" data-pjfolder="1">📁 폴더</a>'
+      /* 📁 2026-09-01 대표 지시 — *"카드에 있는 폴더 이름은 내부폴더로 바꿔줘"*
+         🔴 이름만 바꾸는 게 아니라 «가리키는 곳»도 바꾼다 — 안 그러면 글자가 거짓말한다(§3-5 ⑤).
+            프로젝트 폴더 안의 `내부_<프로젝트명>` 을 연다. 없으면 프로젝트 폴더로 떨어진다. */
+      + '<a href="#" class="off" data-pjfolder="1">📁 내부폴더</a>'
       + '<a href="#" data-pjact="settle" data-pjproj="' + p + '">💰 ' + (isMgr ? '정산 (관리)' : '내 청구') + '</a>'
       /* 🔴 2026-08-26 대표 지시 *"잘못만들었을때 … 삭제하거나 수정할 수 있게"*
          대표에게만 보인다 — 서버도 대표가 아니면 거절한다(화면만 감추는 게 아니다). */
@@ -3308,10 +3351,19 @@
   function kvPopOpen(proj, key, kv, curText){
     kvPopClose();
     /* 노션 후보를 어디서 받나. 담당자는 노션에 자리가 없어 «직접 입력만» 받는다. */
+    /* 👥 2026-09-01 대표 지시 — *"대표님만 보는 목록에 참여인원 넣어서 해외팀이던
+       새롭게 알게된 사람들 다 등록할 수 있게 해줘"*
+       🔴 `many:true` = 여러 명을 «쌓는다». 저장은 쉼표로 한 칸에 담고, 노션엔 여러 명을 연결한다.
+       🔴 「PA팀」(견적서에서 «자동으로» 세는 우리 팀)과 «다른 줄»이다 — 그건 채우는 칸이 아니다. */
     var SRC = { '거래처':{cat:'거래처'},
                 '포토그래퍼':{cat:'인적자원', pos:'포토/감독'},
                 '브랜드':{cat:'인적자원', pos:'브랜드'},
-                '담당자':null };
+                '참여인원':{cat:'인적자원', many:true},
+                /* 🔴 2026-09-01 대표 신고 *"담당자는 노션 등록 안돼"* — `null` 이라 후보도
+                   등록 버튼도 아예 없었다. 큰 폼(`pjNewMgrPicker`)에는 있는데 여기만 없었다.
+                   🔴 [막지는 «않는다»] MUST_PICK 에 안 넣는다 — 노션 «프로젝트»에는 담당자 칸이
+                      아예 없어서, 막으면 노션에 못 넣는 사람은 시트에도 못 적게 된다. */
+                '담당자':{cat:'인적자원', pos:'클라이언트'} };
     var src = SRC[key];
     /* 🔴 2026-09-01 대표 확정 — 거래처·포토그래퍼는 «노션이 원본»이다.
        대표 원문: *"거래처 포토그래퍼는 손입력 없애고 그자리에서 노션에 등록.
@@ -3332,9 +3384,16 @@
     pop.className = 'kvpop';
     pop.innerHTML =
       '<div class="t"><b>' + pjEsc(key) + '</b> — '
-      + (!src     ? '🔴 노션에 「담당자」 칸이 없어 <b>시트에만</b> 저장됩니다'
+      + (key === '담당자'
+           /* 🔴 노션 «네트워크»에는 등록되지만 노션 «프로젝트»에는 담당자 칸이 없다.
+              둘을 뭉뚱그리면 대표가 「노션에 들어갔겠지」로 믿으신다(§3-5 ⑤). */
+           ? '치면 노션 후보가 뜹니다 · 없으면 <b>＋ 노션에 등록</b> · '
+             + '🔴 프로젝트에는 담당자 칸이 없어 <b>시트에만</b> 붙습니다'
+         : !src     ? '🔴 노션에 칸이 없어 <b>시트에만</b> 저장됩니다'
+         : (src && src.many) ? '해외팀·새로 알게 된 분을 <b>여러 명</b> 넣습니다 · 하나씩 골라 <b>Enter</b>'
          : mustPick ? '노션 목록에서 <b>골라야</b> 저장됩니다 · 목록에 없으면 <b>＋ 노션에 등록</b>'
                     : '치면 노션 후보가 뜹니다 · 없으면 그대로 적으셔도 됩니다') + '</div>'
+      + '<div class="chips"></div>'
       + '<input type="text" placeholder="' + pjEsc(key) + ' 이름">'
       + '<div class="hits"></div>'
       + '<div class="row"><span class="msg"></span>'
@@ -3349,6 +3408,41 @@
     inp.value = cur;
     var picked = null;          /* 후보에서 «고른» 것 {id,name} — 노션 연결에 쓴다 */
     var rows = null;
+    /* 👥 여러 명 모드 — 「＋ 채우기」로 열면 지금 값(쉼표)을 칩으로 되살린다 */
+    var many = !!(src && src.many);
+    var chipBox = pop.querySelector('.chips');
+    var picks = [];
+    if(many && cur){
+      picks = cur.split(',').map(function(x){ return { id:'', name:String(x).trim() }; })
+                 .filter(function(x){ return x.name; });
+      inp.value = '';           /* 칩으로 옮겼으니 칸은 비운다 */
+    }
+    function drawChips(){
+      if(!many) return;
+      if(!picks.length){ chipBox.className='chips'; chipBox.innerHTML=''; return; }
+      chipBox.className = 'chips on';
+      chipBox.innerHTML = picks.map(function(x,i){
+        return '<span class="chip' + (x.id ? ' has' : '') + '">' + pjEsc(x.name)
+             + '<b data-i="' + i + '">×</b></span>'; }).join('');
+    }
+    if(many){
+      chipBox.addEventListener('click', function(e){
+        var b = e.target; if(b.tagName !== 'B') return;
+        picks.splice(Number(b.getAttribute('data-i')), 1); drawChips();
+      });
+      drawChips();
+    }
+    /* 한 명을 «칩으로» 담는다. 이미 있으면 안 담는다(같은 사람이 두 번 들어가지 않게) */
+    function addPick(one){
+      if(!one || !one.name) return false;
+      var dup = picks.some(function(x){
+        return (x.id && one.id && x.id === one.id) || x.name === one.name; });
+      if(!dup) picks.push(one);
+      inp.value = ''; hits.className='hits'; drawChips();
+      msg.textContent = picks.length + '명 — 「저장」을 눌러야 들어갑니다';
+      try{ inp.focus(); }catch(e){}
+      return true;
+    }
 
     function drawHits(){
       if(!rows){ hits.className = 'hits'; return; }
@@ -3379,11 +3473,29 @@
     }
 
     /* 🔴 한 글자마다 입력칸을 다시 그리지 않는다 — 후보 줄만 바꾼다 */
-    inp.addEventListener('input', function(){ picked = null; drawHits(); });
+    inp.addEventListener('input', function(){ picked = null; drawHits(); hintAdd(); });
+    /* 🔴 2026-09-01 — 등록 버튼이 «저장을 막을 때»(kvNeedPick)만 떴다.
+       담당자·브랜드·참여인원은 «안 막으므로» 버튼이 영영 안 뜬다 —
+       대표 신고 *"담당자는 노션 등록 안돼"* 의 나머지 절반이 이것이다.
+       → 치는 동안 「노션에 없는 이름」이면 «권한다»(막지는 않는다). 큰 폼 status() 와 같은 동작. */
+    function hintAdd(){
+      if(!src || mustPick) return;              /* 막는 칸은 kvNeedPick 이 맡는다 */
+      var v = String(inp.value || '').trim();
+      if(!v || !rows){ if(!msg.dataset.keep) msg.textContent = msg.dataset.base || ''; return; }
+      var hit = rows.some(function(x){
+        return String(x.name).trim().toLowerCase() === v.toLowerCase(); });
+      if(hit){ msg.textContent = msg.dataset.base || ''; return; }
+      msg.innerHTML = '노션에 없는 이름입니다 '
+                    + '<button type="button" class="add">＋ 노션에 등록</button>'
+                    + ' <span class="hint2">그냥 저장하셔도 됩니다</span>';
+      msg.querySelector('.add').onclick = function(){ kvAddPanel(v, this); };
+    }
     hits.addEventListener('click', function(e){
       var el = e.target; while(el && el !== hits && !el.classList.contains('hit')) el = el.parentElement;
       if(!el || el === hits) return;
-      picked = { id: el.getAttribute('data-id'), name: el.getAttribute('data-nm') };
+      var one = { id: el.getAttribute('data-id'), name: el.getAttribute('data-nm') };
+      if(many){ addPick(one); return; }          /* 👥 여러 명이면 «쌓는다» */
+      picked = one;
       inp.value = picked.name;
       hits.className = 'hits';
       msg.textContent = '✅ 노션에서 골랐습니다 — 시트와 노션 둘 다 들어갑니다';
@@ -3393,7 +3505,19 @@
       if(e.key === 'Escape'){ kvPopClose(); }
       /* 🔴 한글을 조합하는 중(isComposing)에는 Enter 를 «저장»으로 읽지 않는다 —
          마지막 글자가 잘린 채 저장된다 */
-      else if(e.key === 'Enter' && !e.isComposing){ e.preventDefault(); save(); }
+      else if(e.key === 'Enter' && !e.isComposing){
+        e.preventDefault();
+        /* 👥 여러 명일 땐 Enter 가 «한 명 담기»다 — 바로 저장하면 두 번째 사람을 못 넣는다.
+           칸이 비어 있을 때 Enter 를 누르면 그때 저장한다. */
+        if(many && String(inp.value||'').trim()){
+          var v = String(inp.value).trim();
+          var h2 = (rows || []).filter(function(x){
+            return String(x.name).trim().toLowerCase() === v.toLowerCase(); })[0];
+          addPick(h2 ? { id:h2.id, name:h2.name } : { id:'', name:v });
+          return;
+        }
+        save();
+      }
     });
     /* 🔴 save 를 «그대로» 넘기면 안 된다 — 클릭 이벤트 객체가 첫 인자(skipNotion)로 들어가
        truthy 가 되므로, 저장 버튼이 늘 「노션 없이 저장」으로 동작한다(2026-09-01 검사로 잡았다). */
@@ -3409,8 +3533,16 @@
                     + '<button type="button" class="skip">노션 없이 저장</button>';
       /* 🔴 [② 일단 저장] 규칙을 끄는 게 아니라 «이번만» 넘어간다. 그 줄에 🟠 표시가 남는다. */
       msg.querySelector('.skip').onclick = function(){ save(true); };
-      msg.querySelector('.add').onclick = function(){
-        var b = this; b.disabled = true; b.textContent = '칸 불러오는 중…';
+      msg.querySelector('.add').onclick = function(){ kvAddPanel(val, this); };
+    }
+
+    /* 🆕 노션 등록 창을 «여는 곳은 하나»다 (2026-09-01) — 두 군데서 각자 그리면
+       한쪽만 고쳐져 「어떤 때는 버튼 아래 나오는」 오늘 같은 일이 또 난다(§1).
+       · kvNeedPick  = 저장을 «막을 때»(거래처·포토그래퍼)
+       · hintAdd     = 치는 동안 «권할 때»(담당자·브랜드·참여인원) */
+    function kvAddPanel(val, b){
+      {
+        b.disabled = true; b.textContent = '칸 불러오는 중…';
         /* 🔴 [① 속성까지 받는다] 칸을 새로 만들지 않는다 — netProps/netPropHtml/netPropRead 가
            이미 그 일을 한다(§1). 「＋ 새 프로젝트」 폼과 «같은 칸»이 떠야 대표가 안 헷갈리신다.
            🔴 넣는 것도 netAdd 하나다 — 서버에 이메일·이름 중복 막기가 걸려 있어
@@ -3428,8 +3560,15 @@
             + '<div class="npb"><button type="button" class="npok">노션에 넣기</button>'
             + '<button type="button" class="npno">그만두기</button></div>';
           msg.innerHTML = '';
-          pop.appendChild(panel);          /* msg 는 좁아서 창에 직접 붙인다 */
-          panel.querySelector('.npno').onclick = function(){ panel.remove(); kvNeedPick(val); };
+          /* 🔴 2026-09-01 대표 신고 *"노션 등록 창이 약간 이상해"* — 원인 둘이었다.
+             ① `appendChild` 라 등록 창이 [닫기][저장] «아래»에 나왔다(순서가 거꾸로)
+             ② 패널 안에 [노션에 넣기]가 있는데 아래에도 [저장]이 남아 «저장 버튼이 두 개»로 보였다
+             → 버튼 줄 «위»에 넣고, 패널이 떠 있는 동안 그 줄을 감춘다. */
+          var rowEl = pop.querySelector('.row');
+          if(rowEl){ pop.insertBefore(panel, rowEl); rowEl.style.display = 'none'; }
+          else pop.appendChild(panel);
+          function closePanel(){ panel.remove(); if(rowEl) rowEl.style.display = ''; }
+          panel.querySelector('.npno').onclick = function(){ closePanel(); kvNeedPick(val); };
           panel.querySelector('.npok').onclick = function(){
             var ok2 = this; ok2.disabled = true; ok2.textContent = '넣는 중…';
             netAdd(src.cat, val, src.pos || '', null, netPropRead(panel), function(d){
@@ -3447,14 +3586,14 @@
               inp.value = d.row.name;
               if(rows) rows.push(d.row);
               if(typeof NET_CACHE !== 'undefined' && NET_CACHE[src.cat]) NET_CACHE[src.cat].push(d.row);
-              panel.remove();
+              closePanel();
               msg.textContent = '✅ ' + (d.already ? '이미 있어서 그것을 씁니다' : '노션에 등록했습니다')
                               + ' — 이어서 저장합니다…';
               save();                     /* 이제 picked 가 있으므로 통과한다 */
             });
           };
         });
-      };
+      }
     }
 
     function save(skipNotion){
@@ -3470,12 +3609,28 @@
             다시 그려진다 — 안 저장했는데 저장된 줄 아시게 된다.
          🔴 [skipNotion] 대표가 「노션 없이 저장」을 누르면 이번만 넘어간다 — 그때는
             아래에서 그 줄에 «🟠 노션 미등록»을 남겨 나중에 다시 등록하실 수 있게 한다. */
+      /* 👥 여러 명 — 칸에 남은 글자도 «마지막 한 명»으로 담는다(치고 저장을 바로 누르는 흐름) */
+      if(many){
+        if(val){
+          var hit = (rows || []).filter(function(x){
+            return String(x.name).trim().toLowerCase() === val.toLowerCase(); })[0];
+          addPick(hit ? { id:hit.id, name:hit.name } : { id:'', name:val });
+        }
+        val = picks.map(function(x){ return x.name; }).join(', ');
+      }
       if(mustPick && val && !picked && rows && !skipNotion){ kvNeedPick(val); return; }
 
-      var MAP = { '거래처':'client', '담당자':'mgr', '포토그래퍼':'photo', '브랜드':'brand' };
+      var MAP = { '거래처':'client', '담당자':'mgr', '포토그래퍼':'photo', '브랜드':'brand',
+                  '참여인원':'people' };
       var info = {}; info[MAP[key]] = val;
       if(picked && key === '거래처')     info.clientId = picked.id;
       if(picked && key === '포토그래퍼') info.photoId  = picked.id;
+      /* 👥 노션에 «고른 사람»만 연결한다 — 손으로 친 이름은 노션 id 가 없어 못 잇는다.
+         시트에는 둘 다 들어간다(보여주기용). */
+      if(many){
+        var ids = picks.filter(function(x){ return x.id; }).map(function(x){ return x.id; });
+        if(ids.length) info.peopleIds = ids;
+      }
 
       btnOk.disabled = true; btnOk.textContent = '저장 중…';
       msg.textContent = '';
