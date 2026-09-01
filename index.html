@@ -243,6 +243,9 @@
                    border:1px solid var(--line2); color:var(--sub); text-decoration:none;
                    background:#fff; line-height:1.7}
     .pj2 .kv .fill:hover{border-color:#3b6cff; color:#3b6cff; background:#f4f7ff}
+    /* 🔒 2026-09-01 — 「여기부터 대표님만」 띠. 대표에게만 보인다(팀원은 아래 줄 자체가 없다). */
+    .pj2 .kvsec{margin:9px 0 1px; padding:5px 8px; border-radius:7px; background:#f5f3ea;
+                border:1px solid #e6dfc6; color:#7a6a2f; font-size:11px; line-height:1.5}
     /* ✏️ 2026-09-01 대표 지시 — «그 자리에서» 채운다. 페이지를 안 넘긴다.
        대표 원문: *"페이지 안넘어가고 그냥 담당자만 선택하거나 추가할 수 있게"*
        🔴 [왜 고쳤나] 처음엔 정보 폼 «전체»를 열었다. 대표님은 칸 하나만 채우려는데
@@ -268,6 +271,11 @@
     .kvpop .ok{background:#3b6cff; color:#fff; font-weight:700}
     .kvpop .ok:disabled{background:#c9d2e6; cursor:default}
     .kvpop .no{background:var(--chip); color:#5b6472}
+    /* 🔴 2026-09-01 — 「＋ 노션에 등록」(작은 창 안). 저장 버튼과 «다른 색»이라야
+       대표님이 「이건 저장이 아니라 등록이구나」를 눈으로 가르신다. */
+    .kvpop .msg .add{background:#ffb020; color:#3a2a00; font-weight:700;
+                     padding:4px 10px; font-size:11.5px; margin-left:2px}
+    .kvpop .msg .add:disabled{background:#e6dfc6; color:#8b8267; cursor:default}
     .pj2 .qk{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:11px}
     .pj2 .qk a{text-align:center; border:1px solid var(--line); border-radius:7px; padding:9px 0;
       font-size:12px; font-weight:700; color:var(--sub); text-decoration:none; background:var(--card)}
@@ -1995,13 +2003,30 @@
     /* ── 오른쪽 칸 · 쌓인 정보 ── */
     var need = (d.items||[]).filter(function(x){ return x.state==='no' && x.kind==='필수'; }).length;
     var h = '';
+    /* 🔒 2026-09-01 대표 지시 — 「누가 보나」로 두 묶음으로 가른다.
+       대표 원문: *"이건 대표만 볼수있으니 «제일 밑칸»으로. 그리고 «거래처도 대표만» 볼수있고.
+                   … «참여인원»은 «팀원모두» 볼수있고"*
+       🔴 [감추는 게 아니라 «나누는» 것이다] 대표에게는 둘 다 보이고, 아래 묶음에
+          「🔒 대표만 보입니다」 라고 적는다. 그래야 대표님이 «팀원 눈에 뭐가 보이는지» 아신다.
+       🔴 [팀원에게는 «진짜로» 안 보인다] 아래 묶음을 통째로 안 그린다.
+       🔴 [who 가 «없으면» 팀으로 본다] 옛 배포가 who 를 안 보낼 수 있다 —
+          그때 전부 대표 전용으로 치면 팀원 화면이 통째로 빈다. */
+    var IS_OWNER = (PJ_ROLE === '대표');
+    var secretN = 0;
     /* ✏️ 2026-09-01 대표 지시 — 「그 줄 옆에서 바로 채우기」
        🔴 여기 있는 넷만 «화면에서 채울 수 있다» — 프로젝트목록 시트의 글자 칸이기 때문이다.
           나머지(장비세부내역·견적서·정산서 …)는 «다른 데서 일이 끝나야» 생기는 결과물이라
           여기서 손으로 채우면 «없는 사실»을 적는 것이 된다. 그래서 버튼을 안 붙인다.
        🔴 값 → 폼 칸 id. 「＋ 새 프로젝트」 폼의 칸을 그대로 쓴다(§4-1 — 폼을 새로 안 만든다). */
     var PJ_FILLABLE = { '거래처':'pkCli', '담당자':'pkMgr', '포토그래퍼':'pkPho', '브랜드':'pkBrand' };
+    var opened = false;      /* 「🔒 대표만」 띠를 아직 안 넣었나 */
     (d.items||[]).forEach(function(x){
+      var mine = (x.who === '대표');
+      if(mine && !IS_OWNER){ secretN++; return; }        /* 팀원에게는 아예 안 그린다 */
+      if(mine && !opened){                                /* 대표에게는 «여기부터» 라고 알린다 */
+        opened = true;
+        h += '<div class="kvsec">🔒 아래는 <b>대표님만</b> 보입니다 — 팀원 화면에는 안 나옵니다</div>';
+      }
       var mark = (x.state==='ok') ? '✅'
                : (x.state==='no') ? (x.kind==='필수' ? '🔴' : '🟠') : '⚪';
       var txt = (x.state==='unknown') ? '아직 안 봄' : (x.text || (x.state==='ok' ? '있음' : '아직 없음'));
@@ -2580,12 +2605,16 @@
                 people:'인적자원', locs:'업체' }[key];
     var offline = (rows === null);
     var list = offline ? [] : netPick(rows, posName, subName);
+    /* 🔴 2026-09-01 대표 확정 — 거래처·포토그래퍼는 «고른 것»이라야 저장된다.
+       여기서는 «말만» 하고, 실제로 막는 것은 pjMustPick() 한 곳이다(§1). */
+    var must = (key === 'cli' || key === 'pho') && !offline;
 
     box.className = 'cbo';
     box.innerHTML =
       '<input class="cboin" autocomplete="off" spellcheck="false" placeholder="'
       + (offline ? '직접 입력 — 노션을 못 불렀습니다'
-                 : '치면 후보가 뜹니다 (' + list.length + '개) · 없으면 그냥 쓰세요') + '">'
+         : must   ? '목록에서 골라야 합니다 (' + list.length + '개) · 없으면 ＋ 노션에 추가'
+                  : '치면 후보가 뜹니다 (' + list.length + '개) · 없으면 그냥 쓰세요') + '">'
       + '<div class="cbomenu" hidden></div><div class="cbost"></div>';
     var inp  = box.querySelector('.cboin');
     var menu = box.querySelector('.cbomenu');
@@ -2611,7 +2640,8 @@
       var h = hit(v);
       if(h){ st.innerHTML = '<span class="ok">✅ 노션에 있습니다</span>'; return; }
       if(offline){ return; }
-      st.innerHTML = '<span class="warn">🆕 노션에 없는 이름입니다</span> '
+      st.innerHTML = (must ? '<span class="warn">🔴 노션에 없는 이름입니다 — 추가해야 저장됩니다</span> '
+                           : '<span class="warn">🆕 노션에 없는 이름입니다</span> ')
         + '<button type="button" class="addbtn">＋ 노션에 추가</button>';
       /* 🔴 2026-08-22 대표 지시 — 그냥 추가하지 않고 «속성 입력칸»을 띄운다 */
       st.querySelector('.addbtn').onclick = function(){
@@ -2955,10 +2985,43 @@
              + '&data=' + encodeURIComponent(JSON.stringify(data)), done, 45000);
   }
 
+  /* 🔴 2026-09-01 대표 확정 — 거래처·포토그래퍼는 «노션에서 고른 것»이라야 저장한다.
+     작은 창(kvPopOpen)의 MUST_PICK 과 «같은 규칙»이다.
+     🔴 [한 곳에서만 잰다] 만들기(pjNewMake)와 고치기(pjEditSave)가 각자 검사하면
+        언젠가 한쪽이 빠진다(§1). 그래서 이 함수 하나를 둘 다 부른다.
+     🔴 [노션을 못 불렀으면 «안» 막는다] 목록이 없으면 고를 수가 없다 — 그때까지
+        막으면 노션이 잠깐 안 열리는 날 프로젝트를 아예 못 만드신다.
+     🔴 [담당자·브랜드·로케이션·참여인원은 «안» 막는다] 담당자는 노션에 칸이 없고,
+        브랜드는 글자라 id 없이 들어가며, 로케이션은 대표가 명시적으로 빼셨다.
+     반환 = 막아야 할 [칸이름, DOM id] 목록 (비었으면 통과). */
+  function pjMustPick(){
+    var bad = [];
+    var got = function(cat){ return !!(NET_CACHE[cat] && NET_CACHE[cat].length); };
+    if(got('거래처')   && PJ_NEW.cli && PJ_NEW.cli.name && !PJ_NEW.cli.id) bad.push(['거래처',    'pkCli']);
+    if(got('인적자원') && PJ_NEW.pho && PJ_NEW.pho.name && !PJ_NEW.pho.id) bad.push(['포토그래퍼','pkPho']);
+    return bad;
+  }
+  /* 막을 때는 «왜»를 말하고 그 칸으로 데려간다 — 어디를 고쳐야 하는지 모르면 그냥 막힌다 */
+  function pjMustPickStop(bad){
+    alert('🔴 ' + bad.map(function(x){ return x[0]; }).join(' · ')
+        + ' — 노션 목록에서 「골라야」 합니다.\n\n'
+        + '손으로 친 이름은 노션에 안 들어갑니다.\n'
+        + '그대로 두면 나중에 그 값이 사라질 수 있어 막았습니다.\n\n'
+        + '목록에 없는 이름이면 그 칸 아래 「＋ 노션에 추가」를 누르시면 됩니다.');
+    var box = document.getElementById(bad[0][1]);
+    if(box){
+      try{ box.scrollIntoView({ block:'center' }); }catch(e){}
+      var i = box.querySelector('.cboin'); if(i){ try{ i.focus(); }catch(e){} }
+    }
+  }
+
   function pjNewMake(){
     var btn  = document.getElementById('nMk');
     var name = (document.getElementById('nName').value || '').trim();
     if(!name){ alert('이름이 비어 있습니다.'); return; }
+
+    var badPick = pjMustPick();
+    if(badPick.length){ pjMustPickStop(badPick); return; }
 
     var u = loadUser();
     if(!u || !u.cred || !credLive(u)){
@@ -3221,14 +3284,28 @@
                 '브랜드':{cat:'인적자원', pos:'브랜드'},
                 '담당자':null };
     var src = SRC[key];
+    /* 🔴 2026-09-01 대표 확정 — 거래처·포토그래퍼는 «노션이 원본»이다.
+       대표 원문: *"거래처 포토그래퍼는 손입력 없애고 그자리에서 노션에 등록.
+                   그런데 로케이션은 이게 필요없어"*
+       [왜 막나] 손으로 친 이름은 노션에 «안 들어간다» — 연결(relation)은 노션 id 가
+         있어야만 걸린다(정산앱 act=fill 이 id 없는 것은 아예 안 본다). 그대로 두면
+         그 값은 «원본이 없는 값»이 되고, 나중에 노션→시트 길을 만드는 순간 조용히 지워진다.
+       🔴 [담당자는 «안» 막는다] 노션 프로젝트 DB 에 「담당자」 칸이 아예 없어
+          막으면 적을 데가 사라진다.
+       🔴 [브랜드도 «안» 막는다] 글자(rich_text)라 id 없이도 노션에 그대로 들어간다.
+       🔴 [로케이션도 «안» 막는다] 대표가 명시적으로 빼셨다 — 그 칸은 여기 아니라
+          회차 탭에 있고, 자동완성은 뜨되 그냥 쳐도 되게 되어 있다. */
+    var MUST_PICK = { '거래처':1, '포토그래퍼':1 };
+    var mustPick  = !!MUST_PICK[key];
     var cur = (curText === '아직 없음' || curText === '아직 안 봄') ? '' : (curText || '');
 
     var pop = document.createElement('div');
     pop.className = 'kvpop';
     pop.innerHTML =
       '<div class="t"><b>' + pjEsc(key) + '</b> — '
-      + (src ? '치면 노션 후보가 뜹니다 · 없으면 그대로 적으셔도 됩니다'
-             : '🔴 노션에 「담당자」 칸이 없어 <b>시트에만</b> 저장됩니다') + '</div>'
+      + (!src     ? '🔴 노션에 「담당자」 칸이 없어 <b>시트에만</b> 저장됩니다'
+         : mustPick ? '노션 목록에서 <b>골라야</b> 저장됩니다 · 목록에 없으면 <b>＋ 노션에 등록</b>'
+                    : '치면 노션 후보가 뜹니다 · 없으면 그대로 적으셔도 됩니다') + '</div>'
       + '<input type="text" placeholder="' + pjEsc(key) + ' 이름">'
       + '<div class="hits"></div>'
       + '<div class="row"><span class="msg"></span>'
@@ -3264,7 +3341,8 @@
            x.pos·x.sub 는 «배열»이라 글자로 비교하면 하나도 안 걸린다(실제로 그렇게 짰다가 고쳤다). */
         rows = src.pos ? netPick(r, src.pos, null) : r;
         if(!rows.length && src.pos) rows = r;   /* 좁혔더니 0개면 전체를 보여준다 */
-        msg.textContent = '노션 ' + rows.length + '곳 · 골라야 노션에도 들어갑니다';
+        msg.textContent = '노션 ' + rows.length + '곳 · '
+                        + (mustPick ? '골라야 저장됩니다' : '골라야 노션에도 들어갑니다');
         drawHits();
       });
     } else {
@@ -3291,10 +3369,49 @@
     btnOk.addEventListener('click', save);
     setTimeout(function(){ try{ inp.focus(); inp.select(); }catch(e){} }, 30);
 
+    /* 🔴 노션에 없는 이름일 때 — «막기만» 하지 않고 그 자리에서 등록할 길을 준다.
+       대표 원문: *"손입력 없애고 «그자리에서 노션에 등록»"* — 막기만 하면 대표님이
+       노션을 따로 열어야 해서 그게 두 번 일이다(§3-0). */
+    function kvNeedPick(val){
+      msg.innerHTML = '🔴 노션에 없는 이름입니다 — 위에서 고르시거나 '
+                    + '<button type="button" class="add">＋ 노션에 등록</button>';
+      msg.querySelector('.add').onclick = function(){
+        var b = this; b.disabled = true; b.textContent = '넣는 중…';
+        /* 🔴 [이름만 넣는다] 이 작은 창엔 속성 칸이 다 안 들어간다. 나머지는 나중에
+           노션에서 채우면 된다 — 「＋ 새 프로젝트」 폼은 속성까지 받는다(그쪽은 그대로).
+           🔴 [만드는 코드를 새로 안 짠다] netAdd 가 이미 그 일을 한다(§1). 서버에
+           이메일·이름 중복 막기가 걸려 있어 같은 것이 두 줄로 안 생긴다. */
+        netAdd(src.cat, val, src.pos || '', null, null, function(d){
+          if(!d || !d.ok || !d.row){
+            b.disabled = false; b.textContent = '＋ 다시 넣기';
+            msg.insertAdjacentHTML('beforeend',
+              '<br>🔴 못 넣었습니다 — ' + pjEsc((d && d.why) || '알 수 없음'));
+            return;
+          }
+          picked = { id: d.row.id, name: d.row.name };
+          inp.value = d.row.name;
+          if(rows) rows.push(d.row);
+          if(typeof NET_CACHE !== 'undefined' && NET_CACHE[src.cat]) NET_CACHE[src.cat].push(d.row);
+          msg.textContent = '✅ ' + (d.already ? '이미 있어서 그것을 씁니다' : '노션에 등록했습니다')
+                          + ' — 이어서 저장합니다…';
+          save();                       /* 이제 picked 가 있으므로 통과한다 */
+        });
+      };
+    }
+
     function save(){
       var val = String(inp.value || '').trim();
       /* 고른 뒤 글자를 바꿨으면 «고른 것»으로 안 친다 — 엉뚱한 노션 페이지에 붙는다 */
       if(picked && picked.name !== val) picked = null;
+
+      /* 🔴 거래처·포토그래퍼는 «고른 것»이라야 저장한다 (위 MUST_PICK 참고).
+         🔴 [노션을 못 불렀으면 «안» 막는다] rows 가 없으면 목록 자체가 없어 고를 수가
+            없다 — 그때까지 막으면 노션이 잠깐 안 열리는 날 아무것도 못 적으신다.
+         🔴 [빈 값은 «안» 막는다] 비우는 것은 지우는 뜻이라 노션 연결과 상관없다.
+         🔴 [여기서 창을 닫지 않는다] kvPopClose() 를 부르면 그 줄이 «저장된 것처럼»
+            다시 그려진다 — 안 저장했는데 저장된 줄 아시게 된다. */
+      if(mustPick && val && !picked && rows){ kvNeedPick(val); return; }
+
       var MAP = { '거래처':'client', '담당자':'mgr', '포토그래퍼':'photo', '브랜드':'brand' };
       var info = {}; info[MAP[key]] = val;
       if(picked && key === '거래처')     info.clientId = picked.id;
@@ -3435,6 +3552,9 @@
 
   function pjEditSave(){
     var name = PJ_EDIT; if(!name) return;
+    /* 🔴 만들 때와 «같은 규칙»으로 막는다 — 고칠 때만 손입력이 통과하면 그 구멍으로 다 샌다 */
+    var badPick = pjMustPick();
+    if(badPick.length){ pjMustPickStop(badPick); return; }
     var info = {
       from:   document.getElementById('nFrom').value || '',
       to:     document.getElementById('nTo').value || '',
