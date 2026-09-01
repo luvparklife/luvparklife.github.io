@@ -1546,6 +1546,8 @@
      ═══════════════════════════════════════════════════════════════ */
   /* 🔴 FIELD_APP 은 맨 위에서 정한다 (2026-08-26 — 여기 있으면 paint() 보다 늦어 깨진다) */
   var PJ_CACHE = null, PJ_AT = 0, PJ_ROLE = '';
+  /* 👤 2026-09-02 — 서버가 「내가 낀 것만」으로 걸러 보냈나. 화면이 그 사실을 «말해줘야» 한다 */
+  var PJ_MINE = false;
 
   /* ⚡ 2026-09-02 — 목록을 «브라우저 서랍»에도 둔다 (대표 확정: 속도 ①)
      ═══════════════════════════════════════════════════════════════
@@ -1572,11 +1574,11 @@
       return o;
     }catch(e){ return null; }
   }
-  function pjLsSave(rows, role){
+  function pjLsSave(rows, role, mine){
     try{
       var u = loadUser(); if(!u || !u.email) return;
       localStorage.setItem(PJ_LS, JSON.stringify({
-        rows: rows || [], role: role || '', at: Date.now(), em: u.email }));
+        rows: rows || [], role: role || '', mine: !!mine, at: Date.now(), em: u.email }));
     }catch(e){}          /* 저장 못 해도 앱은 그대로 굴러가야 한다 */
   }
   function pjLsClear(){ try{ localStorage.removeItem(PJ_LS); }catch(e){} }
@@ -1603,7 +1605,8 @@
         askCount(FIELD_APP + '?list=projects' + appTok(), function(d){
           if(d && d.ok){
             PJ_CACHE = d.rows || []; PJ_AT = Date.now(); PJ_ROLE = d.role || '';
-            pjLsSave(PJ_CACHE, PJ_ROLE);
+            PJ_MINE = !!d.mine;
+            pjLsSave(PJ_CACHE, PJ_ROLE, PJ_MINE);
           }
           /* 🔴 실패해도 아무것도 안 한다 — 대표는 이게 도는 줄도 모르셔야 한다 */
         }, 25000);
@@ -1750,6 +1753,7 @@
         PJ_CACHE = _ls.rows;
         PJ_AT    = _ls.at || Date.now();
         PJ_ROLE  = _ls.role || PJ_ROLE;
+        PJ_MINE  = !!_ls.mine;
         pjPaint(_ls.rows);
         pjStale(true);                  /* 🔴 «저장해둔 것»임을 반드시 밝힌다 */
         _had = true;
@@ -1790,7 +1794,8 @@
         return;
       }
       PJ_CACHE = d.rows || []; PJ_AT = Date.now(); PJ_ROLE = d.role || '';
-      pjLsSave(PJ_CACHE, PJ_ROLE);      /* ⚡ 2026-09-02 — 다음에 즉시 뜨도록 서랍에 남긴다 */
+      PJ_MINE = !!d.mine;               /* 👤 서버가 「내가 낀 것만」으로 걸렀나 */
+      pjLsSave(PJ_CACHE, PJ_ROLE, PJ_MINE);  /* ⚡ 2026-09-02 — 다음에 즉시 뜨도록 서랍에 남긴다 */
       pjPaint(PJ_CACHE);                /* 🔴 여기서 다시 그리므로 「저장해둔 것」 띠는 저절로 사라진다 */
     }, 25000);
   }
@@ -1884,7 +1889,14 @@
     var on = (PJ_F.q || PJ_F.cli || PJ_F.pho || PJ_F.brand);
     box.innerHTML = (on ? '<p class="foot" style="margin:0 0 8px">🔎 찾은 것 <b>' + n + '개</b> · ' +
         '<a href="#" onclick="pjClearFind();return false;">✕ 조건 지우기</a></p>' : '') +
-      (h || '<p class="foot">해당하는 것이 없습니다.</p>') +
+      /* 👤 2026-09-02 — 「내가 낀 것만」으로 걸러졌으면 «그렇다고 말한다».
+         조용히 줄어들면 「왜 안 보이지」가 되고, 빈 화면이면 「고장났나」로 읽는다. */
+      (h || '<p class="foot">' + (PJ_MINE
+            ? '👤 <b>내가 낀 프로젝트가 없습니다.</b><br>견적서 「참여인원」이나 프로젝트 「담당자」에 ' +
+              '이름이 들어가면 여기에 나타납니다.'
+            : '해당하는 것이 없습니다.') + '</p>') +
+      (PJ_MINE ? '<p class="foot">👤 <b>내가 낀 프로젝트만</b> 보입니다 — ' +
+                 '담당자이거나, 견적서 참여인원에 이름이 있는 것.</p>' : '') +
       '<p class="foot">「프로젝트목록」을 그대로 읽습니다 — 여기서 관리할 목록을 따로 만들지 않습니다.<br>' +
       '<a href="#" onclick="pjLoad(true);return false;">🔄 다시 읽기</a></p>';
   }
