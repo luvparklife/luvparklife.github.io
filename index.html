@@ -245,6 +245,11 @@
     .pj2 .kv .fill:hover{border-color:#3b6cff; color:#3b6cff; background:#f4f7ff}
     /* 🔒 2026-09-01 — 「여기부터 대표님만」 띠. 대표에게만 보인다(팀원은 아래 줄 자체가 없다). */
     /* 🟠 「노션 등록 필요」 딱지 (2026-09-01 대표 지시) */
+    /* ＋ 회차·로케 넣기 (2026-09-01) */
+    .pj2 .dayadd{float:right; font-size:11px; padding:1px 8px; border-radius:999px;
+                 border:1px solid var(--line2); color:var(--sub); text-decoration:none;
+                 background:#fff; line-height:1.7; font-weight:400}
+    .pj2 .dayadd:hover{border-color:#3b6cff; color:#3b6cff; background:#f4f7ff}
     .pj2 .kv .nno{font-size:10.5px; color:#8a6d1f; background:#fff8e6; border:1px solid #f0dda8;
                   border-radius:999px; padding:0 6px; white-space:nowrap}
     .pj2 .kv .nno.gray{color:#7a8290; background:var(--chip); border-color:var(--line2)}
@@ -1825,14 +1830,28 @@
      그리는 코드가 «불러오는 코드» 안에 갇혀 있으면 두 벌을 만들게 된다(§1). */
   function pjDaysPaint(proj, rows){
     var box = document.getElementById('pjDays'); if(!box) return;
+    /* 📅 2026-09-01 대표 지시 — *"이제 회차와 로케이션 합치고 «등록할 수 있게»"*
+       🔴 [무엇이 문제였나] 회차가 없으면 *"「＋ 새 프로젝트」에서 넣으시면 여기 나옵니다"* 라고
+          «떠넘겼다». 이미 만든 프로젝트는 그 길로 갈 수가 없다 —
+          대표 신고: *"내가 원한건 새프로젝트에서도이지만 «기존 프로젝트에서 입력 가능하게»야."*
+       🔴 [새로 만들지 않는다] 「✏️ 정보」 폼이 이미 회차·＋로케를 다 갖고 있다(§4-1).
+          여기서는 «그 폼을 열어 회차 칸으로 데려가는 길»만 하나 더 낸다.
+       🔴 [「관리」 이상만] 서버(projUpdate_)와 같은 기준이다. */
+    var canEdit = (PJ_ROLE === '대표' || PJ_ROLE === '관리');
+    var addBtn = canEdit
+      ? '<a href="#" class="dayadd" data-pjact="edit" data-pjproj="' + pjEsc(proj) + '"'
+        + ' data-pjfocus="dayRows">＋ 회차·로케 넣기</a>' : '';
     if(!rows || !rows.length){
-      box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차</div>'
-                    + '<p class="fn" style="margin:0 0 10px">아직 없습니다 — 「＋ 새 프로젝트」에서 넣으시면 여기 나옵니다.</p>';
+      box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 ' + addBtn + '</div>'
+                    + '<p class="fn" style="margin:0 0 10px">아직 없습니다 — '
+                    + (canEdit ? '위 <b>＋ 회차·로케 넣기</b>를 누르세요.'
+                               : '「관리」 이상만 넣을 수 있습니다.') + '</p>';
       return;
     }
     box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 <span class="fn">'
-                  + rows.length + '회차</span></div>'
+                  + rows.length + '회차</span> ' + addBtn + '</div>'
       + rows.map(function(r){
+          /* 📍 로케가 여러 곳이면 «전부» 보여준다 — `loc` 은 서버가 ' · ' 로 이어 준다 */
           return '<div class="dayline"><b>' + r.no + '회차</b>'
                + '<span class="dt">' + pjEsc(r.date || '—') + '</span>'
                + '<span class="lc">' + pjEsc(r.loc || '—') + '</span>'
@@ -2041,7 +2060,12 @@
           여기서 손으로 채우면 «없는 사실»을 적는 것이 된다. 그래서 버튼을 안 붙인다.
        🔴 값 → 폼 칸 id. 「＋ 새 프로젝트」 폼의 칸을 그대로 쓴다(§4-1 — 폼을 새로 안 만든다). */
     var PJ_FILLABLE = { '거래처':'pkCli', '담당자':'pkMgr', '포토그래퍼':'pkPho', '브랜드':'pkBrand',
-                        '참여인원':'pkPeople' };
+                        '참여인원':'pkPeople',
+                        /* 📍 2026-09-01 — 로케이션은 «회차마다» 다르므로 작은 창으로 못 받는다.
+                           「✏️ 정보」 폼의 «회차 칸»으로 데려간다(거기서 회차별로 ＋로케 를 넣는다).
+                           🔴 그래서 `kvPopOpen` 대신 폼 전체가 열려야 한다 —
+                              아래 클릭 갈래에서 로케이션만 «작은 창을 건너뛴다». */
+                        '로케이션':'dayRows' };
     var opened = false;      /* 「🔒 대표만」 띠를 아직 안 넣었나 */
     (d.items||[]).forEach(function(x){
       /* 📋 2026-09-01 대표 지시 — 카드에 있는 것은 목록에 «안» 그린다(같은 것을 두 번 보게 된다).
@@ -3833,8 +3857,16 @@
       var fid = PJ_EDIT_FOCUS; PJ_EDIT_FOCUS = '';
       setTimeout(function(){
         var wrap = document.getElementById(fid);
-        var inp  = wrap && wrap.querySelector('.cboin');
-        if(!inp) return;
+        if(!wrap) return;
+        /* 📅 2026-09-01 — 회차 칸(dayRows)에는 `.cboin` 이 없다. 그 안의 «첫 입력칸»으로 간다.
+           회차가 하나도 없으면 「＋ 회차 추가」를 «눌러서» 한 줄 만들어 준다 —
+           빈 칸만 보여주면 대표가 「뭘 하라는 거지」가 된다. */
+        var inp = wrap.querySelector('.cboin') || wrap.querySelector('input, select');
+        if(!inp && fid === 'dayRows'){
+          var add = document.getElementById('nDayAdd');
+          if(add){ add.click(); inp = wrap.querySelector('input, select'); }
+        }
+        if(!inp){ try{ wrap.scrollIntoView({block:'center', behavior:'smooth'}); }catch(e){} return; }
         try{ wrap.scrollIntoView({block:'center', behavior:'smooth'}); }catch(e){}
         try{ inp.focus(); inp.select && inp.select(); }catch(e){}
         /* 어느 칸으로 왔는지 눈에 보이게 — 1.6초 뒤 원래대로 */
@@ -4074,6 +4106,8 @@
          🔴 data-pjkey 가 있으면 작은 창, 없으면(아래쪽 「✏️ 정보」) 예전대로 폼 전체. */
       if(act === 'edit'){
         var _k = el.getAttribute('data-pjkey');
+        /* 📍 로케이션은 «회차마다» 달라 작은 창으로 못 받는다 — 폼의 회차 칸으로 보낸다 */
+        if(_k === '로케이션') _k = '';
         if(_k){
           var _kv = el; while(_kv && !_kv.classList.contains('kv')) _kv = _kv.parentElement;
           if(_kv){
