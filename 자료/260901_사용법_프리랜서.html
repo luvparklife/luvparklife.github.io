@@ -283,6 +283,10 @@
       <button class="sub" onclick="go('eq5')"><span class="n">5</span>
         <span><span class="t">깨지거나 없어졌을 때</span><span class="s">파손·분실 · 목록에 없는 장비</span></span>
         <span class="go">›</span></button>
+      <button class="sub" data-role="ok" onclick="go('eq6')"><span class="n">6</span>
+        <span><span class="t">승인하기<span class="roletag">관리 등급</span></span>
+          <span class="s">「요청」을 확정 · 조달업체 · 시트 열기</span></span>
+        <span class="go">›</span></button>
     </div>
   </div>
 </div>
@@ -294,6 +298,14 @@
   <div class="page">
     <div class="sec">
       <h3>안 열리면 — 고장이 아닙니다</h3>
+
+      <div class="box bad" data-role="view"><b>🔒 지금 이 화면은 «보기»만 됩니다.</b>
+        <b>고장이 아닙니다.</b> 둘 중 하나입니다.<br><br>
+        <b>① 허브를 거치지 않고 들어오셨거나</b> — 앱 주소를 직접 열면 앱이 누군지 몰라 입력이 잠깁니다.
+        <code>luvparklife.github.io</code> 에서 구글 로그인하고 <b>「🎬 현장 장비앱」 카드</b>로 다시 들어와 보세요.<br><br>
+        <b>② 아직 명단에 등록이 안 됐거나</b> — 장비앱은 <b>직원명단에 이름이 있어야</b> 열립니다.
+        <b>말씀해 주시면 1분이면 됩니다.</b></div>
+
       <div class="box bad"><b>「보기 전용」이라고 뜨거나 목록이 비어 있나요?</b><br>
         장비앱은 <b>명단에 이름이 있어야</b> 열립니다.
         장비·프로젝트 정보가 들어 있어 아무나 못 보게 되어 있습니다.<br>
@@ -511,9 +523,11 @@
             <td>읽어보시면 됩니다</td></tr>
       </table></div>
 
-      <div class="box warn"><b>⚠️ 「✓」 버튼이 안 눌리는 것은 정상입니다.</b>
+      <div class="box warn" data-role="notok"><b>⚠️ 「✓」 버튼이 안 눌리는 것은 정상입니다.</b>
         확인해서 넘기는 것은 <b>「관리」 등급</b>이 합니다.
         다 됐다고 보시면 <b>말씀만 해주세요.</b></div>
+      <div class="box ok" data-role="ok"><b>✅ 「✓」를 누르면 목록에서 넘어갑니다.</b>
+        되돌리려면 같은 자리에서 다시 누르시면 됩니다.</div>
 
       <div class="nav">
         <button onclick="go('eq3')">◂ 이전</button>
@@ -537,15 +551,59 @@
 
     <div class="sec">
       <h3>목록에 없는 장비를 쓰게 되면</h3>
-      <div class="box warn"><b>⚠️ 장비를 목록에 «추가»하는 것은 PA 담당자가 합니다.</b><br>
+      <div class="box warn" data-role="notok"><b>⚠️ 장비를 목록에 «추가»하는 것은 PA 담당자가 합니다.</b><br>
         추가해야 할 장비가 생기면 <b>PA 담당 직원에게 말씀해 주세요.</b>
         <b>장비 이름 · 수량 · 어디서 빌렸는지</b>만 알려주시면 됩니다.</div>
-      <p style="color:var(--sub);font-size:14px">화면에 <b>「＋ 직접 추가」</b> 버튼이 보이더라도
+      <p style="color:var(--sub);font-size:14px" data-role="notok">화면에 <b>「＋ 직접 추가」</b> 버튼이 보이더라도
         직접 넣지 마시고 담당자에게 전달해 주세요 —
         <b>견적·재고와 이어져 있어</b> 담당자가 확인하고 넣어야 합니다.</p>
 
+      <div data-role="ok">
+        <div class="box ok"><b>🧰 「내가 추가한 장비」에서 직접 넣습니다.</b>
+          이름을 치면 목록이 좁혀집니다 — <b>장비DB에 있는 것만</b> 고를 수 있어 오타가 안 납니다.
+          여러 개를 한꺼번에 고르고 수량·날짜를 한 번만 정해도 됩니다.</div>
+        <div class="box ok"><b>✅ 넣으면 「요청」 상태로 들어갑니다 — 잘못 넣어도 돈이 안 나갑니다.</b>
+          이 상태에서는 <b>견적서에 안 올라갑니다.</b> 조달업체는 <b>「(나중에 정함)」</b>으로 두셔도 됩니다.</div>
+        <div class="box ok"><b>✅ 지워도 사라지지 않습니다.</b>
+          지운 장비는 <b>「지운 것」에 남아</b> 되살릴 수 있습니다.</div>
+      </div>
+
       <div class="nav">
         <button onclick="go('eq4')">◂ 이전</button>
+        <button class="pri" data-role="ok" onclick="go('eq6')">다음 · 승인하기 ▸</button>
+        <button class="pri" data-role="notok" onclick="go('eq')">장비앱 목차로 ▸</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 장비앱 6 (관리 등급 이상) ── -->
+<div id="v-eq6" class="hide" data-role="ok">
+  <div class="apphd"><button class="back" onclick="go('eq')">← 장비앱</button>
+    <span class="ttl">6. 승인하기</span></div>
+  <div class="page">
+
+    <div class="sec">
+      <h3>「요청」을 승인해야 확정됩니다<span class="roletag">관리 등급</span></h3>
+      <p class="lead">현장에서 넣은 장비는 <b>「요청」</b> 상태로 들어옵니다.
+        여기서 승인해야 <b>견적서에 올라가고 금액이 잡힙니다.</b></p>
+      <div class="box ok"><b>✅ 「전부 승인」을 누르면</b>
+        <b>조달업체가 빈 것을 먼저 알려주고</b> 나머지만 승인합니다 — 한 번에 다 넘기지 않습니다.</div>
+    </div>
+
+    <div class="sec">
+      <h3>조달업체가 없으면 승인이 막힙니다</h3>
+      <div class="box warn"><b>일부러 막아둔 것입니다.</b>
+        업체 없이 승인하면 견적에 <b>금액만 잡히고 「어디서 빌리는지」가 없어</b> 현장에서 못 찾습니다.</div>
+      <p>줄카드의 업체 드롭다운에 <b>그 장비를 빌릴 수 있는 곳</b>이 뜹니다.
+        아직 안 정했으면 <b>「(나중에 정함)」</b>으로 두고 나중에 고르셔도 됩니다.</p>
+    </div>
+
+    <div class="sec">
+      <h3>📊 시트 — 열 때 조심하세요</h3>
+      <div class="box bad"><b>소싱시트에는 대외비 정보가 그대로 보입니다.</b>
+        남에게 화면을 보여주실 때 주의하세요. 이 버튼은 <b>「관리」 등급 이상에게만</b> 나옵니다.</div>
+      <div class="nav">
+        <button onclick="go('eq5')">◂ 이전</button>
         <button class="pri" onclick="go('eq')">장비앱 목차로 ▸</button></div>
     </div>
   </div>
@@ -878,20 +936,78 @@
 
 <script>
 /* 화면 전환만 한다 — 서버에 안 붙는다. 인터넷만 되면 어디서나 열린다. */
-var VIEWS = ['home','eq','eq1','eq2','eq3','eq4','eq5',
+var VIEWS = ['home','eq','eq1','eq2','eq3','eq4','eq5','eq6',
              'pay','pay1','pay2','pay3','pay4','proj','help'];
 function go(name){
+  if(name==='eq6' && ROLE!=='ok') name='eq';      /* 등급이 아니면 목차로 */
   VIEWS.forEach(function(v){
     var el = document.getElementById('v-'+v);
     if(el) el.className = (v===name) ? '' : 'hide';
   });
   window.scrollTo(0,0);
+  try{ history.replaceState(null,'', '#'+name); }catch(e){}
 }
+
+/* ══════════ 🔴 앱 «안»에서 열 때 (2026-09-03 대표 확정 🅐 — 사용법은 «한 벌») ══════════
+   주소 뒤에 붙여 부른다:
+     ?go=eq        어느 장부터 열까 (eq · pay · proj · help · 또는 eq3 처럼 화면 이름)
+     ?role=ok      등급 (view=보기 · put=입력 · ok=관리·대표) — 안 주면 put
+     ?in=app       앱 «안»에서 열렸다 → 「← 목록」 대신 닫는 법을 알려준다
+   🔴 이건 «자물쇠가 아니다». 이 문서는 인터넷 공개라 누구나 ?role=ok 를 붙일 수 있다.
+      그래서 «비밀은 애초에 안 담는다» — 등급은 「필요 없는 것을 안 보여주는」 것뿐이다.
+      진짜 자물쇠는 앱 서버가 건다. */
+var Q = (function(){ var o={}; try{
+    (location.search||'').replace(/^\?/,'').split('&').forEach(function(kv){
+      if(!kv) return; var i=kv.indexOf('='); var k=i<0?kv:kv.slice(0,i);
+      o[decodeURIComponent(k)] = i<0?'1':decodeURIComponent(kv.slice(i+1));
+    }); }catch(e){} return o; })();
+
+var ROLE = (function(){
+  var r = (Q.role||'').toLowerCase();
+  if(r==='boss'||r==='manage'||r==='대표'||r==='관리') return 'ok';
+  if(r==='view'||r==='보기') return 'view';
+  if(r==='ok'||r==='view'||r==='put') return r;
+  return 'put';                                   /* 기본 = 외부 스태프 기준 */
+})();
+
+/* 등급에 안 맞는 덩어리를 감춘다. 🔴 «지우지» 않는다 — 등급이 바뀌면 다시 보여야 한다. */
+function applyRole(){
+  var want = { view:['view','notok'], put:['put','notok'], ok:['put','ok'] }[ROLE] || ['put','notok'];
+  Array.prototype.forEach.call(document.querySelectorAll('[data-role]'), function(el){
+    var v = el.getAttribute('data-role');
+    el.classList.toggle('r-off', want.indexOf(v) < 0);
+  });
+}
+
+/* 앱 안에서 열렸으면 「← 목록」이 뜻이 없다 — 닫는 법을 알려준다 */
+function applyInApp(){
+  if(Q['in'] !== 'app') return;
+  document.querySelectorAll('.page').forEach(function(p){
+    var d = document.createElement('div');
+    d.className = 'appback';
+    d.innerHTML = '↩︎ 앱으로 돌아가려면 <b>위쪽 「닫기」</b>를 누르세요';
+    p.appendChild(d);
+  });
+}
+
+(function start(){
+  applyRole(); applyInApp();
+  /* ?go=eq · #eq 둘 다 받는다 */
+  var want = (Q.go || (location.hash||'').replace('#','') || 'home').toLowerCase();
+  if(VIEWS.indexOf(want) < 0) want = 'home';
+  go(want);
+})();
 function fold(id){ var el=document.getElementById(id); if(el) el.classList.toggle('on'); }
 function qa(id){ var el=document.getElementById(id); if(el) el.classList.toggle('on'); }
 </script>
 
 <style>
+/* 🔴 등급에 안 맞는 덩어리는 감춘다 — 자물쇠가 아니라 «안 보여주는» 것뿐이다 */
+[data-role].r-off{display:none !important}
+.roletag{display:inline-block;background:#ede4ff;color:#5b32a8;border:1px solid #d5c4f5;
+  border-radius:999px;padding:1px 8px;font-size:11px;font-weight:800;margin-left:6px;vertical-align:2px}
+.appback{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(250,249,246,0),var(--bg) 34%);
+  padding:14px 0 10px;text-align:center;font-size:13px;color:var(--sub)}
 .fbw{margin:7px 0 13px; border-left:3px solid #c8b28a; background:#fbf7ef; border-radius:0 9px 9px 0; padding:7px 10px 8px}
 .fbw label{display:block; font-size:11px; font-weight:800; color:#8a6d3b; margin-bottom:4px; line-height:1.5}
 .fbw textarea{width:100%; box-sizing:border-box; min-height:38px; border:1px solid #e2d6bd; border-radius:7px;
