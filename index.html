@@ -1210,6 +1210,7 @@
     localStorage.removeItem(KEY);
     hubSessClear(); paySessClear(); /* 🔑 앱 통행증도 같이 버린다 (2026-08-26 · 앱마다 따로다) */
     pjLsClear();                    /* 🔴 저장해둔 프로젝트 목록도 (2026-09-02 — 거래처 이름이 들어 있다) */
+    pj1Clear();                     /* 🔴 프로젝트 «정보»도 (2026-09-03 — 거래처·담당자 이름이 들어 있다) */
     PENDING_LINK = null;
     REFRESHING   = false;
     /* 🔴 이게 있어야 「로그아웃하면 진짜 로그아웃」이 된다.
@@ -1318,7 +1319,7 @@
     localStorage.setItem(KEY, JSON.stringify(u));
     REFRESHING = false;
     /* 🔑 2026-08-26 — 사람이 바뀌었으면 옛 통행증은 버린다(남의 표를 쓰면 안 된다) */
-    if(!prev || prev.email !== u.email){ hubSessClear(); paySessClear(); pjLsClear(); }
+    if(!prev || prev.email !== u.email){ hubSessClear(); paySessClear(); pjLsClear(); pj1Clear(); }
     paint(u);
     scheduleExpire(u.exp);
     /* 🔑 신분증이 살아 있는 «지금» 30일 통행증을 받아 둔다 — 그러면 1시간 뒤에도 앱이 열린다 */
@@ -2031,6 +2032,51 @@
         서버 쪽 캐시 열쇠에 「바뀐 시각 도장」이 들어 있어, 시트가 바뀌면 저절로 새로 읽는다. */
   var PJ_ONE_CACHE = {};      /* { 프로젝트: {at, data} } */
 
+  /* ⚡ 2026-09-03 — 프로젝트 «정보»도 브라우저 서랍에 둔다
+     ═══════════════════════════════════════════════════════════════
+     대표 신고: *"아직 프로젝트앱 정보 불러오는게 오래 걸리는데"*
+     [실측] pjOne 창구 = 최소 2.32초 · 중간 3.28초 — 그것도 «권한 거절만» 하는데 그렇다.
+     [왜 느린가] 목록과 «같은 자리»다 — 앱스스크립트가 깨어나는 고정 비용.
+       서버는 이미 도장 기반 캐시가 있어 줄일 것이 없다. 문제는 화면 캐시가
+       «60초 메모리»뿐이라 새로고침·탭 닫기로 사라져 매번 3초를 다시 기다리는 것.
+     🔴 [정보는 목록보다 자주 바뀐다] 그래서 «먼저 그리고 뒤에서 조용히 갱신»한다.
+        그동안은 「저장해둔 것」이라고 화면에 밝힌다 — 안 밝히면 옛 값을 지금 것으로 믿는다.
+     🔴 [프로젝트마다 쌓인다] 최근 PJ1_KEEP 개만 남긴다 — 브라우저 저장 공간은 무한하지 않다.
+     🔴 [로그아웃·계정 바뀜에 비운다] 거래처·담당자 이름이 들어 있다(목록과 같은 이유).
+     되돌리기 = "정보 저장 되돌려줘" */
+  var PJ1_LS = 'pa_pjone_v1';
+  var PJ1_KEEP = 5, PJ1_DAYS = 3;
+  function pj1All(){
+    try{
+      var o = JSON.parse(localStorage.getItem(PJ1_LS) || 'null');
+      if(!o || !o.em) return null;
+      var u = loadUser();
+      /* 🔴 «다른 계정»이면 안 쓰고 지운다 — 남의 거래처·담당자가 보이면 안 된다 */
+      if(!u || !u.email || String(o.em) !== String(u.email)){ pj1Clear(); return null; }
+      return o;
+    }catch(e){ return null; }
+  }
+  function pj1Get(proj){
+    var o = pj1All(); if(!o || !o.p) return null;
+    var v = o.p[proj];
+    if(!v || !v.at || !v.data) return null;
+    if(Date.now() - v.at > PJ1_DAYS*24*60*60*1000) return null;
+    return v;
+  }
+  function pj1Save(proj, data){
+    try{
+      var u = loadUser(); if(!u || !u.email) return;
+      var o = pj1All() || { em: u.email, p: {} };
+      o.em = u.email; o.p = o.p || {};
+      o.p[proj] = { at: Date.now(), data: data };
+      /* 🔴 최근 것만 남긴다 — 오래된 것부터 버린다 */
+      var ks = Object.keys(o.p).sort(function(a,b){ return (o.p[b].at||0) - (o.p[a].at||0); });
+      if(ks.length > PJ1_KEEP) ks.slice(PJ1_KEEP).forEach(function(k){ delete o.p[k]; });
+      localStorage.setItem(PJ1_LS, JSON.stringify(o));
+    }catch(e){}   /* 저장 못 해도(공간 참) 앱은 그대로 굴러가야 한다 */
+  }
+  function pj1Clear(){ try{ localStorage.removeItem(PJ1_LS); }catch(e){} }
+
   function pjOneLoad(proj, force){
     var box = document.getElementById('pjChk');
     var got = PJ_ONE_CACHE[proj];
@@ -2039,8 +2085,21 @@
       if(box) box.innerHTML = '<p class="foot">🔑 로그인하면 1차 정보를 볼 수 있습니다.</p>';
       return;
     }
+    /* ⚡ 2026-09-03 — 서랍에 있으면 «먼저 그리고» 뒤에서 조용히 갱신한다
+       🔴 force(🔄 다시)일 때는 안 쓴다 — 대표가 «지금 것»을 보려고 누른 것이다 */
+    var had1 = false;
+    if(!force){
+      var ls1 = pj1Get(proj);
+      if(ls1){
+        try{ if(ls1.data && ls1.data.role) PJ_ROLE = ls1.data.role; }catch(e){}
+        PJ_ONE_CACHE[proj] = { at: ls1.at, data: ls1.data };
+        pjOnePaint(proj, ls1.data);
+        pj1Stale(true);          /* 🔴 «저장해둔 것»임을 반드시 밝힌다 */
+        had1 = true;
+      }
+    }
     var t0 = Date.now();
-    if(box) box.innerHTML = '<p class="foot" id="pjChkMsg">📋 불러오는 중… 0초</p>';
+    if(box && !had1) box.innerHTML = '<p class="foot" id="pjChkMsg">📋 불러오는 중… 0초</p>';
     var tk = setInterval(function(){
       var m = document.getElementById('pjChkMsg');
       if(!m){ clearInterval(tk); return; }
@@ -2049,6 +2108,13 @@
     askCount(FIELD_APP + '?action=pjOne&proj=' + encodeURIComponent(proj) + appTok(), function(d){
       clearInterval(tk);
       if(!d || !d.ok){
+        /* ⚡ 2026-09-03 — 서랍으로 이미 그렸으면 «덮지 않는다».
+           덮으면 눈앞에서 정보가 오류 문구로 사라진다 — 있던 것이 없어지는 게 제일 나쁘다. */
+        if(had1){
+          pj1Stale(true, '🔴 최신을 못 받았습니다 — 저장해둔 정보를 보여드립니다  ·  '
+            + (d && d.why ? pjEsc(d.why) : '25초 안에 답이 없음'));
+          return;
+        }
         if(box) box.innerHTML = '<p class="foot">📋 못 받았습니다'
           + (d && d.why ? ' (' + pjEsc(d.why) + ')' : ' — 25초 안에 답이 없습니다')
           + ' <a href="#" onclick="pjOneLoad(\'' + pjEsc(proj) + '\', true);return false">🔄 다시</a></p>';
@@ -2058,8 +2124,24 @@
       }
       if(d.role) PJ_ROLE = d.role;
       PJ_ONE_CACHE[proj] = { at: Date.now(), data: d };
-      pjOnePaint(proj, d);
+      pj1Save(proj, d);           /* ⚡ 다음에 즉시 뜨도록 서랍에 남긴다 */
+      pjOnePaint(proj, d);        /* 🔴 여기서 다시 그리므로 「저장해둔 것」 띠는 저절로 사라진다 */
     }, 25000);
+  }
+
+  /* ⏳ 「지금 보는 것이 저장해둔 정보」임을 밝힌다 (2026-09-03 · 목록의 pjStale 과 같은 규칙)
+     🔴 안 밝히면 옛 값을 «지금 것»으로 믿게 된다 — 2026-08-31 환율에서 겪은 그 자리다. */
+  function pj1Stale(on, msg){
+    var box = document.getElementById('pjChk'); if(!box) return;
+    var el = document.getElementById('pj1Stale');
+    if(!on){ if(el && el.parentNode) el.parentNode.removeChild(el); return; }
+    if(!el){
+      el = document.createElement('p');
+      el.id = 'pj1Stale'; el.className = 'foot';
+      el.style.cssText = 'margin:0 0 8px; font-size:12.5px; opacity:.85';
+      box.insertBefore(el, box.firstChild);
+    }
+    el.textContent = msg || '⏳ 저장해둔 정보입니다 — 최신을 확인하는 중…';
   }
   window.pjOneLoad = pjOneLoad;
 
@@ -3940,7 +4022,7 @@
               return;
             }
             kvPopClose();
-            PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {};   /* 다음에 열 때 새로 읽는다 */
+            PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {}; pj1Clear();   /* 다음에 열 때 새로 읽는다 */
             try{ pjDaysShow(proj); }catch(e){}      /* 회차 줄을 다시 그린다 */
             /* 🔴 «노션에 든 것»과 «시트에만 있는 것»을 나눠 말해준다 —
                안 나누면 「노션에도 들어갔겠지」로 아시게 된다(§3-5 ⑤). */
@@ -3974,7 +4056,7 @@
         }
         pjNotionFill(proj, info, function(n){
           kvPopClose();
-          PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {};    /* 다음에 열 때 새로 읽는다 */
+          PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {}; pj1Clear();    /* 다음에 열 때 새로 읽는다 */
           /* 🔴 화면을 통째로 새로 그리지 않는다 — 그 «줄만» 고친다.
              통째로 그리면 스크롤이 맨 위로 튀어 「어디였지」가 된다. */
           var mk = kv.querySelector('.m'), vv = kv.querySelector('.v'),
