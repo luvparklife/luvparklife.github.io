@@ -396,6 +396,18 @@
     .dayline a.lc{color:inherit;text-decoration:none;border-bottom:1px dashed #b9c2d0;cursor:pointer}
     .dayline a.lc:hover{color:#3b6cff;border-bottom-color:#3b6cff}
     .dayline a.lc.empty{color:#c07000;border-bottom-color:#e8b25a;font-weight:600}
+  /* 📅 2026-09-03 — 날짜·시간도 «누를 수 있게» 되면서 <span> → <a> 가 됐다.
+     🔴 a.lc 스타일이 이 둘에는 «안» 걸려 있어 기본 파란 밑줄 링크로 보이고 폭이 달라져 줄이 밀렸다.
+        로케와 «같은 모양»으로 맞춘다 — 세 개가 다르게 생기면 어디를 눌러야 할지 모른다. */
+  .dayline a.dt, .dayline a.tm{color:inherit;text-decoration:none;
+    border-bottom:1px dashed #b9c2d0;cursor:pointer}
+  .dayline a.dt:hover, .dayline a.tm:hover{color:#3b6cff;border-bottom-color:#3b6cff}
+  .dayline a.dt.empty, .dayline a.tm.empty{color:#c07000;border-bottom-color:#e8b25a}
+  /* 🔴 [실측 2026-09-03] 회차 박스가 236px 인데 내용은 295px(회차44+날짜68+로케102+시간81)라
+     두 줄로 접힌다 — «원래도 그랬다»(span 이던 때도 같은 폭이었다). flex-wrap:wrap 의 의도된 동작.
+     🔴 margin-left:auto 를 넣었더니 시간이 «오른쪽에 혼자» 떨어져 더 어색해져서 뺐다.
+        그냥 흐르게 두면 로케 바로 뒤에 붙어 읽기 쉽다. */
+  .dayline .lc{min-width:70px}
     .dayline .tm{color:var(--sub,#5b6472);white-space:nowrap}
     .dayrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
     .dayrow .dn{font-weight:800;font-size:12.5px;min-width:44px;color:var(--sub,#5b6472)}
@@ -1965,13 +1977,16 @@
           여기서는 «그 폼을 열어 회차 칸으로 데려가는 길»만 하나 더 낸다.
        🔴 [「관리」 이상만] 서버(projUpdate_)와 같은 기준이다. */
     var canEdit = (PJ_ROLE === '대표' || PJ_ROLE === '관리');
+    /* 📅 2026-09-03 대표 확정 — 정보 페이지로 «안» 보낸다. 그 자리에서 작은 창을 연다.
+       🔴 [PJ_DAY_ROWS 를 먼저 채운다] 회차가 «하나도 없을 때»도 「＋ 회차 추가」가 눌려야 하는데,
+          아래 rows.length 갈래에서 return 하면 그 값이 안 채워져 창이 «빈 배열»을 못 본다. */
     var addBtn = canEdit
-      ? '<a href="#" class="dayadd" data-pjact="edit" data-pjproj="' + pjEsc(proj) + '"'
-        + ' data-pjfocus="dayRows">＋ 회차·로케 넣기</a>' : '';
+      ? '<a href="#" class="dayadd" data-pjday="-1" data-pjf="add">＋ 회차 추가</a>' : '';
     if(!rows || !rows.length){
+      PJ_DAY_ROWS = []; PJ_DAY_PROJ = proj;
       box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 ' + addBtn + '</div>'
                     + '<p class="fn" style="margin:0 0 10px">아직 없습니다 — '
-                    + (canEdit ? '위 <b>＋ 회차·로케 넣기</b>를 누르세요.'
+                    + (canEdit ? '위 <b>＋ 회차 추가</b>를 누르세요.'
                                : '「관리」 이상만 넣을 수 있습니다.') + '</p>';
       return;
     }
@@ -1989,15 +2004,154 @@
                 어느 줄에 저장할지 알 수가 없다 — 이 줄에서 열면 그 물음이 아예 안 생긴다. */
           var has = !!r.loc;
           var locTxt = has ? r.loc : (canEdit ? '＋ 로케 넣기' : '—');
+          /* 📅 2026-09-03 — 날짜·시간도 «그 자리에서» 고친다(정보 페이지를 없애기 위해) */
+          var tmTxt = pjHm(r.call) + (pjHm(r.wrap) ? ' ~ ' + pjHm(r.wrap) : '');
           return '<div class="dayline"><b>' + r.no + '회차</b>'
-               + '<span class="dt">' + pjEsc(r.date || '—') + '</span>'
+               + (canEdit
+                   ? '<a href="#" class="dt" data-pjday="' + i + '" data-pjf="date"'
+                     + ' title="이 회차의 날짜를 그 자리에서 고칩니다">' + pjEsc(r.date || '＋ 날짜') + '</a>'
+                   : '<span class="dt">' + pjEsc(r.date || '—') + '</span>')
                + (canEdit
                    ? '<a href="#" class="lc' + (has ? '' : ' empty') + '" data-pjloc="' + i + '"'
                      + ' title="이 회차의 로케를 그 자리에서 고칩니다">' + pjEsc(locTxt) + '</a>'
                    : '<span class="lc">' + pjEsc(locTxt) + '</span>')
-               + '<span class="tm">' + pjEsc(pjHm(r.call)) + (pjHm(r.wrap) ? ' ~ ' + pjEsc(pjHm(r.wrap)) : '') + '</span></div>';
+               + (canEdit
+                   ? '<a href="#" class="tm' + (tmTxt ? '' : ' empty') + '" data-pjday="' + i + '" data-pjf="time"'
+                     + ' title="콜·랩 시간을 그 자리에서 고칩니다">' + pjEsc(tmTxt || '＋ 시간') + '</a>'
+                   : '<span class="tm">' + pjEsc(tmTxt) + '</span>')
+               + '</div>';
         }).join('')
+      /* 📅 2026-09-03 대표 확정 — 회차를 «늘리는» 것도 그 자리에서. 정보 페이지로 안 간다 */
+      + (canEdit
+          ? '<div class="dayline" style="justify-content:flex-start">'
+            + '<a href="#" class="lc empty" data-pjday="-1" data-pjf="add"'
+            + ' title="회차를 하나 더 만듭니다">＋ 회차 추가</a></div>'
+          : '')
       + '<div style="height:10px"></div>';
+  }
+
+  /* 📅 2026-09-03 — 회차를 «서버에 보내는 길»을 한 곳으로 (로케·날짜·시간·회차추가가 다 쓴다)
+     ═══════════════════════════════════════════════════════════════
+     🔴 [왜 한 곳인가] 서버 projDaysSet_ 는 그 프로젝트 회차를 «다 지우고 다시 쓴다».
+        그래서 «언제나 전체»를 보내야 하고, 보내는 규칙이 두 곳이면 한쪽이 반드시 어긋난다(§1).
+     🔴 [읽은 필드를 그대로 돌려준다] date·call·wrap 을 빠뜨리면 그 값이 날아간다.
+        읽기(projDaysGet_)와 쓰기(projLocList_)가 같은 이름을 쓰는 것을 서버에서 대조했다.
+     rows = 화면이 들고 있는 회차 배열(PJ_DAY_ROWS 모양) */
+  function pjDaysToServer(rows){
+    return (rows || []).map(function(r){
+      return { no: r.no, date: r.date || '', call: r.call || '', wrap: r.wrap || '',
+               locs: (r.locs && r.locs.length) ? r.locs
+                   : (r.loc ? [{ n: r.loc, id: r.locId || '' }] : []) };
+    });
+  }
+  function pjDaysSend(proj, rows, done){
+    pjAdmin('update', proj,
+            '&info=' + encodeURIComponent(JSON.stringify({ days: pjDaysToServer(rows) })),
+            function(r){
+              if(r && r.ok){
+                PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {}; pj1Clear();  /* 다음에 열 때 새로 읽는다 */
+                try{ pjDaysShow(proj); }catch(e){}                 /* 회차 줄을 다시 그린다 */
+              }
+              if(done) done(r);
+            });
+  }
+
+  /* 📅 2026-09-03 대표 확정 — *"정보 페이지 꼭 필요할까? 없앨까?"* → **없앤다.**
+     ═══════════════════════════════════════════════════════════════
+     [무엇이 문제였나] 회차 줄에서 «로케만» 고칠 수 있었다. 날짜·시간을 고치거나
+       회차를 «늘리려면» 「✏️ 정보」 폼으로 들어가야 했다.
+       대표 원문: *"1회차까진 괜찮은데 2회차는 또 다시 정보페이지로가."*
+     🔴 [창을 새로 발명하지 않는다] 로케 창(.kvpop)과 «같은 모양»을 쓴다 —
+        다르게 생기면 대표가 「이건 뭐지」 하신다(§4-1).
+     🔴 [저장은 pjDaysSend 하나로] 로케와 «같은 길»이다 — 두 곳이면 어긋난다(§1).
+     🔴 [날짜·시간은 브라우저 기본 칸] <input type="date|time"> 이라 폰에서 달력·시계가 뜬다.
+     kind = 'date'(날짜 고치기) | 'time'(콜·랩 고치기) | 'add'(회차 늘리기)
+     되돌리기 = "회차 그자리 되돌려줘" */
+  var PJDAY_POP = null;
+  function pjDayPopClose(){
+    if(PJDAY_POP && PJDAY_POP.parentNode) PJDAY_POP.parentNode.removeChild(PJDAY_POP);
+    PJDAY_POP = null;
+  }
+  function pjDayPop(kind, idx, anchor){
+    pjDayPopClose();
+    var rows = PJ_DAY_ROWS || [], proj = PJ_DAY_PROJ;
+    var r = (kind === 'add') ? null : rows[idx];
+    if(kind !== 'add' && !r) return;
+    var title = (kind === 'add') ? '＋ 회차 추가'
+              : (r.no + '회차 ' + (kind === 'date' ? '날짜' : '시간'));
+    var tip   = (kind === 'add')
+        ? '날짜를 넣으면 <b>' + (rows.length + 1) + '회차</b>가 생깁니다 · 시간은 나중에 고치셔도 됩니다'
+        : (kind === 'date' ? '이 회차의 촬영 날짜입니다'
+                           : '콜타임 ~ 랩타임 · 비워두셔도 됩니다');
+
+    var pop = document.createElement('div');
+    pop.className = 'kvpop';
+    var body =
+      (kind === 'time')
+        ? '<input type="time" id="pdCall" value="' + pjEsc(pjHm(r.call) || '') + '">'
+          + '<input type="time" id="pdWrap" value="' + pjEsc(pjHm(r.wrap) || '') + '">'
+        : '<input type="date" id="pdDate" value="' + pjEsc((kind === 'add') ? '' : (r.date || '')) + '">'
+          + (kind === 'add'
+              ? '<input type="time" id="pdCall" placeholder="콜타임"><input type="time" id="pdWrap" placeholder="랩타임">'
+              : '');
+    pop.innerHTML =
+      '<div class="t"><b>' + pjEsc(title) + '</b> — ' + tip + '</div>'
+      + body
+      + '<div class="row"><span class="msg"></span>'
+      +   (kind === 'add' ? '' : '<button class="del">이 회차 삭제</button>')
+      +   '<button class="no">닫기</button><button class="ok">저장</button></div>';
+    (anchor.parentNode || document.body).insertBefore(pop, anchor.nextSibling);
+    PJDAY_POP = pop;
+
+    var msg = pop.querySelector('.msg'), btnOk = pop.querySelector('.ok');
+    pop.querySelector('.no').addEventListener('click', pjDayPopClose);
+    setTimeout(function(){ try{ pop.querySelector('input').focus(); }catch(e){} }, 30);
+
+    function send(next, word){
+      btnOk.disabled = true; btnOk.textContent = '저장 중…'; msg.textContent = '';
+      pjDaysSend(proj, next, function(res){
+        if(!res || !res.ok){
+          btnOk.disabled = false; btnOk.textContent = '저장';
+          msg.innerHTML = '🔴 못 저장했습니다 — ' + pjEsc((res && res.error) || '답이 없습니다');
+          return;
+        }
+        pjDayPopClose();
+        pjToast('✅ ' + word);
+      });
+    }
+
+    btnOk.addEventListener('click', function(){
+      var dEl = pop.querySelector('#pdDate'), cEl = pop.querySelector('#pdCall'), wEl = pop.querySelector('#pdWrap');
+      if(kind === 'add'){
+        var dv = String((dEl && dEl.value) || '').trim();
+        /* 🔴 날짜 없이 만들면 «빈 회차»가 생겨 서버가 지워버린다(projDaysSet_ 가 빈 줄을 안 넣는다) */
+        if(!dv){ msg.textContent = '🔴 날짜를 넣어주세요'; return; }
+        var add = rows.slice();
+        add.push({ no: rows.length + 1, date: dv,
+                   call: String((cEl && cEl.value) || ''), wrap: String((wEl && wEl.value) || ''), locs: [] });
+        send(add, (rows.length + 1) + '회차를 만들었습니다');
+        return;
+      }
+      var next = rows.map(function(x, i){
+        if(i !== idx) return x;
+        var c = { no: x.no, date: x.date, call: x.call, wrap: x.wrap, locs: x.locs, loc: x.loc, locId: x.locId };
+        if(kind === 'date') c.date = String((dEl && dEl.value) || '').trim();
+        else { c.call = String((cEl && cEl.value) || ''); c.wrap = String((wEl && wEl.value) || ''); }
+        return c;
+      });
+      if(kind === 'date' && !next[idx].date){ msg.textContent = '🔴 날짜를 비우면 이 회차가 사라집니다 — 지우시려면 「이 회차 삭제」'; return; }
+      send(next, r.no + '회차 ' + (kind === 'date' ? '날짜를' : '시간을') + ' 고쳤습니다');
+    });
+
+    var del = pop.querySelector('.del');
+    if(del) del.addEventListener('click', function(){
+      /* 🔴 되돌릴 수 없다 — 한 번 묻는다(§3-0-D ②) */
+      if(!confirm(r.no + '회차를 지울까요?\n\n로케·시간도 같이 사라지고 되돌릴 수 없습니다.\n뒤 회차는 번호가 하나씩 당겨집니다.')) return;
+      var left = rows.filter(function(x, i){ return i !== idx; })
+                     .map(function(x, i2){ return { no: i2 + 1, date: x.date, call: x.call,
+                                                    wrap: x.wrap, locs: x.locs, loc: x.loc, locId: x.locId }; });
+      send(left, r.no + '회차를 지웠습니다');
+    });
   }
 
   /* 📍 회차 줄의 로케를 누르면 «그 자리에서» 작은 창을 연다 (2026-09-01)
@@ -2018,6 +2172,25 @@
     /* 🔴 이 창은 «회차 하나»에 붙는다 — 저장할 때 나머지 회차는 받은 그대로 되돌려 보낸다 */
     kvPopOpen(PJ_DAY_PROJ, '로케이션', line || el, r.loc || '',
               { day: { idx: i, no: r.no, rows: PJ_DAY_ROWS } });
+  });
+
+  /* 📅 2026-09-03 — 회차 줄의 «날짜·시간»과 «＋ 회차 추가» (정보 페이지를 없애기 위해)
+     🔴 로케와 «같은 위임 방식»이다 — 새로 발명하지 않았다.
+     🔴 data-pjday = 회차 번호(0부터) · -1 이면 「추가」 · data-pjf = date|time|add */
+  document.addEventListener('click', function(e){
+    var el = e.target, n = 0, idx = null, f = null;
+    while(el && n++ < 4){
+      if(el.getAttribute){
+        idx = el.getAttribute('data-pjday');
+        if(idx !== null){ f = el.getAttribute('data-pjf'); break; }
+      }
+      el = el.parentElement;
+    }
+    if(idx === null) return;
+    e.preventDefault();
+    /* 🔴 창을 «회차 줄 아래»에 연다 — 글자 옆(flex 안)에 넣으면 줄이 찌그러진다 */
+    var line = el; while(line && !line.classList.contains('dayline')) line = line.parentElement;
+    pjDayPop(f || 'date', +idx, line || el);
   });
 
   var PJ_CHK_CACHE = {};
@@ -2300,13 +2473,14 @@
           나머지(장비세부내역·견적서·정산서 …)는 «다른 데서 일이 끝나야» 생기는 결과물이라
           여기서 손으로 채우면 «없는 사실»을 적는 것이 된다. 그래서 버튼을 안 붙인다.
        🔴 값 → 폼 칸 id. 「＋ 새 프로젝트」 폼의 칸을 그대로 쓴다(§4-1 — 폼을 새로 안 만든다). */
+    /* 📍 2026-09-03 대표 확정 — 「로케이션」을 여기서 뺐다.
+       [왜] 로케는 «회차마다» 다르라 아래 「📅 촬영 회차」 줄에서 회차별로 고친다.
+         여기에도 버튼을 두면 «같은 것을 고치는 길이 둘»이 되고, 이 버튼은 정보 폼을 열어서
+         대표가 매번 페이지를 옮겨 다니셔야 했다(대표: *"2회차는 또 다시 정보페이지로가"*).
+       🔴 [값은 그대로 보여준다] 「로케이션」 줄은 남는다 — 고치는 버튼만 없앴다.
+       되돌리기 = "로케 채우기 되살려줘" ('로케이션':'dayRows' 한 줄을 되돌린다) */
     var PJ_FILLABLE = { '거래처':'pkCli', '담당자':'pkMgr', '포토그래퍼':'pkPho', '브랜드':'pkBrand',
-                        '참여인원':'pkPeople',
-                        /* 📍 2026-09-01 — 로케이션은 «회차마다» 다르므로 작은 창으로 못 받는다.
-                           「✏️ 정보」 폼의 «회차 칸»으로 데려간다(거기서 회차별로 ＋로케 를 넣는다).
-                           🔴 그래서 `kvPopOpen` 대신 폼 전체가 열려야 한다 —
-                              아래 클릭 갈래에서 로케이션만 «작은 창을 건너뛴다». */
-                        '로케이션':'dayRows' };
+                        '참여인원':'pkPeople' };
     var opened = false;      /* 「🔒 대표만」 띠를 아직 안 넣었나 */
     (d.items||[]).forEach(function(x){
       /* 📋 2026-09-01 대표 지시 — 카드에 있는 것은 목록에 «안» 그린다(같은 것을 두 번 보게 된다).
@@ -4000,37 +4174,30 @@
             { n:이름, id:'' } 를 받아 그대로 적는다(노션 연결만 안 될 뿐 화면에는 보인다).
          되돌리기 = "로케 저장 되돌려줘" (이 if 덩어리만 빼면 예전과 같다 — 다만 예전은 안 됐다) */
       if(day){
+        /* 🔴 그 회차의 로케만 바꾸고 «전체»를 보낸다.
+           보내는 규칙(필드 채우기)은 pjDaysSend 한 곳에서만 정한다 — 두 곳이면 어긋난다(§1). */
         var allRows = (day.rows || []).map(function(r, i){
-          var o = { no: r.no, date: r.date || '', call: r.call || '', wrap: r.wrap || '' };
-          if(i === day.idx){
-            o.locs = picks.map(function(x){ return { n: x.name, id: x.id || '' }; });
-          }else{
-            /* 🔴 다른 회차는 «받은 그대로». locs 가 없던 옛 형식도 살린다 */
-            o.locs = (r.locs && r.locs.length) ? r.locs
-                   : (r.loc ? [{ n: r.loc, id: r.locId || '' }] : []);
-          }
-          return o;
+          if(i !== day.idx) return r;               /* 다른 회차는 받은 그대로 */
+          return { no: r.no, date: r.date, call: r.call, wrap: r.wrap,
+                   locs: picks.map(function(x){ return { n: x.name, id: x.id || '' }; }) };
         });
         var nLoc = picks.length, nNotion = picks.filter(function(x){ return x.id; }).length;
         btnOk.disabled = true; btnOk.textContent = '저장 중…';
         msg.textContent = '';
-        pjAdmin('update', proj, '&info=' + encodeURIComponent(JSON.stringify({ days: allRows })),
-          function(r2){
-            if(!r2 || !r2.ok){
-              btnOk.disabled = false; btnOk.textContent = '저장';
-              msg.innerHTML = '🔴 못 저장했습니다 — ' + pjEsc((r2 && r2.error) || '답이 없습니다');
-              return;
-            }
-            kvPopClose();
-            PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {}; pj1Clear();   /* 다음에 열 때 새로 읽는다 */
-            try{ pjDaysShow(proj); }catch(e){}      /* 회차 줄을 다시 그린다 */
-            /* 🔴 «노션에 든 것»과 «시트에만 있는 것»을 나눠 말해준다 —
-               안 나누면 「노션에도 들어갔겠지」로 아시게 된다(§3-5 ⑤). */
-            pjToast(nLoc
-              ? ('✅ ' + day.no + '회차 로케 ' + nLoc + '곳 저장'
-                 + (nNotion ? ' · 그중 ' + nNotion + '곳은 노션에도 연결' : ' · 시트에만(노션 연결 없음)'))
-              : ('✅ ' + day.no + '회차 로케를 비웠습니다'));
-          });
+        pjDaysSend(proj, allRows, function(r2){
+          if(!r2 || !r2.ok){
+            btnOk.disabled = false; btnOk.textContent = '저장';
+            msg.innerHTML = '🔴 못 저장했습니다 — ' + pjEsc((r2 && r2.error) || '답이 없습니다');
+            return;
+          }
+          kvPopClose();
+          /* 🔴 «노션에 든 것»과 «시트에만 있는 것»을 나눠 말해준다 —
+             안 나누면 「노션에도 들어갔겠지」로 아시게 된다(§3-5 ⑤). */
+          pjToast(nLoc
+            ? ('✅ ' + day.no + '회차 로케 ' + nLoc + '곳 저장'
+               + (nNotion ? ' · 그중 ' + nNotion + '곳은 노션에도 연결' : ' · 시트에만(노션 연결 없음)'))
+            : ('✅ ' + day.no + '회차 로케를 비웠습니다'));
+        });
         return;
       }
 
