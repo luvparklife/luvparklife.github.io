@@ -3642,9 +3642,14 @@
       '<div class="t"><b>' + pjEsc(day ? (day.no + '회차 로케') : key) + '</b> — '
       + (day
            /* 📍 이 창이 «그 회차만» 고친다는 것을 분명히 적는다 —
-              안 적으면 프로젝트 전체 로케를 바꾸는 줄 아신다. */
-           ? '이 회차의 로케입니다 · 치면 노션 후보가 뜹니다 · 여러 곳이면 하나씩 <b>Enter</b>'
-             + ' · 없으면 <b>＋ 노션에 등록</b>'
+              안 적으면 프로젝트 전체 로케를 바꾸는 줄 아신다.
+              🔴 2026-09-03 대표 신고 — *"로케이션은 항상 노션등록이 아니야.
+                 노션에 등록하고싶은것만 등록하고 아닌건 그냥 수기로 등록해서 보여지게."*
+                 [왜 그렇게 보였나] 다른 칸에는 있는 «그대로 적으셔도 됩니다»가 로케에만 빠져 있고,
+                 「없으면 ＋ 노션에 등록」만 적혀 있어 «노션에 넣어야만 되는 것»으로 읽혔다. */
+           ? '이 회차의 로케입니다 · 여러 곳이면 하나씩 <b>Enter</b>'
+             + ' · <b>그냥 적고 Enter</b> 치셔도 됩니다(노션 없이 시트에만)'
+             + ' · 노션에도 넣으려면 <b>후보에서 고르거나 ＋ 노션에 등록</b>'
          : key === '담당자'
            /* 🔴 노션 «네트워크»에는 등록되지만 노션 «프로젝트»에는 담당자 칸이 없다.
               둘을 뭉뚱그리면 대표가 「노션에 들어갔겠지」로 믿으신다(§3-5 ⑤). */
@@ -3683,7 +3688,11 @@
       if(!picks.length){ chipBox.className='chips'; chipBox.innerHTML=''; return; }
       chipBox.className = 'chips on';
       chipBox.innerHTML = picks.map(function(x,i){
-        return '<span class="chip' + (x.id ? ' has' : '') + '">' + pjEsc(x.name)
+        /* 🔴 2026-09-03 — «노션에 연결된 것»만 🔗 를 붙인다. 없는 것은 «수기»다.
+           색(has 클래스)만으로는 구분이 안 보인다는 대표 지적에서 나온 것이라 글자로 적는다. */
+        return '<span class="chip' + (x.id ? ' has' : '') + '" title="'
+             + (x.id ? '노션에 연결됨' : '수기 — 시트에만 저장됩니다') + '">'
+             + (x.id ? '🔗 ' : '') + pjEsc(x.name)
              + '<b data-i="' + i + '">×</b></span>'; }).join('');
     }
     if(many){
@@ -3700,7 +3709,13 @@
         return (x.id && one.id && x.id === one.id) || x.name === one.name; });
       if(!dup) picks.push(one);
       inp.value = ''; hits.className='hits'; drawChips();
-      msg.textContent = picks.length + '명 — 「저장」을 눌러야 들어갑니다';
+      /* 🔴 2026-09-03 — 로케인데 「N명」이라 하면 사람인 줄 아신다. 로케는 「N곳」.
+         그리고 «노션에 연결된 것»과 «시트에만 있는 것»을 세어 나눠 적는다 —
+         대표 지시: *"노션에 등록하고싶은것만 등록하고 아닌건 그냥 수기로"* */
+      var _u = day ? '곳' : '명';
+      var _n = picks.filter(function(x){ return x.id; }).length;
+      msg.textContent = picks.length + _u + (_n ? ' (노션 ' + _n + ' · 수기 ' + (picks.length - _n) + ')' : ' · 수기')
+                      + ' — 「저장」을 눌러야 들어갑니다';
       try{ inp.focus(); }catch(e){}
       return true;
     }
@@ -3889,6 +3904,53 @@
         val = picks.map(function(x){ return x.name; }).join(', ');
       }
       if(mustPick && val && !picked && rows && !skipNotion){ kvNeedPick(val); return; }
+
+      /* 📍 2026-09-03 대표 신고로 잡은 «진짜 버그» — 로케는 저장이 «아예 안 되고 있었다».
+         ═══════════════════════════════════════════════════════════════
+         [무엇이 잘못돼 있었나] 아래 MAP 에 「로케이션」이 없어서 `info[undefined] = val` 이
+           서버로 갔다. 어느 칸에도 안 들어간다 — «수기든 노션이든» 저장이 안 됐다.
+           그래서 대표님 눈에는 「노션 등록만 되는 것」처럼 보였다.
+         🔴 [회차를 «통째로» 되돌려 보낸다] 서버 projDaysSet_ 는 그 프로젝트 회차를 다 지우고
+            다시 쓴다 → 한 회차만 보내면 «나머지 회차가 사라진다».
+         🔴 [읽은 필드를 그대로 돌려준다] date·call·wrap 을 빠뜨리면 «콜타임·랩타임이 날아간다».
+            읽기(projDaysGet_)와 쓰기(projLocList_)가 같은 이름을 쓰는 것을 확인하고 맞췄다.
+         🔴 [id 없는 것도 그대로 보낸다] 그것이 «수기 로케»다 — 서버 projLocList_ 가
+            { n:이름, id:'' } 를 받아 그대로 적는다(노션 연결만 안 될 뿐 화면에는 보인다).
+         되돌리기 = "로케 저장 되돌려줘" (이 if 덩어리만 빼면 예전과 같다 — 다만 예전은 안 됐다) */
+      if(day){
+        var allRows = (day.rows || []).map(function(r, i){
+          var o = { no: r.no, date: r.date || '', call: r.call || '', wrap: r.wrap || '' };
+          if(i === day.idx){
+            o.locs = picks.map(function(x){ return { n: x.name, id: x.id || '' }; });
+          }else{
+            /* 🔴 다른 회차는 «받은 그대로». locs 가 없던 옛 형식도 살린다 */
+            o.locs = (r.locs && r.locs.length) ? r.locs
+                   : (r.loc ? [{ n: r.loc, id: r.locId || '' }] : []);
+          }
+          return o;
+        });
+        var nLoc = picks.length, nNotion = picks.filter(function(x){ return x.id; }).length;
+        btnOk.disabled = true; btnOk.textContent = '저장 중…';
+        msg.textContent = '';
+        pjAdmin('update', proj, '&info=' + encodeURIComponent(JSON.stringify({ days: allRows })),
+          function(r2){
+            if(!r2 || !r2.ok){
+              btnOk.disabled = false; btnOk.textContent = '저장';
+              msg.innerHTML = '🔴 못 저장했습니다 — ' + pjEsc((r2 && r2.error) || '답이 없습니다');
+              return;
+            }
+            kvPopClose();
+            PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {};   /* 다음에 열 때 새로 읽는다 */
+            try{ pjDaysShow(proj); }catch(e){}      /* 회차 줄을 다시 그린다 */
+            /* 🔴 «노션에 든 것»과 «시트에만 있는 것»을 나눠 말해준다 —
+               안 나누면 「노션에도 들어갔겠지」로 아시게 된다(§3-5 ⑤). */
+            pjToast(nLoc
+              ? ('✅ ' + day.no + '회차 로케 ' + nLoc + '곳 저장'
+                 + (nNotion ? ' · 그중 ' + nNotion + '곳은 노션에도 연결' : ' · 시트에만(노션 연결 없음)'))
+              : ('✅ ' + day.no + '회차 로케를 비웠습니다'));
+          });
+        return;
+      }
 
       var MAP = { '거래처':'client', '담당자':'mgr', '포토그래퍼':'photo', '브랜드':'brand',
                   '참여인원':'people' };
