@@ -246,7 +246,7 @@
       <span><span class="t">정산앱</span><span class="s">계좌 넣기 · 청구하기 · 언제 입금되나</span></span>
       <span class="go">›</span></button>
     <button class="card" onclick="go('proj')"><span class="ico">📁</span>
-      <span><span class="t">촬영 자료</span><span class="s">콜시트·장비 리스트는 어디서 보나</span></span>
+      <span><span class="t">프로젝트앱</span><span class="s">촬영 목록 · 콜시트 · 바로가기</span></span>
       <span class="go">›</span></button>
     <button class="card" onclick="go('help')"><span class="ico">🔧</span>
       <span><span class="t">막힐 때</span><span class="s">안 열려요 · 반송됐어요 · 장비가 안 보여요</span></span>
@@ -839,10 +839,10 @@
   </div>
 </div>
 
-<!-- ══════════════ 📁 촬영 자료 ══════════════ -->
+<!-- ══════════════ 📁 프로젝트앱 (2026-09-04 대표 지시로 「촬영 자료」에서 이름 바꿈) ══════════════ -->
 <div id="v-proj" class="hide">
   <div class="apphd"><button class="back" onclick="go('home')">← 목록</button>
-    <span class="ttl">📁 촬영 자료</span></div>
+    <span class="ttl">📁 프로젝트앱</span></div>
   <div class="page">
 
     <div class="sec">
@@ -862,14 +862,52 @@
     </div>
 
     <div class="sec">
-      <h3>📁 「프로젝트」 카드에서는 무엇을 보나</h3>
-      <p>허브에서 <b>「📁 프로젝트」 카드</b>를 누르면 촬영 목록이 나오고,
-        하나를 고르면 그 촬영의 <b>촬영일 · 장비 세부내역 · 참여인원 · 담당자 · 로케이션</b>을
-        한 화면에서 볼 수 있습니다.</p>
-      <div class="box ok"><b>✅ 「내가 지금 뭘 해야 하지」가 헷갈릴 때 여기를 보세요.</b>
-        장비앱·정산앱으로 <b>바로 가는 버튼</b>도 있습니다.</div>
+      <h3>📁 「프로젝트」 카드 — 목록에는 «내가 낀 것만» 나옵니다</h3>
+      <p class="lead">허브에서 <b>「📁 프로젝트」</b>를 누르면 촬영 목록이 나옵니다.
+        전체가 아니라 <b>내가 들어간 촬영만</b> 보입니다.</p>
+      <ol class="st">
+        <li><b>내가 그 촬영 담당자면</b> — 언제나 보입니다</li>
+        <li><b>견적서 참여인원에 내 이름이 있으면</b> — 보입니다</li>
+        <li><b>둘 다 아니면</b> <span class="d">안 보입니다. 분명히 하는 촬영인데 안 보이면
+          <b>담당자에게 말씀해 주세요</b> — 이름이 안 들어간 것입니다.</span></li>
+      </ol>
       <div class="box warn"><b>⚠️ 로그인해야 목록이 보입니다.</b>
         비어 있으면 로그인이 안 된 것입니다.</div>
+    </div>
+
+    <div class="sec">
+      <h3>촬영 하나를 고르면 — 이 여덟 가지가 보입니다</h3>
+      <table>
+        <tr><td><b>촬영일</b></td><td>날짜와 며칠짜리인지</td></tr>
+        <tr><td><b>내 역할</b></td><td>포토 퍼스트 · 개퍼 세컨드처럼
+          <span class="d">🔴 견적서에 내 이름이 들어가 있어야 나옵니다. 비어 있으면 담당자에게 말씀해 주세요.</span></td></tr>
+        <tr><td><b>PA팀</b></td><td>우리 쪽에서 누가 들어가는지</td></tr>
+        <tr><td><b>담당자</b></td><td>막히면 이 사람에게 연락하시면 됩니다</td></tr>
+        <tr><td><b>포토그래퍼 · 브랜드</b></td><td>누구 촬영인지</td></tr>
+        <tr><td><b>로케이션</b></td><td>회차마다 어디서 찍는지</td></tr>
+        <tr><td><b>공유폴더</b></td><td>콜시트·참고 자료가 들어옵니다</td></tr>
+      </table>
+      <div class="box ok"><b>✅ 아래 버튼으로 장비앱·정산앱에 바로 갑니다.</b>
+        <b>🎬 장비</b>(그 촬영 장비 체크) · <b>💰 내 청구</b>(정산) ·
+        <b>🌐 공유파일</b> · <b>📁 내부폴더</b>.</div>
+    </div>
+
+    <div class="sec">
+      <h3>회색으로 눌리지 않는 버튼이 있습니다 — 고장이 아닙니다</h3>
+      <p><b>📋 장비세부내역 · 📊 소싱시트 · 🧾 견적서</b>는 회색입니다.
+        <b>단가와 마진이 보이는 자리</b>라 회사 안에서도 정해진 사람만 엽니다.</p>
+      <div class="box warn"><b>⚠️ 눌러도 됩니다.</b> 누르면 «왜» 못 여는지 알려줍니다.
+        감춰두지 않은 것은, 없는 줄 알고 찾아 헤매시지 않게 하려는 것입니다.</div>
+      <p class="d">🔴 <b>장비 목록이 필요하시면 「🎬 장비」로 들어가세요.</b>
+        거기에는 그 촬영에 나가는 장비가 다 나옵니다 — 금액만 없습니다.</p>
+    </div>
+
+    <div class="sec">
+      <h3>여기서는 «고칠» 수 없습니다</h3>
+      <p>날짜 · 로케이션 · 회차 · 담당자는 <b>보기만</b> 됩니다.
+        고치는 것은 담당자·대표가 합니다.</p>
+      <div class="box ok"><b>✅ 프리랜서가 «적는» 곳은 두 군데입니다.</b>
+        <b>🎬 장비앱</b>(준비·랩업·반납 체크) 와 <b>💰 정산앱</b>(청구).</div>
     </div>
   </div>
 </div>
@@ -979,13 +1017,29 @@ function applyRole(){
   });
 }
 
-/* 앱 안에서 열렸으면 「← 목록」이 뜻이 없다 — 닫는 법을 알려준다 */
+/* 🔒 «그 앱 것만» 보여준다  (2026-09-04 대표 지시)
+   대표 원문: *"각 앱에서의 사용법클릭하면 그 앱의 사용법만 보여줘."*
+   🔴 [새 화면을 안 만든다] 장·내용은 그대로 두고 «다른 장으로 가는 길»만 닫는다(§4-1).
+   🔴 [두 가지를 가른다]
+        in=app  = 앱 «액자 안»에서 열림 → 「← 목록」이 뜻이 없다. 닫는 법을 알려준다.
+        only=1  = 새 탭으로 열림(허브 ❓) → 「← 목록」은 감추되, 막다른 길이 되지 않게
+                  «전체 사용법 보기» 한 줄은 남긴다.
+   🔴 in=app 이면 only 도 저절로 켠다 — 앱 안에서 목록을 헤매게 할 이유가 없다. */
+var IN_APP = (Q['in'] === 'app');
+var ONLY   = IN_APP || Q.only === '1' || Q.only === 'true';
+
 function applyInApp(){
-  if(Q['in'] !== 'app') return;
-  document.querySelectorAll('.page').forEach(function(p){
+  if(!ONLY) return;
+  /* 「← 목록」을 감춘다 — 지우지 않는다(주소에서 only 를 빼면 다시 보인다) */
+  Array.prototype.forEach.call(document.querySelectorAll('.apphd .back'), function(b){
+    b.style.display = 'none';
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.page'), function(p){
     var d = document.createElement('div');
     d.className = 'appback';
-    d.innerHTML = '↩︎ 앱으로 돌아가려면 <b>위쪽 「닫기」</b>를 누르세요';
+    d.innerHTML = IN_APP
+      ? '↩︎ 앱으로 돌아가려면 <b>위쪽 「닫기」</b>를 누르세요'
+      : '📱 다른 앱 사용법도 보시려면 <a href="' + location.pathname + '">전체 사용법 보기</a>';
     p.appendChild(d);
   });
 }
@@ -996,6 +1050,16 @@ function applyInApp(){
   var want = (Q.go || (location.hash||'').replace('#','') || 'home').toLowerCase();
   if(VIEWS.indexOf(want) < 0) want = 'home';
   go(want);
+
+  /* 🔴 앱 «안»에서 열렸으면 «내가 떴다»고 부모에게 알린다 (2026-09-04).
+     [왜] iframe 의 onload 는 «못 여는 주소·404·없는 도메인»에서도 난다(실측 0.0~0.3초).
+          그래서 앱이 onload 만 믿으면 «크롬 에러 페이지»를 사용법인 줄 알고 보여준다.
+          이 한 줄이 있어야 앱이 「진짜 떴다」와 「못 불러왔다」를 가른다.
+     🔴 여기(그리기가 끝난 뒤)에서 보낸다 — 더 일찍 보내면 «반쯤 그려진» 것을 성공이라 한다. */
+  if(Q['in'] === 'app'){
+    try{ if(window.parent && window.parent !== window)
+           window.parent.postMessage({ paGuide:'ready', go:want, role:ROLE }, '*'); }catch(e){}
+  }
 })();
 function fold(id){ var el=document.getElementById(id); if(el) el.classList.toggle('on'); }
 function qa(id){ var el=document.getElementById(id); if(el) el.classList.toggle('on'); }
