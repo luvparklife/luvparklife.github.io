@@ -1900,6 +1900,11 @@
           주소도 여기 안 적는다. 위 카드(data-lifecycle)의 것을 읽어 쓴다(두 군데면 어긋난다 §1). */
     var h = '';
     h += pjNewCardHtml();
+    /* ❓ 2026-09-04 대표 지시 — 프로젝트 «목록»에도 설명서
+       🔴 「＋ 새 프로젝트」는 «관리 이상»에게만 보인다 — 프리랜서에게는 이 줄이 목록 맨 위 첫 안내다. */
+    h += (function(){ var g = guideLink('pjguide');
+           return g ? '<p class="foot" style="margin:0 0 10px">' + g
+                    + ' <span style="opacity:.8">— 이 화면 보는 법 · 로그인 없이 열립니다</span></p>' : ''; })();
     /* 🧪 대표만 보이는 검사 줄 (2026-08-26) */
     var testLine = (PJ_ROLE === '대표') ? '<p class="foot" style="margin-top:14px">🧪 <a href="#" onclick="return pjSelfTest()">'
         + '추가·수정·제거 시험해보기</a> <span id="pjTestMsg"></span></p>' : '';
@@ -3850,6 +3855,33 @@
        그러면 회차·1차정보도 다시 물어봐 요청이 두 배가 됐다. */
     if(!PJ_ROLE) pjAskRole(function(){ if(PJ_ROLE && !PJ_ONE_CACHE[proj]) pjOne(proj); });
   }
+  /* ❓ 사용법으로 가는 주소  (2026-09-04 대표 지시)
+     대표 원문: *"프로젝트카드 안에도 프로젝트 설명서 필요. 그리고 해당 프로젝트 페이지 안에서도 필요해"*
+     🔴 [주소를 여기 안 적는다] 「📱 앱 사용법」 카드가 이미 그 주소를 갖고 있다 — 그것을 읽어 쓴다(§1).
+        문서 파일 이름이 바뀌어도 카드 한 곳만 고치면 여기가 따라온다.
+     🔴 [새 문서를 안 만든다] 그 문서에 「📁 촬영 자료」 장이 이미 있고 `?go=proj` 로 바로 열린다(§3-0). */
+  function guideUrl(sec){
+    var a = [].slice.call(document.querySelectorAll('a.card')).filter(function(c){
+      var t = c.querySelector('.title');
+      return t && t.textContent.trim() === '앱 사용법';
+    })[0];
+    if(!a) return '';
+    var u = a.getAttribute('href') || '';
+    if(!u) return '';
+    /* 🔒 only=1 — «그 장만» 보여준다 (2026-09-04 대표 지시 *"그 앱의 사용법만 보여줘"*)
+       🔴 장비앱·정산앱은 `in=app` 을 보내고 문서가 그것도 only 로 친다 — 앱 코드는 안 고쳤다(§3-0).
+          허브는 «새 탭»으로 열려 「닫기」 안내가 틀린 말이 되므로 only 를 쓴다. */
+    return u + (u.indexOf('?') >= 0 ? '&' : '?') + 'go=' + (sec || 'proj') + '&only=1';
+  }
+  /* 프로젝트 화면에서 쓰는 「❓ 사용법」 한 조각. 주소가 없으면 «아무것도 안 그린다» —
+     죽은 링크를 만드느니 없는 게 낫다(§3-5 ⑤). */
+  function guideLink(cls){
+    var u = guideUrl('proj');
+    if(!u) return '';
+    return '<a class="' + (cls || '') + '" href="' + u + '" target="_blank" rel="noopener"'
+         + ' title="프로젝트 화면 보는 법 — 로그인 없이 열립니다">❓ 사용법</a>';
+  }
+
   /* 카드 한 장. act = 'field'(장비앱으로) / 'settle'(정산앱으로) */
   /* 🔴 pjCard() 는 2026-08-22 「두 칸 관리판」으로 바뀌면서 부르는 곳이 0이 되어 뺐다.
      되살리려면 백업 hub_index_260822_두칸전.html 에 있다. */
@@ -3884,6 +3916,8 @@
           ? '<a href="#" data-pjact="rename" data-pjproj="' + p + '">✏️ 이름</a>'
             + '<a href="#" class="danger" data-pjact="del" data-pjproj="' + p + '">🗑 지우기</a>'
           : '')
+      /* ❓ 2026-09-04 대표 지시 — 프로젝트 «페이지 안»에도 설명서 (맨 뒤: 자주 누르는 것이 아니다) */
+      + guideLink()
       + '</div>';
   }
   /* ═══════════════════════════════════════════════════════════════
