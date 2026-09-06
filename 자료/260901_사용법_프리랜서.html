@@ -1037,8 +1037,13 @@ function applyInApp(){
   Array.prototype.forEach.call(document.querySelectorAll('.page'), function(p){
     var d = document.createElement('div');
     d.className = 'appback';
+    /* 🔴 2026-09-04 대표 지시 — *"앱 사용업에서 디테일 사용법으로 넘어갈 수도 있게"*
+       [무엇이 빠져 있었나] 앱 «안»에서 열면 「닫기」 안내뿐이라 «전체 사용법»으로 갈 길이 없었다.
+       🔴 앱 안은 «액자»라 같은 자리에서 열면 앱이 사라진다 → 새 탭으로 연다. */
     d.innerHTML = IN_APP
       ? '↩︎ 앱으로 돌아가려면 <b>위쪽 「닫기」</b>를 누르세요'
+        + ' &nbsp;·&nbsp; 📱 <a href="' + location.pathname + '" target="_blank" rel="noopener">'
+        + '처음부터 · 다른 앱 사용법 보기</a>'
       : '📱 다른 앱 사용법도 보시려면 <a href="' + location.pathname + '">전체 사용법 보기</a>';
     p.appendChild(d);
   });
