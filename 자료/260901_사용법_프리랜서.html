@@ -1052,7 +1052,12 @@ function applyInApp(){
 (function start(){
   applyRole(); applyInApp();
   /* ?go=eq · #eq 둘 다 받는다 */
-  var want = (Q.go || (location.hash||'').replace('#','') || 'home').toLowerCase();
+  /* 🔴 [2026-09-04 교차검증 ⑥] 해시가 «먼저»다.
+     전에는 `Q.go` 가 먼저라, `?go=proj&only=1` 로 들어와 세부 장으로 옮긴 뒤
+     «새로고침하거나 북마크를 다시 열면» 보던 장이 아니라 처음 장으로 되돌아갔다.
+     장을 옮길 때 replaceState 가 해시를 갱신하므로(쿼리는 그대로 남는다)
+     해시를 먼저 보면 «보던 자리»가 지켜진다. 처음 들어올 땐 해시가 없어 Q.go 가 쓰인다. */
+  var want = ((location.hash||'').replace('#','') || Q.go || 'home').toLowerCase();
   if(VIEWS.indexOf(want) < 0) want = 'home';
   go(want);
 
