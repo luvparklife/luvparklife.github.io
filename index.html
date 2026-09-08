@@ -811,7 +811,14 @@
       <div class="ghead">
         <span class="dot"></span>
         <span class="gt" id="pjName">—</span>
-        <span class="gd"><a href="#p" class="pjback">‹ 프로젝트 목록</a></span>
+        <!-- 🔄 2026-09-08 대표 지시 — *"프로젝트 정보들이 제대로 연동이 안될때 «수동으로 업데이트»
+             할 수 있는 버튼이 있다면 로케이션주소 받기 안써도 되지않아?"*  → **맞습니다. 하나로 합쳤습니다.**
+             🔴 [시간은 안 더 걸린다] 느린 걸음은 «노션에서 받아오기»(282줄 · 몇 초) 하나뿐이고
+                「주소 다시 받기」도 «이미» 그 걸음을 밟고 있었다. 나머지(회차·거래처·인원·담당자)는
+                같은 시트를 읽는 것이라 붙여도 0.5초쯤이다. → 값은 다 새로 오는데 시간은 그대로다.
+             🔴 [버튼이 하나여야 한다] 둘이면 「어느 걸 눌러야 하지」가 생긴다(§4-1). -->
+        <span class="gd"><a href="#" id="pjSync" title="노션·시트에서 이 프로젝트 정보를 «지금» 다시 받아옵니다 (몇 초)">🔄 다시 불러오기</a>
+          &nbsp;<a href="#p" class="pjback">‹ 프로젝트 목록</a></span>
       </div>
       <div id="pjOneBody"></div>
     </div>
@@ -2067,13 +2074,13 @@
        🔴 [「관리」 이상만] 정산앱 창구가 그 등급을 요구한다 — 아래 등급에게 보여주면
           눌러도 거절당해 「눌렀는데 아무 일이 없다」가 된다.
        되돌리기 = **"주소 다시받기 빼줘"** */
-    var needAddr = canEdit && (rows || []).some(function(r){
-      var ls = (r && r.locs && r.locs.length) ? r.locs : [];
-      return ls.some(function(x){ return x && x.n && !x.a; });
-    });
-    var adBtn = needAddr
-      ? ' <a href="#" class="dayadd" id="pjAdRefresh"'
-        + ' title="노션 「위치」를 다시 받아 주소를 채웁니다 (몇 초 걸립니다)">📍 주소 다시 받기</a>' : '';
+    /* 🔴 2026-09-08 — 여기 있던 「📍 주소 다시 받기」를 «없앴다». 대표 지적이 맞았다:
+       *"프로젝트 정보들이 제대로 연동이 안될때 수동으로 업데이트 할 수 있는 버튼이 있다면
+         로케이션주소 받기 안써도 되지않아?"*
+       → 제목 옆 「🔄 다시 불러오기」(#pjSync)가 «같은 걸음»을 밟고 나머지까지 다시 읽는다.
+         버튼이 둘이면 「어느 걸 눌러야 하지」가 생긴다(§4-1).
+       되살리기 = **"주소 다시받기 되살려줘"** */
+    var adBtn = '';
     if(!rows || !rows.length){
       PJ_DAY_ROWS = []; PJ_DAY_PROJ = proj;
       box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 ' + addBtn + '</div>'
@@ -2159,39 +2166,56 @@
   var PJ_AD_BUSY = false;
   document.addEventListener('click', function(e){
     var el = e.target, n = 0, hit = false;
-    while(el && n++ < 4){ if(el.id === 'pjAdRefresh'){ hit = true; break; } el = el.parentElement; }
+    while(el && n++ < 4){ if(el.id === 'pjSync'){ hit = true; break; } el = el.parentElement; }
     if(!hit) return;
     e.preventDefault();
     if(PJ_AD_BUSY) return;                       /* 두 번 눌러 두 번 돌지 않게 */
     PJ_AD_BUSY = true;
-    var proj = PJ_DAY_PROJ, was = el.textContent;
-    el.textContent = '📍 노션에서 받는 중…';
+    var proj = PJ_NOW || PJ_DAY_PROJ, was = el.textContent;
+    el.textContent = '🔄 받는 중…';
     function done(msg, ok){
       PJ_AD_BUSY = false;
       try{ el.textContent = was; }catch(e2){}
       pjToast((ok ? '✅ ' : '🔴 ') + msg);
     }
+    if(!proj){ done('프로젝트를 먼저 열어주세요', false); return; }
+
+    /* ── ②③ 시트에서 다시 읽는다 — 노션을 못 불러도 «이것만은» 한다 ──
+       🔴 [왜 나눠 뒀나] 노션이 느리거나 막혀도 시트 쪽(회차·담당자·견적서 인원)은
+          되는 것이 낫다. 한 걸음이 실패했다고 나머지를 안 하면 대표가 또 누르신다. */
+    function refreshLocal(word, ok){
+      /* 화면이 들고 있던 옛 값을 «전부» 버린다 — 안 버리면 눌러도 그대로다 */
+      PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {}; NET_CACHE = {};
+      try{ pj1Clear(); }catch(e2){}
+      try{ pjOneLoad(proj, true); }catch(e2){}          /* 쌓인 정보(담당자·거래처·PA팀·견적서) */
+      try{ pjCheck(proj); }catch(e2){}                   /* 지금 할 일 */
+      askCount(FIELD_APP + '?action=projDays&fresh=1&proj=' + encodeURIComponent(proj) + appTok(),
+               function(r){
+        if(r && r.ok && r.rows){
+          pjDaysPaint(proj, r.rows);                     /* 회차 칸만 다시 그린다 */
+          var na = 0;
+          r.rows.forEach(function(x){ (x.locs||[]).forEach(function(y){ if(y && y.a) na++; }); });
+          done(word + (na ? ' · 로케 주소 ' + na + '곳' : ''), ok);
+        } else {
+          done(word + ' (회차는 못 읽었습니다)', false);
+        }
+      }, 20000);
+    }
+
+    /* ── ① 노션 → 시트 (느린 걸음 · 몇 초) ── */
     var base = (typeof netBase === 'function') ? netBase() : '';
     if(!base || (typeof payOK === 'function' && !payOK())){
-      done('정산앱에 못 물어봤습니다 — 다시 로그인해 보십시오', false); return;
+      refreshLocal('시트에서만 다시 읽었습니다 — 노션에는 못 물어봤습니다(다시 로그인해 보십시오)', false);
+      return;
     }
-    /* ① 노션 → 시트 */
     askCount(base + '?action=pushPeople' + (typeof payTok === 'function' ? payTok() : ''),
              function(d){
       if(!d || !d.ok){
-        done('노션에서 못 받았습니다' + (d && d.why ? ' — ' + d.why : ' (시간이 모자랐습니다)'), false);
+        refreshLocal('시트에서만 다시 읽었습니다 — 노션에서 못 받았습니다'
+                     + (d && d.why ? '(' + d.why + ')' : '(시간이 모자랐습니다)'), false);
         return;
       }
-      /* ② 시트 → 회차 줄 (캐시를 버리고 다시 읽는다) */
-      askCount(FIELD_APP + '?action=projDays&fresh=1&proj=' + encodeURIComponent(proj) + appTok(),
-               function(r){
-        if(!r || !r.ok || !r.rows){ done('받았는데 회차를 다시 못 읽었습니다 — 새로고침해 보십시오', false); return; }
-        pjDaysPaint(proj, r.rows);
-        var n2 = 0;
-        r.rows.forEach(function(x){ (x.locs||[]).forEach(function(y){ if(y && y.a) n2++; }); });
-        done(n2 ? ('주소 ' + n2 + '곳을 받았습니다')
-                : '받았지만 주소가 «노션에 비어 있습니다» — 노션 로케 페이지의 「위치」를 채워주세요', !!n2);
-      }, 20000);
+      refreshLocal('다시 불러왔습니다', true);
     }, 60000);   /* 🔴 노션 282줄을 읽는다 — 8초로는 자주 잘린다 */
   });
 
