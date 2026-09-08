@@ -3096,6 +3096,22 @@
       +   '<div id="pkPho">불러오는 중…</div></div>'
       + '<div class="nf"><label>브랜드 <span class="opt">— 치면 노션 「브랜드」 후보</span></label>'
       +   '<div id="pkBrand">불러오는 중…</div></div>'
+      /* 🏷 2026-09-08 대표 지시 — *"프로젝트 만들 때 고르게 해달라"*
+         🔴 [왜 필요한가] 노션 DB 의 기본 뷰가 「종류 = 프로덕션」으로 걸러져 있다.
+            종류가 비면 «만들어도 그 뷰에 안 보인다» — 대표 신고(*"노션 촬영리뷰에는 안들어왔는데"*)의
+            절반이 이것이었다.
+         🔴 [기본값을 「프로덕션」으로 둔다] 대부분이 여기 해당하고, 안 고르고 만드셔도
+            «안 보이는 사고»가 안 난다. 고르는 것은 그대로 되신다.
+         🔴 [옵션은 DB_촬영리뷰와 «똑같다»] 대표가 나중에 두 DB 를 합치실 때 어긋나면 안 된다. */
+      + '<div class="nf"><label>종류 <span class="opt">— 노션 「종류」. 안 고르면 기본 뷰에서 안 보입니다</span></label>'
+      +   '<select id="nKind">'
+      +     '<option value="프로덕션" selected>프로덕션</option>'
+      +     '<option value="외주촬영">외주촬영</option>'
+      +     '<option value="어씨">어씨</option>'
+      +     '<option value="개인작업">개인작업</option>'
+      +     '<option value="조명개퍼">조명개퍼</option>'
+      +     '<option value="렌탈">렌탈</option>'
+      +   '</select></div>'
       + '<div class="nf"><label>📅 촬영 회차 <span class="opt">— 회차마다 로케이션·시간이 달라도 됩니다</span></label>'
       +   '<div id="dayRows"></div>'
       +   '<button type="button" class="mini" id="nDayAdd">＋ 회차 추가</button>'
@@ -3725,6 +3741,9 @@
       /* 🔴 2026-08-26 — 이름은 하나다. `name` 이 곧 프로젝트명이자 노션 제목이다. */
       name:      name,
       brand:     (PJ_NEW.brand && PJ_NEW.brand.name) || '',
+      /* 🏷 2026-09-08 — 「종류」. 칸이 없는 옛 화면에서도 안 깨지게 기본값을 둔다.
+         🔴 서버(정산앱)가 «목록에 있는 값일 때만» 넣는다 — 이상한 값이 가도 프로젝트는 만들어진다. */
+      kind:      ((document.getElementById('nKind') || {}).value || '프로덕션'),
       dateStart: document.getElementById('nFrom').value || '',
       clientId:  (PJ_NEW.cli && PJ_NEW.cli.id) || '',
       /* 🔴 여러 명·여러 곳을 그대로 보낸다. 포토그래퍼(대표 한 명)도 참여인원에 같이 넣는다 —
