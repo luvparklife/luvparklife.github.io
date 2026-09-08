@@ -2781,6 +2781,12 @@
       if(aS && d.sheetUrl){
         aS.className=''; aS.setAttribute('data-pjact','sheet'); aS.setAttribute('data-pjurl', d.sheetUrl);
       }
+      /* 📋 프로젝트목록 «그 줄» — 위 소싱시트와 «같은 방식»이다(새 방식을 만들지 않았다).
+         🔴 옛 배포는 listUrl 을 안 보낸다 → 회색 그대로. 죽은 링크를 만들지 않는다. */
+      var aL = qk.querySelector('a[data-pjlist]');
+      if(aL && d.listUrl){
+        aL.className=''; aL.setAttribute('data-pjact','sheet'); aL.setAttribute('data-pjurl', d.listUrl);
+      }
       var aH = qk.querySelector('a[data-pjshare]');
       if(aH){
         if(d.shareUrl){
@@ -3823,6 +3829,12 @@
             msg += '  🔴 노션 페이지 — ' + ((nd && (nd.error || nd.why)) || '못 만들었습니다')
                 +  '\n      (시트 줄과 폴더는 만들어졌습니다. 노션만 다시 하시면 됩니다)\n';
           }
+          /* 📋 2026-09-08 — «어디에 들어갔는지» 그 자리에서 알린다.
+             🔴 대표님이 못 찾으신 이유를 같이 적는다 — 목록은 «넣은 순»이라 맨 아래다.
+                이유 없이 줄 번호만 주면 다음에도 맨 위부터 찾으신다. */
+          if(d.listRow) msg += '\n📋 프로젝트목록 ' + d.listRow + '행에 들어갔습니다'
+                             + '\n    (목록은 넣은 순이라 맨 아래입니다 — 방금 연 화면의'
+                             + '\n     「📋 목록에서 보기」를 누르면 그 줄로 바로 갑니다)\n';
           if(d.folder) msg += '\n📂 폴더: ' + d.folder;
           if(nd && nd.ok && nd.url) msg += '\n📝 노션: ' + nd.url;
           alert(msg);
@@ -3943,6 +3955,10 @@
             「관리」 이상만 주소를 받는다(단가·마진) — 소싱시트 버튼과 «같은 자물쇠». */
       + '<a href="#" class="off" data-pjeqd="1">📋 장비세부내역</a>'
       + '<a href="#" class="off" data-pjsheet="1">📊 소싱시트</a>'
+      /* 📋 2026-09-08 대표 신고 — *"프로젝트 생성했는데 탭에는 안들어왔는데"*
+         실은 «들어가 있었고» 맨 아래라 못 찾으신 것이다. 그 줄로 바로 데려간다.
+         🔴 소싱시트 버튼과 «같은 자물쇠»(관리 이상) — 서버가 주소를 안 주면 회색 그대로 있는다. */
+      + '<a href="#" class="off" data-pjlist="1">📋 목록에서 보기</a>'
       + '<a href="#" class="off" data-pjshare="1">🌐 공유파일</a>'
       /* 📁 2026-09-01 대표 지시 — *"카드에 있는 폴더 이름은 내부폴더로 바꿔줘"*
          🔴 이름만 바꾸는 게 아니라 «가리키는 곳»도 바꾼다 — 안 그러면 글자가 거짓말한다(§3-5 ⑤).
