@@ -50,6 +50,12 @@
     .ghead .dot{width:10px; height:10px; border-radius:50%}
     .ghead .gt{font-size:14px; font-weight:800; letter-spacing:.2px}
     .ghead .gd{font-size:12px; color:var(--faint)}
+    /* 🔀 2026-09-08 — 프로젝트 바로 전환 칸 (제목 옆 · 대표 확정 🅐)
+       🔴 max-width 를 둔다 — 프로젝트 이름이 길어(260827_Unaffected_김하경스튜디오)
+          그대로 두면 폰에서 제목 줄이 통째로 밀린다. 고를 때는 브라우저가 전체를 보여준다. */
+    .ghead .gd #pjJump{font:inherit; font-size:12px; font-weight:700; color:#2f5fd0;
+      border:1px solid var(--line); background:var(--card); border-radius:7px;
+      padding:3px 6px; margin-right:7px; cursor:pointer; max-width:190px; vertical-align:middle}
     .group.team .dot{background:var(--team)}
     .group.team .gt{color:var(--team)}
     .group.adm  .dot{background:var(--adm)}
@@ -828,7 +834,16 @@
                 「주소 다시 받기」도 «이미» 그 걸음을 밟고 있었다. 나머지(회차·거래처·인원·담당자)는
                 같은 시트를 읽는 것이라 붙여도 0.5초쯤이다. → 값은 다 새로 오는데 시간은 그대로다.
              🔴 [버튼이 하나여야 한다] 둘이면 「어느 걸 눌러야 하지」가 생긴다(§4-1). -->
-        <span class="gd"><a href="#" id="pjSync" title="노션·시트에서 이 프로젝트 정보를 «지금» 다시 받아옵니다 (몇 초)">🔄 다시 불러오기</a>
+        <!-- 🔀 2026-09-08 대표 확정(목업 🅐) — *"이 페이지에서 다른 프로젝트로 넘어갈 수 도있게"*
+             [전에 무엇이 불편했나] 다른 프로젝트를 보려면 「‹ 프로젝트 목록」으로 나갔다가 다시
+               골라야 했다 — 두 번 누르고 보던 자리를 잃는다.
+             🔴 [새 모양을 발명하지 않았다] 현장 장비앱이 쓰는 «프로젝트 고르는 칸»과 같은 방식이다(§4-1).
+             🔴 [서버를 안 부른다] 이미 받아둔 PJ_CACHE 를 그대로 쓴다(§3-0) — 누르는 즉시 뜬다.
+             🔴 [onchange 를 «속성»으로 단다] JS 로 addEventListener 를 하면 pjOne 이 다시 그릴 때마다
+                리스너가 쌓인다(2026-09-08 옆 창이 같은 함정을 밟고 알려줬다). 속성은 안 쌓인다. -->
+        <span class="gd"><select id="pjJump" title="다른 프로젝트로 바로 넘어갑니다" hidden
+                onchange="pjJumpGo(this.value)"></select>
+          <a href="#" id="pjSync" title="노션·시트에서 이 프로젝트 정보를 «지금» 다시 받아옵니다 (몇 초)">🔄 다시 불러오기</a>
           &nbsp;<a href="#p" class="pjback">‹ 프로젝트 목록</a></span>
       </div>
       <div id="pjOneBody"></div>
@@ -4047,9 +4062,37 @@
     send(false);
   }
 
+  /* 🔀 2026-09-08 대표 확정(목업 🅐) — 제목 옆 «다른 프로젝트로» 칸을 채운다.
+     🔴 [지금 보는 것은 목록에서 뺀다] 제목에 이미 크게 떠 있다 — 두 번 나오면
+        「이걸 또 고르라는 건가」가 된다. 첫 줄은 «안내»이지 고를 값이 아니다.
+     🔴 [목록이 아직 없거나 나 혼자면 «감춘다»] 고를 것이 없는 칸은 누르면 아무 일도 안 나
+        「고장났나」로 읽힌다.
+     🔴 [서버를 안 부른다] PJ_CACHE 를 그대로 쓴다 — 없으면 그냥 감출 뿐이다(§3-0). */
+  function pjJumpFill(proj){
+    var s = document.getElementById('pjJump');
+    if(!s) return;
+    var list = (PJ_CACHE || []).map(function(p){ return (p && p.name) || p; })
+      .filter(function(n){ return n && String(n).trim() && n !== proj; });
+    if(!list.length){ s.hidden = true; s.innerHTML = ''; return; }
+    s.innerHTML = '<option value="">▾ 다른 프로젝트로</option>'
+      + list.map(function(n){ return '<option value="' + pjEsc(n) + '">' + pjEsc(n) + '</option>'; }).join('');
+    s.value = '';
+    s.hidden = false;
+  }
+  /* 🔴 [「고치는 중」을 «여기서» 푼다] pjRoute 는 `h !== '#p'` 일 때만 푸는데,
+     `#p/A` → `#p/B` 는 둘 다 `#p/` 라 «안 풀린다». 안 풀면 A 에서 열어둔 정보 고치기 폼이
+     B 화면에 그대로 남는다 — 2026-09-03 대표 신고(「누르면 바로 정보고치기로 간다」)와 같은 자리다. */
+  function pjJumpGo(name){
+    if(!name) return;
+    pjEditLeave();
+    location.hash = '#p/' + encodeURIComponent(name);
+  }
+  window.pjJumpGo = pjJumpGo;
+
   /* ── 프로젝트 하나 ── */
   function pjOne(proj){
     document.getElementById('pjName').textContent = proj;
+    pjJumpFill(proj);
     var role = PJ_ROLE || '확인 중';
     var isOwner = (role === '대표');
     var isMgr   = (role === '대표' || role === '관리');
