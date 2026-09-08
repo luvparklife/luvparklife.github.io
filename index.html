@@ -2058,6 +2058,22 @@
           아래 rows.length 갈래에서 return 하면 그 값이 안 채워져 창이 «빈 배열»을 못 본다. */
     var addBtn = canEdit
       ? '<a href="#" class="dayadd" data-pjday="-1" data-pjf="add">＋ 회차 추가</a>' : '';
+    /* 📍 2026-09-08 대표 지시 — *"프로젝트앱에서 «바로» 되게해야지."*
+       [무엇이 불편했나] 주소가 안 보일 때 «견적앱으로 건너가» 🔄 명단 새로고침을 누르고
+         다시 돌아와야 했다 — 화면을 세 번 옮겨 다니신다.
+       🔴 [화면을 열 때 «자동»으로 안 부른다] 이 갱신은 노션 282줄을 통째로 읽는다.
+          열 때마다 부르면 프로젝트 화면이 매번 몇 초씩 멈춘다.
+       🔴 [주소가 «빠진 로케가 있을 때만» 뜬다] 다 채워져 있으면 누를 이유가 없다.
+       🔴 [「관리」 이상만] 정산앱 창구가 그 등급을 요구한다 — 아래 등급에게 보여주면
+          눌러도 거절당해 「눌렀는데 아무 일이 없다」가 된다.
+       되돌리기 = **"주소 다시받기 빼줘"** */
+    var needAddr = canEdit && (rows || []).some(function(r){
+      var ls = (r && r.locs && r.locs.length) ? r.locs : [];
+      return ls.some(function(x){ return x && x.n && !x.a; });
+    });
+    var adBtn = needAddr
+      ? ' <a href="#" class="dayadd" id="pjAdRefresh"'
+        + ' title="노션 「위치」를 다시 받아 주소를 채웁니다 (몇 초 걸립니다)">📍 주소 다시 받기</a>' : '';
     if(!rows || !rows.length){
       PJ_DAY_ROWS = []; PJ_DAY_PROJ = proj;
       box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 ' + addBtn + '</div>'
@@ -2070,7 +2086,7 @@
        서버가 회차를 통째로 갈아끼우기 때문에, 한 회차만 보내면 나머지가 지워진다. */
     PJ_DAY_ROWS = rows; PJ_DAY_PROJ = proj;
     box.innerHTML = '<div class="gt" style="margin-bottom:6px">📅 촬영 회차 <span class="fn">'
-                  + rows.length + '회차</span> ' + addBtn + '</div>'
+                  + rows.length + '회차</span> ' + addBtn + adBtn + '</div>'
       + rows.map(function(r, i){
           /* 📍 로케가 여러 곳이면 «전부» 보여준다 — `loc` 은 서버가 ' · ' 로 이어 준다 */
           /* 📍 2026-09-01 대표 지시 — *"로케도 담당자나 포토그래퍼처럼 수정 페이지로 안들어가고
@@ -2128,6 +2144,57 @@
      🔴 [읽은 필드를 그대로 돌려준다] date·call·wrap 을 빠뜨리면 그 값이 날아간다.
         읽기(projDaysGet_)와 쓰기(projLocList_)가 같은 이름을 쓰는 것을 서버에서 대조했다.
      rows = 화면이 들고 있는 회차 배열(PJ_DAY_ROWS 모양) */
+  /* 📍 2026-09-08 대표 지시 — 「📍 주소 다시 받기」를 «프로젝트 화면에서 바로»
+     ═══════════════════════════════════════════════════════════════
+     주소가 오는 길 = 노션 「위치」 → 정산앱 → 장비앱 시트 「_네트워크캐시」 → 회차 줄.
+     이 버튼은 그 길을 «한 번 흘려보낸다» — 두 걸음이다:
+       ① 정산앱 `?action=pushPeople`  — 노션을 읽어 시트에 쓴다(몇 초)
+       ② 장비앱 `?action=projDays&fresh=1` — 방금 쓴 시트를 다시 읽는다
+     🔴 [새 창구를 안 만들었다] ①은 견적앱 「🔄 명단 새로고침」이 이미 쓰던 길이고,
+        ②는 원래 있던 창구에 `fresh=1` 한 글자를 더한 것이다(§3-0 · §4-1).
+     🔴 [정산앱 주소를 코드에 안 적는다] `netBase()` 가 「정산」 카드에서 읽는다(§1).
+     🔴 [화면을 통째로 다시 안 그린다] 회차 칸만 다시 그린다 — 통째로 그리면
+        스크롤이 맨 위로 튀어 「어디였지」가 된다(2026-09-01에 겪은 것).
+     🔴 [실패하면 «실패했다고 말한다»] 조용히 아무 일도 안 일어나면 또 누르신다. */
+  var PJ_AD_BUSY = false;
+  document.addEventListener('click', function(e){
+    var el = e.target, n = 0, hit = false;
+    while(el && n++ < 4){ if(el.id === 'pjAdRefresh'){ hit = true; break; } el = el.parentElement; }
+    if(!hit) return;
+    e.preventDefault();
+    if(PJ_AD_BUSY) return;                       /* 두 번 눌러 두 번 돌지 않게 */
+    PJ_AD_BUSY = true;
+    var proj = PJ_DAY_PROJ, was = el.textContent;
+    el.textContent = '📍 노션에서 받는 중…';
+    function done(msg, ok){
+      PJ_AD_BUSY = false;
+      try{ el.textContent = was; }catch(e2){}
+      pjToast((ok ? '✅ ' : '🔴 ') + msg);
+    }
+    var base = (typeof netBase === 'function') ? netBase() : '';
+    if(!base || (typeof payOK === 'function' && !payOK())){
+      done('정산앱에 못 물어봤습니다 — 다시 로그인해 보십시오', false); return;
+    }
+    /* ① 노션 → 시트 */
+    askCount(base + '?action=pushPeople' + (typeof payTok === 'function' ? payTok() : ''),
+             function(d){
+      if(!d || !d.ok){
+        done('노션에서 못 받았습니다' + (d && d.why ? ' — ' + d.why : ' (시간이 모자랐습니다)'), false);
+        return;
+      }
+      /* ② 시트 → 회차 줄 (캐시를 버리고 다시 읽는다) */
+      askCount(FIELD_APP + '?action=projDays&fresh=1&proj=' + encodeURIComponent(proj) + appTok(),
+               function(r){
+        if(!r || !r.ok || !r.rows){ done('받았는데 회차를 다시 못 읽었습니다 — 새로고침해 보십시오', false); return; }
+        pjDaysPaint(proj, r.rows);
+        var n2 = 0;
+        r.rows.forEach(function(x){ (x.locs||[]).forEach(function(y){ if(y && y.a) n2++; }); });
+        done(n2 ? ('주소 ' + n2 + '곳을 받았습니다')
+                : '받았지만 주소가 «노션에 비어 있습니다» — 노션 로케 페이지의 「위치」를 채워주세요', !!n2);
+      }, 20000);
+    }, 60000);   /* 🔴 노션 282줄을 읽는다 — 8초로는 자주 잘린다 */
+  });
+
   function pjDaysToServer(rows){
     return (rows || []).map(function(r){
       return { no: r.no, date: r.date || '', call: r.call || '', wrap: r.wrap || '',
