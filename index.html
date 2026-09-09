@@ -4080,9 +4080,33 @@
   function pjLastSet(n){
     try { n ? localStorage.setItem(PJ_LAST_KEY, n) : localStorage.removeItem(PJ_LAST_KEY); } catch(e){}
   }
+  /* 🔴 2026-09-10 — «기억이 없을 때»를 안 만들어서 대표님 화면이 «안 바뀐 것»으로 보였다.
+     2026-09-09 ①번 확정은 **"①마지막으로 연 프로젝트 ②없으면 촬영일이 가장 가까운 것"** 이었는데
+     ②를 빼먹었다. 그래서 처음 누르면 예전처럼 목록이 떴다.
+     🔴 서버를 «안» 부른다 — 목록은 이미 이 브라우저에 저장돼 있다(pjLsGet · 2026-09-02 속도 개선).
+     🔴 「가장 가까운」 = 오늘 포함 «앞으로 올 것» 중 가장 가까운 것. 없으면 «가장 최근에 지난 것».
+        (어제 끝난 촬영보다 내일 촬영이 급하다) */
+  function pjNearest(){
+    var rows = null;
+    try { rows = (PJ_CACHE && PJ_CACHE.length) ? PJ_CACHE : ((pjLsGet() || {}).rows || null); } catch(e){}
+    if(!rows || !rows.length) return '';
+    var today = new Date(); today.setHours(0,0,0,0);
+    var soon = null, soonD = 1e15, past = null, pastD = 1e15;
+    rows.forEach(function(p){
+      var nm = (p && p.name) || p; if(!nm) return;
+      var m = String(nm).match(/^(\d{2})(\d{2})(\d{2})/);   /* 260902_GRAFF → 26·09·02 */
+      if(!m) return;
+      var d = new Date(2000 + (+m[1]), (+m[2]) - 1, +m[3]);
+      if(isNaN(d)) return;
+      var gap = d - today;
+      if(gap >= 0){ if(gap < soonD){ soonD = gap; soon = nm; } }
+      else       { if(-gap < pastD){ pastD = -gap; past = nm; } }
+    });
+    return soon || past || '';
+  }
   function pjCardGo(ev){
-    var n = pjLastGet();
-    if(!n) return true;                       /* 기억이 없으면 예전처럼 «목록»으로 */
+    var n = pjLastGet() || pjNearest();
+    if(!n) return true;                       /* 그것도 없으면(정말 처음) 예전처럼 «목록»으로 */
     if(ev){ try { ev.preventDefault(); } catch(e){} }
     pjEditLeave();
     location.hash = '#p/' + encodeURIComponent(n);
