@@ -1938,6 +1938,15 @@
   }
   function pjPaint(rows){
     if(PJ_EDIT) return;        /* 🔴 고치는 중이면 폼을 덮지 않는다 (2026-08-26) */
+    /* 📁 카드로 들어왔는데 그때는 목록을 몰랐다 → 이제 알았으니 «가장 가까운 촬영»으로 */
+    if(PJ_AUTO_JUMP){
+      PJ_AUTO_JUMP = false;
+      var _go = pjLastGet() || pjNearest();
+      if(_go && location.hash === '#p'){
+        location.hash = '#p/' + encodeURIComponent(_go);
+        return;
+      }
+    }
     var box = document.getElementById('pjListBody');
     /* 🔴 2026-08-21 대표: *"생애주기랑 프로젝트랑 합쳐줘. 프로젝트 클릭하면 프로젝트들 카드로
        보이고. 프로젝트도 생성할 수 있게하고."*
@@ -4104,9 +4113,14 @@
     });
     return soon || past || '';
   }
+  /* 🔴 2026-09-10 — 대표 신고 *"지금 프로젝트 화면이 그대로인데"*.
+     원인: 허브를 «새로 열면» 목록을 아직 안 받아서 pjNearest() 가 빈 값이었다 → 그대로 목록.
+     고침: 그때는 «목록을 받은 뒤» 자동으로 가장 가까운 프로젝트로 넘어간다(한 번만).
+     🔴 「‹ 프로젝트 목록」으로 «일부러» 온 것은 안 튄다 — 이 깃발은 카드를 눌렀을 때만 선다. */
+  var PJ_AUTO_JUMP = false;
   function pjCardGo(ev){
     var n = pjLastGet() || pjNearest();
-    if(!n) return true;                       /* 그것도 없으면(정말 처음) 예전처럼 «목록»으로 */
+    if(!n){ PJ_AUTO_JUMP = true; return true; }   /* 목록을 받고 나서 «그때» 넘어간다 */
     if(ev){ try { ev.preventDefault(); } catch(e){} }
     pjEditLeave();
     location.hash = '#p/' + encodeURIComponent(n);
@@ -4120,12 +4134,15 @@
     var list = (PJ_CACHE || []).map(function(p){ return (p && p.name) || p; })
       .filter(function(n){ return n && String(n).trim() && n !== proj; });
     if(!list.length){ s.hidden = true; s.innerHTML = ''; return; }
-    /* 🔴 2026-09-09 대표 확정 — *"드롭다운에 새프로젝트 추가 하면 추가 창 뜨고"*
-       🔴 「전체 목록」은 여기 «안» 넣는다 — 바로 옆에 「‹ 프로젝트 목록」 링크가 이미 있다.
-          두 군데 두면 어느 것이 진짜인지 모르게 된다(§4-1). */
+    /* 🔴 2026-09-09 대표 확정 (4안 중 🅐) — 드롭다운 맨 아래에 «두 줄»이 온다:
+         ➕ 새 프로젝트 만들기  ·  📋 전체 목록 보기
+       🔴 2026-09-10 — 「전체 목록」을 «내 판단으로 뺐다가» 대표 지적으로 되돌렸다.
+          옆에 「‹ 프로젝트 목록」 링크가 있다는 이유였는데, **확정된 것을 내가 바꾼 것**이다(§3-2-C).
+          알리기만 하고 승낙을 안 받았다. 다시 빼지 말 것. */
     s.innerHTML = '<option value="">▾ 다른 프로젝트로</option>'
       + list.map(function(n){ return '<option value="' + pjEsc(n) + '">' + pjEsc(n) + '</option>'; }).join('')
-      + '<option value="__new__">➕ 새 프로젝트 만들기</option>';
+      + '<option value="__new__">➕ 새 프로젝트 만들기</option>'
+      + '<option value="__list__">📋 전체 목록 보기</option>';
     s.value = '';
     s.hidden = false;
   }
@@ -4137,6 +4154,7 @@
     pjEditLeave();
     /* ➕ 새 프로젝트 — 목록 화면으로 가서 «추가 창»을 연다.
        🔴 폼을 여기서 새로 그리지 않는다 — pjNewOpen 이 이미 그 일을 한다(§3-0). */
+    if(name === '__list__'){ location.hash = '#p'; return; }
     if(name === '__new__'){
       location.hash = '#p';
       setTimeout(function(){ try { if(typeof pjNewOpen === 'function') pjNewOpen(); } catch(e){} }, 260);
