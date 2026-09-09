@@ -671,7 +671,11 @@
               안에 보이는 칸만 등급에 따라 달라진다.
            🔴 앱을 복사하지 않는다. 주소에 ?proj= 를 실어 보낼 뿐이고,
               그게 없으면 각 앱은 지금과 100% 똑같이 동작한다. -->
-      <a class="card" href="#p" id="cardProj">
+      <!-- 🔴 2026-09-09 대표 확정(4안 중 🅐) — *"프로젝트 클릭하면 프로젝트 목록이 아니라
+           프로젝트 정보가 나오고"*. 누르면 «마지막에 보던 프로젝트»로 바로 간다.
+           🔴 href 는 `#p` 그대로 둔다 — 기억이 없거나 JS 가 막히면 «예전처럼» 목록으로 간다(길을 안 없앤다).
+           🔴 `#p` 에서 «되돌리는» 방식을 안 썼다 — 그러면 뒤로가기가 튕긴다(`#p/A` → 뒤로 → `#p` → 또 앞으로). -->
+      <a class="card" href="#p" id="cardProj" onclick="return pjCardGo(event)">
         <div class="row">
           <div class="icon">📁</div>
           <div class="body">
@@ -4068,14 +4072,36 @@
      🔴 [목록이 아직 없거나 나 혼자면 «감춘다»] 고를 것이 없는 칸은 누르면 아무 일도 안 나
         「고장났나」로 읽힌다.
      🔴 [서버를 안 부른다] PJ_CACHE 를 그대로 쓴다 — 없으면 그냥 감출 뿐이다(§3-0). */
+  /* ═══ 📁 «마지막에 보던 프로젝트» 기억 (2026-09-09 대표 확정 🅐) ═══
+     🔴 이 브라우저에만 남는다 — 남의 화면은 안 바뀐다.
+     🔴 목록에서 사라진 프로젝트(완료·이름 변경)는 «기억하지 않는다» — 빈 화면으로 데려가면 안 된다. */
+  var PJ_LAST_KEY = 'pa_pj_last';
+  function pjLastGet(){ try { return localStorage.getItem(PJ_LAST_KEY) || ''; } catch(e){ return ''; } }
+  function pjLastSet(n){
+    try { n ? localStorage.setItem(PJ_LAST_KEY, n) : localStorage.removeItem(PJ_LAST_KEY); } catch(e){}
+  }
+  function pjCardGo(ev){
+    var n = pjLastGet();
+    if(!n) return true;                       /* 기억이 없으면 예전처럼 «목록»으로 */
+    if(ev){ try { ev.preventDefault(); } catch(e){} }
+    pjEditLeave();
+    location.hash = '#p/' + encodeURIComponent(n);
+    return false;
+  }
+  window.pjCardGo = pjCardGo;
+
   function pjJumpFill(proj){
     var s = document.getElementById('pjJump');
     if(!s) return;
     var list = (PJ_CACHE || []).map(function(p){ return (p && p.name) || p; })
       .filter(function(n){ return n && String(n).trim() && n !== proj; });
     if(!list.length){ s.hidden = true; s.innerHTML = ''; return; }
+    /* 🔴 2026-09-09 대표 확정 — *"드롭다운에 새프로젝트 추가 하면 추가 창 뜨고"*
+       🔴 「전체 목록」은 여기 «안» 넣는다 — 바로 옆에 「‹ 프로젝트 목록」 링크가 이미 있다.
+          두 군데 두면 어느 것이 진짜인지 모르게 된다(§4-1). */
     s.innerHTML = '<option value="">▾ 다른 프로젝트로</option>'
-      + list.map(function(n){ return '<option value="' + pjEsc(n) + '">' + pjEsc(n) + '</option>'; }).join('');
+      + list.map(function(n){ return '<option value="' + pjEsc(n) + '">' + pjEsc(n) + '</option>'; }).join('')
+      + '<option value="__new__">➕ 새 프로젝트 만들기</option>';
     s.value = '';
     s.hidden = false;
   }
@@ -4085,6 +4111,13 @@
   function pjJumpGo(name){
     if(!name) return;
     pjEditLeave();
+    /* ➕ 새 프로젝트 — 목록 화면으로 가서 «추가 창»을 연다.
+       🔴 폼을 여기서 새로 그리지 않는다 — pjNewOpen 이 이미 그 일을 한다(§3-0). */
+    if(name === '__new__'){
+      location.hash = '#p';
+      setTimeout(function(){ try { if(typeof pjNewOpen === 'function') pjNewOpen(); } catch(e){} }, 260);
+      return;
+    }
     location.hash = '#p/' + encodeURIComponent(name);
   }
   window.pjJumpGo = pjJumpGo;
@@ -4092,6 +4125,13 @@
   /* ── 프로젝트 하나 ── */
   function pjOne(proj){
     document.getElementById('pjName').textContent = proj;
+    /* 🔴 «지금 목록에 있는 것»만 기억한다 — 완료됐거나 이름이 바뀐 것을 기억하면
+       다음에 카드를 눌렀을 때 빈 화면으로 데려간다. 목록을 아직 안 받았으면 그냥 믿는다. */
+    try {
+      var _l = PJ_CACHE || [];
+      if(_l.length && !_l.some(function(p){ return ((p && p.name) || p) === proj; })) pjLastSet('');
+      else pjLastSet(proj);
+    } catch(e){ try { pjLastSet(proj); } catch(e2){} }
     pjJumpFill(proj);
     var role = PJ_ROLE || '확인 중';
     var isOwner = (role === '대표');
