@@ -1,0 +1,517 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>허브 새 디자인 — 눌러보세요</title>
+<style>
+:root{--ink:#1c2330;--sub:#5b6472;--line:#e6e1d8;--bg:#faf8f4;--pt:#2563eb;--gr:#2f8f5b;--acc:#b8863b}
+*{box-sizing:border-box}
+body{margin:0;background:#eef0f4;color:var(--ink);
+     font:15px/1.7 -apple-system,"Apple SD Gothic Neo",sans-serif;padding:0 0 60px}
+.page{max-width:1000px;margin:0 auto;padding:0 14px}
+h1{font-size:21px;margin:20px 0 3px;letter-spacing:-.4px}
+.lead{color:var(--sub);font-size:13.5px;margin:0 0 14px}
+.sw{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px;align-items:center}
+.sw b{font-size:12.5px;color:var(--sub);margin-right:2px}
+.sw button{border:1px solid #cfd5df;background:#fff;border-radius:8px;padding:6px 12px;
+  font-size:12.5px;font-family:inherit;color:var(--ink);cursor:pointer}
+.sw button.on{background:#20293a;border-color:#20293a;color:#fff;font-weight:700}
+.note{background:#fff8e8;border-left:4px solid var(--acc);border-radius:0 9px 9px 0;
+  padding:9px 13px;font-size:13px;margin:10px 0}
+
+/* ── 화면 ── */
+.brz{border:1px solid #d3d8e0;border-radius:12px;overflow:hidden;background:#fff;
+  box-shadow:0 6px 26px rgba(20,30,50,.12);margin:12px 0}
+.urlbar{background:#e8ebf0;padding:6px 11px;font-size:11.5px;color:#5b6472;display:flex;gap:6px;align-items:center}
+.urlbar .dot{width:9px;height:9px;border-radius:50%;background:#c9cfda}
+.urlbar .u{background:#fff;border-radius:5px;padding:3px 10px;flex:1;font-size:11.5px;color:#6b7280}
+.scr{position:relative;display:flex;flex-direction:column;height:600px;overflow:hidden}
+.mainrow{flex:1;display:flex;min-height:0}
+.content{flex:1;min-width:0;overflow-y:auto;background:var(--bg);padding:16px 18px}
+
+/* 띠 */
+.strip{flex:0 0 auto;background:#20293a;color:#cfd8dc;font-size:12.5px;display:flex;gap:4px;
+  align-items:center;padding:7px 9px;overflow-x:auto;white-space:nowrap}
+.strip::-webkit-scrollbar{height:5px}
+.strip::-webkit-scrollbar-thumb{background:#46536b;border-radius:9px}
+.strip button{border:none;font:inherit;color:inherit;background:none;cursor:pointer;flex:0 0 auto}
+.strip .s{padding:5px 10px;border-radius:7px}
+.strip .s:hover{background:rgba(255,255,255,.13)}
+.strip .s.now{background:#fff;color:#1c2330;font-weight:800}
+.strip .bg{font-size:9.5px;opacity:.7;margin-left:3px;letter-spacing:-1px}
+.strip .home{background:rgba(255,255,255,.14);font-weight:800;padding:5px 9px;border-radius:7px}
+.strip .home.act{background:#fff;color:#1c2330}
+.strip .pjb{background:var(--gr);color:#fff;border-radius:7px;padding:5px 11px;font-weight:700}
+.strip .bell{background:#b23b3b;color:#fff;border-radius:7px;padding:5px 10px;font-weight:700}
+.strip .bell.zero{background:rgba(255,255,255,.16)}
+.strip .sep{width:1px;height:17px;background:rgba(255,255,255,.22);margin:0 4px;flex:0 0 auto}
+
+/* 사이드바 */
+.dw{flex:0 0 236px;background:#20293a;color:#cfd8dc;overflow-y:auto;padding:9px 8px;font-size:12.5px}
+.dw button{border:none;font:inherit;color:inherit;background:none;cursor:pointer;width:100%;
+  text-align:left;display:block}
+.dw .cls{background:rgba(255,255,255,.14);border-radius:7px;padding:7px 8px;text-align:center;font-weight:700}
+.dw .gt{font-size:10.5px;color:#7d8ba3;margin:12px 0 4px;padding-left:7px}
+.dw .it{padding:6px 9px;border-radius:7px;margin-bottom:2px}
+.dw .it:hover{background:rgba(255,255,255,.12)}
+.dw .it.now{background:#fff;color:#1c2330;font-weight:700}
+.dw .it small{display:block;font-size:10px;color:#8593aa;margin-top:1px}
+.dw .it.now small{color:#5b6472}
+.dw .bgl{float:right;font-size:9.5px;opacity:.65;letter-spacing:-1px}
+
+/* 탭 */
+.tabs{display:flex;gap:3px;padding:0 0 0 2px;border-bottom:1px solid var(--line);margin-bottom:13px}
+.tabs button{border:1px solid transparent;border-bottom:none;background:none;font:inherit;
+  padding:6px 14px;border-radius:8px 8px 0 0;cursor:pointer;color:#8a837b;font-size:13px}
+.tabs button.on{background:#fff;border-color:var(--line);color:var(--ink);font-weight:700;margin-bottom:-1px}
+
+/* 오늘 할 일 */
+.todo{background:#fff5f5;border:1px solid #f2d6d6;border-radius:11px;padding:11px 13px;margin-bottom:14px}
+.todo .h{color:#c0392b;font-weight:800;font-size:14px}
+.todo .g{font-size:12px;color:#8a6a6a;margin:2px 0 7px}
+.todo .r{display:flex;gap:8px;align-items:center;font-size:13px;padding:5px 0;border-top:1px dashed #f0dcdc}
+.todo .r span{flex:1}
+.todo .r button{border:1px solid #cfe3d5;background:#f2fbf5;color:#2e7d5b;border-radius:7px;
+  padding:3px 9px;font-size:11.5px;font-family:inherit;cursor:pointer;white-space:nowrap}
+.todo .r.done span{text-decoration:line-through;color:#b3aaa2}
+
+/* 정보 표 */
+table.info{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff}
+table.info th,table.info td{border:1px solid var(--line);padding:8px 11px;text-align:left}
+table.info th{background:#f5f2ec;width:31%;font-weight:700}
+.gobar{font-size:13px;color:#7a736b;margin:12px 0 0}
+.gobar a{color:var(--pt);text-decoration:none;cursor:pointer}
+
+/* 드롭다운 */
+.pick{position:absolute;left:52px;top:40px;z-index:20;background:#fff;border:1px solid #b9c2d0;
+  border-radius:10px;box-shadow:0 10px 26px rgba(20,28,44,.24);padding:6px;width:258px}
+.pick button{border:none;background:none;font:inherit;width:100%;text-align:left;display:block;
+  padding:7px 9px;border-radius:7px;font-size:12.5px;cursor:pointer;color:var(--ink)}
+.pick button:hover{background:#f2f6ff}
+.pick .now{background:#e8f4ee;font-weight:800}
+.pick .add{color:var(--pt);font-weight:700}
+.pick .sep{height:1px;background:#e2e6ee;margin:4px 2px}
+.mask{position:absolute;inset:0;z-index:15}
+
+/* 지금 화면(비교용) */
+.old{background:var(--bg);padding:16px 18px;overflow-y:auto;flex:1}
+.old .navold{display:flex;gap:6px;align-items:center;padding:0 0 9px;border-bottom:1px solid var(--line);
+  margin-bottom:11px;font-size:12px}
+.old .navold i{border:1px solid #ddd7cc;background:#fff;border-radius:7px;padding:3px 9px;font-style:normal;color:#999}
+.old h2{font-size:19px;margin:2px 0 2px}
+.old .sub{font-size:12px;color:#8a837b;margin:0 0 12px}
+.old .pf{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 13px;
+  display:flex;gap:10px;align-items:center;margin-bottom:13px;font-size:12.5px}
+.old .pf .out{margin-left:auto;border:1px solid #ddd7cc;border-radius:8px;padding:5px 11px;color:#666}
+.old .ptitle{margin:0 0 9px;font-size:15px;font-weight:700}
+.old .ptitle i{font-size:11.5px;color:var(--pt);font-style:normal;font-weight:400;margin-left:8px}
+.old .cols{display:flex;gap:11px}
+.old .pane{flex:1;background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.old .ph{background:#f5f2ec;padding:6px 11px;font-size:11.5px;color:#7a736b;font-weight:700}
+.old .pb{padding:10px 11px;font-size:12.5px}
+.old .edb{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:#666}
+
+.say{background:#eef3fb;border-left:4px solid var(--pt);border-radius:0 9px 9px 0;
+  padding:9px 13px;font-size:13px;margin:10px 0 0;min-height:22px}
+</style></head><body><div class="page">
+
+<h1>🧭 허브 새 디자인 — 눌러보세요</h1>
+<p class="lead">대표님이 아침에 주신 <b>첨부 두 장 그대로</b> 그렸습니다.
+<b>아직 진짜 허브에는 안 넣었습니다</b> — 이 화면이 맞다고 하시면 그때 넣습니다.</p>
+
+<div class="sw">
+  <b>무엇을 볼까요</b>
+  <button id="b_new" class="on" onclick="setView('new')">✨ 바뀔 것</button>
+  <button id="b_old" onclick="setView('old')">지금 (비교)</button>
+</div>
+<div class="sw">
+  <b>누구로</b>
+  <button id="r_owner" class="on" onclick="setRole('owner')">👑 대표</button>
+  <button id="r_mgr" onclick="setRole('mgr')">🛠 관리 (명진)</button>
+  <button id="r_free" onclick="setRole('free')">🎬 프리랜서</button>
+</div>
+
+<div class="brz">
+  <div class="urlbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="u" id="url">luvparklife.github.io/#p/260902_샘플에이</span></div>
+  <div class="scr" id="scr"></div>
+</div>
+<div class="say" id="say">👆 <b>🏠 를 눌러보세요</b> — 사이드바가 왼쪽에서 나옵니다. <b>📁 초록칸</b>도 눌러보세요.</div>
+
+<div class="note">
+🔴 <b>「지금 (비교)」을 눌러 보시면</b> 무엇이 없어지는지 바로 보입니다 —
+제목 · 설명 · 로그인 카드 · 「260902_샘플에이 🔄 ‹프로젝트 목록」 줄 · 2단 · ✥ 배치 바꾸기 · ‹뒤로 앞으로›.
+</div>
+
+<div class="note" style="border-left-color:#c0392b;background:#fff5f5">
+🔴 <b>제가 «정하지 못해» 여쭙는 것은 이제 «둘»뿐입니다</b> — 나머지는 첨부대로 다 없앴습니다.<br>
+① <b>로그아웃은 어디에 둘까요?</b> 첨부에 로그인 카드가 없어서 갈 곳이 없습니다 →
+지금은 <b>사이드바 맨 아래</b>에 넣어 뒀습니다(눌러서 확인해 보세요).<br>
+② <b>‹뒤로 · 앞으로›를 없애도 될까요?</b> 첨부엔 없습니다. 다만 <b>아이폰 홈 화면에서 열면
+주소창이 없어 이게 유일한 뒤로가기</b>입니다.
+</div>
+
+</div>
+<script>
+var VIEW='new', ROLE='owner', DRAWER=0, PICK=0, TAB=0, PROJ='260902_샘플에이';
+var TODO=[
+ {t:'가견적 보내기 — <b>260902_샘플에이</b> 내일이 촬영입니다 (D-1)', done:0, who:['owner']},
+ {t:'장비 승인 3건 — <b>260912_샘플씨</b> 「요청」 상태라 견적에 안 잡힙니다', done:0, who:['owner','mgr']},
+ {t:'계산서 미발행 2건 — 가업체 250,000 · 나업체 200,000', done:0, who:['owner']},
+ {t:'정산 미지급 1건 — 최사아 250,000 · 이체 대기', done:0, who:['owner']},
+ {t:'반납 안 된 장비 6개 — 260820_샘플디 · 장비1 외', done:0, who:['owner','mgr','free']}
+];
+var APPS=[
+ {k:'proj', ico:'📁', n:'프로젝트', see:['owner','mgr','free']},
+ {k:'quote',ico:'🧾', n:'견적서',  see:['owner']},
+ {k:'field',ico:'🎬', n:'장비앱',  see:['owner','mgr','free']},
+ {k:'pay',  ico:'💰', n:'정산',    see:['owner','mgr','free']}
+];
+var PAGES=[
+ {ico:'📊', n:'장비 시트',            s:'소싱시트 · 장비DB · 단가',  see:['owner','mgr']},
+ {ico:'🧾', n:'세무대사',             s:'계산서 발행 확인',          see:['owner','mgr']},
+ {ico:'🅰️', n:'업무 / 일정 관리',      s:'보고서 · 문서 수정',        see:['owner']},
+ {ico:'🔄', n:'일정 새로고침',         s:'캘린더 ↔ 노션',            see:['owner']},
+ {ico:'📚', n:'도서관',               s:'자료 · 레퍼런스',           see:['owner']},
+ {ico:'📋', n:'서비스 안내',           s:'거래처에 보낼 링크',        see:['owner']},
+ {ico:'💰', n:'단가 안내 PDF — 한글',  s:'🔒 보낼 땐 조심',           see:['owner']},
+ {ico:'💵', n:'Price Guide — 영문',   s:'해외팀 · 해외 클라이언트',   see:['owner']},
+ {ico:'📋', n:'프로젝트 생애주기 입력', s:'노션에 등록',              see:['owner','mgr']},
+ {ico:'📱', n:'앱 사용법',             s:'3분이면 됩니다',            see:['owner','mgr','free']}
+];
+var PJS=['260902_샘플에이','260905_샘플비','260912_샘플씨'];
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function can(x){return x.see.indexOf(ROLE)>=0;}
+function badge(x){return x.see.length===3?'':(x.see.indexOf('mgr')>=0?'👑🛠':'👑');}
+function todoMine(){return TODO.filter(function(x){return x.who.indexOf(ROLE)>=0;});}
+function todoLeft(){return todoMine().filter(function(x){return !x.done;});}
+function say(h){document.getElementById('say').innerHTML=h;}
+function setView(v){VIEW=v;DRAWER=0;PICK=0;
+  document.getElementById('b_new').className=(v==='new'?'on':'');
+  document.getElementById('b_old').className=(v==='old'?'on':'');
+  draw(); say(v==='old'
+   ? '이게 <b>지금</b> 화면입니다 — 제목 · 로그인 카드 · 제목줄 · 2단 · ✥ 배치 바꾸기가 다 있습니다.'
+   : '이게 <b>바뀔 것</b>입니다 — 첨부 그대로 <b>띠 바로 아래 표</b>입니다.');}
+function setRole(r){ROLE=r;DRAWER=0;PICK=0;TAB=0;
+  ['owner','mgr','free'].forEach(function(x){
+    document.getElementById('r_'+x).className=(x===r?'on':'');});
+  draw();
+  var a=APPS.filter(can).length,g=PAGES.filter(can).length;
+  say(r==='free' ? '🎬 <b>프리랜서</b> — 띠에 '+a+'개, 사이드바에 '+(a+g)+'개. <b>🔔 은 안 보입니다</b>(대표님 일이라 소음이 됩니다). 🔒 줄도 사라졌습니다.'
+    : r==='mgr'  ? '🛠 <b>관리(명진)</b> — 👑 딱지가 붙은 <b>견적서</b>가 사라졌습니다(단가·마진). 사이드바 '+(a+g)+'개.'
+                 : '👑 <b>대표</b> — 띠 '+a+'개 · 사이드바 '+(a+g)+'개 전부 보입니다.');}
+function toggleDrawer(){DRAWER=!DRAWER;PICK=0;draw();
+  say(DRAWER?'🏠 <b>전체 앱·페이지</b>가 왼쪽에서 나왔습니다 — <b>허브로 안 돌아갔습니다.</b> 위는 «이 프로젝트에서», 아래는 «그 밖에».'
+            :'닫았습니다.');}
+function togglePick(){PICK=!PICK;draw();
+  if(PICK) say('맨 아래에 <b>➕ 새 프로젝트 만들기</b>와 <b>📋 전체 목록 보기</b>가 있습니다.');}
+function pick(n){PROJ=n;PICK=0;draw();say('📁 <b>'+esc(n)+'</b> 로 옮겼습니다 — <b>화면을 안 떠났습니다.</b>');}
+function setTab(i){TAB=i;draw();
+  say(['<b>정보</b> — 첨부 그대로 띠 바로 아래 표입니다.',
+       '<b>촬영 회차</b> — 회차마다 콜·랩·로케를 봅니다.',
+       '<b>폴더</b> — 드라이브 폴더로 갑니다.'][i]);}
+function doneTodo(i){var m=todoMine();if(m[i])m[i].done=1;draw();
+  say('✅ <b>완료</b>돼서 빠졌습니다. 남은 것 <b>'+todoLeft().length+'건</b>. 🔴 «가봤다»고는 안 사라집니다.');}
+function nop(w){say('🧪 목업이라 '+esc(w)+'는 실제로 안 열립니다.');}
+
+function stripHtml(){
+  var h='<div class="strip">';
+  h+='<button class="home'+(DRAWER?' act':'')+'" onclick="toggleDrawer()" title="전체 앱·페이지">🏠</button>';
+  h+='<button class="pjb" onclick="togglePick()">📁 '+esc(PROJ)+' ▾</button>';
+  if(ROLE!=='free'){
+    var n=todoLeft().length;
+    h+='<button class="bell'+(n?'':' zero')+'" onclick="nop(\'알림\')">🔔 '+n+'</button>';
+  }
+  h+='<span class="sep"></span>';
+  APPS.forEach(function(x){ if(!can(x))return; var b=badge(x);
+    h+='<button class="s'+(x.k==='proj'?' now':'')+'" onclick="nop(\''+x.n+'\')">'+x.ico+' '+esc(x.n)+
+       (b?'<span class="bg">'+b+'</span>':'')+'</button>';});
+  return h+'</div>';
+}
+function drawerHtml(){
+  if(!DRAWER) return '';
+  var h='<div class="dw"><button class="cls" onclick="toggleDrawer()">✕ 닫기</button>';
+  h+='<div class="gt">📁 이 프로젝트에서</div>';
+  APPS.forEach(function(x){ if(!can(x))return; var b=badge(x);
+    h+='<button class="it'+(x.k==='proj'?' now':'')+'" onclick="nop(\''+x.n+'\')">'+
+       (b?'<span class="bgl">'+b+'</span>':'')+x.ico+' '+esc(x.n)+'</button>';});
+  h+='<div class="gt">🗂 그 밖에 (프로젝트와 상관없이)</div>';
+  PAGES.forEach(function(x){ if(!can(x))return; var b=badge(x);
+    h+='<button class="it" onclick="nop(\''+esc(x.n)+'\')">'+(b?'<span class="bgl">'+b+'</span>':'')+
+       x.ico+' '+esc(x.n)+'<small>'+esc(x.s)+'</small></button>';});
+  h+='<div class="gt">＋</div><button class="it" onclick="nop(\'새 프로젝트\')">➕ 새 프로젝트</button>';
+  h+='<div class="gt">👤 김가나 · '+(ROLE==='owner'?'대표':ROLE==='mgr'?'관리':'프리랜서')+'</div>'+
+     '<button class="it" onclick="nop(\'로그아웃\')">🚪 로그아웃</button>';
+  return h+'</div>';
+}
+function infoTable(){
+  var lock = (ROLE==='owner');
+  var h='<table class="info">'+
+   '<tr><th>촬영일</th><td>09/02 ~ 09/03 (2일)</td></tr>'+
+   '<tr><th>장비 세부내역</th><td>146줄 · 1,000,000</td></tr>'+
+   '<tr><th>PA팀</th><td>김가나 · 이다라 · 박마바</td></tr>'+
+   '<tr><th>브랜드</th><td>샘플브랜드</td></tr>'+
+   '<tr><th>촬영 회차</th><td>1일차 콜 07:00 · 랩 19:00</td></tr>';
+  if(lock) h+='<tr><th>🔒 거래처</th><td>㈜샘플코리아 <span style="color:#8a837b">(대표님만)</span></td></tr>'+
+              '<tr><th>🔒 견적서</th><td>2차 · 최종견적 <span style="color:#8a837b">(대표님만)</span></td></tr>';
+  h+='</table>';
+  h+='<p class="gobar">🔗 바로가기 — <a onclick="nop(\'견적서\')">🧾 견적서</a> · '+
+     '<a onclick="nop(\'장비앱\')">🎬 장비앱</a> · <a onclick="nop(\'정산\')">💰 정산</a> · '+
+     '<a onclick="nop(\'폴더\')">📁 폴더</a></p>';
+  return h;
+}
+function todoHtml(){
+  if(ROLE==='free') return '';
+  var m=todoMine(), n=todoLeft().length;
+  if(!m.length) return '';
+  var h='<div class="todo"><div class="h">🔔 오늘 할 일 '+n+'건</div>'+
+        '<div class="g">줄을 누르면 <b>바로 그 자리로</b> 갑니다. 🔴 <b>가봤다고 사라지지 않습니다 — «완료»돼야 사라집니다.</b></div>';
+  m.forEach(function(x,i){
+    h+='<div class="r'+(x.done?' done':'')+'"><span>· '+x.t+'</span>'+
+       (x.done?'<button disabled style="opacity:.5">✅ 완료</button>'
+              :'<button onclick="doneTodo('+i+')">✅ 완료됐다고 치기</button>')+'</div>';});
+  return h+'</div>';
+}
+function newHtml(){
+  var tabs=['정보','촬영 회차','폴더'];
+  var h='<div class="tabs">';
+  tabs.forEach(function(t,i){ h+='<button class="'+(TAB===i?'on':'')+'" onclick="setTab('+i+')">'+t+'</button>';});
+  h+='</div>';
+  if(TAB===0) h+=todoHtml()+infoTable();
+  else if(TAB===1) h+='<table class="info">'+
+    '<tr><th>1일차 · 09/02</th><td>콜 07:00 · 랩 19:00 · 로케 A 스튜디오</td></tr>'+
+    '<tr><th>2일차 · 09/03</th><td>콜 08:00 · 랩 18:00 · 로케 B 스튜디오</td></tr></table>';
+  else h+='<table class="info">'+
+    '<tr><th>📁 프로젝트 폴더</th><td><a class="gobar" onclick="nop(\'폴더\')" style="color:#2563eb;cursor:pointer">드라이브에서 열기</a></td></tr>'+
+    '<tr><th>🧾 견적서</th><td>보낸 차수 2건</td></tr></table>';
+  return '<div class="content">'+h+'</div>';
+}
+function oldHtml(){
+  return '<div class="old">'+
+   '<div class="navold"><i>‹ 뒤로</i><i>앞으로 ›</i><i>🏠 홈</i>'+
+   '<span style="margin-left:auto;color:#7a736b">📁 260902_샘플에이</span></div>'+
+   '<h2>🎬 프로덕션 허브</h2><p class="sub">필요한 앱을 눌러 들어가세요. 이 페이지 하나만 북마크하면 됩니다.</p>'+
+   '<div class="pf"><span style="font-size:20px">🙂</span><div><b>김가나</b><br>'+
+   '<span style="color:#8a837b">owner@example.com · 대표 · 10월 10일까지 로그인 유지</span></div>'+
+   '<span class="out">로그아웃</span></div>'+
+   '<div class="ptitle">260902_샘플에이<i>🔄 다시 불러오기</i><i>‹ 프로젝트 목록</i></div>'+
+   '<div class="cols"><div class="pane"><div class="ph">진행 · 지금 할 일</div>'+
+   '<div class="pb" style="color:#8a837b">준비 146줄 중 12줄이 아직 「요청」입니다.</div></div>'+
+   '<div class="pane"><div class="ph">쌓인 정보 · 바로가기</div><div class="pb">'+infoTable()+'</div></div></div>'+
+   '<div class="edb">✥ 배치 바꾸기</div></div>';
+}
+function pickHtml(){
+  if(!PICK) return '';
+  var h='<div class="mask" onclick="togglePick()"></div><div class="pick">';
+  PJS.forEach(function(n){
+    h+='<button class="'+(n===PROJ?'now':'')+'" onclick="pick(\''+n+'\')">'+
+       (n===PROJ?'✓ ':'')+'📁 '+esc(n)+'</button>';});
+  h+='<div class="sep"></div><button class="add" onclick="nop(\'새 프로젝트\')">➕ 새 프로젝트 만들기</button>'+
+     '<button onclick="nop(\'전체 목록\')">📋 전체 목록 보기</button>';
+  return h+'</div>';
+}
+function draw(){
+  document.getElementById('url').textContent =
+    VIEW==='old' ? 'luvparklife.github.io/#p/'+PROJ : 'luvparklife.github.io/#p/'+PROJ;
+  var s=document.getElementById('scr');
+  if(VIEW==='old'){ s.innerHTML='<div class="mainrow">'+oldHtml()+'</div>'; return; }
+  s.innerHTML = stripHtml() + '<div class="mainrow">' + drawerHtml() + newHtml() + '</div>' + pickHtml();
+}
+draw();
+</script>
+<style>
+.fbw{margin:7px 0 13px; border-left:3px solid #c8b28a; background:#fbf7ef; border-radius:0 9px 9px 0; padding:7px 10px 8px}
+.fbw label{display:block; font-size:11px; font-weight:800; color:#8a6d3b; margin-bottom:4px; line-height:1.5}
+.fbw textarea{width:100%; box-sizing:border-box; min-height:38px; border:1px solid #e2d6bd; border-radius:7px;
+  padding:6px 8px; font:inherit; font-size:12.5px; background:#fff; color:#2c2c2c; resize:vertical}
+.fbw textarea.has{border-color:#c0392b; background:#fffaf9}
+.fbw .fbtools{float:right; display:flex; gap:4px}
+.fbw .fbtools button{border:1px solid #e2d6bd; background:#fff; color:#8a6d3b; border-radius:5px;
+  padding:1px 6px; font:inherit; font-size:10px; font-weight:700; cursor:pointer}
+#fbbar{position:fixed; left:0; right:0; bottom:0; z-index:9999; background:#2c2c2c; color:#fff;
+  display:flex; gap:7px; align-items:center; padding:8px 11px; font-size:12px}
+#fbbar b{color:#ffd479}
+#fbbar button{border:0; border-radius:7px; padding:7px 11px; font:inherit; font-size:12px;
+  font-weight:700; cursor:pointer; background:#fff; color:#2c2c2c}
+#fbbar .gh{margin-left:auto}
+body{padding-bottom:56px !important}
+</style>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   💬 미리보기에도 «항목마다» 피드백 칸 (2026-08-22 대표 지시)
+      *"미리보기도 피드백칸 항목마다 항상 넣어줘"*
+   🔴 회사 표준(guide 템플릿·연습장)과 같은 방식이다 — 새로 발명하지 않았다.
+   🔴 제목으로 저장한다(순서로 하면 화면을 고쳤을 때 엉뚱한 항목에 붙는다).
+   🔴 화면이 «다시 그려지는» 앱이라 MutationObserver 로 매번 다시 붙인다.
+   🔴 한글 조합 중에는 저장·표시를 안 건드린다(안 그러면 글자가 끊긴다).
+   🔴 이 덩어리는 «미리보기 전용»이다 — 진짜 허브에는 안 들어간다.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  /* 🔴 2026-09-03 — 문서 이름이 «박혀» 있었다.
+     [무엇이 문제였나] 이 위젯을 붙인 모든 문서가 «같은» 저장 열쇠를 써서
+       ①저장 파일이 늘 「허브_새프로젝트폼_미리보기_YYMMDD.md」로 떨어지고
+       ②문서가 달라도 localStorage 열쇠가 같아 서로 덮어쓸 수 있었다.
+       실측 2026-09-03 — 프리랜서 사용법 연습장에서 적었는데 파일 이름이 그 옛 문서로 나왔다.
+     [고친 법] <title> → 파일명 순으로 «스스로» 정한다. 둘 다 없을 때만 '문서'. */
+  var DOC=(function(){
+    try{ var t=(document.title||'').trim(); if(t) return t; }catch(e){}
+    try{ var p=decodeURIComponent((location.pathname||'').split('/').pop()||'');
+         p=p.replace(/\.html?$/i,''); if(p) return p; }catch(e){}
+    return '문서';
+  })();
+  var KEY='fb::'+DOC, store={};
+  try{ store=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ store={}; }
+  function slug(t){ var h=5381; for(var i=0;i<t.length;i++){ h=((h*33)^t.charCodeAt(i))>>>0; } return 'fb_'+h.toString(36); }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} count(); }
+  function txt(e){ return (e&&e.textContent||'').replace(/\s+/g,' ').trim(); }
+
+  /* 어디에 붙이나 — [고르는 법, 제목 만드는 법] */
+  var SPOTS=[
+    ['.pjfind',        function(){ return '① 찾기 막대'; }],
+    ['#pjRows',        function(){ return '② 프로젝트 목록'; }],
+    ['.pjnew .nf',     function(e){ var l=e.querySelector('label'); return '③ 새 프로젝트 · '+txt(l).replace(/\s*[—*].*$/,''); }],
+    ['.pjnew .namebox',function(){ return '③ 새 프로젝트 · 프로젝트 이름'; }],
+    ['.pjnew .rulebox',function(){ return '③ 새 프로젝트 · 이름 양식 설명'; }],
+    ['.pjnew .willbox',function(){ return '③ 새 프로젝트 · 만들면 이렇게 됩니다'; }],
+    ['#pjQk',          function(){ return '④ 프로젝트 하나 · 바로가기'; }],
+    ['#pjLeft',        function(){ return '④ 프로젝트 하나 · 단계'; }],
+    ['#pjChk',         function(){ return '④ 프로젝트 하나 · 확인할 것'; }]
+  ];
+
+  /* ══ 🔴 2026-09-02 — 「항목마다」를 «자동»으로 찾는다 ══════════════
+     [왜 고쳤나] 대표가 *"목업은 항상 항목별로 피드백창 해달라고했는데 왜 안되는거야
+       이거 중복으로 일어나는데"* 라고 하셨다. 실측 = 화면 항목 11개인데 칸은 3개.
+     [진짜 원인] 위 SPOTS 는 «사람이 손으로 적는 목록»이다. 문서를 만들 때마다
+       클로드가 자리를 골랐고, 고를 때마다 빠졌다. 규칙(§3-3)이 있어도
+       «사람이 매번 챙겨야 하는 것은 언젠가 반드시 안 지켜진다»(§5-1-E).
+       실제로 대표가 이 지적을 «네 번» 하셨다.
+     [고친 법] 제목(h1~h4)이 있는 덩어리를 «스스로» 찾아 전부 붙인다.
+       SPOTS 는 그대로 살려 둔다 — 제목이 없는 자리(입력칸·표)는 손으로 지정해야 한다.
+     🔴 이 파일이 «원본»이다. 사본에서만 고치면 다음 문서에서 또 반복된다(§1). */
+  var FB_AUTO = true;                                  /* 끄려면 false */
+  var AUTO_SPOT = [['[data-fb-auto]', function(e){ return e.getAttribute('data-fb-auto'); }]];
+  function markAuto(){
+    var hs;
+    try{ hs=document.querySelectorAll('h1,h2,h3,h4'); }catch(e){ return; }
+    for(var i=0;i<hs.length;i++){
+      var h=hs[i];
+      if(h.closest && h.closest('.fbw')) continue;      /* 피드백 칸 안의 제목은 건너뛴다 */
+      /* 제목에 딸린 «부제»는 뺀다 — 안 빼면 「🏢 받는 쪽 노션 거래처에서 찾거나…」로 길어진다.
+         🔴 원본을 안 건드리려고 사본에서 지운다(화면의 부제는 그대로 남는다). */
+      var name;
+      try{
+        var c=h.cloneNode(true), j=c.querySelectorAll('.sp,.hint,small,.badge,.tag');
+        for(var k=0;k<j.length;k++) j[k].parentNode.removeChild(j[k]);
+        name=txt(c);
+      }catch(e){ name=txt(h); }
+      if(!name) continue;
+      if(name.length>40) name=name.slice(0,40)+'…';
+      if(h.getClientRects().length===0) continue;       /* 지금 «안 보이는» 것은 나중에(관찰자가 다시 돈다) */
+      /* 붙일 자리 = 이 제목이 이끄는 «덩어리» 끝.
+         덩어리를 못 찾으면 제목 바로 아래에 붙인다 — 자리를 못 정해 «빠뜨리는» 것보다 낫다. */
+      var box=h.parentElement, spot=h;
+      if(box && box!==document.body && box.parentElement &&
+         box.querySelectorAll('h1,h2,h3,h4').length===1) spot=box;
+      if(spot.dataset && spot.dataset.fbDone) continue;
+      if(spot.getAttribute && !spot.getAttribute('data-fb-auto'))
+        spot.setAttribute('data-fb-auto', name);
+    }
+  }
+
+  function attach(){
+    if(FB_AUTO) markAuto();
+    SPOTS.concat(AUTO_SPOT).forEach(function(sp){
+      Array.prototype.slice.call(document.querySelectorAll(sp[0])).forEach(function(el){
+        if(el.dataset.fbDone) return;
+        if(el.closest && el.closest('.fbw')) return;
+        el.dataset.fbDone='1';
+        var title; try{ title=sp[1](el); }catch(e){ title=sp[0]; }
+        if(!title) return;
+        var id=slug(title);
+        var w=document.createElement('div'); w.className='fbw';
+        var lab=document.createElement('label'); lab.setAttribute('for',id);
+        lab.textContent='💬 「'+title+'」 피드백 — 고칠 것 · 빠진 것 · 질문';
+        var tools=document.createElement('span'); tools.className='fbtools';
+        var ta=document.createElement('textarea');
+        ta.id=id; ta.dataset.t=title; ta.placeholder='한 줄 적어주세요. 자동 저장됩니다.';
+        ta.value=store[id]||''; if(ta.value.trim()) ta.classList.add('has');
+        var ime=false, tm=null;
+        function done(){ ta.classList.toggle('has', !!ta.value.trim()); save(); }
+        ta.addEventListener('compositionstart',function(){ ime=true; });
+        ta.addEventListener('compositionend',function(){ ime=false; done(); });
+        ta.addEventListener('input',function(){
+          store[id]=ta.value;                 /* 값은 늘 담는다 */
+          if(ime) return;                     /* 🔴 조합 중엔 안 건드린다 */
+          if(tm) clearTimeout(tm); tm=setTimeout(done,500);
+        });
+        ta.addEventListener('blur',function(){ if(tm) clearTimeout(tm); done(); });
+        ta.addEventListener('keydown',function(ev){
+          if((ev.metaKey||ev.ctrlKey)&&(ev.key==='a'||ev.key==='A')){ ev.preventDefault(); ev.stopPropagation(); ta.select(); }
+        });
+        [['전체선택',function(){ ta.focus(); ta.select(); }],
+         ['복사',function(b){ ta.focus(); ta.select();
+            var fin=function(){ var o=b.textContent; b.textContent='✅'; setTimeout(function(){ b.textContent=o; },1100); };
+            if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(fin,fin);
+            else { try{ document.execCommand('copy'); }catch(e){} fin(); } }],
+         ['비우기',function(){ ta.value=''; store[id]=''; done(); }]
+        ].forEach(function(t){
+          var b=document.createElement('button'); b.type='button'; b.textContent=t[0];
+          b.onclick=function(){ t[1](b); }; tools.appendChild(b);
+        });
+        lab.appendChild(tools);
+        w.appendChild(lab); w.appendChild(ta);
+        if(el.parentNode) el.parentNode.insertBefore(w, el.nextSibling);
+      });
+    });
+    count();
+  }
+  function all(){
+    return Array.prototype.slice.call(document.querySelectorAll('.fbw textarea'))
+      .filter(function(t){ return t.value.trim(); });
+  }
+  function count(){
+    var n=all().length, e=document.getElementById('fbn'); if(e) e.textContent=n;
+  }
+  function bar(){
+    var b=document.createElement('div'); b.id='fbbar';
+    b.innerHTML='💬 적은 피드백 <b id="fbn">0</b>개'
+      + '<span class="gh"></span><button id="fbCopy">📋 전체 복사</button>'
+      + '<button id="fbSave">💾 피드백 저장</button>';
+    document.body.appendChild(b);
+    function text(){
+      var out='# 피드백 · '+DOC+'\n\n';
+      all().forEach(function(t){ out+='## '+t.dataset.t+'\n'+t.value.trim()+'\n\n'; });
+      return out;
+    }
+    document.getElementById('fbCopy').onclick=function(){
+      var t=text(), me=this, fin=function(){ me.textContent='✅ 복사했습니다'; setTimeout(function(){ me.textContent='📋 전체 복사'; },1400); };
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(fin,fin); else fin();
+    };
+    document.getElementById('fbSave').onclick=function(){
+      if(!all().length){ alert('아직 적으신 피드백이 없습니다.'); return; }
+      var d=new Date(), p=function(n){ return (n<10?'0':'')+n; };
+      var nm='피드백_'+DOC+'_'+String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+'.md';
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([text()],{type:'text/markdown;charset=utf-8'}));
+      a.download=nm; document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },800);
+    };
+  }
+  function boot(){ bar(); attach();
+    var tm=null;
+    /* 🔴 2026-09-03 — attributeFilter 를 더했다.
+       [무엇이 문제였나] markAuto 는 «지금 안 보이는» 제목을 건너뛰고(위 getClientRects) 관찰자가
+         다시 돌기를 기다린다. 그런데 관찰자가 childList 만 봐서, 화면을 «class 로» 감췄다 폈다 하는
+         문서(탭·단계 전환)에서는 «영영 안 깨어난다».
+         실측 2026-09-03 프리랜서 사용법 연습장 — 항목 16개인데 칸이 «2개»(첫 화면 것만) 붙었다.
+       [왜 filter 를 거는가] attributes:true 를 통째로 켜면 이 위젯이 스스로 붙이는
+         data-fb-auto · data-fb-done 변화까지 잡아 계속 되돈다.
+         class/style/hidden 은 위젯이 «안 건드리는» 것이라 되돌 일이 없다. */
+    new MutationObserver(function(){ if(tm) clearTimeout(tm); tm=setTimeout(attach,250); })
+      .observe(document.body,{childList:true,subtree:true,
+                              attributes:true,attributeFilter:['class','style','hidden']});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+</body></html>
