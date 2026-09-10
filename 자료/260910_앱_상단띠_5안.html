@@ -72,6 +72,19 @@ h2{font-size:16px;margin:26px 0 6px;padding-bottom:6px;border-bottom:2px solid #
 .cmp h4{margin:0 0 5px;font-size:13.5px}
 .cmp p{margin:0 0 5px;font-size:12.5px;color:var(--sub);line-height:1.6}
 .cmp .g{color:#2e7d5b;font-weight:700}.cmp .b{color:var(--rd);font-weight:700}
+/* ▾ 메뉴줄 — 띠 바로 아래로 펼쳐진다 (2026-09-10 대표 지시 「메뉴줄처럼」) */
+.mnu{flex:0 0 auto;background:#20293a;color:#cfd8dc;font-size:12.5px;padding:8px 9px 10px;
+  max-height:290px;overflow-y:auto;border-bottom:2px solid #46536b}
+.mnu .gt{font-size:10.5px;color:#7d8ba3;margin:9px 0 4px;padding-left:6px}
+.mnu .gt:first-child{margin-top:0}
+.mnu .it{padding:7px 9px;border-radius:7px;cursor:pointer}
+.mnu .it:hover{background:rgba(255,255,255,.12)}
+.mnu .it.now{background:#fff;color:#1c2330;font-weight:700}
+.mnu .it small{display:block;font-size:10px;color:#8593aa;margin-top:1px}
+.mnu .cls2{margin-top:9px;background:rgba(255,255,255,.14);border-radius:7px;padding:7px;
+  text-align:center;font-weight:700;cursor:pointer}
+.mnu.two{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;align-items:start}
+.mnu.two .gt,.mnu.two .cls2{grid-column:1/-1}
 .dw{position:absolute;left:0;top:0;bottom:0;width:210px;background:#20293a;color:#cfd8dc;
   z-index:8;padding:9px 8px;font-size:12.5px;overflow-y:auto}
 .dw .cls{background:rgba(255,255,255,.14);border-radius:7px;padding:6px;text-align:center;font-weight:700;cursor:pointer}
@@ -87,11 +100,18 @@ h2{font-size:16px;margin:26px 0 6px;padding-bottom:6px;border-bottom:2px solid #
 
 <div class="sw">
   <b>안</b>
-  <button id="p_A" class="on" onclick="setP('A')">🅐 띠 한 줄 (전체)<small>🏠·프로젝트·🔔·앱4</small></button>
+  <button id="p_X" class="on" onclick="setP('X')" style="border-color:#2f8f5b">✅ 확정안 (🅒+🅔)<small>글자로 · 폰은 아래</small></button>
+  <button id="p_A" onclick="setP('A')">🅐 띠 한 줄 (전체)<small>🏠·프로젝트·🔔·앱4</small></button>
   <button id="p_B" onclick="setP('B')">🅑 아이콘만<small>글자 없이 짧게</small></button>
   <button id="p_C" onclick="setP('C')">🅒 띠가 프로젝트를 맡음<small>기존에서 뺀다</small></button>
   <button id="p_D" onclick="setP('D')">🅓 접었다 폈다<small>평소엔 한 줄</small></button>
   <button id="p_E" onclick="setP('E')">🅔 폰은 맨 아래<small>엄지로 닿는 자리</small></button>
+</div>
+<div class="sw">
+  <b>🏠 를 누르면</b>
+  <button id="m_menu" class="on" onclick="setM('menu')">▾ 메뉴줄<small>띠 바로 밑에 펼침</small></button>
+  <button id="m_grid" onclick="setM('grid')">▾ 메뉴줄 · 두 칸<small>14줄이 한눈에</small></button>
+  <button id="m_side" onclick="setM('side')">◧ 왼쪽 서랍<small>지금 방식</small></button>
 </div>
 <div class="sw">
   <b>어느 앱</b>
@@ -151,14 +171,19 @@ h2{font-size:16px;margin:26px 0 6px;padding-bottom:6px;border-bottom:2px solid #
 
 </div>
 <script>
-var P='A', APP='field', W=390, DRAW=0, OPEN=0;
+var P='X', APP='field', W=390, DRAW=0, OPEN=0, MENU='menu';
+function setM(v){MENU=v;DRAW=0;['menu','grid','side'].forEach(function(x){on('m_'+x,x===v);});draw();
+  say({menu:'▾ <b>메뉴줄</b> — 띠 바로 아래로 펼쳐집니다. 🏠 를 눌러 보세요.',
+       grid:'▾ <b>두 칸 메뉴줄</b> — 14줄이 한눈에 들어옵니다. 🏠 를 눌러 보세요.',
+       side:'◧ <b>왼쪽 서랍</b> — 지금 방식입니다.'}[v]);}
 var APPS=[['proj','📁','프로젝트',''],['quote','🧾','견적서','👑'],['field','🎬','장비앱',''],['pay','💰','정산','']];
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function say(h){document.getElementById('say').innerHTML=h;}
 function on(id,y){var e=document.getElementById(id); if(e) e.className=y?'on':'';}
-function setP(v){P=v;DRAW=0;OPEN=0;['A','B','C','D','E'].forEach(function(x){on('p_'+x,x===v);});draw();
-  say({A:'🅐 <b>허브와 똑같은 띠</b>입니다 — 🏠 · 프로젝트 · 🔔 · 앱 4개. 그 아래가 기존 상단바입니다.',
+function setP(v){P=v;DRAW=0;OPEN=0;['X','A','B','C','D','E'].forEach(function(x){on('p_'+x,x===v);});draw();
+  say({X:'✅ <b>확정안</b> — 프로젝트를 «띠»가 맡고(기존 상단바에서 뺐습니다) · <b>글자로</b> 적고 · <b>폰에서는 맨 아래</b>입니다.',
+       A:'🅐 <b>허브와 똑같은 띠</b>입니다 — 🏠 · 프로젝트 · 🔔 · 앱 4개. 그 아래가 기존 상단바입니다.',
        B:'🅑 <b>아이콘만</b>이라 폰에서 제일 짧습니다. 대신 처음 쓰는 사람은 뭔지 모릅니다.',
        C:'🅒 <b>프로젝트를 띠가 맡고</b> 기존 상단바에서 뺐습니다 — 두 곳에 안 나옵니다.',
        D:'🅓 <b>평소엔 얇은 한 줄</b>입니다. 눌러서 펴 보세요.',
@@ -174,7 +199,7 @@ function nop(w){say('🧪 목업이라 '+esc(w)+'는 실제로 안 열립니다.
 
 function tape(){
   var thin = (P==='D' && !OPEN);
-  var h='<div class="tape'+(thin?' thin':'')+(P==='E'&&W===390?' bottom':'')+'">';
+  var h='<div class="tape'+(thin?' thin':'')+((P==='E'||P==='X')&&W===390?' bottom':'')+'">';
   h+='<button class="home" onclick="toggleDraw()">🏠</button>';
   if(P==='D' && !OPEN){
     h+='<button class="s" onclick="toggleOpen()" style="margin-left:2px">'+
@@ -182,16 +207,18 @@ function tape(){
        '<span style="flex:1"></span><button class="bell" onclick="nop(\'알림\')">🔔 5</button></div>';
     return h;
   }
-  if(P==='A'||P==='C'||P==='D'||P==='E')
+  if(P==='X'||P==='A'||P==='C'||P==='D'||P==='E')
     h+='<button class="pjb" onclick="nop(\'프로젝트 고르기\')">📁 '+
-       (W===390?'샘플브랜드':'260902_샘플에이')+' ▾</button>';
+       '260902_샘플에이 ▾</button>';
   if(P!=='B') h+='<button class="bell" onclick="nop(\'알림\')">🔔 5</button>';
   h+='<span class="sep"></span>';
   APPS.forEach(function(x){
     var me=(x[0]===APP);
     /* 🔴 실물과 같게 — 폰(520 이하)에서는 띠 글자를 숨긴다(.tt-t 규칙).
        목업이 이걸 빠뜨려서 「🅐는 폰에서 밀린다」로 잘못 보였다(2026-09-10 실측으로 잡음). */
-    var noTxt = (P==='B') || (W===390);
+    /* 🔴 2026-09-10 대표 지시 — *"아이콘으로 하지말고 텍스트로. 아이콘은 뭐가뭔지 헷갈려.
+       공간이 없으면 옆으로 스크롤해도 괜찮아."* → 폰에서도 «글자»를 적는다. */
+    var noTxt = (P==='B');
     h+='<button class="s'+(me?' now':'')+'" onclick="nop(\''+x[2]+'\')">'+x[1]+
        (noTxt?'':' '+esc(x[2])+(x[3]?'<span class="bg">'+x[3]+'</span>':''))+'</button>';
   });
@@ -201,9 +228,9 @@ function tape(){
 function oldbar(){
   if(APP==='field'){
     return '<div class="old field">'+
-      (P==='C'?'':'<span class="b" onclick="nop(\'허브\')">🏠</span>')+
+      ((P==='C'||P==='X')?'':'<span class="b" onclick="nop(\'허브\')">🏠</span>')+
       '<span class="lg">현장시트</span>'+
-      (P==='C'?'':'<span class="sel">260902_샘플에이 ▾</span>')+
+      ((P==='C'||P==='X')?'':'<span class="sel">260902_샘플에이 ▾</span>')+
       '<span class="tabs"><i class="on">준비</i><i>랩업</i><i>반납</i></span>'+
       '</div><div class="old field" style="padding-top:0">'+
       '<span class="b">🔔 알림</span><span class="b">🔄</span><span class="b">📊 시트</span>'+
@@ -211,14 +238,14 @@ function oldbar(){
   }
   if(APP==='quote'){
     return '<div class="old quote">'+
-      (P==='C'?'':'<span class="b" onclick="nop(\'허브\')">🏠</span>')+
+      ((P==='C'||P==='X')?'':'<span class="b" onclick="nop(\'허브\')">🏠</span>')+
       '<span class="lg">견적서</span><span class="sel">PA ▾</span>'+
-      (P==='C'?'':'<span class="sel">260902_샘플에이 ▾</span>')+
+      ((P==='C'||P==='X')?'':'<span class="sel">260902_샘플에이 ▾</span>')+
       '<span class="b">한국어</span><span class="b">₩</span></div>'+
       '<div class="old2">📌 09/02~09/03 · ㈜샘플코리아 · 담당 김가나 · 장비 1,000,000</div>';
   }
   return '<div class="old pay">'+
-    (P==='C'?'':'<span class="b" onclick="nop(\'허브\')">🏠</span>')+
+    ((P==='C'||P==='X')?'':'<span class="b" onclick="nop(\'허브\')">🏠</span>')+
     '<span class="lg">프리랜서 정산</span><span style="flex:1"></span>'+
     '<span class="b">?</span><span class="b">⏻</span></div>'+
     '<div class="old2">작업 등록 · 내 정산 · 지급명세서</div>';
@@ -230,8 +257,24 @@ function paper(){
     '(앱 안 내용은 <b>한 줄도 안 바뀝니다</b>.)';
   return '<b>내 청구</b><br>작업 회차 · 금액 · 첨부 …<br><br>(앱 안 내용은 <b>한 줄도 안 바뀝니다</b>.)';
 }
+var PAGES=[['📊','장비대장','소싱시트 · 장비DB · 단가'],['🧾','세무대사','계산서 발행 확인'],
+ ['🅰️','업무 / 일정 관리','보고서 · 문서 수정'],['🔄','일정 새로고침','캘린더 ↔ 노션'],
+ ['📚','도서관','자료 · 레퍼런스'],['📋','서비스 안내','거래처에 보낼 링크'],
+ ['💰','단가 안내 (한글)','🔒 보낼 땐 조심'],['💵','Price Guide (영문)','해외팀'],
+ ['📋','생애주기 입력','노션에 등록'],['📱','앱 사용법','3분이면 됩니다']];
+function menubar(){
+  if(!DRAW || MENU==='side') return '';
+  var h='<div class="mnu'+(MENU==='grid'?' two':'')+'">';
+  h+='<div class="gt">📁 이 프로젝트에서</div>';
+  APPS.forEach(function(x){ h+='<div class="it'+(x[0]===APP?' now':'')+'">'+x[1]+' '+x[2]+'</div>'; });
+  h+='<div class="gt">🗂 그 밖에 (프로젝트와 상관없이)</div>';
+  PAGES.forEach(function(x){ h+='<div class="it">'+x[0]+' '+x[1]+'<small>'+x[2]+'</small></div>'; });
+  h+='<div class="gt">＋</div><div class="it">➕ 새 프로젝트</div>';
+  h+='<div class="gt">👤 김가나 · 대표</div><div class="it">🚪 로그아웃</div>';
+  return h+'<div class="cls2" onclick="toggleDraw()">✕ 닫기</div></div>';
+}
 function drawer(){
-  if(!DRAW) return '';
+  if(!DRAW || MENU!=='side') return '';
   return '<div class="dw"><div class="cls" onclick="toggleDraw()">✕ 닫기</div>'+
    '<div class="gt">📁 이 프로젝트에서</div>'+
    APPS.map(function(x){return '<div class="it'+(x[0]===APP?' now':'')+'">'+x[1]+' '+x[2]+'</div>';}).join('')+
@@ -245,9 +288,11 @@ function draw(){
   document.getElementById('url').textContent =
     APP==='pay' ? 'script.google.com/…/exec (정산)' : 'script.google.com/…/exec'+(APP==='quote'?'?page=quote':'');
   var s=document.getElementById('scr');
-  var bottom = (P==='E' && W===390);
-  s.innerHTML = (bottom?'':tape()) + oldbar() + '<div class="paper">'+paper()+'</div>'
-              + (bottom?tape():'') + drawer();
+  var bottom = ((P==='E'||P==='X') && W===390);
+  var mb = menubar();
+  s.innerHTML = (bottom?'':tape()) + (bottom?'':mb) + oldbar()
+              + '<div class="paper">'+paper()+'</div>'
+              + (bottom?mb:'') + (bottom?tape():'') + drawer();
 }
 draw();
 </script>
