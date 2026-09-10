@@ -401,6 +401,14 @@
       padding:5px 8px; font:inherit; font-size:12.5px}
     .pj2 .tkadd button{border:1px solid var(--line); background:#fff; border-radius:7px;
       padding:4px 12px; font:inherit; font-size:12px; font-weight:700; color:var(--sub); cursor:pointer}
+    /* 🏢 업체 연락처 (2026-09-10) — 이름·주소·전화 셋만 */
+    .pj2 .bz{display:flex; gap:8px; align-items:baseline; flex-wrap:wrap;
+      padding:5px 0; border-top:1px solid var(--line2); font-size:12.5px}
+    .pj2 .bzn{font-weight:700; min-width:88px}
+    .pj2 .bza{flex:1; min-width:120px; color:var(--sub); font-size:11.5px}
+    /* 🔴 폰에서 «눌러서 바로 전화»가 되게 tel: 링크로 — 현장에서 제일 자주 하는 동작이다 */
+    .pj2 .bzt{color:var(--daily); text-decoration:none; font-weight:700; white-space:nowrap}
+    .pj2 .bzt.none{color:var(--faint); font-weight:400}
     .pj2 .fdt{font-size:11.5px; font-weight:800; color:var(--faint); margin:11px 0 5px}
     .pj2 .qk.fdq{margin-top:0}
     .pj2 .qk a .cnt{display:block; font-size:10px; color:var(--faint); font-weight:400; margin-top:1px}
@@ -4783,7 +4791,50 @@
     }else if(canPush){
       h += '<p class="fn" style="margin:4px 0">👤 글은 읽기만 · <b>확인 상태만</b> 누를 수 있습니다</p>';
     }
+    h += pjBizHtml();
     box.innerHTML = h + '</div>';
+  }
+  /* 🏢 업체 연락처 (2026-09-10 대표 지시 · *"업체 연락처는 접었다 폈다로"*)
+     ═══════════════════════════════════════════════════════════════════
+     🔴 [이름·주소·전화 «셋만»] 대표 확정. **계좌·사업자번호는 어느 경우에도 안 나갑니다** —
+        서버가 담지도 않는다(§3-1-B-3). 여기서 감추는 것이 아니라 «오지도 않는다».
+     🔴 [원본은 노션 DB_네트워크 하나] 시트에 베껴 적지 않는다(§1) —
+        노션에서 전화를 고치면 다음 갱신에 저절로 따라온다.
+     🔴 [어디서 오나] 회차의 «로케이션»이다. 정산앱이 하루 1회 써주는 `_네트워크캐시` 를
+        장비앱이 읽어 회차 줄에 실어 보낸다 — 드라이브·노션을 더 열지 않는다.
+     🟡 [소싱시트 «조달업체»(HK렌탈 등)는 아직 안 넣었다] 그건 소싱시트를 또 열어야 해서
+        화면이 느려진다. 필요하면 = **"조달업체도 연락처에 넣어줘"**
+     🔴 [비어 있으면 «상자를 안 만든다»] 빈 접기 줄만 남으면 「고장났나」로 읽힌다. */
+  var PJ_BIZ_FOLD = true;
+  function pjBizList(){
+    var out = [], seen = {};
+    (PJ_DAY_ROWS || []).forEach(function(r){
+      ((r && r.locs) || []).forEach(function(x){
+        if(!x || !x.n) return;
+        if(!x.a && !x.t) return;                    /* 주소도 전화도 없으면 적을 게 없다 */
+        var k = String(x.n).trim();
+        if(seen[k]) return;
+        seen[k] = 1;
+        out.push({ n: k, a: x.a || '', t: x.t || '' });
+      });
+    });
+    return out;
+  }
+  function pjBizHtml(){
+    var L = pjBizList();
+    if(!L.length) return '';
+    return '<div class="tkfold" id="pjBizBar">' + (PJ_BIZ_FOLD ? '▸' : '▾')
+      + ' 🏢 업체 연락처 ' + L.length + '곳'
+      + (PJ_BIZ_FOLD ? ' <span class="fn">— 눌러서 펴기</span>' : '') + '</div>'
+      + '<div id="pjBizBox"' + (PJ_BIZ_FOLD ? ' hidden' : '') + '>'
+      + L.map(function(b){
+          return '<div class="bz"><span class="bzn">' + pjEsc(b.n) + '</span>'
+            + (b.a ? '<span class="bza">' + pjEsc(b.a) + '</span>' : '')
+            + (b.t ? '<a class="bzt" href="tel:' + pjEsc(String(b.t).replace(/[^0-9+]/g, ''))
+                     + '">' + pjEsc(b.t) + '</a>' : '<span class="bzt none">전화 없음</span>')
+            + '</div>'; }).join('')
+      + '<p class="fn" style="margin:5px 0 0">이름 · 주소 · 전화 <b>셋만</b> — '
+      + '계좌·사업자번호는 나가지 않습니다. 고치는 곳은 <b>노션</b>입니다.</p></div>';
   }
   function pjTaskRow(i){
     var t = PJ_TASKS[i] || {}, s = String(t.s || 'non');
@@ -4930,6 +4981,15 @@
     if(!el || !el.getAttribute) return;
     if(el.id === 'pjNoteSave'){ e.preventDefault(); pjNoteSave(); return; }
     if(el.id === 'pjTkAdd'){ e.preventDefault(); pjTaskAdd(); return; }
+    if(el.id === 'pjBizBar'){
+      e.preventDefault();
+      PJ_BIZ_FOLD = !PJ_BIZ_FOLD;
+      var bz = document.getElementById('pjBizBox');
+      if(bz){ bz.hidden = PJ_BIZ_FOLD;
+              el.innerHTML = (PJ_BIZ_FOLD ? '▸' : '▾') + ' 🏢 업체 연락처 ' + pjBizList().length + '곳'
+                + (PJ_BIZ_FOLD ? ' <span class="fn">— 눌러서 펴기</span>' : ''); }
+      return;
+    }
     if(el.id === 'pjTkFold'){
       e.preventDefault();
       var z = document.getElementById('pjTkDone');
