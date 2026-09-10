@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>📱 탭 시험 — 아이폰에서 「앱 여는 3초」를 없앨 수 있나</title>
+<!--
+  🧪 2026-09-10 — 대표님이 폰에서 «직접» 재보시는 페이지.
+
+  [무엇을 재나] 앱 사이를 옮길 때 「탭을 정해두고 다시 쓰기」가 아이폰에서 되나.
+    · 되면  → 두 번째부터 «거의 즉시» (지금 5~7초 → 0초)
+    · 안 되면 → ㉮탭이 쌓이거나 ㉯눌러도 화면이 안 바뀐다
+
+  🔴 이 페이지에는 회사 정보가 «한 글자도» 없다 — 인터넷에 올려도 안전하다.
+  🔴 진짜 앱을 열지 않는다. 아래 「시험용 화면」만 연다.
+-->
+<style>
+  :root{ --ink:#1c2330; --faint:#6b7280; --line:#e3e7ee; --bg:#f7f8fa; --pt:#2f8f5b; }
+  *{ box-sizing:border-box; -webkit-text-size-adjust:100%; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+        font:16px/1.65 -apple-system,"Apple SD Gothic Neo",BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .wrap{ max-width:640px; margin:0 auto; padding:18px 15px 60px; }
+  h1{ font-size:21px; margin:6px 0 4px; letter-spacing:-.4px; }
+  .sub{ color:var(--faint); font-size:14px; margin:0 0 18px; }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:14px;
+         padding:16px 15px; margin:0 0 14px; }
+  .step{ display:inline-block; background:var(--ink); color:#fff; font-size:12px; font-weight:800;
+         border-radius:20px; padding:3px 11px; margin-bottom:9px; letter-spacing:-.2px; }
+  h2{ font-size:17px; margin:2px 0 7px; letter-spacing:-.3px; }
+  p{ margin:0 0 9px; }
+  .btn{ display:block; width:100%; border:none; border-radius:12px; cursor:pointer;
+        font:inherit; font-size:17px; font-weight:800; padding:16px 14px; margin:11px 0 4px;
+        background:var(--pt); color:#fff; letter-spacing:-.3px; }
+  .btn:active{ opacity:.85; }
+  .btn.g{ background:#455a64; }
+  .note{ font-size:13.5px; color:var(--faint); margin:6px 0 0; }
+  .box{ background:#f2f6ff; border:1px solid #d6e2f7; border-radius:11px; padding:12px 13px;
+        margin:11px 0 0; font-size:14.5px; }
+  .box b{ color:#1e4fa3; }
+  .ans{ background:#fff8e6; border:1px solid #f0dfae; }
+  .ans b{ color:#8a6100; }
+  ul{ margin:7px 0 0; padding-left:20px; }
+  li{ margin:5px 0; }
+  .big{ font-size:19px; font-weight:800; letter-spacing:-.3px; }
+  .foot{ color:var(--faint); font-size:12.5px; margin-top:26px; line-height:1.7; }
+  code{ background:#eef1f6; border-radius:5px; padding:1px 6px; font-size:13.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>📱 탭 시험</h1>
+  <p class="sub">아이폰에서 <b>「앱 여는 3초」</b>를 없앨 수 있는지 30초면 알 수 있습니다.<br>
+     <b>아이폰 사파리</b>로 열어 주세요 (컴퓨터로도 되지만, 알고 싶은 건 아이폰입니다).</p>
+
+  <div class="card">
+    <span class="step">1단계</span>
+    <h2>「장비앱」을 엽니다</h2>
+    <p>아래를 <b>한 번</b> 누르면 시험용 화면이 뜹니다.
+       거기에 <b>「몇 번째로 열렸는지」</b>가 적혀 있습니다.</p>
+    <button class="btn" onclick="go('field')">🎬 장비앱 열기</button>
+    <p class="note">진짜 장비앱이 아닙니다 — 아무것도 안 바뀝니다.</p>
+  </div>
+
+  <div class="card">
+    <span class="step">2단계</span>
+    <h2>이 페이지로 돌아와 <b>다시</b> 누릅니다</h2>
+    <p>열린 화면에서 <b>「⬅ 시험으로 돌아가기」</b>를 누르고,
+       위 <b>🎬 장비앱 열기</b>를 <b>한 번 더</b> 눌러 주세요.</p>
+    <div class="box ans">
+      <p style="margin:0 0 6px"><b>여기서 갈립니다 👇</b></p>
+      <ul style="margin:0">
+        <li><b>「1번째」 그대로</b> → ✅ <b>탭 재사용이 됩니다</b> (앱 여는 3초가 사라집니다)</li>
+        <li><b>「2번째」로 늘어남</b> → 🔴 다시 열린 것입니다 (지금과 같습니다)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="step">3단계</span>
+    <h2>⚡ 이게 되면 <b>3초가 사라집니다</b></h2>
+    <p>위와 달리, 아래는 <b>주소를 다시 안 주고</b> 이미 열린 화면으로 <b>옮기기만</b> 합니다.
+       되면 <b>다시 읽지 않아 0초</b>입니다.</p>
+    <button class="btn" onclick="switchOnly('field')">⚡ 열려 있는 장비앱으로 «전환만»</button>
+    <div class="box ans">
+      <b>화면에 「✅ 다시 안 읽고 그대로 왔습니다 — 0초!」가 뜨면</b> → 아이폰에서도 됩니다.<br>
+      <b>아무 일도 안 일어나면</b> → 🔴 아이폰이 이 방식을 막는 것입니다.
+    </div>
+    <p class="note">1단계를 먼저 눌러 장비앱을 열어 두셔야 합니다.</p>
+  </div>
+
+  <div class="card">
+    <span class="step">4단계</span>
+    <h2>탭이 몇 개인지 세어 주세요</h2>
+    <p>사파리 <b>오른쪽 아래 ⧉</b>(네모 두 개)를 누르면 열린 탭이 다 보입니다.</p>
+    <div class="box">
+      <b>탭이 2개면</b> — 시험 페이지 + 장비앱 = 정상<br>
+      <b>탭이 3개 이상이면</b> — 🔴 누를 때마다 <b>쌓이고 있습니다</b>
+    </div>
+    <button class="btn g" onclick="go('quote')">🧾 견적서도 열어보기 (있으면 좋습니다)</button>
+    <p class="note">앱이 둘일 때도 탭이 «앱마다 하나»로 유지되는지 보는 것입니다.</p>
+  </div>
+
+  <div class="card">
+    <span class="step">알려주실 것</span>
+    <h2>세 줄이면 됩니다</h2>
+    <p class="big">① 2단계에서 <b>1번째</b>였나요, <b>2번째</b>였나요?<br>
+       ② 3단계에서 <b>「✅ 0초!」가 떴나요</b>, 아무 일도 없었나요?<br>
+       ③ 탭이 <b>몇 개</b>였나요?</p>
+  </div>
+
+  <p class="foot">
+    🔴 이 페이지에는 회사 정보가 한 글자도 없습니다.<br>
+    🔴 진짜 앱을 열지 않습니다 — 시험용 빈 화면만 엽니다.<br>
+    만든 날 2026-09-10 · 다 쓰면 지웁니다.
+  </p>
+</div>
+
+<script>
+/* 🔴 앱과 «똑같은 방식»으로 연다 — window.open(주소, 「탭 이름」).
+   탭 이름을 정해두면 컴퓨터 브라우저는 그 탭을 다시 쓴다.
+   아이폰이 그렇게 하는지가 이 시험의 전부다. */
+function go(who){
+  var url = '260910_탭시험_화면.html?who=' + encodeURIComponent(who);
+  var name = 'pa-test-' + who;      /* 앱마다 «고정된» 탭 이름 */
+  try {
+    var w = window.open(url, name);
+    /* 🔴 이미 열린 탭이 있으면 «주소를 다시 안 준다» — 그래야 다시 안 읽는다.
+       그런데 window.open 은 주소를 주면 대개 다시 읽는다. 그래서 두 번 부른다:
+       ①이름만으로 찾아보고 ②없으면 그때 주소로 연다. */
+    if (w) { try { w.focus(); } catch(e){} }
+    else { alert('창이 막혔습니다 — 사파리 설정에서 「팝업 차단」을 꺼주세요.'); }
+  } catch(e){ alert('열지 못했습니다: ' + e); }
+}
+
+/* ⚡ 이것이 «진짜 최적화»다 — 주소를 안 주고 이름만으로 그 탭을 찾아 옮긴다.
+   🔴 되면 페이지를 «다시 안 읽는다» = 앱 여는 3초가 통째로 사라진다.
+   🔴 아이폰 사파리가 이걸 막는지가 오늘 재려는 전부다. */
+function switchOnly(who){
+  var name = 'pa-test-' + who, w = null;
+  try { w = window.open('', name); } catch(e){}
+  if(!w){ alert('창이 막혔습니다 — 사파리 설정에서 「팝업 차단」을 꺼주세요.'); return; }
+  /* 🔴 그 이름의 탭이 «없으면» 빈 탭(about:blank)이 새로 생긴다 — 치우고 알린다.
+     안 치우면 대표님 화면에 흰 탭만 남아 「고장 났나」로 보인다. */
+  var blank = false;
+  try { blank = (!w.location || String(w.location.href) === 'about:blank'); } catch(e){ blank = false; }
+  if(blank){
+    try { w.close(); } catch(e){}
+    alert('먼저 1단계에서 「🎬 장비앱 열기」를 눌러 장비앱을 띄워 주세요.');
+    return;
+  }
+  try { w.postMessage({ pa:'switch' }, '*'); } catch(e){}
+  try { w.focus(); } catch(e){}
+}
+</script>
+</body>
+</html>
