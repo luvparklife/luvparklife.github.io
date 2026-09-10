@@ -75,7 +75,8 @@
        🔴 스크롤해도 «따라온다»(sticky) — 프로젝트 화면은 길어서, 안 그러면
           돌아가려고 매번 맨 위까지 올려야 한다. 고정을 풀려면 position:sticky 한 줄만 빼면 된다. */
     .navbar{
-      position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:6px;
+      /* 🔴 2026-09-10 — sticky 를 «띠를 감싸는 .patop» 으로 옮겼다. 둘 다 top:0 이면 겹친다. */
+      position:relative; z-index:1; display:flex; align-items:center; gap:6px;
       padding:8px 0 10px; margin:0 0 6px; background:var(--bg);
       border-bottom:1px solid var(--line);
     }
@@ -97,6 +98,11 @@
        🔴 자주 쓰는 것이 아니라 맨 위 자리를 차지할 이유가 없다(2026-08-31 대표 지시). */
     .editbar{display:flex; align-items:center; gap:8px; margin:22px 0 4px;
       padding-top:16px; border-top:1px solid var(--line); flex-wrap:wrap}
+    /* 🔴 2026-09-10 — «원래 있던» 버그. 코드는 `hidden` 을 제대로 걸고 있었는데
+       위 `display:flex` 가 그것을 이겨서 «프로젝트 화면에도 ✥ 배치 바꾸기가 보였다»
+       (인터넷본에서 실측 — hidden=true 인데 화면엔 보임). 2026-08-31 에 버튼에서
+       이미 한 번 겪은 함정인데 여기 남아 있었다. 첫 화면이 프로젝트로 바뀌면서 눈에 띄어 잡았다. */
+    .editbar[hidden]{display:none !important}
     .editbar button{
       font:inherit; font-size:12.5px; font-weight:700; cursor:pointer;
       border:1px solid var(--line); background:var(--card); color:var(--sub);
@@ -501,23 +507,106 @@
       padding:5px 0; list-style:none}
     .npmore summary::-webkit-details-marker{display:none}
     .npmore[open] summary{margin-bottom:6px}
+
+    /* ═══════ 🧭 앱 이동 띠 + 🏠 사이드바 ═══════════════════════════════
+       2026-09-10 대표 확정 — *"홈화면을 누르면 첨부파일처럼 사이드바 뜨게. 기존에 홈화면은 없는거야"*
+       🖼 확정본 그림 = `260909_앱이동_개선_연습장.html` · `260909_프로젝트화면_4안_연습장.html`
+          🔴 모양(색·크기·묶음)을 그 파일에서 «그대로» 떠 왔다 — 새로 그리지 않았다.
+       🔴 주소를 여기 다시 안 적는다 — 아래 카드들이 원본이고, 띠·사이드바는 «그 카드를 대신 눌러» 준다(§1). */
+    .patop{position:sticky; top:0; z-index:60; background:var(--bg)}
+    .pastrip{background:#20293a; color:#cfd8dc; font-size:12.5px; display:flex; gap:4px;
+      align-items:center; padding:6px 9px; overflow-x:auto; white-space:nowrap;
+      border-radius:0 0 10px 10px; margin:0 0 2px}
+    .pastrip[hidden]{display:none !important}
+    /* 🔔 띠에서 누르면 위에서 펼쳐지는 「지금 할 일」 (2026-09-10 대표 확정 — 「알림은 띠에서만」) */
+    .pabell{background:#fff5f5; border-bottom:1px solid #f2d6d6; padding:11px 13px}
+    .pabell[hidden]{display:none !important}
+    .pabell .h{color:#c0392b; font-weight:800; font-size:14px; margin-bottom:3px}
+    /* 📄 프로젝트 «한 장» — 탭이 없다. 무엇이 들어와도 「— 이름 —」 한 줄만 더하면 된다 */
+    .sect{font-size:12px; color:var(--faint); font-weight:800; margin:20px 0 7px; letter-spacing:.02em}
+    .sect:first-child{margin-top:2px}
+    /* 🔴 2단만 푼다 — 나머지 .pj2 규칙은 그대로 쓴다 */
+    .pj1{display:block !important}
+    .pj1 > .sect + div, .pj1 > .sect + p{margin-bottom:2px}
+    /* 🔴 [hidden 이 display 에 진다] 오늘 세 번째로 밟은 함정 — 감출 것들에 못을 박는다 */
+    .ghead[hidden], .pf[hidden], h1[hidden], .sub[hidden], .navbar[hidden]{display:none !important}   /* 🔴 display:flex 가 hidden 을 이긴다 (오늘 실제로 겪음) */
+    .pastrip::-webkit-scrollbar{height:5px}
+    .pastrip::-webkit-scrollbar-thumb{background:#46536b; border-radius:9px}
+    .pastrip button{border:none; font:inherit; color:inherit; background:none; cursor:pointer}
+    .pastrip .s{padding:5px 10px; border-radius:7px; flex:0 0 auto}
+    .pastrip .s:hover{background:rgba(255,255,255,.13)}
+    .pastrip .s.now{background:#fff; color:#1c2330; font-weight:800}
+    .pastrip .bg{font-size:9.5px; opacity:.7; margin-left:3px; letter-spacing:-1px}
+    .pastrip .s.now .bg{opacity:.55}
+    .pastrip .home{background:rgba(255,255,255,.14); font-weight:800}
+    .pastrip .pjb{background:#2f8f5b; color:#fff; border-radius:7px; padding:5px 11px;
+      font-weight:700; flex:0 0 auto; max-width:44vw; overflow:hidden; text-overflow:ellipsis}
+    .pastrip .bell{background:rgba(255,255,255,.16); color:#fff; border-radius:7px;
+      padding:5px 10px; font-weight:700; flex:0 0 auto}
+    .pastrip .sep{width:1px; height:17px; background:rgba(255,255,255,.22); flex:0 0 auto; margin:0 4px}
+
+    /* 🏠 를 누르면 왼쪽에서 나오는 사이드바 — 전체 앱·페이지 */
+    .padwmask{position:fixed; inset:0; background:rgba(15,20,30,.38); z-index:70}
+    .padwmask[hidden]{display:none !important}
+    .padw{position:fixed; left:0; top:0; bottom:0; width:242px; z-index:71; background:#20293a;
+      color:#cfd8dc; overflow-y:auto; padding:9px 8px; font-size:12.5px}
+    .padw[hidden]{display:none !important}
+    .padw button{border:none; font:inherit; color:inherit; background:none; cursor:pointer;
+      width:100%; text-align:left; display:block}
+    .padw .cls{background:rgba(255,255,255,.14); border-radius:7px; padding:7px 8px;
+      text-align:center; font-weight:700}
+    .padw .gt{font-size:10.5px; color:#7d8ba3; margin:12px 0 4px; padding-left:7px; letter-spacing:.03em}
+    .padw .it{padding:6px 9px; border-radius:7px; margin-bottom:2px}
+    .padw .it:hover{background:rgba(255,255,255,.12)}
+    .padw .it.now{background:#fff; color:#1c2330; font-weight:700}
+    .padw .it small{display:block; font-size:10px; color:#8593aa; margin-top:1px}
+    .padw .it.now small{color:#5b6472}
+    .padw .bgl{float:right; font-size:9.5px; opacity:.65; letter-spacing:-1px}
+    @media(max-width:520px){ .padw{width:100%} }
+
+    /* 📁 띠 초록칸을 누르면 나오는 프로젝트 고르기 */
+    .papick{position:absolute; z-index:72; background:#fff; border:1px solid #b9c2d0;
+      border-radius:10px; box-shadow:0 8px 22px rgba(20,28,44,.22); padding:6px; width:264px;
+      max-width:calc(100vw - 24px); max-height:340px; overflow-y:auto}
+    .papick[hidden]{display:none !important}
+    .papick button{border:none; font:inherit; background:none; cursor:pointer; width:100%;
+      text-align:left; display:block; color:#1c2330}
+    .papick .r{padding:7px 9px; border-radius:7px; font-size:12.5px}
+    .papick .r:hover{background:#f2f6ff}
+    .papick .r.now{background:#e8f4ee; font-weight:800}
+    .papick .r.add{color:#2563eb; font-weight:700}
+    .papick .sep{height:1px; background:#e2e6ee; margin:4px 2px}
   </style>
 </head>
 <body>
+  <!-- 🏠 사이드바 (fixed — 어느 화면에서든 같은 자리에서 나온다) -->
+  <div class="padwmask" id="paDwMask" hidden></div>
+  <nav class="padw" id="paDw" hidden aria-label="전체 앱과 페이지"></nav>
+  <div class="papick" id="paPick" hidden></div>
   <div class="wrap">
     <!-- ⬅ ➡ 🏠 맨 위 이동바 (2026-08-31 대표 지시 — *"최상단에는 뒤로가기 앞으로가기 그리고 홈으로 가기"*)
          🔴 브라우저 발자국을 «그대로» 쓴다(#p · #p/이름 이 이미 발자국을 남긴다) — 새로 만들지 않았다.
          🔴 갈 곳이 없으면 못 누르게 막는다 — 안 그러면 뒤로가 허브 «밖»(전에 보던 사이트)으로 나간다. -->
-    <div class="navbar" id="navBar">
-      <button id="navBack" type="button" title="뒤로" disabled>‹ 뒤로</button>
-      <button id="navFwd"  type="button" title="앞으로" disabled>앞으로 ›</button>
-      <button id="navHome" type="button" title="도구 전체(홈)로">🏠 홈</button>
-      <span class="navsp"></span>
-      <span class="navwh" id="navWhere">도구 전체</span>
+    <div class="patop" id="paTop">
+      <!-- 🧭 앱 이동 띠 (2026-09-10 대표 확정) — 스크롤해도 안 움직인다 -->
+      <div class="pastrip" id="paStrip" hidden></div>
+      <!-- 🔔 은 «띠를 눌러야» 펼쳐진다 (2026-09-10 대표 확정) -->
+      <div class="pabell" id="paBell" hidden>
+        <div class="h">🔔 지금 할 일</div>
+        <div id="pjLeft"><p class="foot" style="margin:0">불러오는 중…</p></div>
+      </div>
+      <!-- 🔴 2026-09-10 대표 확정 — 「‹뒤로 · 앞으로 ›」를 없앴다.
+           [근거] 내가 그동안 댄 이유("아이폰에서 유일한 뒤로가기")는 «사실이 아니었다» —
+             전체화면 앱 모드 태그가 없어 사파리 탭으로 열리고 하단 뒤로가기가 그대로 있다.
+           [진짜 이유] 허브 안에는 «깊이»가 없다 — 다른 프로젝트도·목록도 전부 한 번에 간다.
+           🔴 전체화면 앱 모드(apple-mobile-web-app-capable)를 켜는 날 이 결정을 다시 본다. -->
+      <div class="navbar" id="navBar" hidden></div>
     </div>
+    <!-- 🔴 「🏠 홈」 단추를 여기서 뺐다 — 갈 곳(도구 전체 화면)이 없어졌다.
+         이제 🏠 는 띠에 있고, 누르면 «사이드바»가 나온다. -->
 
-    <h1>🎬 프로덕션 허브</h1>
-    <p class="sub">필요한 앱을 눌러 들어가세요. 이 페이지 하나만 북마크하면 됩니다.</p>
+    <h1 id="pageTitle">🎬 프로덕션 허브</h1>
+    <p class="sub" id="pageSub">필요한 앱을 눌러 들어가세요. 이 페이지 하나만 북마크하면 됩니다.</p>
 
     <!-- ============ 프로필 · 구글 로그인 상태 ============
          디폴트는 「로그아웃」이다. 구글이 자동으로 로그인시키지 않도록 auto_select를 끄고
@@ -829,7 +918,7 @@
     </div>
 
     <div class="group pjview" id="vProjOne" hidden>
-      <div class="ghead">
+      <div class="ghead" id="pjHead">
         <span class="dot"></span>
         <span class="gt" id="pjName">—</span>
         <!-- 🔄 2026-09-08 대표 지시 — *"프로젝트 정보들이 제대로 연동이 안될때 «수동으로 업데이트»
@@ -1073,6 +1162,40 @@
     return (d.getMonth() + 1) + '월 ' + d.getDate() + '일까지 로그인 유지';
   }
 
+  /* ═══════ 🏠 «허브를 열면 무엇이 먼저 뜨나» (2026-09-09 대표 확정 🅐) ═══════
+     대표 원문(2026-09-09) — *"3번이 기본이 되고 «맨 처음 화면은 프로젝트 띄워져있는걸로»"*
+     🔴 그전에는 이것을 「📁 프로젝트 카드를 눌렀을 때」로만 만들어서,
+        허브를 열면 여전히 카드들이 먼저 보였다(대표 지적 *"허브 전체가 바뀌어야 하는거 아니야?"*).
+
+     [주소가 뜻하는 것]
+       (해시 없음) → «첫 화면» — 로그인했으면 프로젝트, 손님이면 도구 전체
+       #home       → 도구 전체 (🏠 홈 단추가 가는 곳)
+       #p          → 📁 프로젝트 목록
+       #p/이름      → 📁 그 프로젝트 정보
+
+     🔴 손님(로그인 전)에게는 «도구 전체»가 먼저다 — 내가 정하고 밝혀 둔다.
+        손님은 프로젝트를 볼 권한이 없어 프로젝트 화면으로 보내면 「🔒 로그인하세요」만 보이고,
+        «처음 오는 프리랜서가 「📱 앱 사용법」을 못 찾는다».
+     🔴 주소를 «바꿔치기»(replaceState)한다 — 새 발자국을 안 만든다.
+        안 그러면 「뒤로」가 다시 첫 화면으로 와서 또 프로젝트로 튄다(제자리걸음).
+     되돌리기 = "허브 첫화면 되돌려줘" (HUB_PROJ_FIRST 를 false 로) */
+  var HUB_PROJ_FIRST = true;
+  /* 🔴 2026-09-10 대표 확정 — *"기존에 홈화면은 없는거야"*. `#home`(도구 전체 화면)을 없앴다.
+     이 값은 «옛 링크가 들어왔을 때 알아보려고» 남겨 둔다 — 들어오면 첫 화면으로 되돌린다. */
+  var HUB_HOME_HASH  = '#home';
+  function hubProjFirst(){
+    if(!HUB_PROJ_FIRST) return false;
+    try { return roleOf(loadUser()) !== 'guest'; } catch(e){ return false; }
+  }
+  /* 「지금 카드 화면(손님 로그인 화면)을 보고 있나」
+     🔴 이름을 hubOnHome 에서 바꿨다 — 「홈」이라는 화면이 없어졌는데 이름만 남으면 거짓말이 된다(§3-5 ⑤).
+     🔴 로그인한 사람에게는 «언제나 false» 다 — 카드 화면이 아예 없다. */
+  function hubCardScreen(){
+    var h = location.hash || '';
+    if(h.indexOf('#p') === 0) return false;
+    return !hubProjFirst();
+  }
+
   /* 이메일로 역할을 정한다 */
   function roleOf(u){
     if(!u || !u.email) return 'guest';
@@ -1094,7 +1217,10 @@
        (원래 있던 것인데, ✥ 배치 바꾸기를 맨 아래로 내리면서 눈에 띄었다)
        → 홈이 아니면 홈 것들을 다시 감춘다. 홈에서는 아무 일도 안 한다. */
     try{
-      if(location.hash){
+      /* 🔴 2026-09-10 — 전에는 «해시가 있으면» 홈이 아니라고 봤다.
+         이제 해시가 «없어도» 프로젝트 화면일 수 있고(첫 화면), `#home` 은 홈이다.
+         → 판단을 hubOnHome() 한 곳에 맡긴다(§1). 안 그러면 🏠 홈에서 카드가 통째로 사라진다. */
+      if(!hubCardScreen()){
         var hs = document.querySelectorAll('.group:not(.pjview)');
         for(var k = 0; k < hs.length; k++) hs[k].hidden = true;
         var eb2 = document.getElementById('edBar'); if(eb2) eb2.hidden = true;
@@ -1942,7 +2068,8 @@
     if(PJ_AUTO_JUMP){
       PJ_AUTO_JUMP = false;
       var _go = pjLastGet() || pjNearest();
-      if(_go && location.hash === '#p'){
+      /* 🔴 해시가 «없는» 첫 화면에서도 여기로 온다 (2026-09-10) — 그때도 넘어가야 한다 */
+      if(_go && (location.hash === '#p' || !location.hash)){
         location.hash = '#p/' + encodeURIComponent(_go);
         return;
       }
@@ -2808,16 +2935,42 @@
     var PJ_FILLABLE = { '거래처':'pkCli', '담당자':'pkMgr', '포토그래퍼':'pkPho', '브랜드':'pkBrand',
                         'PA팀':'pkPeople' };
     var opened = false;      /* 「🔒 대표만」 띠를 아직 안 넣었나 */
-    (d.items||[]).forEach(function(x){
-      /* 📋 2026-09-01 대표 지시 — 카드에 있는 것은 목록에 «안» 그린다(같은 것을 두 번 보게 된다).
-         🔴 [값은 «버리지 않는다»] 카드 버튼이 「(119건)」·폴더 주소로 쓴다.
-            서버에서 지우면 카드가 몇 건인지·어느 폴더인지 모른다. */
-      if(x.who === '카드') return;
-      var mine = (x.who === '대표');
-      if(mine && !IS_OWNER){ secretN++; return; }        /* 팀원에게는 아예 안 그린다 */
-      if(mine && !opened){                                /* 대표에게는 «여기부터» 라고 알린다 */
+    /* 🔴 2026-09-10 대표 확정 — 줄 «순서»와 「누가 보나」는 여기 두 곳에서만 정한다(§1).
+       대표 원문: *"내부폴더, 공유파일, 소싱시트, 장비세부내역은 관리 이상. 정산서는 대표만"*
+       + 앞서 주신 순서 그대로. 🔴 「촬영 회차」는 «아래 섹션»이 맡는다 — 거기서 추가·시간·주소를
+         등록하므로 표에도 두면 «같은 것이 두 곳»이 된다. */
+    var PJ_ORDER = ['촬영일','PA팀','포토그래퍼','브랜드','담당자','공유폴더',
+                    '거래처','견적서','내부폴더','공유파일','소싱시트','장비세부내역','정산서'];
+    var PJ_SEE = { '거래처':'mgr', '견적서':'mgr', '내부폴더':'mgr', '공유파일':'mgr',
+                   '소싱시트':'mgr', '장비세부내역':'mgr', '정산서':'owner' };
+    var IS_MGR = (PJ_ROLE === '대표' || PJ_ROLE === '관리');
+    var _by = {};
+    (d.items||[]).forEach(function(x){ if(x && x.key) _by[x.key] = x; });
+    /* 🔴 서버가 «줄»로 안 주는 둘을 여기서 만든다 — 주소는 이미 받아둔 것을 쓴다(새로 안 부른다) */
+    if(d.shareUrl || d.shareState) _by['공유파일'] = { key:'공유파일', kind:'결과물',
+        state: d.shareUrl ? 'ok' : 'no',
+        text: d.shareUrl ? (d.shareState ? String(d.shareState) : '있음') : '아직 안 만듦',
+        link: d.shareUrl || '' };
+    if(d.sheetUrl) _by['소싱시트'] = { key:'소싱시트', kind:'결과물', state:'ok',
+        text:'단가·마진이 보이는 시트', link:d.sheetUrl };
+    /* 📋 장비세부내역 — 버튼이 하던 일(소싱시트로 감)을 «줄»이 이어받는다 */
+    if(d.sheetUrl && _by['장비세부내역'] && !_by['장비세부내역'].link) _by['장비세부내역'].link = d.sheetUrl;
+    var _list = [];
+    PJ_ORDER.forEach(function(k){ if(_by[k]){ _list.push(_by[k]); delete _by[k]; } });
+    /* 순서표에 없는 것이 서버에서 오면 «버리지 않고» 뒤에 붙인다 — 조용히 사라지면 안 된다 */
+    (d.items||[]).forEach(function(x){ if(x && _by[x.key] && x.who !== '카드'){ _list.push(x); delete _by[x.key]; } });
+    var openedMgr = false;
+    _list.forEach(function(x){
+      var need2 = PJ_SEE[x.key] || '';
+      if(need2 === 'owner' && !IS_OWNER){ secretN++; return; }
+      if(need2 === 'mgr'   && !IS_MGR){   secretN++; return; }
+      if(need2 === 'mgr' && !openedMgr){
+        openedMgr = true;
+        h += '<div class="kvsec">🔒 아래는 <b>「관리」 이상만</b> 보입니다 — 팀원 화면에는 안 나옵니다</div>';
+      }
+      if(need2 === 'owner' && !opened){
         opened = true;
-        h += '<div class="kvsec">🔒 아래는 <b>대표님만</b> 보입니다 — 팀원 화면에는 안 나옵니다</div>';
+        h += '<div class="kvsec">🔒 아래는 <b>대표님만</b> 보입니다</div>';
       }
       var mark = (x.state==='ok') ? '✅'
                : (x.state==='no') ? (x.kind==='필수' ? '🔴' : '🟠') : '⚪';
@@ -4165,6 +4318,30 @@
   window.pjJumpGo = pjJumpGo;
 
   /* ── 프로젝트 하나 ── */
+  /* 🔴 2026-09-10 대표 확정 — 섹션 목록은 «여기 한 곳»에서만 정한다 (§1).
+     대표 지시: *"노션웹으로 쓰던 팀 공유를 어떻게 할지 결정하지 않아서 앞으로 변경 될 수 있는 점 고려하고"*
+     → 팀 공유가 정해지면 이 배열에 «한 줄»만 더하면 되고, 안 하기로 하면 그 한 줄만 뺀다.
+       탭이 아니라 «한 장»이라 위쪽은 하나도 안 바뀐다. */
+  function pjSections_(proj, isOwner, isMgr, canAsk){
+    var a = [
+      { n: '정보', html: function(){
+          return '<div id="pjChk"><p class="foot" style="margin:0">📋 확인 중…</p></div>'
+            + pjLinks(proj, isOwner, isMgr)
+            + '<p class="fn">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.'
+            + (!PJ_ROLE && !canAsk ? '<br>🔑 <b>다시 로그인해주세요</b> — 구글 통행증이 1시간마다 만료돼서 등급을 못 물어봅니다.' : '')
+            + (isMgr ? '' : '<br>🔒 거래처·견적서·내부폴더·공유파일·소싱시트·장비세부내역은 <b>「관리」 이상만</b> 보입니다.')
+            + (isOwner ? '' : '<br>💰 정산서는 <b>대표님만</b> 보입니다.')
+            + '<br>🌐 <b>공유파일</b>이 회색이면 그 프로젝트는 <b>아직 안 만든 것</b>입니다 — 장비시트 메뉴 「🌐 팀 공유파일 만들기」.'
+            + '<br>⚪ <b>아직 안 봄</b> = 노션·정산앱에 있는 것이라 이 화면이 아직 못 물어봅니다.</p>'; } },
+      { n: '촬영 회차', html: function(){ return '<div id="pjDays"></div>'; } }
+      /* 🔮 팀 공유가 정해지면 여기에 한 줄:
+         , { n:'팀 공유', html: function(){ return '<div id="pjTeam"></div>'; } } */
+    ];
+    return a.map(function(x){
+      return '<div class="sect">— ' + pjEsc(x.n) + ' —</div>' + x.html();
+    }).join('');
+  }
+
   function pjOne(proj){
     document.getElementById('pjName').textContent = proj;
     /* 🔴 «지금 목록에 있는 것»만 기억한다 — 완료됐거나 이름이 바뀐 것을 기억하면
@@ -4193,23 +4370,22 @@
     /* 🔴 2026-09-01 — 통행증이 있으면 등급을 물어볼 수 «있다». 신분증만 보면
        「다시 로그인해주세요」라고 «거짓말»한다(§3-5 ⑤ — 글자가 사실과 맞나). */
     var canAsk = canApp();
-    h += '<div class="pj2">'
-      +   '<div class="pane"><div class="ph">진행 · 지금 할 일</div>'
-      +     '<div class="pb" id="pjLeft"><p class="foot" style="margin:0">불러오는 중…</p></div></div>'
-      +   '<div class="pane"><div class="ph">쌓인 정보 · 바로가기</div><div class="pb">'
-      +     '<div id="pjDays"></div>'
-      +     '<div id="pjChk"><p class="foot" style="margin:0">📋 확인 중…</p></div>'
-      +     pjLinks(proj, isOwner, isMgr)
-      +     '<p class="fn">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.'
-      +     (!PJ_ROLE && !canAsk ? '<br>🔑 <b>다시 로그인해주세요</b> — 구글 통행증이 1시간마다 만료돼서 등급을 못 물어봅니다.' : '')
-      +     (isOwner ? '' : '<br>견적서는 단가·마진이 그대로 보여서 <b>대표님만</b> 열립니다.')
-      +     (isMgr ? '' : '<br>📊 소싱시트도 단가·마진이 보여서 <b>「관리」 이상만</b> 열립니다.')
-      +     '<br>🌐 <b>공유파일</b>이 회색이면 그 프로젝트는 <b>아직 안 만든 것</b>입니다 — 장비시트 메뉴 「🌐 팀 공유파일 만들기」.'
-      +     '<br>⚪ <b>아직 안 봄</b> = 노션·정산앱에 있는 것이라 이 화면이 아직 못 물어봅니다.'
-      +     '<br>📝 노션 페이지 · ✅ 끝내기는 <b>아직 안 만들었습니다.</b></p>'
-      +   '</div></div>'
-      + '</div>';
+    /* 🔴 2026-09-10 대표 확정 — 「알림은 띠에서만 · 탭 없이 한 장」.
+       [무엇이 바뀌었나] 2단(왼쪽 진행 / 오른쪽 정보)을 없앴다.
+         · 「진행 · 지금 할 일」(#pjLeft)은 «띠 🔔» 안으로 옮겼다 — id 는 그대로라 채우는 코드는 안 고쳤다.
+         · 탭을 안 만들었다 — 팀 공유가 무엇으로 정해지든 «「— 이름 —」 한 줄»만 더하면 된다.
+           탭이면 탭을 늘려야 하고 폰에서 폭이 모자라 옆으로 밀린다.
+       🔴 섹션 목록은 pjSections_() «한 곳»에서만 정한다(§1). */
+    /* 🔴 class 를 «둘 다» 준다 — 기존 스타일(.pj2 .kv · .pj2 .qk · .pj2 .fn …)이 수십 개라
+       한 장으로 바꾼다고 그것을 다시 쓰면 반드시 어긋난다. .pj1 이 «2단만» 풀어준다. */
+    h += '<div class="pj2 pj1">' + pjSections_(proj, isOwner, isMgr, canAsk) + '</div>';
     document.getElementById('pjOneBody').innerHTML = h;
+    /* 🔄 「다시 불러오기」는 제목줄에 있었는데 그 줄을 감췄다 → 「— 정보 —」 옆으로 «옮긴다».
+       🔴 새로 만들지 않고 «그 요소를 그대로» 옮긴다 — id·리스너가 살아 있어야 한다(§1). */
+    try {
+      var _sy = document.getElementById('pjSync'), _s1 = document.querySelector('#pjOneBody .sect');
+      if(_sy && _s1){ _sy.style.cssText = 'margin-left:8px;font-weight:400;font-size:11.5px'; _s1.appendChild(_sy); }
+    } catch(e){}
     /* ⚡ 2026-08-26 — 회차·1차정보·등급을 «한 번에» 받는다(전에는 셋을 따로 불렀다).
        기다림이 3번 → 1번이 되고, 타임아웃으로 실패할 자리도 그만큼 줄었다. */
     pjOneLoad(proj);
@@ -4274,23 +4450,20 @@
     var p = pjEsc(proj);
     return '<div class="qk" id="pjQk">'
       + '<a href="#" data-pjact="field" data-pjproj="' + p + '" data-pjextra="">🎬 장비</a>'
-      + (isOwner
-          ? '<a href="#" data-pjact="field" data-pjproj="' + p + '" data-pjextra="page=quote">🧾 견적서</a>'
-          : '<a href="#" class="off">🧾 견적서</a>')
+
       /* 📋 2026-09-01 대표 지시 — *"장비세부내역은 정보에서 지우고 카드에 넣어주고"*
          🔴 소싱시트로 간다 — 장비 «세부»는 거기가 원본이다(장비앱은 현장 확인·승인용).
             「관리」 이상만 주소를 받는다(단가·마진) — 소싱시트 버튼과 «같은 자물쇠». */
-      + '<a href="#" class="off" data-pjeqd="1">📋 장비세부내역</a>'
-      + '<a href="#" class="off" data-pjsheet="1">📊 소싱시트</a>'
+
       /* 📋 2026-09-08 대표 신고 — *"프로젝트 생성했는데 탭에는 안들어왔는데"*
          실은 «들어가 있었고» 맨 아래라 못 찾으신 것이다. 그 줄로 바로 데려간다.
          🔴 소싱시트 버튼과 «같은 자물쇠»(관리 이상) — 서버가 주소를 안 주면 회색 그대로 있는다. */
       + '<a href="#" class="off" data-pjlist="1">📋 목록에서 보기</a>'
-      + '<a href="#" class="off" data-pjshare="1">🌐 공유파일</a>'
+
       /* 📁 2026-09-01 대표 지시 — *"카드에 있는 폴더 이름은 내부폴더로 바꿔줘"*
          🔴 이름만 바꾸는 게 아니라 «가리키는 곳»도 바꾼다 — 안 그러면 글자가 거짓말한다(§3-5 ⑤).
             프로젝트 폴더 안의 `내부_<프로젝트명>` 을 연다. 없으면 프로젝트 폴더로 떨어진다. */
-      + '<a href="#" class="off" data-pjfolder="1">📁 내부폴더</a>'
+
       + '<a href="#" data-pjact="settle" data-pjproj="' + p + '">💰 ' + (isMgr ? '정산 (관리)' : '내 청구') + '</a>'
       /* 🔴 2026-08-26 대표 지시 *"잘못만들었을때 … 삭제하거나 수정할 수 있게"*
          대표에게만 보인다 — 서버도 대표가 아니면 거절한다(화면만 감추는 게 아니다). */
@@ -5277,9 +5450,9 @@
     b.disabled = (NAV_AT <= 1);
     f.disabled = (NAV_AT >= NAV_MAX);
     var h = location.hash || '';
-    if(hm) hm.disabled = !h;                            /* 이미 홈이면 못 누른다 */
+    /* 🔴 「🏠 홈」 단추는 없앴다(홈 화면이 없다) — 🏠 는 띠에 있고 «사이드바»를 연다 */
     if(w){
-      var t = '도구 전체';
+      var t = hubCardScreen() ? '로그인이 필요합니다' : '📁 프로젝트 목록';
       if(h === '#p') t = '📁 프로젝트 목록';
       else if(h.indexOf('#p/') === 0){
         try{ t = '📁 ' + decodeURIComponent(h.slice(3)); }catch(e){ t = '📁 ' + h.slice(3); }
@@ -5294,11 +5467,8 @@
     if(b) b.addEventListener('click', function(){ if(!b.disabled) history.back(); });
     if(f) f.addEventListener('click', function(){ if(!f.disabled) history.forward(); });
     /* 🏠 홈 — 발자국을 «남긴다»(뒤로 누르면 보던 프로젝트로 돌아온다) */
-    if(hm) hm.addEventListener('click', function(){
-      if(hm.disabled) return;
-      if(location.hash) location.hash = '';
-      else { pjRoute(); }
-    });
+    /* 🔴 「🏠 홈」 단추는 이동바에서 뺐다 (2026-09-10) — 갈 곳이 없어졌다.
+       🏠 는 띠에 있고, 누르면 «사이드바»가 나온다(paDrawer). */
   })();
 
   /* ── 화면 갈아끼우기 ── */
@@ -5310,33 +5480,89 @@
           «방금 연 폼»을 덮었다(「✏️ 정보를 눌러도 아무 반응 없음」).
           → 폼이 사는 자리(`#p`)를 벗어날 때만 정리한다. */
     if(h !== '#p') pjEditLeave();
-    var list = document.getElementById('vProjList');
-    var one  = document.getElementById('vProjOne');
-    var home = document.querySelectorAll('.group:not(.pjview)');
-    /* ✥ 배치 바꾸기는 «홈에서만» 보인다 — 프로젝트 화면엔 끌어다 놓을 카드가 없다 */
-    var eb = document.getElementById('edBar');
+    /* 🔴 2026-09-10 — 「목록이 도착하면 프로젝트로 튄다」는 깃발(PJ_AUTO_JUMP)은
+       «그 길로 갈 때»만 살아 있어야 한다. 안 꺼두면 나중에 대표님이 «일부러»
+       📋 전체 목록을 열었을 때도 프로젝트로 끌려간다(내 검사가 실제로 잡았다). */
+    /* 🔴 2026-09-10 — 이 깃발은 «첫 화면(해시 없음)» 전용이다.
+       해시가 «있으면» 대표님이 일부러 간 것이니 끈다 — 안 끄면 📋 전체 목록을 열어도 끌려간다.
+       (`#home` 이 없어지면서 옛 조건이 죽어 있었다 — 검사가 잡았다) */
+    if(h) PJ_AUTO_JUMP = false;
+    /* 옛 `#home` 링크가 들어오면 «첫 화면»으로 되돌린다 — 그 화면은 이제 없다 */
+    if(h === HUB_HOME_HASH){
+      try { history.replaceState(history.state, '', location.pathname + location.search); } catch(e){}
+      h = '';
+    }
     if(h.indexOf('#p/') === 0){
       var proj = '';
       try { proj = decodeURIComponent(h.slice(3)); } catch(e){ proj = h.slice(3); }
-      for(var i=0;i<home.length;i++) home[i].hidden = true;
-      list.hidden = true; one.hidden = false;
-      if(eb) eb.hidden = true;
-      pjOne(proj);
+      pjShowOne_(proj);
     } else if(h === '#p'){
-      for(var j=0;j<home.length;j++) home[j].hidden = true;
-      one.hidden = true; list.hidden = false;
-      if(eb) eb.hidden = true;
-      pjLoad(false);
+      pjShowList_();
     } else {
-      list.hidden = true; one.hidden = true;
-      for(var k=0;k<home.length;k++) home[k].hidden = false;
-      /* 🔴 홈으로 돌아오면 등급별 감추기를 «다시» 건다 —
-         안 그러면 대표 전용 그룹이 손님에게 열린 채로 남는다.
-         (edBar 도 data-see="owner" 라 여기서 «대표에게만» 다시 켜진다) */
-      try { applyRole(roleOf(loadUser())); } catch(e){}
+      /* ── 해시 없음 = «허브를 열었다» (2026-09-09 대표 확정 🅐) ── */
+      if(hubProjFirst()){
+        var n = pjLastGet() || pjNearest();
+        if(n){
+          /* 🔴 발자국을 «새로 만들지 않고 바꿔치기»한다 —
+             pushState 로 하면 「뒤로」가 첫 화면으로 와서 또 튀어 제자리걸음이 된다. */
+          try { history.replaceState(history.state, '', '#p/' + encodeURIComponent(n)); } catch(e){}
+          pjShowOne_(n);
+        } else {
+          /* 아직 목록을 모른다(처음 열었거나 저장본이 없다) →
+             목록을 그리다가 «받는 순간» 가장 가까운 촬영으로 넘어간다(pjPaint) */
+          PJ_AUTO_JUMP = true;
+          pjShowList_();
+        }
+      } else {
+        pjShowCards_();     /* 🔴 손님 — 로그인 카드와 「팀」 카드들. 갈 수 있는 곳이 여기뿐이다 */
+      }
     }
+    try { paStripPaint(); } catch(e){}
     try { navMark(); } catch(e){}
     window.scrollTo(0,0);
+  }
+
+  /* ── 화면 셋 — 그리는 자리는 «한 곳씩»이다 (§1) ── */
+  function pjHomeEls_(){ return document.querySelectorAll('.group:not(.pjview)'); }
+  /* 🔴 2026-09-10 대표 확정 — 첨부에 없는 것들을 프로젝트 화면에서 감춘다.
+     [무엇] 「🎬 프로덕션 허브」 제목 · 설명 한 줄 · 로그인 카드 · 「프로젝트명 🔄 ‹목록」 줄.
+     🔴 [지우지 않고 감춘다] 손님(로그인 전)에게는 그대로 보여야 한다 — 로그인할 자리다.
+     🔴 [로그아웃은 사이드바 맨 아래로] 로그인 카드가 사라져 갈 곳이 거기뿐이다(대표 확정). */
+  function pjChrome_(hide){
+    ['pageTitle','pageSub','pf','pjHead'].forEach(function(id){
+      var e = document.getElementById(id); if(e) e.hidden = !!hide;
+    });
+  }
+  function pjShowOne_(proj){
+    pjChrome_(true);
+    var home = pjHomeEls_();
+    for(var i=0;i<home.length;i++) home[i].hidden = true;
+    var l = document.getElementById('vProjList'), o = document.getElementById('vProjOne');
+    var eb = document.getElementById('edBar');
+    if(l) l.hidden = true; if(o) o.hidden = false;
+    if(eb) eb.hidden = true;               /* ✥ 배치 바꾸기는 «홈에서만» — 끌어다 놓을 카드가 없다 */
+    pjOne(proj);
+  }
+  function pjShowList_(){
+    pjChrome_(true);
+    var home = pjHomeEls_();
+    for(var i=0;i<home.length;i++) home[i].hidden = true;
+    var l = document.getElementById('vProjList'), o = document.getElementById('vProjOne');
+    var eb = document.getElementById('edBar');
+    if(o) o.hidden = true; if(l) l.hidden = false;
+    if(eb) eb.hidden = true;
+    pjLoad(false);
+  }
+  function pjShowCards_(){
+    pjChrome_(false);        /* 손님 — 로그인 카드가 있어야 로그인한다 */
+    var l = document.getElementById('vProjList'), o = document.getElementById('vProjOne');
+    if(l) l.hidden = true; if(o) o.hidden = true;
+    var home = pjHomeEls_();
+    for(var k=0;k<home.length;k++) home[k].hidden = false;
+    /* 🔴 홈으로 돌아오면 등급별 감추기를 «다시» 건다 —
+       안 그러면 대표 전용 그룹이 손님에게 열린 채로 남는다.
+       (edBar 도 data-see="owner" 라 여기서 «대표에게만» 다시 켜진다) */
+    try { applyRole(roleOf(loadUser())); } catch(e){}
   }
   window.addEventListener('hashchange', pjRoute);
 
@@ -5450,7 +5676,13 @@
        🔴 프로젝트 화면(#p)에서는 홈 카드가 «원래» 다 숨겨져 있으므로 재지 않는다 —
           안 그러면 멀쩡한 배치를 사고로 오해한다(§3-2-D 거짓 경보). */
     function guardVisible(){
-      if (String(location.hash || '').indexOf('#p') === 0) return;
+      /* 🔴 2026-09-10 — 전에는 «주소»로 프로젝트 화면인지 봤다. 이제 해시가 «없어도»
+         프로젝트 화면일 수 있어(첫 화면) 그대로 두면 «멀쩡한 배치를 사고로 오해»해
+         카드를 통째로 원래 자리로 되돌린다. → 주소가 아니라 «지금 화면»을 본다.
+         이 편이 원래 의도에도 더 맞다(부팅 때는 아직 프로젝트 화면이 안 그려져 있어
+         예전과 똑같이 안전망이 그대로 돈다). */
+      var _o = document.getElementById('vProjOne'), _l = document.getElementById('vProjList');
+      if ((_o && !_o.hidden) || (_l && !_l.hidden)) return;
       var vis = Array.prototype.filter.call(document.querySelectorAll('a.card'), function(c){
         return c.offsetParent !== null && !c.closest('.pjview'); }).length;
       if (vis >= 2) return;
@@ -5750,6 +5982,227 @@
 
     restore();
   })();
+
+
+  /* ═══════════ 🧭 앱 이동 띠 + 🏠 사이드바 ═══════════════════════════════
+     2026-09-10 대표 확정 — *"홈화면을 누르면 첨부파일처럼 사이드바 뜨게. 기존에 홈화면은 없는거야"*
+     🖼 확정본 그림 = `260909_앱이동_개선_연습장.html`(띠·사이드바) · `260909_프로젝트화면_4안_연습장.html`
+
+     🔴 여기에 «주소를 하나도 안 적었다»(§1) — 아래 카드들이 원본이다.
+        · 띠의 앱 3개 → 이미 있는 `pjOpen`·`pjSettle` 을 그대로 부른다(프로젝트를 데리고 간다)
+        · 사이드바의 나머지 → «그 카드를 대신 눌러» 준다(card.click()).
+          그러면 통행증(?t=)·탭 이름 규칙이 통째로 그대로 산다 — 다시 짤 것이 0이다.
+     🔴 카드를 찾는 열쇠 = id 가 있으면 id, 없으면 «제목 첫 글자». 못 찾으면 그 줄을 «안 그린다»
+        (죽은 줄을 만들지 않는다). 점검이 「사이드바에 N개」를 세므로 조용히 사라지지 않는다.
+     되돌리기 = "허브 띠 빼줘" */
+  var PA_APPS = [
+    { k:'proj',  ico:'📁', n:'프로젝트', id:'cardProj' },
+    { k:'quote', ico:'🧾', n:'견적서',  t:'견적서' },
+    { k:'field', ico:'🎬', n:'장비앱',  t:'현장 장비앱' },
+    { k:'pay',   ico:'💰', n:'정산',    t:'정산앱' }
+  ];
+  var PA_PAGES = [
+    { ico:'📊', n:'장비 시트',            s:'소싱시트 · 장비DB · 단가',  t:'장비 관리' },
+    { ico:'🧾', n:'세무대사',             s:'계산서 발행 확인',          t:'세무대사' },
+    { ico:'🅰️', n:'업무 / 일정 관리',      s:'보고서 · 문서 수정',        t:'업무 / 일정 관리' },
+    { ico:'🔄', n:'일정 새로고침',         s:'캘린더 ↔ 노션',            t:'일정 새로고침' },
+    { ico:'📚', n:'도서관',               s:'자료 · 레퍼런스',           t:'도서관' },
+    { ico:'📋', n:'서비스 안내',           s:'거래처에 보낼 링크',        t:'서비스 안내' },
+    { ico:'💰', n:'단가 안내 PDF — 한글',  s:'🔒 보낼 땐 조심',           t:'단가 안내 PDF' },
+    { ico:'💵', n:'Price Guide — 영문',   s:'해외팀 · 해외 클라이언트',   t:'Price Guide' },
+    { ico:'📋', n:'프로젝트 생애주기 입력', s:'노션에 등록',              t:'프로젝트 생애주기' },
+    { ico:'📱', n:'앱 사용법',             s:'3분이면 됩니다',            t:'앱 사용법' }
+  ];
+  function paCard(x){
+    if(!x) return null;
+    if(x.id){ return document.getElementById(x.id); }
+    var cs = document.querySelectorAll('a.card');
+    for(var i=0;i<cs.length;i++){
+      var t = cs[i].querySelector('.title');
+      if(t && t.textContent.trim().indexOf(x.t) === 0) return cs[i];
+    }
+    return null;
+  }
+  /* 🔴 「누가 볼 수 있나」를 새로 정하지 않는다 — 그 카드가 든 그룹의 data-see 를 읽는다.
+     applyRole 과 «같은 규칙»이라 두 곳이 어긋날 수가 없다(§1). */
+  function paSee(card){
+    if(!card) return null;
+    var g = card.closest ? card.closest('[data-see]') : null;
+    return g ? (g.getAttribute('data-see') || '') : '';
+  }
+  function paCan(card){
+    var need = paSee(card);
+    if(need === null) return false;          /* 카드를 못 찾았다 */
+    if(!need) return true;                   /* 모두 볼 수 있는 것 */
+    var r = roleOf(loadUser());
+    return r === 'owner' || (r === 'admin' && need === 'admin');
+  }
+  /* 딱지 — 확정본과 같은 규칙: 모두 볼 수 있으면 없음 · 대표+관리면 👑🛠 · 대표만이면 👑 */
+  function paBadge(card){
+    var need = paSee(card);
+    return need === 'owner' ? '👑' : (need === 'admin' ? '👑🛠' : '');
+  }
+  function roleName_(){
+    var r = roleOf(loadUser());
+    return r === 'owner' ? '대표' : r === 'admin' ? '관리' : r === 'team' ? '팀원' : '손님';
+  }
+  function paProjNow(){
+    try { return (typeof PJ_NOW === 'string' && PJ_NOW) ? PJ_NOW : (pjLastGet() || pjNearest() || ''); }
+    catch(e){ return ''; }
+  }
+
+  /* ── 띠 그리기 ── */
+  function paStripPaint(){
+    var el = document.getElementById('paStrip');
+    if(!el) return;
+    /* 🔴 손님(로그인 전)에게는 띠를 안 그린다 — 프로젝트를 볼 권한이 없어 갈 곳이 없다.
+       그때는 본문에 로그인 카드와 「팀」 카드들이 보인다. */
+    if(roleOf(loadUser()) === 'guest'){ el.hidden = true; el.innerHTML = ''; return; }
+    var nm = paProjNow();
+    var h = '<button class="s home" type="button" data-pa="home" title="전체 앱·페이지">🏠</button>'
+          + '<button class="pjb" type="button" data-pa="pick" id="paPjBtn">📁 '
+          + pjEsc(nm || '프로젝트 고르기') + ' ▾</button>'
+          + '<button class="bell" type="button" data-pa="bell" title="오늘 할 일">🔔</button>'
+          + '<span class="sep"></span>';
+    PA_APPS.forEach(function(x){
+      var c = paCard(x);
+      if(!paCan(c)) return;
+      var b = paBadge(c);
+      h += '<button class="s' + (x.k === 'proj' ? ' now' : '') + '" type="button" data-pa="go" data-pak="'
+         + x.k + '">' + x.ico + ' ' + pjEsc(x.n) + (b ? '<span class="bg">' + b + '</span>' : '') + '</button>';
+    });
+    el.innerHTML = h;
+    el.hidden = false;
+  }
+
+  /* ── 🏠 사이드바 ── */
+  function paDrawerPaint(){
+    var dw = document.getElementById('paDw');
+    if(!dw) return;
+    var h = '<button class="cls" type="button" data-pa="close">✕ 닫기</button>'
+          + '<div class="gt">📁 이 프로젝트에서</div>';
+    PA_APPS.forEach(function(x){
+      var c = paCard(x); if(!paCan(c)) return;
+      var b = paBadge(c);
+      h += '<button class="it' + (x.k === 'proj' ? ' now' : '') + '" type="button" data-pa="go" data-pak="'
+         + x.k + '">' + (b ? '<span class="bgl">' + b + '</span>' : '') + x.ico + ' ' + pjEsc(x.n) + '</button>';
+    });
+    h += '<div class="gt">🗂 그 밖에 (프로젝트와 상관없이)</div>';
+    PA_PAGES.forEach(function(x, i){
+      var c = paCard(x); if(!paCan(c)) return;
+      var b = paBadge(c);
+      h += '<button class="it" type="button" data-pa="card" data-pai="' + i + '">'
+         + (b ? '<span class="bgl">' + b + '</span>' : '') + x.ico + ' ' + pjEsc(x.n)
+         + '<small>' + pjEsc(x.s) + '</small></button>';
+    });
+    /* 🔴 `pjNew` 카드를 찾지 않는다 — 그건 «목록 화면에만» 그려지는 버튼이라
+       프로젝트 정보 화면에서는 DOM 에 없다(2026-09-10 실측으로 잡음).
+       대신 드롭다운의 「➕ 새 프로젝트 만들기」와 «똑같은 길»(pjJumpGo)을 쓴다(§1). */
+    h += '<div class="gt">＋</div>'
+       + '<button class="it" type="button" data-pa="new">➕ 새 프로젝트</button>';
+    /* 🚪 2026-09-10 대표 확정 — 「사이드바 맨 아래면 돼」. 로그인 카드를 감췄으니 여기가 유일한 자리다. */
+    var _u = loadUser();
+    if(_u && _u.email){
+      h += '<div class="gt">👤 ' + pjEsc(_u.name || _u.email) + ' · ' + pjEsc(PJ_ROLE || roleName_()) + '</div>'
+         + '<button class="it" type="button" data-pa="out">🚪 로그아웃</button>';
+    }
+    dw.innerHTML = h;
+  }
+  function paDrawer(on){
+    var dw = document.getElementById('paDw'), mk = document.getElementById('paDwMask');
+    if(!dw) return;
+    if(on === undefined) on = dw.hidden;
+    if(on) paDrawerPaint();
+    dw.hidden = !on; if(mk) mk.hidden = !on;
+    paPick(false);
+    var hb = document.querySelector('#paStrip .home');
+    if(hb) hb.classList.toggle('now', !!on);
+  }
+  window.paDrawer = paDrawer;
+
+  /* ── 📁 프로젝트 고르기 (띠 초록칸) ── */
+  function paPick(on){
+    var pk = document.getElementById('paPick'), btn = document.getElementById('paPjBtn');
+    if(!pk) return;
+    if(on === undefined) on = pk.hidden;
+    if(!on){ pk.hidden = true; pk.innerHTML = ''; return; }
+    var now = paProjNow();
+    var rows = (PJ_CACHE || []).map(function(p){ return (p && p.name) || p; })
+                 .filter(function(n){ return n && String(n).trim(); });
+    var h = '';
+    if(now) h += '<button class="r now" type="button" data-pa="pj" data-pan="' + pjEsc(now) + '">✓ 📁 '
+               + pjEsc(now) + '</button>';
+    rows.forEach(function(n){
+      if(n === now) return;
+      h += '<button class="r" type="button" data-pa="pj" data-pan="' + pjEsc(n) + '">📁 ' + pjEsc(n) + '</button>';
+    });
+    if(!rows.length && !now) h += '<div class="r" style="color:#8a837b">목록을 불러오는 중…</div>';
+    h += '<div class="sep"></div>'
+       + '<button class="r add" type="button" data-pa="new">➕ 새 프로젝트 만들기</button>'
+       + '<button class="r" type="button" data-pa="list">📋 전체 목록 보기</button>';
+    pk.innerHTML = h;
+    pk.hidden = false;
+    /* 초록칸 바로 아래에 붙인다 */
+    if(btn){
+      var r = btn.getBoundingClientRect();
+      pk.style.left = Math.max(8, Math.min(r.left + window.scrollX, window.innerWidth - 274)) + 'px';
+      pk.style.top  = (r.bottom + window.scrollY + 5) + 'px';
+    }
+  }
+
+  /* ── 눌렀을 때 ── */
+  function paGoApp(k){
+    paDrawer(false);
+    var n = paProjNow();
+    if(k === 'proj'){ location.hash = n ? '#p/' + encodeURIComponent(n) : '#p'; return; }
+    /* 🔴 앱을 여는 규칙을 다시 안 짠다 — 프로젝트 화면 바로가기가 쓰는 그 함수를 그대로 부른다 */
+    if(k === 'pay')   { pjSettle(n); return; }
+    if(k === 'quote') { pjOpen(FIELD_APP, n, 'page=quote'); return; }
+    if(k === 'field') { pjOpen(FIELD_APP, n, ''); return; }
+  }
+  document.addEventListener('click', function(ev){
+    var el = ev.target, n = 0, act = null;
+    while(el && n++ < 8){
+      if(el.getAttribute){ act = el.getAttribute('data-pa'); if(act) break; }
+      el = el.parentElement;
+    }
+    /* 드롭다운 밖을 누르면 닫는다 */
+    if(!act){
+      var pk = document.getElementById('paPick');
+      if(pk && !pk.hidden) paPick(false);
+      return;
+    }
+    ev.preventDefault();
+    if(act === 'home')  { paDrawer(); return; }
+    if(act === 'out')   { paDrawer(false);
+                          var ob = document.getElementById('pfOut'); if(ob) ob.click(); return; }
+    if(act === 'close') { paDrawer(false); return; }
+    if(act === 'pick')  { paPick(); return; }
+    if(act === 'go')    { paGoApp(el.getAttribute('data-pak')); return; }
+    if(act === 'list')  { paPick(false); paDrawer(false); pjEditLeave(); location.hash = '#p'; return; }
+    if(act === 'pj')    { paPick(false); pjEditLeave();
+                          location.hash = '#p/' + encodeURIComponent(el.getAttribute('data-pan') || ''); return; }
+    if(act === 'new')   { paPick(false); paDrawer(false);
+                          /* 드롭다운 「➕ 새 프로젝트 만들기」와 같은 길 — 목록으로 갔다가 추가 창을 연다 */
+                          try { pjJumpGo('__new__'); } catch(e){} return; }
+    if(act === 'bell')  {
+      /* 🔔 = 「지금 할 일」. 예전 왼쪽 칸(pjLeft)이 그대로 여기로 왔다 — 가짜 숫자가 아니라 «진짜»다. */
+      var bp = document.getElementById('paBell');
+      if(bp){ bp.hidden = !bp.hidden;
+        var bb = document.querySelector('#paStrip .bell');
+        if(bb) bb.classList.toggle('act', !bp.hidden); }
+      return;
+    }
+    if(act === 'card')  {
+      paDrawer(false);
+      var x = PA_PAGES[+el.getAttribute('data-pai')];
+      var c = paCard(x);
+      if(!c){ alert('「' + (x ? x.n : '') + '」 카드를 못 찾았습니다.'); return; }
+      c.click();      /* 🔴 주소·통행증·탭 규칙이 그대로 산다 */
+      return;
+    }
+  }, true);
+  window.addEventListener('resize', function(){ paPick(false); });
 
   startGoogle();
   pjRoute();
