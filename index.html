@@ -587,6 +587,11 @@
     .pabell .h{color:#c0392b; font-weight:800; font-size:14px; margin-bottom:3px}
     /* 📄 프로젝트 «한 장» — 탭이 없다. 무엇이 들어와도 「— 이름 —」 한 줄만 더하면 된다 */
     .sect{font-size:12px; color:var(--faint); font-weight:800; margin:20px 0 7px; letter-spacing:.02em}
+    /* 📐 2026-09-10 — 접을 수 있는 섹션 머리(「정보」). 눌러서 접었다 폈다.
+       🔴 접혀 있어도 «몇 개인지»는 적는다 — 「있다」는 걸 알아야 한다. */
+    .sect.fold{cursor:pointer; user-select:none; -webkit-user-select:none}
+    .sect.fold:hover{color:var(--daily)}
+    .sect .secn{font-weight:400; color:var(--line-strong,#b6bcc4); margin-left:4px}
     .sect:first-child{margin-top:2px}
     /* 🔴 2단만 푼다 — 나머지 .pj2 규칙은 그대로 쓴다 */
     .pj1{display:block !important}
@@ -2958,6 +2963,8 @@
        🔴 [d.check 안에서 온다] 서버가 그 응답에 note·tasks 를 실어 보낸다.
        🔴 [try 로 감싼다] 여기서 터지면 «회차·정보»까지 같이 안 그려진다. */
     try { if(d.check) pjNotePaint(proj, d.check); } catch(e){}
+    /* 📐 접힌 「정보」 머리에 «몇 줄인지» 적는다 — 그리기가 다 끝난 «뒤»라야 셀 수 있다 */
+    try { pjSecCount(); } catch(e){}
   }
 
   function pjCheck(proj){
@@ -4567,7 +4574,9 @@
       /* 📌 2026-09-10 대표 확정 — 「촬영 안내」는 «회차 밑»으로 (*"촬영 안내는 회차 밑으로"*).
          노션 「PA공유_」 페이지를 없애는 자리다 — 특이사항·차량·픽업루트를 여기 적는다. */
       { n: '촬영 안내', html: function(){ return '<div id="pjNote"></div>'; } },
-      { n: '정보', html: function(){
+      /* 📐 fold:1 = 접을 수 있는 섹션. 「정보」만 접는다 —
+         회차·촬영 안내는 «매번 보는 것»이라 접으면 오히려 나쁘다. */
+      { n: '정보', fold: 1, html: function(){
           return '<div id="pjChk"><p class="foot" style="margin:0">📋 확인 중…</p></div>'
             + pjLinks(proj, isOwner, isMgr)
             + '<p class="fn">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.'
@@ -4579,10 +4588,75 @@
       /* 🔮 팀 공유가 정해지면 여기에 한 줄:
          , { n:'팀 공유', html: function(){ return '<div id="pjTeam"></div>'; } } */
     ];
+    /* 📐 2026-09-10 대표 확정 — 「정보·폴더를 접어둔다」 (탭은 «안» 만든다)
+       ═══════════════════════════════════════════════════════════════════
+       대표 질문: *"프로젝트정보페이지에 있으면 로딩도 길어지고 느려지는거 아니야?
+                    아예 페이지내에 탭을 하나 더 만들면 어때?"*
+       🔴 [탭은 «로딩을 안 줄인다»] 두 입장을 붙여 논쟁시켰는데 **탭을 주장한 쪽까지 인정했다** —
+          서버는 이미 «한 번»에 회차·정보·안내를 다 받아온다. 탭은 «덜 받는» 게 아니라 «덜 그리는» 것이다.
+       🔴 [그래서 «실제로 쟀다»] 아이폰 390×660 기준:
+          보통(회차1·확인3) **2.1화면** · 나쁜 경우(회차5·확인15) **3.9화면**.
+          그리고 «자리를 제일 많이 먹는 것»이 **정보 줄 502px** 이었다(회차 225 · 폴더 196).
+          🔴 그런데 정보는 «가장 안 바뀌는 것»이다 — 거래처·브랜드는 한 번 정하면 그대로다.
+       👉 **정보 하나만 접으면 698px(정보 502 + 폴더 196)가 사라진다** — 탭 3개를 만들지 않고.
+          접기는 «이미 있는 것»이고(업체 연락처·완료), 탭은 «새 상태»를 하나 더 만든다(§4-1).
+       🔴 [접는 것은 「정보」뿐이다] 회차·촬영 안내는 «매번 보는 것»이라 접지 않는다.
+       되돌리기 = **"정보 접기 빼줘"** */
     return a.map(function(x){
-      return '<div class="sect" data-sec="' + pjEsc(x.n) + '">— ' + pjEsc(x.n) + ' —</div>' + x.html();
+      var canFold = !!x.fold;
+      var open = canFold ? pjSecOpen(x.n) : true;
+      return '<div class="sect' + (canFold ? ' fold' : '') + '" data-sec="' + pjEsc(x.n) + '"'
+           + (canFold ? ' data-pjsec="' + pjEsc(x.n) + '" title="눌러서 접었다 폈다 합니다"' : '')
+           + '>' + (canFold ? (open ? '▾ ' : '▸ ') : '— ') + pjEsc(x.n) + (canFold ? '' : ' —')
+           + (canFold ? '<span class="secn" id="secN' + pjEsc(x.n) + '"></span>' : '')
+           + '</div>'
+           + '<div class="secbody" data-sb="' + pjEsc(x.n) + '"' + (open ? '' : ' hidden') + '>'
+           + x.html() + '</div>';
     }).join('');
   }
+  /* 📐 접힘 상태는 «그 사람 폰»에 남는다 — 대표님이 한 번 펴시면 그 뒤로 계속 펴져 있다.
+     🔴 [기본은 «접힘»] 정보는 가장 안 바뀌는 것이고, 접으면 화면이 절반이 된다.
+     🔴 [못 읽어도 안 깨진다] 저장소가 막힌 브라우저(사생활 보호 창)에서도 기본값으로 돈다. */
+  var PJ_SEC_LS = 'pa_pjsec_v1';
+  function pjSecAll(){
+    try { return JSON.parse(localStorage.getItem(PJ_SEC_LS) || '{}') || {}; }
+    catch(e){ return {}; }
+  }
+  function pjSecOpen(n){
+    var o = pjSecAll();
+    return (n in o) ? !!o[n] : false;      /* 처음엔 접혀 있다 */
+  }
+  function pjSecToggle(n){
+    var o = pjSecAll();
+    o[n] = !pjSecOpen(n);
+    try { localStorage.setItem(PJ_SEC_LS, JSON.stringify(o)); } catch(e){}
+    var body = document.querySelector('.secbody[data-sb="' + n + '"]');
+    var head = document.querySelector('.sect[data-pjsec="' + n + '"]');
+    if(body) body.hidden = !o[n];
+    if(head) head.firstChild.textContent = (o[n] ? '▾ ' : '▸ ') + n;
+    pjSecCount();
+  }
+  /* 접힌 머리에 «몇 개인지» 적는다 — 접혀 있어도 «있다»는 건 알아야 한다 */
+  function pjSecCount(){
+    try {
+      var el = document.getElementById('secN정보');
+      if(!el) return;
+      var open = pjSecOpen('정보');
+      var kv = document.querySelectorAll('#pjChk .kv').length;
+      var fd = document.querySelectorAll('#pjFd .qk a').length;
+      el.textContent = open ? '' : (' ' + kv + '줄 · 폴더 ' + fd);
+    } catch(e){}
+  }
+  document.addEventListener('click', function(e){
+    var el = e.target, n = 0, sec = null;
+    while(el && n++ < 3){
+      if(el.getAttribute){ sec = el.getAttribute('data-pjsec'); if(sec !== null) break; }
+      el = el.parentElement;
+    }
+    if(sec === null) return;
+    e.preventDefault();
+    pjSecToggle(sec);
+  });
 
   function pjOne(proj){
     document.getElementById('pjName').textContent = proj;
