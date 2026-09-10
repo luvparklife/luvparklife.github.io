@@ -1,0 +1,691 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>프로젝트 안 레이아웃 — 4안 · 알림 설정</title>
+<style>
+:root{--ink:#1c2330;--sub:#5b6472;--line:#e6e1d8;--bg:#faf8f4;--pt:#2563eb;--gr:#2f8f5b;--acc:#b8863b;--rd:#c0392b}
+*{box-sizing:border-box}
+body{margin:0;background:#eef0f4;color:var(--ink);
+     font:15px/1.7 -apple-system,"Apple SD Gothic Neo",sans-serif;padding:0 0 60px}
+.page{max-width:1020px;margin:0 auto;padding:0 14px}
+h1{font-size:21px;margin:20px 0 3px;letter-spacing:-.4px}
+.lead{color:var(--sub);font-size:13.5px;margin:0 0 14px}
+h2{font-size:16px;margin:24px 0 6px;padding-bottom:6px;border-bottom:2px solid #d9dee6}
+.sw{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0 4px;align-items:center}
+.sw b{font-size:12.5px;color:var(--sub);margin-right:2px;flex:0 0 auto}
+.sw button{border:1px solid #cfd5df;background:#fff;border-radius:8px;padding:6px 12px;
+  font-size:12.5px;font-family:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.sw button.on{background:#20293a;border-color:#20293a;color:#fff;font-weight:700}
+.sw button small{display:block;font-size:11px;opacity:.72;font-weight:400}
+.note{background:#fff8e8;border-left:4px solid var(--acc);border-radius:0 9px 9px 0;
+  padding:9px 13px;font-size:13px;margin:10px 0}
+.note.red{background:#fff5f5;border-left-color:var(--rd)}
+
+/* 화면 */
+.brz{border:1px solid #d3d8e0;border-radius:12px;overflow:hidden;background:#fff;
+  box-shadow:0 6px 26px rgba(20,30,50,.12);margin:12px 0}
+.urlbar{background:#e8ebf0;padding:6px 11px;font-size:11.5px;color:#5b6472;display:flex;gap:6px;align-items:center}
+.urlbar .dot{width:9px;height:9px;border-radius:50%;background:#c9cfda}
+.urlbar .u{background:#fff;border-radius:5px;padding:3px 10px;flex:1;font-size:11.5px;color:#6b7280}
+.scr{position:relative;display:flex;flex-direction:column;height:620px;overflow:hidden;margin:0 auto;
+  transition:max-width .15s}
+.mainrow{flex:1;display:flex;min-height:0}
+.content{flex:1;min-width:0;overflow-y:auto;background:var(--bg);padding:15px 17px}
+
+.strip{flex:0 0 auto;background:#20293a;color:#cfd8dc;font-size:12.5px;display:flex;gap:4px;
+  align-items:center;padding:7px 9px;overflow-x:auto;white-space:nowrap}
+.strip button{border:none;font:inherit;color:inherit;background:none;cursor:pointer;flex:0 0 auto}
+.strip .s{padding:5px 10px;border-radius:7px}
+.strip .s:hover{background:rgba(255,255,255,.13)}
+.strip .s.now{background:#fff;color:#1c2330;font-weight:800}
+.strip .bg{font-size:9.5px;opacity:.7;margin-left:3px;letter-spacing:-1px}
+.strip .home{background:rgba(255,255,255,.14);font-weight:800;padding:5px 9px;border-radius:7px}
+.strip .pjb{background:var(--gr);color:#fff;border-radius:7px;padding:5px 11px;font-weight:700}
+.strip .bell{background:#b23b3b;color:#fff;border-radius:7px;padding:5px 10px;font-weight:700}
+.strip .bell.zero{background:rgba(255,255,255,.16)}
+.strip .bell.act{background:#fff;color:#b23b3b}
+.strip .sep{width:1px;height:17px;background:rgba(255,255,255,.22);margin:0 4px;flex:0 0 auto}
+
+.tabs{display:flex;gap:3px;border-bottom:1px solid var(--line);margin-bottom:13px}
+.tabs button{border:1px solid transparent;border-bottom:none;background:none;font:inherit;
+  padding:6px 14px;border-radius:8px 8px 0 0;cursor:pointer;color:#8a837b;font-size:13px}
+.tabs button.on{background:#fff;border-color:var(--line);color:var(--ink);font-weight:700;margin-bottom:-1px}
+
+.todo{background:#fff5f5;border:1px solid #f2d6d6;border-radius:11px;padding:11px 13px;margin-bottom:14px}
+.todo.drop{border-radius:0;margin:0 0 13px;border-left:none;border-right:none}
+.todo .h{color:var(--rd);font-weight:800;font-size:14px}
+.todo .g{font-size:11.5px;color:#8a6a6a;margin:2px 0 7px;line-height:1.55}
+.todo .r{display:flex;gap:8px;align-items:center;font-size:13px;padding:5px 0;border-top:1px dashed #f0dcdc}
+.todo .r span{flex:1;cursor:pointer}
+.todo .r span:hover{text-decoration:underline}
+.todo .r button{border:1px solid #cfe3d5;background:#f2fbf5;color:#2e7d5b;border-radius:7px;
+  padding:3px 9px;font-size:11.5px;font-family:inherit;cursor:pointer;white-space:nowrap}
+.todo .r.done span{text-decoration:line-through;color:#b3aaa2;cursor:default}
+.todo .none{font-size:12.5px;color:#8a837b;padding:4px 0}
+
+.sect{font-size:12px;color:#8a837b;font-weight:800;margin:18px 0 6px;letter-spacing:.02em}
+table.info{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff}
+table.info th,table.info td{border:1px solid var(--line);padding:8px 11px;text-align:left}
+table.info th{background:#f5f2ec;width:32%;font-weight:700}
+table.info td .fill{border:1px solid #cfd9e8;background:#f2f7ff;color:var(--pt);border-radius:6px;
+  padding:1px 7px;font-size:11px;font-family:inherit;cursor:pointer;margin-left:6px}
+.gobar{font-size:13px;color:#7a736b;margin:12px 0 0}
+.gobar a{color:var(--pt);text-decoration:none;cursor:pointer}
+.prog{background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:13px}
+.prog .ph{background:#f5f2ec;padding:6px 11px;font-size:11.5px;color:#7a736b;font-weight:700}
+.prog .pb{padding:10px 11px;font-size:12.5px;color:#5b6472}
+.cols{display:flex;gap:11px;align-items:flex-start}
+.cols>div{flex:1;min-width:0}
+
+.dw{flex:0 0 232px;background:#20293a;color:#cfd8dc;overflow-y:auto;padding:9px 8px;font-size:12.5px}
+.dw button{border:none;font:inherit;color:inherit;background:none;cursor:pointer;width:100%;text-align:left;display:block}
+.dw .cls{background:rgba(255,255,255,.14);border-radius:7px;padding:7px 8px;text-align:center;font-weight:700}
+.dw .gt{font-size:10.5px;color:#7d8ba3;margin:12px 0 4px;padding-left:7px}
+.dw .it{padding:6px 9px;border-radius:7px;margin-bottom:2px}
+.dw .it:hover{background:rgba(255,255,255,.12)}
+.dw .it.now{background:#fff;color:#1c2330;font-weight:700}
+.dw .it small{display:block;font-size:10px;color:#8593aa;margin-top:1px}
+.dw .bgl{float:right;font-size:9.5px;opacity:.65;letter-spacing:-1px}
+
+.say{background:#eef3fb;border-left:4px solid var(--pt);border-radius:0 9px 9px 0;
+  padding:9px 13px;font-size:13px;margin:10px 0 0;min-height:22px}
+.chk{display:flex;flex-wrap:wrap;gap:5px}
+.chk label{border:1px solid #cfd5df;background:#fff;border-radius:8px;padding:5px 10px;
+  font-size:12.5px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.chk label.on{background:#20293a;border-color:#20293a;color:#fff;font-weight:700}
+.chk input{margin:0}
+.cmp{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.cmp>div{flex:1;min-width:222px;background:#fff;border:1px solid #d9dee6;border-radius:10px;padding:10px 12px}
+.cmp h4{margin:0 0 5px;font-size:13.5px}
+.cmp p{margin:0 0 5px;font-size:12.5px;color:var(--sub);line-height:1.6}
+.cmp .g{color:#2e7d5b;font-weight:700}
+.cmp .b{color:var(--rd);font-weight:700}
+</style></head><body><div class="page">
+
+<h1>📐 프로젝트 «안» 레이아웃 — ✅ 확정안 확인</h1>
+<p class="lead">2026-09-10 대표 확정 — <b>「알림은 띠에서만」 + 「탭 없이 한 장」</b>.
+그 <b>둘을 합친 모습</b>이 맨 앞 <b>✅ 확정안</b>입니다(기본으로 켜 뒀습니다).
+🔴 <b>🔔 을 눌러보세요</b> — 띠에서만 펼쳐집니다. 나머지 안은 비교용으로 남겨 뒀습니다.</p>
+
+<div class="sw">
+  <b>레이아웃</b>
+  <button id="p_E" class="on" onclick="setPlan('E')" style="border-color:#2f8f5b">✅ 확정안 (🅑+🅒)<small>탭 없음 · 🔔은 띠에서만</small></button>
+  <button id="p_A" onclick="setPlan('A')">🅐 첨부 그대로<small>탭 + 🔔 상자 + 표</small></button>
+  <button id="p_B" onclick="setPlan('B')">🅑 알림은 띠에서만<small>표만 · 🔔 누르면 펼쳐짐</small></button>
+  <button id="p_C" onclick="setPlan('C')">🅒 탭 없이 한 장<small>위에서 아래로 쭉</small></button>
+  <button id="p_D" onclick="setPlan('D')">🅓 왼쪽 할 일 · 오른쪽 정보<small>넓은 화면 2단</small></button>
+</div>
+<div class="sw">
+  <b>누구로</b>
+  <button id="r_owner" class="on" onclick="setRole('owner')">👑 대표</button>
+  <button id="r_mgr" onclick="setRole('mgr')">🛠 관리 (명진)</button>
+  <button id="r_free" onclick="setRole('free')">🎬 프리랜서</button>
+  <b style="margin-left:10px">화면</b>
+  <button id="w_full" class="on" onclick="setW(0)">💻 넓은 화면</button>
+  <button id="w_ph" onclick="setW(390)">📱 폰</button>
+</div>
+
+<div class="brz">
+  <div class="urlbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="u">luvparklife.github.io/#p/260902_샘플에이</span></div>
+  <div class="scr" id="scr"></div>
+</div>
+<div class="say" id="say">👆 <b>레이아웃 4개</b>를 눌러 비교해 보세요. 🏠·📁·🔔·탭도 전부 눌립니다.</div>
+
+<h2>🔔 알림 — 대표님이 정하실 것 네 가지</h2>
+
+<div class="sw"><b>① 무엇을 담나</b></div>
+<div class="chk" id="chk1"></div>
+<p class="lead" style="margin:6px 0 0">🔴 <b>지금은 하나도 안 이어져 있습니다</b> — 무엇을 담을지 정해 주시면 그때 서버에서 끌어옵니다.
+체크를 껐다 켜면 위 화면에서 바로 사라지고 나타납니다.</p>
+
+<div class="sw" style="margin-top:14px">
+  <b>② 프리랜서에게는</b>
+  <button id="f_no" class="on" onclick="setFree('no')">안 보인다<small>지금 목업 기본</small></button>
+  <button id="f_diff" onclick="setFree('diff')">내용을 다르게 보인다<small>내 일만</small></button>
+</div>
+<div class="note red" style="margin-top:6px">
+🔴 <b>여기 두 기록이 서로 어긋나 있어 여쭙습니다.</b>
+대표님은 2026-09-09에 *"프리랜서에게는 내용 달르게 보여주지"* 라고 하셨는데,
+확정본 연습장 코드에는 <b>「프리랜서에겐 안 띄운다」</b>고 적혀 있습니다.
+<b>「내용을 다르게」</b>를 누르시면 프리랜서에게 무엇이 보일지 확인하실 수 있습니다.
+</div>
+
+<div class="sw" style="margin-top:14px">
+  <b>③ 「✅ 완료됐다고 치기」 단추</b>
+  <button id="d_on" class="on" onclick="setDone('on')">둔다<small>내가 눌러 끈다</small></button>
+  <button id="d_off" onclick="setDone('off')">뺀다<small>진짜 완료돼야 사라진다</small></button>
+</div>
+<div class="note">
+🔴 <b>이 단추는 «진짜 일을 끝내지 않습니다»</b> — 알림만 끕니다.
+예를 들어 「계산서 미발행 2건」을 눌러 꺼도 <b>계산서는 여전히 안 나갔습니다.</b>
+「뺀다」로 하면 <b>진짜로 발행됐을 때만</b> 사라집니다 — 대신 오늘 처리 못 하는 것이 계속 떠 있습니다.
+</div>
+
+<div class="sw" style="margin-top:14px">
+  <b>④ 할 일이 0건이면</b>
+  <button id="z_gray" class="on" onclick="setZero('gray')">회색 🔔 0<small>자리는 남는다</small></button>
+  <button id="z_hide" onclick="setZero('hide')">아예 숨긴다<small>띠가 짧아진다</small></button>
+</div>
+
+<h2>네 안 — 무엇이 좋고 무엇이 아쉬운가</h2>
+<div class="cmp">
+<div><h4>🅐 첨부 그대로</h4>
+  <p><span class="g">좋은 점</span> 프로젝트를 열면 <b>할 일이 제일 먼저</b> 눈에 들어옵니다. 첨부와 같습니다.</p>
+  <p><span class="b">아쉬운 점</span> 할 일이 5건이면 <b>표가 스크롤 아래로 밀립니다.</b> 매일 보는 표인데 매일 스크롤합니다.</p></div>
+<div><h4>🅑 알림은 띠에서만</h4>
+  <p><span class="g">좋은 점</span> <b>표가 언제나 맨 위</b>입니다. 할 일은 🔔 숫자로 알고, 볼 때만 펼칩니다.</p>
+  <p><span class="b">아쉬운 점</span> <b>한 번 더 눌러야</b> 봅니다. 안 누르면 안 봅니다.</p></div>
+<div><h4>🅒 탭 없이 한 장</h4>
+  <p><span class="g">좋은 점</span> <b>누를 것이 없습니다.</b> 아래로 굴리면 회차·폴더까지 다 나옵니다. 폰에서 편합니다.</p>
+  <p><span class="b">아쉬운 점</span> 길어집니다. <b>폴더를 보려면 매번 끝까지</b> 내려야 합니다.</p></div>
+<div><h4>🅓 왼쪽 할 일 · 오른쪽 정보</h4>
+  <p><span class="g">좋은 점</span> <b>둘 다 한눈에</b> 보입니다. 스크롤도 한 번 더 누를 것도 없습니다.</p>
+  <p><span class="b">아쉬운 점</span> <b>폰에서는 위아래로 쌓여</b> 🅐와 같아집니다. 넓은 화면에서만 이득입니다.</p></div>
+</div>
+
+<h2>📋 표 — 대표님이 주신 순서 그대로 넣었습니다</h2>
+<div class="note">
+주신 순서 <b>촬영 회차 → 촬영일 → PA팀 → 포토그래퍼 → 브랜드 → 담당자 → 공유폴더 →
+거래처 → 견적서 → 내부폴더 → 공유파일 → 소싱시트</b> 그대로입니다.
+아래 네 가지만 눌러 정해 주시면 끝납니다.
+</div>
+
+<div class="sw">
+  <b>① 촬영 회차</b>
+  <button id="rn_sum" class="on" onclick="setRnd('sum')">표에 «1일차만» + 아래 섹션<small>주신 순서 그대로</small></button>
+  <button id="rn_one" onclick="setRnd('one')">표에 «전부» · 섹션 없앰<small>한 곳에만</small></button>
+  <button id="rn_sect" onclick="setRnd('sect')">표에서 빼고 «섹션만»<small>지금 방식</small></button>
+</div>
+<div class="note" style="margin-top:4px">🔴 <b>주신 대로 1번에 두면 「촬영 회차」가 두 곳에 나옵니다</b>
+— 표 첫 줄과 아래 「— 촬영 회차 —」 섹션. 그래서 셋 중에 고르셔야 합니다.</div>
+
+<div class="sw" style="margin-top:12px">
+  <b>② 목록에 없던 둘 — 장비 세부내역 · 정산서</b>
+  <button id="ex_drop" class="on" onclick="setExtra('drop')">뺀다<small>주신 목록에 없었음</small></button>
+  <button id="ex_keep" onclick="setExtra('keep')">남긴다<small>지금 있는 것</small></button>
+</div>
+<div class="note" style="margin-top:4px">🔴 <b>「뺀다」로 해도 사라지지 않습니다</b> —
+장비 세부내역은 <b>🔗 바로가기 버튼</b>으로 갑니다(위 화면에서 확인). 정산서는 💰 정산 앱에 있습니다.</div>
+
+<div class="sw" style="margin-top:12px">
+  <b>③ 내부폴더 · 공유파일 · 소싱시트 · 견적서</b>
+  <button id="mv_row" class="on" onclick="setMove('row')">표 «줄»로<small>주신 목록대로</small></button>
+  <button id="mv_btn" onclick="setMove('btn')">지금처럼 «버튼»으로<small>표가 짧아짐</small></button>
+</div>
+
+<div class="sw" style="margin-top:12px">
+  <b>④ 거래처 · 견적서를 볼 수 있는 사람</b>
+  <button id="pm_mgr" class="on" onclick="setPerm('mgr')">관리 이상<small>주신 대로 — 명진님도 봄</small></button>
+  <button id="pm_own" onclick="setPerm('own')">대표님만<small>지금 방식</small></button>
+</div>
+<div class="note" style="margin-top:4px">✅ <b>넓혀도 안전합니다</b> — 그 줄은
+「㈜샘플코리아」·「2차 · 최종견적」처럼 <b>이름과 차수만</b> 보여주고 <b>금액·마진은 안 담습니다.</b>
+🔴 단 <b>소싱시트는 그대로 「관리 이상」</b>입니다 — 그건 열면 단가·마진이 다 보입니다.</div>
+
+<h2>🔮 나중에 「팀 공유」가 들어오면</h2>
+<div class="sw">
+  <b>미리 보기</b>
+  <button id="ts_off" class="on" onclick="setTS(0)">지금</button>
+  <button id="ts_on" onclick="setTS(1)">팀 공유가 붙으면</button>
+</div>
+<div class="note">
+🔴 <b>대표님 말씀대로 「바뀔 수 있다」를 전제로 만들었습니다.</b>
+확정안은 <b>탭이 없어서</b> 나중에 무엇이 들어와도 <b>「— 이름 —」 한 줄만 더하면</b> 끝입니다.
+탭 방식이면 탭을 늘려야 하고 <b>폰에서 폭이 모자라 옆으로 밀립니다.</b> 그래서 이 선택이 «나중»에도 유리합니다.<br>
+🔴 <b>제가 지키는 것</b> — 섹션 목록을 <b>코드 한 곳</b>에서만 정합니다. 팀 공유가 정해지면 <b>한 줄 추가</b>로 끝나고,
+싫으시면 그 한 줄을 빼면 됩니다. <b>다른 데를 손댈 일이 없습니다.</b>
+</div>
+
+<h2>덤 — 「＋ 채우기」는 어디에</h2>
+<div class="sw">
+  <b>빈 칸을 채우는 단추</b>
+  <button id="fl_row" class="on" onclick="setFill('row')">그 줄 옆에<small>지금 방식</small></button>
+  <button id="fl_none" onclick="setFill('none')">안 둔다<small>표가 깔끔</small></button>
+</div>
+<p class="lead" style="margin:6px 0 0">위 화면에서 <b>브랜드</b>와 <b>거래처</b> 줄을 보세요 — 비어 있으면 <b>＋ 채우기</b>가 붙습니다.</p>
+
+</div>
+<script>
+var PLAN='E', ROLE='owner', W=0, TAB=0, DRAWER=0, BELL=0, FREE='no', DONEBTN='on', ZERO='gray', FILL='row';
+var SRC=[
+ {k:'quote', n:'마감 임박 견적',   on:1, t:'가견적 보내기 — <b>260902_샘플에이</b> 내일이 촬영입니다 (D-1)', who:['owner']},
+ {k:'equip', n:'미승인 장비',      on:1, t:'장비 승인 3건 — <b>260912_샘플씨</b>「요청」 상태라 견적에 안 잡힙니다', who:['owner','mgr']},
+ {k:'tax',   n:'미발행 계산서',    on:1, t:'계산서 미발행 2건 — 가업체 250,000 · 나업체 200,000', who:['owner']},
+ {k:'pay',   n:'미지급 정산',      on:1, t:'정산 미지급 1건 — 최사아 250,000 · 이체 대기', who:['owner']},
+ {k:'ret',   n:'미반납 장비',      on:1, t:'반납 안 된 장비 6개 — 260820_샘플디 · 장비1 외', who:['owner','mgr']}
+];
+var FREETODO=[
+ {k:'my_ret', n:'내가 안 돌려준 장비', on:1, t:'내가 안 돌려준 장비 2개 — 장비1 · 삼각대', who:['free']},
+ {k:'my_claim', n:'내 청구 안 낸 것',  on:1, t:'청구 안 낸 촬영 1건 — <b>260902_샘플에이</b> 09/02', who:['free']},
+ {k:'my_back',  n:'반송된 청구',      on:1, t:'반송된 청구 1건 — 영수증이 빠졌습니다', who:['free']}
+];
+var DONE={}, TS=0, RND='sum', EXTRA='drop', MOVE='row', PERM='mgr';
+function setRnd(v){RND=v;on('rn_sum',v==='sum');on('rn_one',v==='one');on('rn_sect',v==='sect');draw();
+  say({sum:'표 첫 줄에 <b>1일차만</b> 요약하고, 자세한 것은 아래 <b>「— 촬영 회차 —」</b>에서 봅니다.',
+       one:'표에 <b>회차를 전부</b> 넣고 아래 섹션은 <b>없앴습니다</b> — 한 곳에만 있습니다.',
+       sect:'표에서 빼고 <b>아래 섹션에만</b> 뒀습니다(지금 방식).'}[v]);}
+function setExtra(v){EXTRA=v;on('ex_drop',v==='drop');on('ex_keep',v==='keep');draw();
+  say(v==='drop'?'뺐습니다 — <b>장비 세부내역은 🔗 바로가기 버튼</b>으로 갔습니다(화면 아래를 보세요).'
+                :'표에 <b>남겼습니다</b> — 장비 세부내역 · 정산서 두 줄이 늘었습니다.');}
+function setMove(v){MOVE=v;on('mv_row',v==='row');on('mv_btn',v==='btn');draw();
+  say(v==='row'?'<b>표 줄로</b> 올렸습니다 — 🔗 바로가기에서는 <b>빠졌습니다</b>(같은 것이 두 군데 있으면 안 됩니다).'
+                :'<b>버튼으로</b> 되돌렸습니다 — 표가 그만큼 짧아지고 「— 폴더 —」 섹션이 살아납니다.');}
+function setPerm(v){PERM=v;on('pm_mgr',v==='mgr');on('pm_own',v==='own');draw();
+  say(v==='mgr'?'<b>관리 이상</b>이 봅니다 — 🛠 관리(명진)로 바꿔 확인해 보세요.'
+                :'<b>대표님만</b> 봅니다(지금 방식).');}
+function setTS(v){ TS=v; on('ts_off',!v); on('ts_on',!!v); draw();
+  say(v?'🔮 <b>팀 공유가 붙으면</b> 이렇게 «맨 아래 한 덩어리»가 늘어납니다 — 위쪽은 하나도 안 바뀝니다.'
+       :'지금 모습입니다.'); }
+var APPS=[
+ {k:'proj',ico:'📁',n:'프로젝트',see:['owner','mgr','free']},
+ {k:'quote',ico:'🧾',n:'견적서',see:['owner']},
+ {k:'field',ico:'🎬',n:'장비앱',see:['owner','mgr','free']},
+ {k:'pay',ico:'💰',n:'정산',see:['owner','mgr','free']}];
+var PAGES=[
+ {ico:'📊',n:'장비 시트',s:'소싱시트 · 장비DB · 단가',see:['owner','mgr']},
+ {ico:'🧾',n:'세무대사',s:'계산서 발행 확인',see:['owner','mgr']},
+ {ico:'🅰️',n:'업무 / 일정 관리',s:'보고서 · 문서 수정',see:['owner']},
+ {ico:'🔄',n:'일정 새로고침',s:'캘린더 ↔ 노션',see:['owner']},
+ {ico:'📚',n:'도서관',s:'자료 · 레퍼런스',see:['owner']},
+ {ico:'📋',n:'서비스 안내',s:'거래처에 보낼 링크',see:['owner']},
+ {ico:'💰',n:'단가 안내 PDF — 한글',s:'🔒 보낼 땐 조심',see:['owner']},
+ {ico:'💵',n:'Price Guide — 영문',s:'해외팀 · 해외 클라이언트',see:['owner']},
+ {ico:'📋',n:'프로젝트 생애주기 입력',s:'노션에 등록',see:['owner','mgr']},
+ {ico:'📱',n:'앱 사용법',s:'3분이면 됩니다',see:['owner','mgr','free']}];
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function can(x){return x.see.indexOf(ROLE)>=0;}
+function badge(x){return x.see.length===3?'':(x.see.indexOf('mgr')>=0?'👑🛠':'👑');}
+function say(h){document.getElementById('say').innerHTML=h;}
+function pool(){ return (ROLE==='free') ? (FREE==='diff'?FREETODO:[]) : SRC; }
+function items(){ return pool().filter(function(x){ return x.on && x.who.indexOf(ROLE)>=0; }); }
+function left(){ return items().filter(function(x){ return !DONE[x.k]; }); }
+function bellShown(){ if(ROLE==='free' && FREE==='no') return false;
+  if(ZERO==='hide' && left().length===0) return false; return true; }
+
+function on(id,yes){ var e=document.getElementById(id); if(e) e.className=yes?'on':''; }
+function setPlan(p){PLAN=p;BELL=0;TAB=0;['E','A','B','C','D'].forEach(function(x){on('p_'+x,x===p);});draw();
+  say({E:'✅ <b>확정안</b> — 탭이 없고 <b>표가 바로</b> 나옵니다. 🔔 은 <b>띠를 눌러야</b> 위에서 펼쳐집니다. 아래로 굴리면 촬영 회차·폴더까지 이어집니다.',
+       A:'🅐 <b>첨부 그대로</b> — 탭 아래 🔔 상자, 그 아래 표.',
+       B:'🅑 <b>표가 맨 위</b>입니다. 🔔 을 눌러야 할 일이 아래로 펼쳐집니다 — 눌러보세요.',
+       C:'🅒 <b>탭이 없습니다.</b> 아래로 굴리면 회차·폴더까지 이어집니다.',
+       D:'🅓 <b>왼쪽 할 일 · 오른쪽 정보.</b> 📱 폰을 눌러 보세요 — 위아래로 쌓입니다.'}[p]);}
+function setRole(r){ROLE=r;BELL=0;DRAWER=0;['owner','mgr','free'].forEach(function(x){on('r_'+x,x===r);});
+  paintChk();draw();
+  say(r==='free'
+   ? (FREE==='no' ? '🎬 <b>프리랜서</b> — 🔔 이 <b>아예 없습니다.</b> 🔒 줄과 견적서도 사라졌습니다.'
+                  : '🎬 <b>프리랜서</b> — 🔔 에 <b>「내 일」만</b> 뜹니다(내 장비·내 청구·반송). 대표님 일은 안 보입니다.')
+   : r==='mgr' ? '🛠 <b>관리(명진)</b> — 👑 <b>견적서</b>가 사라지고, 🔔 에서도 <b>돈에 관한 줄</b>이 빠집니다.'
+               : '👑 <b>대표</b> — 전부 보입니다.');}
+function setW(w){W=w;on('w_full',w===0);on('w_ph',w===390);draw();
+  say(w?'📱 <b>폰</b>입니다 — 🅓는 여기서 2단이 무너져 🅐와 같아집니다.':'');}
+function setFree(v){FREE=v;on('f_no',v==='no');on('f_diff',v==='diff');
+  if(ROLE!=='free'){setRole('free');return;} paintChk();draw();
+  say(v==='no'?'프리랜서에게 🔔 을 <b>안 보여줍니다.</b>':'프리랜서에게 <b>내 일만</b> 보여줍니다.');}
+function setDone(v){DONEBTN=v;on('d_on',v==='on');on('d_off',v==='off');draw();
+  say(v==='on'?'「✅ 완료됐다고 치기」를 <b>둡니다</b> — 내가 눌러 끕니다.'
+              :'단추를 <b>뺐습니다</b> — 진짜로 끝나야 사라집니다. 오늘 못 하는 것은 계속 떠 있습니다.');}
+function setZero(v){ZERO=v;on('z_gray',v==='gray');on('z_hide',v==='hide');draw();}
+function setFill(v){FILL=v;on('fl_row',v==='row');on('fl_none',v==='none');draw();
+  say(v==='row'?'빈 칸 옆에 <b>＋ 채우기</b>가 붙습니다 — 브랜드·거래처 줄을 보세요.':'단추를 뺐습니다.');}
+function paintChk(){
+  var box=document.getElementById('chk1'), src=pool();
+  if(!src.length){ box.innerHTML='<span style="font-size:12.5px;color:#8a837b">프리랜서에게 «안 보인다»로 두면 담을 것이 없습니다.</span>'; return; }
+  box.innerHTML=src.map(function(x,i){
+    return '<label class="'+(x.on?'on':'')+'"><input type="checkbox" '+(x.on?'checked':'')+
+      ' onchange="tog('+i+',this.checked)">'+esc(x.n)+'</label>';}).join('');
+}
+function tog(i,v){ pool()[i].on=v?1:0; paintChk(); draw(); }
+function toggleDrawer(){DRAWER=!DRAWER;BELL=0;draw();
+  say(DRAWER?'🏠 <b>사이드바</b> — 맨 아래에 <b>🚪 로그아웃</b>이 있습니다(확정하신 자리).':'');}
+function toggleBell(){ BELL=!BELL; draw();
+  if(BELL) say('🔔 을 눌러 <b>펼쳤습니다</b> — 🅑는 이렇게 «볼 때만» 봅니다.'); }
+function setTab(i){TAB=i;draw();}
+function doTodo(k){DONE[k]=1;draw();
+  say('✅ <b>완료</b>로 껐습니다. 남은 것 <b>'+left().length+'건</b>. 🔴 이 단추는 «알림만» 끕니다 — 진짜 일은 그대로입니다.');}
+function jump(t){say('👉 <b>바로 그 자리로</b> 데려갑니다 — '+t+'. 🔴 <b>가봤다고 사라지지 않습니다.</b>');}
+function nop(w){say('🧪 목업이라 '+esc(w)+'는 실제로 안 열립니다.');}
+
+function stripHtml(){
+  var h='<div class="strip">';
+  h+='<button class="home" onclick="toggleDrawer()">🏠</button>';
+  h+='<button class="pjb" onclick="nop(\'프로젝트 고르기\')">📁 260902_샘플에이 ▾</button>';
+  if(bellShown()){ var n=left().length;
+    h+='<button class="bell'+(n?'':' zero')+(BELL?' act':'')+'" onclick="toggleBell()">🔔 '+n+'</button>'; }
+  h+='<span class="sep"></span>';
+  APPS.forEach(function(x){ if(!can(x))return; var b=badge(x);
+    h+='<button class="s'+(x.k==='proj'?' now':'')+'" onclick="nop(\''+x.n+'\')">'+x.ico+' '+esc(x.n)+
+       (b?'<span class="bg">'+b+'</span>':'')+'</button>';});
+  return h+'</div>';
+}
+function drawerHtml(){
+  if(!DRAWER) return '';
+  var h='<div class="dw"><button class="cls" onclick="toggleDrawer()">✕ 닫기</button>'+
+        '<div class="gt">📁 이 프로젝트에서</div>';
+  APPS.forEach(function(x){ if(!can(x))return; var b=badge(x);
+    h+='<button class="it'+(x.k==='proj'?' now':'')+'" onclick="nop(\''+x.n+'\')">'+
+       (b?'<span class="bgl">'+b+'</span>':'')+x.ico+' '+esc(x.n)+'</button>';});
+  h+='<div class="gt">🗂 그 밖에 (프로젝트와 상관없이)</div>';
+  PAGES.forEach(function(x){ if(!can(x))return; var b=badge(x);
+    h+='<button class="it" onclick="nop(\''+esc(x.n)+'\')">'+(b?'<span class="bgl">'+b+'</span>':'')+
+       x.ico+' '+esc(x.n)+'<small>'+esc(x.s)+'</small></button>';});
+  h+='<div class="gt">＋</div><button class="it" onclick="nop(\'새 프로젝트\')">➕ 새 프로젝트</button>'+
+     '<div class="gt">👤 김가나 · '+(ROLE==='owner'?'대표':ROLE==='mgr'?'관리':'프리랜서')+'</div>'+
+     '<button class="it" onclick="nop(\'로그아웃\')">🚪 로그아웃</button>';
+  return h+'</div>';
+}
+function todoHtml(cls){
+  if(!bellShown()) return '';
+  var m=items(), n=left().length;
+  var h='<div class="todo'+(cls||'')+'"><div class="h">🔔 '+(ROLE==='free'?'내 일 ':'오늘 할 일 ')+n+'건</div>'+
+    '<div class="g">줄을 누르면 <b>바로 그 자리로</b> 갑니다. 🔴 <b>가봤다고 사라지지 않습니다 — «완료»돼야 사라집니다.</b></div>';
+  if(!m.length) h+='<div class="none">담을 것을 하나도 안 고르셨습니다 — 아래 ①에서 골라 주세요.</div>';
+  m.forEach(function(x){
+    var d=!!DONE[x.k];
+    h+='<div class="r'+(d?' done':'')+'"><span onclick="'+(d?'':'jump(\''+esc(x.n)+'\')')+'">· '+x.t+'</span>'+
+      (DONEBTN==='on'
+        ? (d?'<button disabled style="opacity:.45">✅ 완료</button>'
+            :'<button onclick="doTodo(\''+x.k+'\')">✅ 완료됐다고 치기</button>')
+        : '')+'</div>';});
+  return h+'</div>';
+}
+function fillBtn(){ return FILL==='row' ? '<button class="fill" onclick="nop(\'채우기\')">＋ 채우기</button>' : ''; }
+/* 🔴 2026-09-10 대표가 주신 «순서 그대로». 줄 목록은 여기 한 곳에서만 정한다(§1). */
+function opener(t){ return ' <a style="color:#2563eb;cursor:pointer;font-size:12px" onclick="nop(\''+t+'\')">열기 ›</a>'; }
+function nofill(){ return '<span style="color:#c0392b">아직 안 넣음</span>'+fillBtn(); }
+function seeMgr(){ return ROLE==='owner'||ROLE==='mgr'; }
+function seeOwn(){ return ROLE==='owner'; }
+function infoRows(){
+  var rows=[];
+  if(RND!=='sect') rows.push(['촬영 회차', RND==='one'
+      ? '1일차 콜 07:00 · 랩 19:00 · A 스튜디오<br>2일차 콜 08:00 · 랩 18:00 · B 스튜디오'
+      : '1일차 콜 07:00 · 랩 19:00 <span style="color:#8a837b;font-size:11.5px">외 1일차 — 아래에서</span>', 1]);
+  rows.push(['촬영일',     '09/02 ~ 09/03 (2일)', 1]);
+  rows.push(['PA팀',       '김가나 · 이다라 · 박마바', 1]);
+  rows.push(['포토그래퍼',  nofill(), 1]);
+  rows.push(['브랜드',      '샘플브랜드', 1]);
+  rows.push(['담당자',      '김가나', 1]);
+  rows.push(['공유폴더',    '있음'+opener('공유폴더'), 1]);
+  var lockTag = (PERM==='mgr') ? ' <span style="color:#8a837b;font-size:11.5px">(관리 이상)</span>'
+                               : ' <span style="color:#8a837b;font-size:11.5px">(대표님만)</span>';
+  var lockOk  = (PERM==='mgr') ? seeMgr() : seeOwn();
+  if(lockOk){
+    rows.push(['🔒 거래처',  nofill()+lockTag, 1]);
+    rows.push(['🔒 견적서',  '2차 · 최종견적'+opener('견적서 폴더')+lockTag, 1]);
+  }
+  if(MOVE==='row'){
+    rows.push(['내부폴더',  '있음'+opener('내부폴더'), 1]);
+    rows.push(['공유파일',  '<span style="color:#c0392b">🔄 갱신 필요</span>'+opener('공유파일'), 1]);
+    if(seeMgr()) rows.push(['소싱시트', opener('소싱시트')+' <span style="color:#8a837b;font-size:11.5px">(관리 이상 — 단가·마진)</span>', 1]);
+  }
+  if(EXTRA==='keep'){
+    rows.push(['장비 세부내역', '146줄 · 1,000,000'+opener('장비 세부내역'), 1]);
+    if(seeOwn()) rows.push(['정산서', '<span style="color:#8a837b">아직</span> <span style="color:#8a837b;font-size:11.5px">(대표님만)</span>', 1]);
+  }
+  return rows;
+}
+function infoTable(){
+  return '<table class="info">'+infoRows().map(function(r){
+    return '<tr><th>'+r[0]+'</th><td>'+r[1]+'</td></tr>'; }).join('')+'</table>';
+}
+/* 🔴 줄로 올라간 것은 버튼에서 «빠진다» — 같은 것이 두 군데 있으면 안 된다(§1) */
+function goBar(){
+  var b=[];
+  if(MOVE!=='row'){ b.push('<a onclick="nop(\'내부폴더\')">📁 내부폴더</a>');
+                    b.push('<a onclick="nop(\'공유파일\')">🌐 공유파일</a>');
+                    if(seeMgr()) b.push('<a onclick="nop(\'소싱시트\')">📊 소싱시트</a>');
+                    if(seeOwn()) b.push('<a onclick="nop(\'견적서\')">🧾 견적서</a>'); }
+  if(EXTRA!=='keep') b.push('<a onclick="nop(\'장비 세부내역\')">📋 장비 세부내역</a>');
+  b.push('<a onclick="nop(\'목록에서 보기\')">📋 목록에서 보기</a>');
+  b.push('<a onclick="nop(\'사용법\')">❓ 사용법</a>');
+  return '<p class="gobar">🔗 바로가기 — '+b.join(' · ')+'</p>';
+}
+function daysTable(){ return '<table class="info">'+
+  '<tr><th>1일차 · 09/02</th><td>콜 07:00 · 랩 19:00 · A 스튜디오</td></tr>'+
+  '<tr><th>2일차 · 09/03</th><td>콜 08:00 · 랩 18:00 · B 스튜디오</td></tr></table>'; }
+function folderTable(){ return '<table class="info">'+
+  '<tr><th>📁 프로젝트 폴더</th><td><a class="gobar" style="color:#2563eb;cursor:pointer" onclick="nop(\'폴더\')">드라이브에서 열기</a></td></tr>'+
+  '<tr><th>🧾 견적서</th><td>보낸 차수 2건</td></tr></table>'; }
+function progBox(){ return '<div class="prog"><div class="ph">진행 · 지금 할 일</div>'+
+  '<div class="pb">준비 146줄 중 <b>12줄이 아직 「요청」</b>입니다 — 승인해야 견적에 잡힙니다.</div></div>'; }
+function tabsHtml(){
+  var t=['정보','촬영 회차','폴더'], h='<div class="tabs">';
+  t.forEach(function(x,i){h+='<button class="'+(TAB===i?'on':'')+'" onclick="setTab('+i+')">'+x+'</button>';});
+  return h+'</div>';
+}
+/* 🔴 «섹션 목록은 여기 한 곳»에서만 정한다 (§1) — 팀 공유가 정해지면 이 배열에 한 줄만 더한다.
+   싫으시면 그 한 줄을 빼면 끝이고, 다른 데는 손댈 일이 없다. */
+function sections(){
+  var a=[ {n:'정보', html:function(){ return infoTable()+goBar(); }} ];
+  if(RND!=='one') a.push({n:'촬영 회차', html:daysTable});
+  if(MOVE!=='row') a.push({n:'폴더', html:folderTable});
+  if(TS) a.push({n:'팀 공유', soon:1, html:function(){
+    return '<table class="info">'+
+     '<tr><th>🌐 공유파일</th><td>해외팀 · 조명팀이 적은 답 <b>22건</b></td></tr>'+
+     '<tr><th>📝 노션 페이지</th><td><span style="color:#8a837b">아직 안 정했습니다</span></td></tr></table>'; }});
+  return a;
+}
+function longHtml(){
+  return sections().map(function(x){
+    return '<div class="sect">— '+esc(x.n)+' —'+(x.soon?' <span style="color:#2563eb">(나중에 붙을 자리)</span>':'')+'</div>'+x.html();
+  }).join('');
+}
+function body(){
+  if(PLAN==='E'){ return longHtml(); }          /* ✅ 확정안 — 탭 없음 · 🔔 은 띠에서만 */
+  if(PLAN==='C'){ return todoHtml()+longHtml(); }
+  var inner='';
+  if(TAB===0){
+    if(PLAN==='A') inner=todoHtml()+infoTable()+goBar();
+    else if(PLAN==='B') inner=infoTable()+goBar();
+    else inner='<div class="cols" id="dcols"><div>'+todoHtml()+progBox()+'</div><div>'+infoTable()+goBar()+'</div></div>';
+  } else if(TAB===1) inner=daysTable();
+  else inner=folderTable();
+  return tabsHtml()+inner;
+}
+function draw(){
+  var s=document.getElementById('scr');
+  s.style.maxWidth = W? W+'px' : '';
+  var drop = ((PLAN==='B'||PLAN==='E') && BELL) ? todoHtml(' drop') : '';
+  s.innerHTML = stripHtml() + '<div class="mainrow">' + drawerHtml() +
+    '<div class="content">' + drop + body() + '</div></div>';
+  if(PLAN==='D' && W===390){ var c=document.getElementById('dcols'); if(c) c.style.display='block'; }
+}
+paintChk(); draw();
+</script>
+<style>
+.fbw{margin:7px 0 13px; border-left:3px solid #c8b28a; background:#fbf7ef; border-radius:0 9px 9px 0; padding:7px 10px 8px}
+.fbw label{display:block; font-size:11px; font-weight:800; color:#8a6d3b; margin-bottom:4px; line-height:1.5}
+.fbw textarea{width:100%; box-sizing:border-box; min-height:38px; border:1px solid #e2d6bd; border-radius:7px;
+  padding:6px 8px; font:inherit; font-size:12.5px; background:#fff; color:#2c2c2c; resize:vertical}
+.fbw textarea.has{border-color:#c0392b; background:#fffaf9}
+.fbw .fbtools{float:right; display:flex; gap:4px}
+.fbw .fbtools button{border:1px solid #e2d6bd; background:#fff; color:#8a6d3b; border-radius:5px;
+  padding:1px 6px; font:inherit; font-size:10px; font-weight:700; cursor:pointer}
+#fbbar{position:fixed; left:0; right:0; bottom:0; z-index:9999; background:#2c2c2c; color:#fff;
+  display:flex; gap:7px; align-items:center; padding:8px 11px; font-size:12px}
+#fbbar b{color:#ffd479}
+#fbbar button{border:0; border-radius:7px; padding:7px 11px; font:inherit; font-size:12px;
+  font-weight:700; cursor:pointer; background:#fff; color:#2c2c2c}
+#fbbar .gh{margin-left:auto}
+body{padding-bottom:56px !important}
+</style>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   💬 미리보기에도 «항목마다» 피드백 칸 (2026-08-22 대표 지시)
+      *"미리보기도 피드백칸 항목마다 항상 넣어줘"*
+   🔴 회사 표준(guide 템플릿·연습장)과 같은 방식이다 — 새로 발명하지 않았다.
+   🔴 제목으로 저장한다(순서로 하면 화면을 고쳤을 때 엉뚱한 항목에 붙는다).
+   🔴 화면이 «다시 그려지는» 앱이라 MutationObserver 로 매번 다시 붙인다.
+   🔴 한글 조합 중에는 저장·표시를 안 건드린다(안 그러면 글자가 끊긴다).
+   🔴 이 덩어리는 «미리보기 전용»이다 — 진짜 허브에는 안 들어간다.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  /* 🔴 2026-09-03 — 문서 이름이 «박혀» 있었다.
+     [무엇이 문제였나] 이 위젯을 붙인 모든 문서가 «같은» 저장 열쇠를 써서
+       ①저장 파일이 늘 「허브_새프로젝트폼_미리보기_YYMMDD.md」로 떨어지고
+       ②문서가 달라도 localStorage 열쇠가 같아 서로 덮어쓸 수 있었다.
+       실측 2026-09-03 — 프리랜서 사용법 연습장에서 적었는데 파일 이름이 그 옛 문서로 나왔다.
+     [고친 법] <title> → 파일명 순으로 «스스로» 정한다. 둘 다 없을 때만 '문서'. */
+  var DOC=(function(){
+    try{ var t=(document.title||'').trim(); if(t) return t; }catch(e){}
+    try{ var p=decodeURIComponent((location.pathname||'').split('/').pop()||'');
+         p=p.replace(/\.html?$/i,''); if(p) return p; }catch(e){}
+    return '문서';
+  })();
+  var KEY='fb::'+DOC, store={};
+  try{ store=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ store={}; }
+  function slug(t){ var h=5381; for(var i=0;i<t.length;i++){ h=((h*33)^t.charCodeAt(i))>>>0; } return 'fb_'+h.toString(36); }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} count(); }
+  function txt(e){ return (e&&e.textContent||'').replace(/\s+/g,' ').trim(); }
+
+  /* 어디에 붙이나 — [고르는 법, 제목 만드는 법] */
+  var SPOTS=[
+    ['.pjfind',        function(){ return '① 찾기 막대'; }],
+    ['#pjRows',        function(){ return '② 프로젝트 목록'; }],
+    ['.pjnew .nf',     function(e){ var l=e.querySelector('label'); return '③ 새 프로젝트 · '+txt(l).replace(/\s*[—*].*$/,''); }],
+    ['.pjnew .namebox',function(){ return '③ 새 프로젝트 · 프로젝트 이름'; }],
+    ['.pjnew .rulebox',function(){ return '③ 새 프로젝트 · 이름 양식 설명'; }],
+    ['.pjnew .willbox',function(){ return '③ 새 프로젝트 · 만들면 이렇게 됩니다'; }],
+    ['#pjQk',          function(){ return '④ 프로젝트 하나 · 바로가기'; }],
+    ['#pjLeft',        function(){ return '④ 프로젝트 하나 · 단계'; }],
+    ['#pjChk',         function(){ return '④ 프로젝트 하나 · 확인할 것'; }]
+  ];
+
+  /* ══ 🔴 2026-09-02 — 「항목마다」를 «자동»으로 찾는다 ══════════════
+     [왜 고쳤나] 대표가 *"목업은 항상 항목별로 피드백창 해달라고했는데 왜 안되는거야
+       이거 중복으로 일어나는데"* 라고 하셨다. 실측 = 화면 항목 11개인데 칸은 3개.
+     [진짜 원인] 위 SPOTS 는 «사람이 손으로 적는 목록»이다. 문서를 만들 때마다
+       클로드가 자리를 골랐고, 고를 때마다 빠졌다. 규칙(§3-3)이 있어도
+       «사람이 매번 챙겨야 하는 것은 언젠가 반드시 안 지켜진다»(§5-1-E).
+       실제로 대표가 이 지적을 «네 번» 하셨다.
+     [고친 법] 제목(h1~h4)이 있는 덩어리를 «스스로» 찾아 전부 붙인다.
+       SPOTS 는 그대로 살려 둔다 — 제목이 없는 자리(입력칸·표)는 손으로 지정해야 한다.
+     🔴 이 파일이 «원본»이다. 사본에서만 고치면 다음 문서에서 또 반복된다(§1). */
+  var FB_AUTO = true;                                  /* 끄려면 false */
+  var AUTO_SPOT = [['[data-fb-auto]', function(e){ return e.getAttribute('data-fb-auto'); }]];
+  function markAuto(){
+    var hs;
+    try{ hs=document.querySelectorAll('h1,h2,h3,h4'); }catch(e){ return; }
+    for(var i=0;i<hs.length;i++){
+      var h=hs[i];
+      if(h.closest && h.closest('.fbw')) continue;      /* 피드백 칸 안의 제목은 건너뛴다 */
+      /* 제목에 딸린 «부제»는 뺀다 — 안 빼면 「🏢 받는 쪽 노션 거래처에서 찾거나…」로 길어진다.
+         🔴 원본을 안 건드리려고 사본에서 지운다(화면의 부제는 그대로 남는다). */
+      var name;
+      try{
+        var c=h.cloneNode(true), j=c.querySelectorAll('.sp,.hint,small,.badge,.tag');
+        for(var k=0;k<j.length;k++) j[k].parentNode.removeChild(j[k]);
+        name=txt(c);
+      }catch(e){ name=txt(h); }
+      if(!name) continue;
+      if(name.length>40) name=name.slice(0,40)+'…';
+      if(h.getClientRects().length===0) continue;       /* 지금 «안 보이는» 것은 나중에(관찰자가 다시 돈다) */
+      /* 붙일 자리 = 이 제목이 이끄는 «덩어리» 끝.
+         덩어리를 못 찾으면 제목 바로 아래에 붙인다 — 자리를 못 정해 «빠뜨리는» 것보다 낫다. */
+      var box=h.parentElement, spot=h;
+      if(box && box!==document.body && box.parentElement &&
+         box.querySelectorAll('h1,h2,h3,h4').length===1) spot=box;
+      if(spot.dataset && spot.dataset.fbDone) continue;
+      if(spot.getAttribute && !spot.getAttribute('data-fb-auto'))
+        spot.setAttribute('data-fb-auto', name);
+    }
+  }
+
+  function attach(){
+    if(FB_AUTO) markAuto();
+    SPOTS.concat(AUTO_SPOT).forEach(function(sp){
+      Array.prototype.slice.call(document.querySelectorAll(sp[0])).forEach(function(el){
+        if(el.dataset.fbDone) return;
+        if(el.closest && el.closest('.fbw')) return;
+        el.dataset.fbDone='1';
+        var title; try{ title=sp[1](el); }catch(e){ title=sp[0]; }
+        if(!title) return;
+        var id=slug(title);
+        var w=document.createElement('div'); w.className='fbw';
+        var lab=document.createElement('label'); lab.setAttribute('for',id);
+        lab.textContent='💬 「'+title+'」 피드백 — 고칠 것 · 빠진 것 · 질문';
+        var tools=document.createElement('span'); tools.className='fbtools';
+        var ta=document.createElement('textarea');
+        ta.id=id; ta.dataset.t=title; ta.placeholder='한 줄 적어주세요. 자동 저장됩니다.';
+        ta.value=store[id]||''; if(ta.value.trim()) ta.classList.add('has');
+        var ime=false, tm=null;
+        function done(){ ta.classList.toggle('has', !!ta.value.trim()); save(); }
+        ta.addEventListener('compositionstart',function(){ ime=true; });
+        ta.addEventListener('compositionend',function(){ ime=false; done(); });
+        ta.addEventListener('input',function(){
+          store[id]=ta.value;                 /* 값은 늘 담는다 */
+          if(ime) return;                     /* 🔴 조합 중엔 안 건드린다 */
+          if(tm) clearTimeout(tm); tm=setTimeout(done,500);
+        });
+        ta.addEventListener('blur',function(){ if(tm) clearTimeout(tm); done(); });
+        ta.addEventListener('keydown',function(ev){
+          if((ev.metaKey||ev.ctrlKey)&&(ev.key==='a'||ev.key==='A')){ ev.preventDefault(); ev.stopPropagation(); ta.select(); }
+        });
+        [['전체선택',function(){ ta.focus(); ta.select(); }],
+         ['복사',function(b){ ta.focus(); ta.select();
+            var fin=function(){ var o=b.textContent; b.textContent='✅'; setTimeout(function(){ b.textContent=o; },1100); };
+            if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(fin,fin);
+            else { try{ document.execCommand('copy'); }catch(e){} fin(); } }],
+         ['비우기',function(){ ta.value=''; store[id]=''; done(); }]
+        ].forEach(function(t){
+          var b=document.createElement('button'); b.type='button'; b.textContent=t[0];
+          b.onclick=function(){ t[1](b); }; tools.appendChild(b);
+        });
+        lab.appendChild(tools);
+        w.appendChild(lab); w.appendChild(ta);
+        if(el.parentNode) el.parentNode.insertBefore(w, el.nextSibling);
+      });
+    });
+    count();
+  }
+  function all(){
+    return Array.prototype.slice.call(document.querySelectorAll('.fbw textarea'))
+      .filter(function(t){ return t.value.trim(); });
+  }
+  function count(){
+    var n=all().length, e=document.getElementById('fbn'); if(e) e.textContent=n;
+  }
+  function bar(){
+    var b=document.createElement('div'); b.id='fbbar';
+    b.innerHTML='💬 적은 피드백 <b id="fbn">0</b>개'
+      + '<span class="gh"></span><button id="fbCopy">📋 전체 복사</button>'
+      + '<button id="fbSave">💾 피드백 저장</button>';
+    document.body.appendChild(b);
+    function text(){
+      var out='# 피드백 · '+DOC+'\n\n';
+      all().forEach(function(t){ out+='## '+t.dataset.t+'\n'+t.value.trim()+'\n\n'; });
+      return out;
+    }
+    document.getElementById('fbCopy').onclick=function(){
+      var t=text(), me=this, fin=function(){ me.textContent='✅ 복사했습니다'; setTimeout(function(){ me.textContent='📋 전체 복사'; },1400); };
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(fin,fin); else fin();
+    };
+    document.getElementById('fbSave').onclick=function(){
+      if(!all().length){ alert('아직 적으신 피드백이 없습니다.'); return; }
+      var d=new Date(), p=function(n){ return (n<10?'0':'')+n; };
+      var nm='피드백_'+DOC+'_'+String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+'.md';
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([text()],{type:'text/markdown;charset=utf-8'}));
+      a.download=nm; document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },800);
+    };
+  }
+  function boot(){ bar(); attach();
+    var tm=null;
+    /* 🔴 2026-09-03 — attributeFilter 를 더했다.
+       [무엇이 문제였나] markAuto 는 «지금 안 보이는» 제목을 건너뛰고(위 getClientRects) 관찰자가
+         다시 돌기를 기다린다. 그런데 관찰자가 childList 만 봐서, 화면을 «class 로» 감췄다 폈다 하는
+         문서(탭·단계 전환)에서는 «영영 안 깨어난다».
+         실측 2026-09-03 프리랜서 사용법 연습장 — 항목 16개인데 칸이 «2개»(첫 화면 것만) 붙었다.
+       [왜 filter 를 거는가] attributes:true 를 통째로 켜면 이 위젯이 스스로 붙이는
+         data-fb-auto · data-fb-done 변화까지 잡아 계속 되돈다.
+         class/style/hidden 은 위젯이 «안 건드리는» 것이라 되돌 일이 없다. */
+    new MutationObserver(function(){ if(tm) clearTimeout(tm); tm=setTimeout(attach,250); })
+      .observe(document.body,{childList:true,subtree:true,
+                              attributes:true,attributeFilter:['class','style','hidden']});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+</body></html>
