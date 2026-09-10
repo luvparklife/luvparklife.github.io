@@ -1,0 +1,450 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>앱 상단 띠 — 5안</title>
+<style>
+:root{--ink:#1c2330;--sub:#5b6472;--line:#d8dce3;--bg:#f5f7fa;--pt:#2563eb;--gr:#2f8f5b;--acc:#b8863b;--rd:#c0392b}
+*{box-sizing:border-box}
+body{margin:0;background:#eef0f4;color:var(--ink);
+     font:15px/1.7 -apple-system,"Apple SD Gothic Neo",sans-serif;padding:0 0 70px}
+.page{max-width:1080px;margin:0 auto;padding:0 14px}
+h1{font-size:21px;margin:20px 0 3px;letter-spacing:-.4px}
+.lead{color:var(--sub);font-size:13.5px;margin:0 0 12px}
+h2{font-size:16px;margin:26px 0 6px;padding-bottom:6px;border-bottom:2px solid #d9dee6}
+.sw{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0 4px;align-items:center}
+.sw b{font-size:12.5px;color:var(--sub);margin-right:2px;flex:0 0 auto}
+.sw button{border:1px solid #cfd5df;background:#fff;border-radius:8px;padding:6px 12px;
+  font-size:12.5px;font-family:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.sw button.on{background:#20293a;border-color:#20293a;color:#fff;font-weight:700}
+.sw button small{display:block;font-size:11px;opacity:.72;font-weight:400}
+.note{background:#fff8e8;border-left:4px solid var(--acc);border-radius:0 9px 9px 0;
+  padding:9px 13px;font-size:13px;margin:10px 0}
+.note.red{background:#fff5f5;border-left-color:var(--rd)}
+
+.brz{border:1px solid #d3d8e0;border-radius:12px;overflow:hidden;background:#fff;
+  box-shadow:0 6px 26px rgba(20,30,50,.12);margin:12px auto;transition:max-width .15s}
+.urlbar{background:#e8ebf0;padding:6px 11px;font-size:11.5px;color:#5b6472;display:flex;gap:6px;align-items:center}
+.urlbar .dot{width:9px;height:9px;border-radius:50%;background:#c9cfda}
+.urlbar .u{background:#fff;border-radius:5px;padding:3px 10px;flex:1;font-size:11.5px;color:#6b7280;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scr{position:relative;display:flex;flex-direction:column;height:520px;overflow:hidden}
+.paper{flex:1;overflow-y:auto;background:#f7f8fa;padding:14px 15px;font-size:13px;color:#5b6472}
+
+/* ── 새 띠 (앱마다 «항상 같다») ── */
+.tape{flex:0 0 auto;background:#20293a;color:#cfd8dc;font-size:12.5px;display:flex;gap:4px;
+  align-items:center;padding:7px 9px;overflow-x:auto;white-space:nowrap}
+.tape::-webkit-scrollbar{height:4px}
+.tape::-webkit-scrollbar-thumb{background:#46536b;border-radius:9px}
+.tape button{border:none;font:inherit;color:inherit;background:none;cursor:pointer;flex:0 0 auto}
+.tape .s{padding:5px 10px;border-radius:7px}
+.tape .s:hover{background:rgba(255,255,255,.13)}
+.tape .s.now{background:#fff;color:#1c2330;font-weight:800}
+.tape .home{background:rgba(255,255,255,.14);font-weight:800;padding:5px 9px;border-radius:7px}
+.tape .pjb{background:var(--gr);color:#fff;border-radius:7px;padding:5px 11px;font-weight:700;
+  max-width:40vw;overflow:hidden;text-overflow:ellipsis}
+.tape .bell{background:#b23b3b;color:#fff;border-radius:7px;padding:5px 9px;font-weight:700}
+.tape .sep{width:1px;height:16px;background:rgba(255,255,255,.22);margin:0 3px;flex:0 0 auto}
+.tape .bg{font-size:9px;opacity:.7;margin-left:2px;letter-spacing:-1px}
+.tape.thin{padding:5px 9px}
+.tape.bottom{order:9}
+
+/* ── 기존 상단바 (앱마다 «다르다») ── */
+.old{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:9px 12px;color:#fff;
+  flex-wrap:wrap;font-size:12.5px}
+.old.field{background:#263238}
+.old.quote{background:#1f3350}
+.old.pay{background:#2b2b28}
+.old .b{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:5px;
+  padding:5px 9px;white-space:nowrap}
+.old .sel{background:rgba(255,255,255,.92);color:#1c2330;border-radius:5px;padding:5px 9px;font-weight:700}
+.old .lg{font-weight:800;letter-spacing:-.2px}
+.old .tabs{display:flex;gap:3px;margin-left:auto}
+.old .tabs i{font-style:normal;background:rgba(255,255,255,.12);border-radius:5px;padding:5px 9px}
+.old .tabs i.on{background:#fff;color:#1c2330;font-weight:800}
+.old2{flex:0 0 auto;background:#eef3fa;border-bottom:1px solid #d6e0ee;padding:6px 12px;
+  font-size:11.5px;color:#37527a}
+
+.cnt{position:absolute;right:9px;top:8px;background:#fff;border:1px solid var(--line);
+  border-radius:20px;padding:2px 10px;font-size:11px;color:var(--sub);z-index:5}
+.say{background:#eef3fb;border-left:4px solid var(--pt);border-radius:0 9px 9px 0;
+  padding:9px 13px;font-size:13px;margin:10px 0 0;min-height:22px}
+.cmp{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.cmp>div{flex:1;min-width:210px;background:#fff;border:1px solid #d9dee6;border-radius:10px;padding:10px 12px}
+.cmp h4{margin:0 0 5px;font-size:13.5px}
+.cmp p{margin:0 0 5px;font-size:12.5px;color:var(--sub);line-height:1.6}
+.cmp .g{color:#2e7d5b;font-weight:700}.cmp .b{color:var(--rd);font-weight:700}
+.dw{position:absolute;left:0;top:0;bottom:0;width:210px;background:#20293a;color:#cfd8dc;
+  z-index:8;padding:9px 8px;font-size:12.5px;overflow-y:auto}
+.dw .cls{background:rgba(255,255,255,.14);border-radius:7px;padding:6px;text-align:center;font-weight:700;cursor:pointer}
+.dw .gt{font-size:10.5px;color:#7d8ba3;margin:11px 0 4px;padding-left:6px}
+.dw .it{padding:6px 8px;border-radius:7px;cursor:pointer}
+.dw .it:hover{background:rgba(255,255,255,.12)}
+.dw .it.now{background:#fff;color:#1c2330;font-weight:700}
+</style></head><body><div class="page">
+
+<h1>📱 앱 상단 띠 — 5안 (폰에서 어떻게 보이나)</h1>
+<p class="lead">대표님 지시 — <b>「상단 띠는 항상 동일하게, 그 밑에 기존 상단이 있는 거지」</b>.
+지금은 띠가 <b>기존 상단바 «안»에 섞여</b> 있어 폰에서 복잡합니다. 다섯 가지로 만들어 봤습니다.</p>
+
+<div class="sw">
+  <b>안</b>
+  <button id="p_A" class="on" onclick="setP('A')">🅐 띠 한 줄 (전체)<small>🏠·프로젝트·🔔·앱4</small></button>
+  <button id="p_B" onclick="setP('B')">🅑 아이콘만<small>글자 없이 짧게</small></button>
+  <button id="p_C" onclick="setP('C')">🅒 띠가 프로젝트를 맡음<small>기존에서 뺀다</small></button>
+  <button id="p_D" onclick="setP('D')">🅓 접었다 폈다<small>평소엔 한 줄</small></button>
+  <button id="p_E" onclick="setP('E')">🅔 폰은 맨 아래<small>엄지로 닿는 자리</small></button>
+</div>
+<div class="sw">
+  <b>어느 앱</b>
+  <button id="a_field" class="on" onclick="setA('field')">🎬 장비앱</button>
+  <button id="a_quote" onclick="setA('quote')">🧾 견적앱</button>
+  <button id="a_pay" onclick="setA('pay')">💰 정산앱</button>
+  <b style="margin-left:10px">화면</b>
+  <button id="w_ph" class="on" onclick="setW(390)">📱 폰 (390)</button>
+  <button id="w_full" onclick="setW(0)">💻 넓은 화면</button>
+</div>
+
+<div class="brz" id="brz">
+  <div class="urlbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="u" id="url">script.google.com/…/exec</span></div>
+  <div class="scr" id="scr"></div>
+</div>
+<div class="say" id="say">👆 <b>폰(390)</b>이 기본입니다. 안을 바꿔 가며 <b>맨 위 두 줄</b>이 어떻게 되는지 보세요.
+🏠 과 📁 도 눌립니다.</div>
+
+<div class="note">
+🔴 <b>오늘 실측으로 «진짜 원인»을 찾았습니다</b> — 띠 글자를 폰에서 숨기는 규칙이
+<b>장비앱 파일에만</b> 있었고 <b>견적앱·정산앱엔 없었습니다.</b> 그래서 그 둘만 폰에서 길어졌습니다.
+<b>띠 파일 한 곳으로 옮겨 이미 고쳤습니다</b> — 아래 화면은 그 «고친 뒤» 모습입니다.
+</div>
+
+<div class="note red">
+🔴 <b>지금(고치기 전)은 이렇습니다</b> — 띠가 기존 상단바 «안»에 들어가 있어
+<b>「🏠 현장시트 [프로젝트▾] 📁🧾🎬💰 준비|랩업|반납 🔔 🔄 📊」가 한 줄</b>에 다 있습니다.
+폰에서는 줄이 두세 번 접히거나 옆으로 밀립니다. 그래서 대표님이 「복잡하다」고 하신 것입니다.
+</div>
+
+<h2>다섯 안 — 무엇이 좋고 무엇이 아쉬운가</h2>
+<div class="cmp">
+<div><h4>🅐 띠 한 줄 (전체)</h4>
+  <p><span class="g">좋은 점</span> <b>허브와 «똑같습니다».</b> 어느 앱에 있든 같은 자리에 같은 것이 있습니다.</p>
+  <p><span class="b">아쉬운 점</span> 장비앱은 <b>프로젝트가 두 곳</b>(띠·기존 상단)에 나옵니다.</p></div>
+<div><h4>🅑 아이콘만</h4>
+  <p><span class="g">좋은 점</span> 폰에서 <b>제일 짧습니다.</b> 밀지 않아도 다 보입니다.</p>
+  <p><span class="b">아쉬운 점</span> 처음 쓰는 사람은 <b>아이콘이 뭔지 모릅니다</b>(프리랜서).</p></div>
+<div><h4>🅒 띠가 프로젝트를 맡음</h4>
+  <p><span class="g">좋은 점</span> <b>중복이 없습니다.</b> 프로젝트는 띠 한 곳에서만 고릅니다.</p>
+  <p><span class="b">아쉬운 점</span> <b>기존 상단바를 고쳐야</b> 합니다 — 앱마다 자리가 달라 손이 갑니다.</p></div>
+<div><h4>🅓 접었다 폈다</h4>
+  <p><span class="g">좋은 점</span> 평소엔 <b>한 줄이 아주 얇습니다.</b> 필요할 때만 폅니다.</p>
+  <p><span class="b">아쉬운 점</span> <b>한 번 더 눌러야</b> 다른 앱으로 갑니다 — 「이동이 불편하다」를 없애려던 것과 어긋납니다.</p></div>
+<div><h4>🅔 폰은 맨 아래</h4>
+  <p><span class="g">좋은 점</span> <b>엄지로 바로 닿습니다.</b> 위쪽이 통째로 비어 표가 넓어집니다.</p>
+  <p><span class="b">아쉬운 점</span> 넓은 화면에서는 위, 폰에서는 아래 — <b>자리가 달라집니다.</b>
+  그리고 장비앱은 아래에 <b>저장 바</b>가 이미 있습니다.</p></div>
+</div>
+
+<div class="note">
+🔴 <b>제 추천 = 🅐 또는 🅒.</b> 「항상 동일」이 목적이므로 <b>허브와 같은 모양(🅐)</b>이 맞고,
+중복이 거슬리시면 <b>🅒</b>로 기존 상단바에서 프로젝트를 빼면 됩니다.
+🅑는 프리랜서가 헤매고, 🅓·🅔는 「한 번에 이동」이라는 애초 목적과 어긋납니다.
+</div>
+
+</div>
+<script>
+var P='A', APP='field', W=390, DRAW=0, OPEN=0;
+var APPS=[['proj','📁','프로젝트',''],['quote','🧾','견적서','👑'],['field','🎬','장비앱',''],['pay','💰','정산','']];
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function say(h){document.getElementById('say').innerHTML=h;}
+function on(id,y){var e=document.getElementById(id); if(e) e.className=y?'on':'';}
+function setP(v){P=v;DRAW=0;OPEN=0;['A','B','C','D','E'].forEach(function(x){on('p_'+x,x===v);});draw();
+  say({A:'🅐 <b>허브와 똑같은 띠</b>입니다 — 🏠 · 프로젝트 · 🔔 · 앱 4개. 그 아래가 기존 상단바입니다.',
+       B:'🅑 <b>아이콘만</b>이라 폰에서 제일 짧습니다. 대신 처음 쓰는 사람은 뭔지 모릅니다.',
+       C:'🅒 <b>프로젝트를 띠가 맡고</b> 기존 상단바에서 뺐습니다 — 두 곳에 안 나옵니다.',
+       D:'🅓 <b>평소엔 얇은 한 줄</b>입니다. 눌러서 펴 보세요.',
+       E:'🅔 <b>폰에서는 맨 아래</b>로 갑니다 — 엄지로 닿습니다. 넓은 화면을 눌러 보세요(위로 갑니다).'}[v]);}
+function setA(v){APP=v;DRAW=0;['field','quote','pay'].forEach(function(x){on('a_'+x,x===v);});draw();
+  say({field:'🎬 <b>장비앱</b> — 기존 상단바에 프로젝트·준비/랩업/반납·🔔·📊 가 있습니다.',
+       quote:'🧾 <b>견적앱</b> — 사업자·프로젝트 고르는 칸과 아래 요약 띠가 있습니다.',
+       pay:'💰 <b>정산앱</b> — 상단바가 짧고 탭이 아래에 있습니다.'}[v]);}
+function setW(v){W=v;on('w_ph',v===390);on('w_full',v===0);draw();}
+function toggleDraw(){DRAW=!DRAW;draw(); if(DRAW) say('🏠 <b>사이드바</b> — 전체 앱·페이지. 어느 안이든 똑같이 나옵니다.');}
+function toggleOpen(){OPEN=!OPEN;draw();}
+function nop(w){say('🧪 목업이라 '+esc(w)+'는 실제로 안 열립니다.');}
+
+function tape(){
+  var thin = (P==='D' && !OPEN);
+  var h='<div class="tape'+(thin?' thin':'')+(P==='E'&&W===390?' bottom':'')+'">';
+  h+='<button class="home" onclick="toggleDraw()">🏠</button>';
+  if(P==='D' && !OPEN){
+    h+='<button class="s" onclick="toggleOpen()" style="margin-left:2px">'+
+       (APP==='field'?'🎬 장비앱':APP==='quote'?'🧾 견적서':'💰 정산')+' ▾</button>'+
+       '<span style="flex:1"></span><button class="bell" onclick="nop(\'알림\')">🔔 5</button></div>';
+    return h;
+  }
+  if(P==='A'||P==='C'||P==='D'||P==='E')
+    h+='<button class="pjb" onclick="nop(\'프로젝트 고르기\')">📁 '+
+       (W===390?'샘플브랜드':'260902_샘플에이')+' ▾</button>';
+  if(P!=='B') h+='<button class="bell" onclick="nop(\'알림\')">🔔 5</button>';
+  h+='<span class="sep"></span>';
+  APPS.forEach(function(x){
+    var me=(x[0]===APP);
+    /* 🔴 실물과 같게 — 폰(520 이하)에서는 띠 글자를 숨긴다(.tt-t 규칙).
+       목업이 이걸 빠뜨려서 「🅐는 폰에서 밀린다」로 잘못 보였다(2026-09-10 실측으로 잡음). */
+    var noTxt = (P==='B') || (W===390);
+    h+='<button class="s'+(me?' now':'')+'" onclick="nop(\''+x[2]+'\')">'+x[1]+
+       (noTxt?'':' '+esc(x[2])+(x[3]?'<span class="bg">'+x[3]+'</span>':''))+'</button>';
+  });
+  if(P==='D') h+='<span style="flex:1"></span><button class="s" onclick="toggleOpen()">▴</button>';
+  return h+'</div>';
+}
+function oldbar(){
+  if(APP==='field'){
+    return '<div class="old field">'+
+      (P==='C'?'':'<span class="b" onclick="nop(\'허브\')">🏠</span>')+
+      '<span class="lg">현장시트</span>'+
+      (P==='C'?'':'<span class="sel">260902_샘플에이 ▾</span>')+
+      '<span class="tabs"><i class="on">준비</i><i>랩업</i><i>반납</i></span>'+
+      '</div><div class="old field" style="padding-top:0">'+
+      '<span class="b">🔔 알림</span><span class="b">🔄</span><span class="b">📊 시트</span>'+
+      '<span class="b">카테고리별</span></div>';
+  }
+  if(APP==='quote'){
+    return '<div class="old quote">'+
+      (P==='C'?'':'<span class="b" onclick="nop(\'허브\')">🏠</span>')+
+      '<span class="lg">견적서</span><span class="sel">PA ▾</span>'+
+      (P==='C'?'':'<span class="sel">260902_샘플에이 ▾</span>')+
+      '<span class="b">한국어</span><span class="b">₩</span></div>'+
+      '<div class="old2">📌 09/02~09/03 · ㈜샘플코리아 · 담당 김가나 · 장비 1,000,000</div>';
+  }
+  return '<div class="old pay">'+
+    (P==='C'?'':'<span class="b" onclick="nop(\'허브\')">🏠</span>')+
+    '<span class="lg">프리랜서 정산</span><span style="flex:1"></span>'+
+    '<span class="b">?</span><span class="b">⏻</span></div>'+
+    '<div class="old2">작업 등록 · 내 정산 · 지급명세서</div>';
+}
+function paper(){
+  if(APP==='field') return '<b>준비 · 장비 146줄</b><br>카메라 · 조명 · 그립 …<br><br>'+
+    '(앱 안 내용은 <b>한 줄도 안 바뀝니다</b> — 띠는 위에 얹는 것입니다.)';
+  if(APP==='quote') return '<b>견적서 작성</b><br>인건비 · 장비 · 차량 · 경비 …<br><br>'+
+    '(앱 안 내용은 <b>한 줄도 안 바뀝니다</b>.)';
+  return '<b>내 청구</b><br>작업 회차 · 금액 · 첨부 …<br><br>(앱 안 내용은 <b>한 줄도 안 바뀝니다</b>.)';
+}
+function drawer(){
+  if(!DRAW) return '';
+  return '<div class="dw"><div class="cls" onclick="toggleDraw()">✕ 닫기</div>'+
+   '<div class="gt">📁 이 프로젝트에서</div>'+
+   APPS.map(function(x){return '<div class="it'+(x[0]===APP?' now':'')+'">'+x[1]+' '+x[2]+'</div>';}).join('')+
+   '<div class="gt">🗂 그 밖에</div>'+
+   '<div class="it">📊 장비대장</div><div class="it">🧾 세무대사</div><div class="it">📚 도서관</div>'+
+   '<div class="it">📱 앱 사용법</div>'+
+   '<div class="gt">👤 김가나 · 대표</div><div class="it">🚪 로그아웃</div></div>';
+}
+function draw(){
+  document.getElementById('brz').style.maxWidth = W? W+'px' : '';
+  document.getElementById('url').textContent =
+    APP==='pay' ? 'script.google.com/…/exec (정산)' : 'script.google.com/…/exec'+(APP==='quote'?'?page=quote':'');
+  var s=document.getElementById('scr');
+  var bottom = (P==='E' && W===390);
+  s.innerHTML = (bottom?'':tape()) + oldbar() + '<div class="paper">'+paper()+'</div>'
+              + (bottom?tape():'') + drawer();
+}
+draw();
+</script>
+<style>
+.fbw{margin:7px 0 13px; border-left:3px solid #c8b28a; background:#fbf7ef; border-radius:0 9px 9px 0; padding:7px 10px 8px}
+.fbw label{display:block; font-size:11px; font-weight:800; color:#8a6d3b; margin-bottom:4px; line-height:1.5}
+.fbw textarea{width:100%; box-sizing:border-box; min-height:38px; border:1px solid #e2d6bd; border-radius:7px;
+  padding:6px 8px; font:inherit; font-size:12.5px; background:#fff; color:#2c2c2c; resize:vertical}
+.fbw textarea.has{border-color:#c0392b; background:#fffaf9}
+.fbw .fbtools{float:right; display:flex; gap:4px}
+.fbw .fbtools button{border:1px solid #e2d6bd; background:#fff; color:#8a6d3b; border-radius:5px;
+  padding:1px 6px; font:inherit; font-size:10px; font-weight:700; cursor:pointer}
+#fbbar{position:fixed; left:0; right:0; bottom:0; z-index:9999; background:#2c2c2c; color:#fff;
+  display:flex; gap:7px; align-items:center; padding:8px 11px; font-size:12px}
+#fbbar b{color:#ffd479}
+#fbbar button{border:0; border-radius:7px; padding:7px 11px; font:inherit; font-size:12px;
+  font-weight:700; cursor:pointer; background:#fff; color:#2c2c2c}
+#fbbar .gh{margin-left:auto}
+body{padding-bottom:56px !important}
+</style>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   💬 미리보기에도 «항목마다» 피드백 칸 (2026-08-22 대표 지시)
+      *"미리보기도 피드백칸 항목마다 항상 넣어줘"*
+   🔴 회사 표준(guide 템플릿·연습장)과 같은 방식이다 — 새로 발명하지 않았다.
+   🔴 제목으로 저장한다(순서로 하면 화면을 고쳤을 때 엉뚱한 항목에 붙는다).
+   🔴 화면이 «다시 그려지는» 앱이라 MutationObserver 로 매번 다시 붙인다.
+   🔴 한글 조합 중에는 저장·표시를 안 건드린다(안 그러면 글자가 끊긴다).
+   🔴 이 덩어리는 «미리보기 전용»이다 — 진짜 허브에는 안 들어간다.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  /* 🔴 2026-09-03 — 문서 이름이 «박혀» 있었다.
+     [무엇이 문제였나] 이 위젯을 붙인 모든 문서가 «같은» 저장 열쇠를 써서
+       ①저장 파일이 늘 「허브_새프로젝트폼_미리보기_YYMMDD.md」로 떨어지고
+       ②문서가 달라도 localStorage 열쇠가 같아 서로 덮어쓸 수 있었다.
+       실측 2026-09-03 — 프리랜서 사용법 연습장에서 적었는데 파일 이름이 그 옛 문서로 나왔다.
+     [고친 법] <title> → 파일명 순으로 «스스로» 정한다. 둘 다 없을 때만 '문서'. */
+  var DOC=(function(){
+    try{ var t=(document.title||'').trim(); if(t) return t; }catch(e){}
+    try{ var p=decodeURIComponent((location.pathname||'').split('/').pop()||'');
+         p=p.replace(/\.html?$/i,''); if(p) return p; }catch(e){}
+    return '문서';
+  })();
+  var KEY='fb::'+DOC, store={};
+  try{ store=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ store={}; }
+  function slug(t){ var h=5381; for(var i=0;i<t.length;i++){ h=((h*33)^t.charCodeAt(i))>>>0; } return 'fb_'+h.toString(36); }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} count(); }
+  function txt(e){ return (e&&e.textContent||'').replace(/\s+/g,' ').trim(); }
+
+  /* 어디에 붙이나 — [고르는 법, 제목 만드는 법] */
+  var SPOTS=[
+    ['.pjfind',        function(){ return '① 찾기 막대'; }],
+    ['#pjRows',        function(){ return '② 프로젝트 목록'; }],
+    ['.pjnew .nf',     function(e){ var l=e.querySelector('label'); return '③ 새 프로젝트 · '+txt(l).replace(/\s*[—*].*$/,''); }],
+    ['.pjnew .namebox',function(){ return '③ 새 프로젝트 · 프로젝트 이름'; }],
+    ['.pjnew .rulebox',function(){ return '③ 새 프로젝트 · 이름 양식 설명'; }],
+    ['.pjnew .willbox',function(){ return '③ 새 프로젝트 · 만들면 이렇게 됩니다'; }],
+    ['#pjQk',          function(){ return '④ 프로젝트 하나 · 바로가기'; }],
+    ['#pjLeft',        function(){ return '④ 프로젝트 하나 · 단계'; }],
+    ['#pjChk',         function(){ return '④ 프로젝트 하나 · 확인할 것'; }]
+  ];
+
+  /* ══ 🔴 2026-09-02 — 「항목마다」를 «자동»으로 찾는다 ══════════════
+     [왜 고쳤나] 대표가 *"목업은 항상 항목별로 피드백창 해달라고했는데 왜 안되는거야
+       이거 중복으로 일어나는데"* 라고 하셨다. 실측 = 화면 항목 11개인데 칸은 3개.
+     [진짜 원인] 위 SPOTS 는 «사람이 손으로 적는 목록»이다. 문서를 만들 때마다
+       클로드가 자리를 골랐고, 고를 때마다 빠졌다. 규칙(§3-3)이 있어도
+       «사람이 매번 챙겨야 하는 것은 언젠가 반드시 안 지켜진다»(§5-1-E).
+       실제로 대표가 이 지적을 «네 번» 하셨다.
+     [고친 법] 제목(h1~h4)이 있는 덩어리를 «스스로» 찾아 전부 붙인다.
+       SPOTS 는 그대로 살려 둔다 — 제목이 없는 자리(입력칸·표)는 손으로 지정해야 한다.
+     🔴 이 파일이 «원본»이다. 사본에서만 고치면 다음 문서에서 또 반복된다(§1). */
+  var FB_AUTO = true;                                  /* 끄려면 false */
+  var AUTO_SPOT = [['[data-fb-auto]', function(e){ return e.getAttribute('data-fb-auto'); }]];
+  function markAuto(){
+    var hs;
+    try{ hs=document.querySelectorAll('h1,h2,h3,h4'); }catch(e){ return; }
+    for(var i=0;i<hs.length;i++){
+      var h=hs[i];
+      if(h.closest && h.closest('.fbw')) continue;      /* 피드백 칸 안의 제목은 건너뛴다 */
+      /* 제목에 딸린 «부제»는 뺀다 — 안 빼면 「🏢 받는 쪽 노션 거래처에서 찾거나…」로 길어진다.
+         🔴 원본을 안 건드리려고 사본에서 지운다(화면의 부제는 그대로 남는다). */
+      var name;
+      try{
+        var c=h.cloneNode(true), j=c.querySelectorAll('.sp,.hint,small,.badge,.tag');
+        for(var k=0;k<j.length;k++) j[k].parentNode.removeChild(j[k]);
+        name=txt(c);
+      }catch(e){ name=txt(h); }
+      if(!name) continue;
+      if(name.length>40) name=name.slice(0,40)+'…';
+      if(h.getClientRects().length===0) continue;       /* 지금 «안 보이는» 것은 나중에(관찰자가 다시 돈다) */
+      /* 붙일 자리 = 이 제목이 이끄는 «덩어리» 끝.
+         덩어리를 못 찾으면 제목 바로 아래에 붙인다 — 자리를 못 정해 «빠뜨리는» 것보다 낫다. */
+      var box=h.parentElement, spot=h;
+      if(box && box!==document.body && box.parentElement &&
+         box.querySelectorAll('h1,h2,h3,h4').length===1) spot=box;
+      if(spot.dataset && spot.dataset.fbDone) continue;
+      if(spot.getAttribute && !spot.getAttribute('data-fb-auto'))
+        spot.setAttribute('data-fb-auto', name);
+    }
+  }
+
+  function attach(){
+    if(FB_AUTO) markAuto();
+    SPOTS.concat(AUTO_SPOT).forEach(function(sp){
+      Array.prototype.slice.call(document.querySelectorAll(sp[0])).forEach(function(el){
+        if(el.dataset.fbDone) return;
+        if(el.closest && el.closest('.fbw')) return;
+        el.dataset.fbDone='1';
+        var title; try{ title=sp[1](el); }catch(e){ title=sp[0]; }
+        if(!title) return;
+        var id=slug(title);
+        var w=document.createElement('div'); w.className='fbw';
+        var lab=document.createElement('label'); lab.setAttribute('for',id);
+        lab.textContent='💬 「'+title+'」 피드백 — 고칠 것 · 빠진 것 · 질문';
+        var tools=document.createElement('span'); tools.className='fbtools';
+        var ta=document.createElement('textarea');
+        ta.id=id; ta.dataset.t=title; ta.placeholder='한 줄 적어주세요. 자동 저장됩니다.';
+        ta.value=store[id]||''; if(ta.value.trim()) ta.classList.add('has');
+        var ime=false, tm=null;
+        function done(){ ta.classList.toggle('has', !!ta.value.trim()); save(); }
+        ta.addEventListener('compositionstart',function(){ ime=true; });
+        ta.addEventListener('compositionend',function(){ ime=false; done(); });
+        ta.addEventListener('input',function(){
+          store[id]=ta.value;                 /* 값은 늘 담는다 */
+          if(ime) return;                     /* 🔴 조합 중엔 안 건드린다 */
+          if(tm) clearTimeout(tm); tm=setTimeout(done,500);
+        });
+        ta.addEventListener('blur',function(){ if(tm) clearTimeout(tm); done(); });
+        ta.addEventListener('keydown',function(ev){
+          if((ev.metaKey||ev.ctrlKey)&&(ev.key==='a'||ev.key==='A')){ ev.preventDefault(); ev.stopPropagation(); ta.select(); }
+        });
+        [['전체선택',function(){ ta.focus(); ta.select(); }],
+         ['복사',function(b){ ta.focus(); ta.select();
+            var fin=function(){ var o=b.textContent; b.textContent='✅'; setTimeout(function(){ b.textContent=o; },1100); };
+            if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(fin,fin);
+            else { try{ document.execCommand('copy'); }catch(e){} fin(); } }],
+         ['비우기',function(){ ta.value=''; store[id]=''; done(); }]
+        ].forEach(function(t){
+          var b=document.createElement('button'); b.type='button'; b.textContent=t[0];
+          b.onclick=function(){ t[1](b); }; tools.appendChild(b);
+        });
+        lab.appendChild(tools);
+        w.appendChild(lab); w.appendChild(ta);
+        if(el.parentNode) el.parentNode.insertBefore(w, el.nextSibling);
+      });
+    });
+    count();
+  }
+  function all(){
+    return Array.prototype.slice.call(document.querySelectorAll('.fbw textarea'))
+      .filter(function(t){ return t.value.trim(); });
+  }
+  function count(){
+    var n=all().length, e=document.getElementById('fbn'); if(e) e.textContent=n;
+  }
+  function bar(){
+    var b=document.createElement('div'); b.id='fbbar';
+    b.innerHTML='💬 적은 피드백 <b id="fbn">0</b>개'
+      + '<span class="gh"></span><button id="fbCopy">📋 전체 복사</button>'
+      + '<button id="fbSave">💾 피드백 저장</button>';
+    document.body.appendChild(b);
+    function text(){
+      var out='# 피드백 · '+DOC+'\n\n';
+      all().forEach(function(t){ out+='## '+t.dataset.t+'\n'+t.value.trim()+'\n\n'; });
+      return out;
+    }
+    document.getElementById('fbCopy').onclick=function(){
+      var t=text(), me=this, fin=function(){ me.textContent='✅ 복사했습니다'; setTimeout(function(){ me.textContent='📋 전체 복사'; },1400); };
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(fin,fin); else fin();
+    };
+    document.getElementById('fbSave').onclick=function(){
+      if(!all().length){ alert('아직 적으신 피드백이 없습니다.'); return; }
+      var d=new Date(), p=function(n){ return (n<10?'0':'')+n; };
+      var nm='피드백_'+DOC+'_'+String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+'.md';
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([text()],{type:'text/markdown;charset=utf-8'}));
+      a.download=nm; document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },800);
+    };
+  }
+  function boot(){ bar(); attach();
+    var tm=null;
+    /* 🔴 2026-09-03 — attributeFilter 를 더했다.
+       [무엇이 문제였나] markAuto 는 «지금 안 보이는» 제목을 건너뛰고(위 getClientRects) 관찰자가
+         다시 돌기를 기다린다. 그런데 관찰자가 childList 만 봐서, 화면을 «class 로» 감췄다 폈다 하는
+         문서(탭·단계 전환)에서는 «영영 안 깨어난다».
+         실측 2026-09-03 프리랜서 사용법 연습장 — 항목 16개인데 칸이 «2개»(첫 화면 것만) 붙었다.
+       [왜 filter 를 거는가] attributes:true 를 통째로 켜면 이 위젯이 스스로 붙이는
+         data-fb-auto · data-fb-done 변화까지 잡아 계속 되돈다.
+         class/style/hidden 은 위젯이 «안 건드리는» 것이라 되돌 일이 없다. */
+    new MutationObserver(function(){ if(tm) clearTimeout(tm); tm=setTimeout(attach,250); })
+      .observe(document.body,{childList:true,subtree:true,
+                              attributes:true,attributeFilter:['class','style','hidden']});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+</body></html>
