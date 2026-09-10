@@ -41,7 +41,9 @@
       background:var(--bg); color:var(--ink);
       padding:26px 16px 40px; -webkit-font-smoothing:antialiased; line-height:1.5;
     }
-    .wrap{max-width:540px; margin:0 auto}
+    /* 🔴 2026-09-10 대표 지시 「웹에서 볼때 너무 좁아 넓게 해줘」 — 540 → 1080.
+       폰에서는 화면 폭에 맞춰 저절로 줄어든다(max-width 라 «상한»일 뿐이다). */
+    .wrap{max-width:1080px; margin:0 auto}
     h1{font-size:23px; font-weight:800; letter-spacing:-.3px}
     .sub{font-size:13px; color:var(--sub); margin:4px 0 22px}
 
@@ -513,7 +515,9 @@
        🖼 확정본 그림 = `260909_앱이동_개선_연습장.html` · `260909_프로젝트화면_4안_연습장.html`
           🔴 모양(색·크기·묶음)을 그 파일에서 «그대로» 떠 왔다 — 새로 그리지 않았다.
        🔴 주소를 여기 다시 안 적는다 — 아래 카드들이 원본이고, 띠·사이드바는 «그 카드를 대신 눌러» 준다(§1). */
-    .patop{position:sticky; top:0; z-index:60; background:var(--bg)}
+    /* 🔴 2026-09-10 — 띠를 «마스크(70)보다 위»로 올린다. 안 그러면 사이드바가 열렸을 때
+       마스크가 띠를 덮어 🏠 를 «다시 못 눌러» 접히지 않는다(대표 신고). */
+    .patop{position:sticky; top:0; z-index:80; background:var(--bg)}
     .pastrip{background:#20293a; color:#cfd8dc; font-size:12.5px; display:flex; gap:4px;
       align-items:center; padding:6px 9px; overflow-x:auto; white-space:nowrap;
       border-radius:0 0 10px 10px; margin:0 0 2px}
@@ -1900,7 +1904,16 @@
       return nm.length > 4 ? nm : 'pa_app';
     }catch(e){ return 'pa_app'; }
   }
+  /* 🔴 2026-09-10 대표 지시 — 「띠에서 프로젝트·견적서·장비앱 넘어갈 때 새 창 말고 «이 창에서»」.
+     [속도 사실] 앱스스크립트 앱은 «처음 열 때» 4~5초가 걸린다. 고정 탭이면 두 번째부터 0초인데,
+       같은 창으로 가면 «갈 때마다» 그 4~5초를 낸다(허브로 돌아올 때는 깃허브라 빠르다).
+     [그래도 이렇게 한다] 대표 지시다. 되돌리기 = "띠에서 새 탭으로 되돌려줘" (PA_SAME_TAB=false)
+     🔴 «띠에서 누를 때만» 이렇게 한다 — 사이드바의 노션·드라이브까지 이러면 허브를 잃는다. */
+  var PA_SAME_TAB = true, PA_SAME_NOW = false;
   function openApp_(url){
+    if(PA_SAME_TAB && PA_SAME_NOW){
+      try { location.href = url; return true; } catch(e){}
+    }
     var w = null;
     try{ w = window.open(url, tabName_(url)); }catch(e){ w = null; }
     if(w){
@@ -2940,14 +2953,20 @@
        + 앞서 주신 순서 그대로. 🔴 「촬영 회차」는 «아래 섹션»이 맡는다 — 거기서 추가·시간·주소를
          등록하므로 표에도 두면 «같은 것이 두 곳»이 된다. */
     var PJ_ORDER = ['촬영일','PA팀','포토그래퍼','브랜드','담당자','공유폴더',
-                    '거래처','견적서','내부폴더','공유파일','소싱시트','장비세부내역','정산서'];
-    var PJ_SEE = { '거래처':'mgr', '견적서':'mgr', '내부폴더':'mgr', '공유파일':'mgr',
+                    '거래처','견적서','내부폴더','외부장비공유','소싱시트','장비세부내역','정산서'];
+    /* 🔴 2026-09-10 대표 지시 — 「관리자이상 보이는 거에 «참여인원»이 빠졌어」.
+       [확인함] 「참여인원」은 2026-09-08에 「PA팀」으로 이름이 바뀐 그 줄이다(같은 것).
+       🔴 [밝혀 둡니다] 2026-09-01 확정은 *"참여인원은 팀원모두 볼수있고"* 였다 —
+          오늘 지시가 그것을 «뒤집는다». 최신 지시를 따르되 기록에 남긴다(§3-2-C).
+       되돌리기 = "PA팀 팀원모두로 되돌려줘" */
+    var PJ_SEE = { 'PA팀':'mgr', '거래처':'mgr', '견적서':'mgr', '내부폴더':'mgr', '외부장비공유':'mgr',
                    '소싱시트':'mgr', '장비세부내역':'mgr', '정산서':'owner' };
     var IS_MGR = (PJ_ROLE === '대표' || PJ_ROLE === '관리');
     var _by = {};
     (d.items||[]).forEach(function(x){ if(x && x.key) _by[x.key] = x; });
     /* 🔴 서버가 «줄»로 안 주는 둘을 여기서 만든다 — 주소는 이미 받아둔 것을 쓴다(새로 안 부른다) */
-    if(d.shareUrl || d.shareState) _by['공유파일'] = { key:'공유파일', kind:'결과물',
+    /* 🔴 2026-09-10 대표 지시 — 이름을 「외부장비공유」로. 무엇을 가리키는지가 이름에 드러난다. */
+    if(d.shareUrl || d.shareState) _by['외부장비공유'] = { key:'외부장비공유', kind:'결과물',
         state: d.shareUrl ? 'ok' : 'no',
         text: d.shareUrl ? (d.shareState ? String(d.shareState) : '있음') : '아직 안 만듦',
         link: d.shareUrl || '' };
@@ -4324,21 +4343,23 @@
        탭이 아니라 «한 장»이라 위쪽은 하나도 안 바뀐다. */
   function pjSections_(proj, isOwner, isMgr, canAsk){
     var a = [
+      /* 🔴 2026-09-10 대표 지시 — 「회차는 같은 곳에 있는 게 (낫다) 그러면 맨 위로 올려줘」.
+         회차는 여기서 «추가·시간·주소»를 등록하므로 표에는 안 넣는다(같은 것이 두 곳이 되면 안 된다). */
+      { n: '촬영 회차', html: function(){ return '<div id="pjDays"></div>'; } },
       { n: '정보', html: function(){
           return '<div id="pjChk"><p class="foot" style="margin:0">📋 확인 중…</p></div>'
             + pjLinks(proj, isOwner, isMgr)
             + '<p class="fn">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.'
             + (!PJ_ROLE && !canAsk ? '<br>🔑 <b>다시 로그인해주세요</b> — 구글 통행증이 1시간마다 만료돼서 등급을 못 물어봅니다.' : '')
-            + (isMgr ? '' : '<br>🔒 거래처·견적서·내부폴더·공유파일·소싱시트·장비세부내역은 <b>「관리」 이상만</b> 보입니다.')
+            + (isMgr ? '' : '<br>🔒 참여인원(PA팀)·거래처·견적서·내부폴더·외부장비공유·소싱시트·장비세부내역은 <b>「관리」 이상만</b> 보입니다.')
             + (isOwner ? '' : '<br>💰 정산서는 <b>대표님만</b> 보입니다.')
-            + '<br>🌐 <b>공유파일</b>이 회색이면 그 프로젝트는 <b>아직 안 만든 것</b>입니다 — 장비시트 메뉴 「🌐 팀 공유파일 만들기」.'
+            + '<br>🌐 <b>외부장비공유</b>가 회색이면 그 프로젝트는 <b>아직 안 만든 것</b>입니다 — 장비시트 메뉴 「🌐 팀 공유파일 만들기」.'
             + '<br>⚪ <b>아직 안 봄</b> = 노션·정산앱에 있는 것이라 이 화면이 아직 못 물어봅니다.</p>'; } },
-      { n: '촬영 회차', html: function(){ return '<div id="pjDays"></div>'; } }
       /* 🔮 팀 공유가 정해지면 여기에 한 줄:
          , { n:'팀 공유', html: function(){ return '<div id="pjTeam"></div>'; } } */
     ];
     return a.map(function(x){
-      return '<div class="sect">— ' + pjEsc(x.n) + ' —</div>' + x.html();
+      return '<div class="sect" data-sec="' + pjEsc(x.n) + '">— ' + pjEsc(x.n) + ' —</div>' + x.html();
     }).join('');
   }
 
@@ -4383,7 +4404,8 @@
     /* 🔄 「다시 불러오기」는 제목줄에 있었는데 그 줄을 감췄다 → 「— 정보 —」 옆으로 «옮긴다».
        🔴 새로 만들지 않고 «그 요소를 그대로» 옮긴다 — id·리스너가 살아 있어야 한다(§1). */
     try {
-      var _sy = document.getElementById('pjSync'), _s1 = document.querySelector('#pjOneBody .sect');
+      var _sy = document.getElementById('pjSync'),
+          _s1 = document.querySelector('#pjOneBody .sect[data-sec="정보"]');
       if(_sy && _s1){ _sy.style.cssText = 'margin-left:8px;font-weight:400;font-size:11.5px'; _s1.appendChild(_sy); }
     } catch(e){}
     /* ⚡ 2026-08-26 — 회차·1차정보·등급을 «한 번에» 받는다(전에는 셋을 따로 불렀다).
@@ -6155,10 +6177,14 @@
     paDrawer(false);
     var n = paProjNow();
     if(k === 'proj'){ location.hash = n ? '#p/' + encodeURIComponent(n) : '#p'; return; }
-    /* 🔴 앱을 여는 규칙을 다시 안 짠다 — 프로젝트 화면 바로가기가 쓰는 그 함수를 그대로 부른다 */
-    if(k === 'pay')   { pjSettle(n); return; }
-    if(k === 'quote') { pjOpen(FIELD_APP, n, 'page=quote'); return; }
-    if(k === 'field') { pjOpen(FIELD_APP, n, ''); return; }
+    /* 🔴 앱을 여는 규칙을 다시 안 짠다 — 프로젝트 화면 바로가기가 쓰는 그 함수를 그대로 부른다.
+       띠에서 누를 때만 «같은 창»으로 간다(깃발을 세웠다 바로 내린다 — 다른 곳은 예전 그대로). */
+    PA_SAME_NOW = true;
+    try {
+      if(k === 'pay')   { pjSettle(n); }
+      else if(k === 'quote') { pjOpen(FIELD_APP, n, 'page=quote'); }
+      else if(k === 'field') { pjOpen(FIELD_APP, n, ''); }
+    } finally { PA_SAME_NOW = false; }
   }
   document.addEventListener('click', function(ev){
     var el = ev.target, n = 0, act = null;
