@@ -666,6 +666,71 @@
     .papick .r.now{background:#e8f4ee; font-weight:800}
     .papick .r.add{color:#2563eb; font-weight:700}
     .papick .sep{height:1px; background:#e2e6ee; margin:4px 2px}
+
+    /* ═══ 📑 프로젝트 탭 3개 (2026-09-11 대표 확정) ═══════════════════
+       대표 지시: *"세개 탭으로 나누면 좋을것 같아."*
+       🔴 [왜 탭인가] 한 장에 다 두면 폰에서 «3.9화면»이 된다(2026-09-10 실측).
+          프리랜서는 「안내·할 일」만 보고, 대표는 「회고」를 본다 — 보는 사람이 다르다.
+       🔴 [탭 줄이 «스크롤을 따라오지 않는다»] 붙여두면 좁은 폰에서 표를 덮는다.
+          탭을 누르는 일은 화면 맨 위에서 한 번뿐이라 따라올 이유가 없다. */
+    .pjtabs{display:flex; gap:4px; margin:10px 0 8px; border-bottom:2px solid #e2e6ee;
+      overflow-x:auto; -webkit-overflow-scrolling:touch}
+    .pjtabs button{border:none; background:none; font:inherit; cursor:pointer;
+      padding:8px 12px 7px; font-size:13px; font-weight:700; color:#6b7688;
+      border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap;
+      border-radius:7px 7px 0 0}
+    .pjtabs button:hover{background:#f2f6ff; color:#1c2330}
+    .pjtabs button.on{color:#1c2330; border-bottom-color:#2563eb; background:#f2f6ff}
+    .pjtabs .tn{margin-left:4px; font-size:11px; font-weight:800; color:#fff;
+      background:#c0392b; border-radius:9px; padding:1px 6px; display:inline-block}
+    /* 🔴 [이 한 줄이 «반드시» 있어야 한다] 위의 display:inline-block 이 hidden 속성의
+       기본값(display:none)을 «이긴다» — 없으면 0건일 때도 회색 자국이 남아
+       탭 이름이 「📋 정보 _」 처럼 보인다(실물 캡처에서 잡았다). */
+    .pjtabs .tn[hidden]{display:none !important}
+    .pjtabs .tn.zero{background:#aeb6c4}
+    .pjtab[hidden]{display:none !important}
+
+    /* ═══ 📝 회고 (2026-09-11) ═══════════════════════════════════════
+       대표 지시: *"회고는 촬영 «중에도» 계속 등록해야되. 준비할때부터 촬영할때까지가
+                   제일 많은 문제점을 파악할 수 있어."*
+       🔴 [줄 쌓기다 — 큰 칸이 아니다] 옛 노션은 큰 칸 9개였는데 실제로 쓰인 것은
+          「문제」 하나(39%)였다. 큰 칸은 «나중에 한 번에» 적게 만들고, 그러면 안 적는다.
+          한 줄씩 쌓으면 겪는 순간에 적을 수 있다. */
+    .rvbox{border:1px solid #e2e6ee; border-radius:10px; padding:10px 11px; background:#fff}
+    .rvadd{display:flex; gap:6px; margin-bottom:9px}
+    .rvadd input{flex:1; min-width:0; font:inherit; font-size:13px; padding:7px 9px;
+      border:1px solid #c8cfda; border-radius:8px}
+    .rvadd button{border:none; background:#2563eb; color:#fff; font:inherit; font-weight:700;
+      font-size:12.5px; padding:7px 12px; border-radius:8px; cursor:pointer; white-space:nowrap}
+    .rvadd button:disabled{background:#aeb6c4; cursor:default}
+    .rvline{display:flex; gap:7px; align-items:flex-start; padding:7px 0;
+      border-top:1px solid #eef1f6}
+    .rvline:first-of-type{border-top:none}
+    .rvline .ph{flex:none; font-size:10.5px; font-weight:800; border-radius:6px;
+      padding:2px 6px; margin-top:1px; white-space:nowrap}
+    .rvline .ph.pre{background:#e8f0fe; color:#1a56c4}
+    .rvline .ph.mid{background:#fdeccd; color:#95601a}
+    .rvline .ph.end{background:#e8f4ee; color:#1c6b46}
+    .rvline .tx{flex:1; min-width:0; font-size:13px; line-height:1.55; white-space:pre-wrap;
+      word-break:break-word}
+    /* 🔴 [display:block 이 «반드시» 있어야 한다] span 은 기본이 inline 이라
+       margin-top 만 주면 본문 끝에 «달라붙는다» — 「…미리 확인강문원 · 2026-09-11」
+       처럼 보여 문장이 이상해진다(실물 캡처에서 잡았다). */
+    .rvline .wd{display:block; font-size:11px; color:#8a93a3; margin-top:3px}
+    .rvline .dl{flex:none; border:none; background:none; cursor:pointer; color:#b9c2d0;
+      font-size:13px; padding:0 2px; line-height:1.4}
+    .rvline .dl:hover{color:#c0392b}
+    .rvrate{display:flex; gap:6px; align-items:center; margin:10px 0 8px;
+      padding-top:9px; border-top:1px solid #eef1f6; flex-wrap:wrap}
+    .rvrate button{border:1px solid #c8cfda; background:#fff; font:inherit; font-size:12.5px;
+      padding:5px 11px; border-radius:14px; cursor:pointer; color:#4a5465}
+    .rvrate button.on{background:#1c2330; border-color:#1c2330; color:#fff; font-weight:700}
+    .rvtags{display:flex; gap:5px; flex-wrap:wrap; margin-top:2px}
+    .rvtags button{border:1px solid #dfe4ec; background:#fff; font:inherit; font-size:12px;
+      padding:4px 9px; border-radius:13px; cursor:pointer; color:#6b7688}
+    .rvtags button.on{background:#eef3ff; border-color:#9cb6f0; color:#1a56c4; font-weight:700}
+    .rvmsg{font-size:11.5px; color:#8a93a3; margin-left:auto}
+    .rvmsg.err{color:#c0392b; font-weight:700}
   </style>
 </head>
 <body>
@@ -2981,8 +3046,13 @@
        🔴 [d.check 안에서 온다] 서버가 그 응답에 note·tasks 를 실어 보낸다.
        🔴 [try 로 감싼다] 여기서 터지면 «회차·정보»까지 같이 안 그려진다. */
     try { if(d.check) pjNotePaint(proj, d.check); } catch(e){}
+    /* 📝 회고 (2026-09-11) — 「관리」 미만이면 #pjRev 가 아예 없어 그냥 넘어간다.
+       🔴 [따로 try 로 감싼다] 여기서 터져도 회차·정보·안내는 그려져야 한다. */
+    try { if(d.check) pjRevPaint(proj, d.check); } catch(e){}
     /* 📐 접힌 「정보」 머리에 «몇 줄인지» 적는다 — 그리기가 다 끝난 «뒤»라야 셀 수 있다 */
     try { pjSecCount(); } catch(e){}
+    /* 🔢 탭 이름 옆 숫자 — 그리기가 끝난 «뒤»라야 셀 수 있다 */
+    try { pjTabCount(); } catch(e){}
   }
 
   function pjCheck(proj){
@@ -4618,10 +4688,13 @@
     var a = [
       /* 🔴 2026-09-10 대표 지시 — 「회차는 같은 곳에 있는 게 (낫다) 그러면 맨 위로 올려줘」.
          회차는 여기서 «추가·시간·주소»를 등록하므로 표에는 안 넣는다(같은 것이 두 곳이 되면 안 된다). */
-      { n: '촬영 회차', html: function(){ return '<div id="pjDays"></div>'; } },
+      { n: '촬영 회차', tab: 'info', html: function(){ return '<div id="pjDays"></div>'; } },
       /* 📌 2026-09-10 대표 확정 — 「촬영 안내」는 «회차 밑»으로 (*"촬영 안내는 회차 밑으로"*).
          노션 「PA공유_」 페이지를 없애는 자리다 — 특이사항·차량·픽업루트를 여기 적는다. */
-      { n: '촬영 안내', html: function(){ return '<div id="pjNote"></div>'; } },
+      /* 📌 2026-09-11 대표 지시 — *"촬영 안내를 할일,질문과 같이 묶어줘."*
+         🔴 [같은 탭인 것이 맞다] pjNote 한 덩어리 안에 「안내 글 + ✔ 확인할 것 + 업체 연락처」가
+            이미 같이 들어 있다. 프리랜서가 여는 탭은 이것 하나다. */
+      { n: '촬영 안내', tab: 'todo', html: function(){ return '<div id="pjNote"></div>'; } },
       /* 📐 2026-09-11 대표 지시 — 「정보는 펼치고 접고 하지 말고 «항상 펼쳐져» 있자」.
          ═══════════════════════════════════════════════════════════════
          🔴 [하루 전 확정을 대표가 «무르셨다»] 2026-09-10 아침에 「정보·폴더를 접어둔다」로
@@ -4632,7 +4705,7 @@
             `fold` 를 쓰는 섹션이 하나도 없으면 아무 일도 안 하고, 나중에 다른 줄을
             접어야 할 때 그대로 쓴다. 지우면 되살리는 값이 더 크다(§4-1).
          되돌리기 = **"정보 접기 되살려줘"**(아래 줄에 `fold: 1,` 을 도로 넣는다) */
-      { n: '정보', html: function(){
+      { n: '정보', tab: 'info', html: function(){
           return '<div id="pjChk"><p class="foot" style="margin:0">📋 확인 중…</p></div>'
             + pjLinks(proj, isOwner, isMgr)
             + '<p class="fn">🔴 <b>지금 등급: ' + pjEsc(PJ_ROLE || '확인 중…') + '</b> — 등급에 따라 보이는 칸이 다릅니다.'
@@ -4641,8 +4714,15 @@
             + (isOwner ? '' : '<br>💰 정산서는 <b>대표님만</b> 보입니다.')
             + '<br>🌐 <b>외부장비공유</b>가 회색이면 그 프로젝트는 <b>아직 안 만든 것</b>입니다 — 장비시트 메뉴 「🌐 팀 공유파일 만들기」.'
             + '<br>⚪ <b>아직 안 봄</b> = 노션·정산앱에 있는 것이라 이 화면이 아직 못 물어봅니다.</p>'; } },
+      /* 📝 2026-09-11 대표 확정 — 회고 탭 (🔒 「관리」 이상만)
+         🔴 [당사자가 읽는 줄 알면 그 칸은 그날로 죽는다] 옛 노션 회고 9칸 중
+            「팀리뷰」·「퍼포먼스」가 각 19%였다 — 사람 평가가 섞인다.
+            그래서 «탭 자체를 안 그린다». 서버(projSeeFilter_)에서도 한 번 더 막는다.
+         🔴 [비어 있어도 탭은 있다] 없으면 「없는 기능」으로 읽힌다. */
+      { n: '회고', tab: 'rev', mgr: 1,
+        html: function(){ return '<div id="pjRev"></div>'; } },
       /* 🔮 팀 공유가 정해지면 여기에 한 줄:
-         , { n:'팀 공유', html: function(){ return '<div id="pjTeam"></div>'; } } */
+         , { n:'팀 공유', tab:'todo', html: function(){ return '<div id="pjTeam"></div>'; } } */
     ];
     /* 📐 2026-09-10 대표 확정 — 「정보·폴더를 접어둔다」 (탭은 «안» 만든다)
        ═══════════════════════════════════════════════════════════════════
@@ -4658,17 +4738,106 @@
           접기는 «이미 있는 것»이고(업체 연락처·완료), 탭은 «새 상태»를 하나 더 만든다(§4-1).
        🔴 [접는 것은 「정보」뿐이다] 회차·촬영 안내는 «매번 보는 것»이라 접지 않는다.
        되돌리기 = **"정보 접기 빼줘"** */
-    return a.map(function(x){
-      var canFold = !!x.fold;
-      var open = canFold ? pjSecOpen(x.n) : true;
-      return '<div class="sect' + (canFold ? ' fold' : '') + '" data-sec="' + pjEsc(x.n) + '"'
-           + (canFold ? ' data-pjsec="' + pjEsc(x.n) + '" title="눌러서 접었다 폈다 합니다"' : '')
-           + '>' + (canFold ? (open ? '▾ ' : '▸ ') : '— ') + pjEsc(x.n) + (canFold ? '' : ' —')
-           + (canFold ? '<span class="secn" id="secN' + pjEsc(x.n) + '"></span>' : '')
-           + '</div>'
-           + '<div class="secbody" data-sb="' + pjEsc(x.n) + '"' + (open ? '' : ' hidden') + '>'
-           + x.html() + '</div>';
+    /* 📑 2026-09-11 대표 확정 — 탭 3개로 나눈다 (*"세개 탭으로 나누면 좋을것 같아."*)
+       ═══════════════════════════════════════════════════════════════════
+       🔴 [탭 목록도 «여기 한 곳»에서만 정한다] 위 배열의 `tab:` 이 어느 탭에 붙을지를 정하고,
+          아래 PJ_TABS 가 «탭 줄»을 만든다. 섹션을 옮기려면 `tab:` 한 글자만 고친다(§1).
+       🔴 [「관리」 이상만 보는 탭은 «안 그린다»] 감추기(hidden)가 아니라 아예 안 만든다 —
+          감추면 브라우저 소스에 그대로 남는다(2026-08-31 견적서에서 실제로 샌 자리).
+       🔴 [등급을 아직 모를 때는 회고 탭을 «안» 보여준다] 눌러도 서버가 거절한다.
+          등급이 온 뒤 다시 그려지면 그때 나타난다. */
+    var PJ_TABS = [
+      { k: 'info', n: '📋 정보' },
+      { k: 'todo', n: '✔ 안내·할 일' },
+      { k: 'rev',  n: '📝 회고', mgr: 1 }
+    ];
+    var use = PJ_TABS.filter(function(t){
+      if(t.mgr && !isMgr) return false;
+      return a.some(function(x){ return x.tab === t.k && !(x.mgr && !isMgr); });
+    });
+    if(!use.length) return '';
+    var now = pjTabNow_(use);
+
+    var bar = '<div class="pjtabs" role="tablist">' + use.map(function(t){
+      return '<button type="button" data-pjtab="' + pjEsc(t.k) + '"'
+           + (t.k === now ? ' class="on"' : '') + '>' + pjEsc(t.n)
+           + '<span class="tn zero" id="pjTabN_' + pjEsc(t.k) + '" hidden></span></button>';
+    }).join('') + '</div>';
+
+    var bodies = use.map(function(t){
+      var mine = a.filter(function(x){ return x.tab === t.k && !(x.mgr && !isMgr); });
+      /* 🔴 [섹션이 «하나»뿐이면 머리글을 안 그린다] 탭 이름이 「📝 회고」인데 바로 아래
+         또 「— 회고 —」가 나오면 같은 말을 두 번 하는 것이다(실물 캡처에서 잡았다).
+         둘 이상이면 «어디부터 어디까지»를 가르는 뜻이 있으므로 그대로 둔다. */
+      var solo = mine.length === 1;
+      var inner = mine
+        .map(function(x){
+          if(solo && !x.fold) return '<div class="secbody" data-sb="' + pjEsc(x.n) + '">'
+                                   + x.html() + '</div>';
+          var canFold = !!x.fold;
+          var open = canFold ? pjSecOpen(x.n) : true;
+          return '<div class="sect' + (canFold ? ' fold' : '') + '" data-sec="' + pjEsc(x.n) + '"'
+               + (canFold ? ' data-pjsec="' + pjEsc(x.n) + '" title="눌러서 접었다 폈다 합니다"' : '')
+               + '>' + (canFold ? (open ? '▾ ' : '▸ ') : '— ') + pjEsc(x.n) + (canFold ? '' : ' —')
+               + (canFold ? '<span class="secn" id="secN' + pjEsc(x.n) + '"></span>' : '')
+               + '</div>'
+               + '<div class="secbody" data-sb="' + pjEsc(x.n) + '"' + (open ? '' : ' hidden') + '>'
+               + x.html() + '</div>';
+        }).join('');
+      return '<div class="pjtab" data-pjtabbody="' + pjEsc(t.k) + '"'
+           + (t.k === now ? '' : ' hidden') + '>' + inner + '</div>';
     }).join('');
+
+    return bar + bodies;
+  }
+  /* 📑 지금 어느 탭인가 — «그 사람 폰»에 남는다 (2026-09-11)
+     🔴 [기본은 「정보」다] 프로젝트를 열면 촬영일·회차부터 본다.
+     🔴 [기억해둔 탭이 «지금 없으면»(등급이 내려갔다) 첫 탭으로] 빈 화면이 되면 안 된다. */
+  var PJ_TAB_LS = 'pa_pjtab_v1';
+  function pjTabNow_(use){
+    var k = '';
+    try { k = localStorage.getItem(PJ_TAB_LS) || ''; } catch(e){}
+    for(var i = 0; i < use.length; i++) if(use[i].k === k) return k;
+    return use[0].k;
+  }
+  function pjTabGo(k){
+    try { localStorage.setItem(PJ_TAB_LS, k); } catch(e){}
+    var bs = document.querySelectorAll('[data-pjtab]');
+    for(var i = 0; i < bs.length; i++){
+      var on = bs[i].getAttribute('data-pjtab') === k;
+      bs[i].className = on ? 'on' : '';
+    }
+    var ds = document.querySelectorAll('[data-pjtabbody]');
+    for(var j = 0; j < ds.length; j++){
+      ds[j].hidden = ds[j].getAttribute('data-pjtabbody') !== k;
+    }
+  }
+  window.pjTabGo = pjTabGo;
+  document.addEventListener('click', function(e){
+    var el = e.target, n = 0, k = null;
+    while(el && n++ < 3){
+      if(el.getAttribute){ k = el.getAttribute('data-pjtab'); if(k !== null) break; }
+      el = el.parentElement;
+    }
+    if(k === null) return;
+    e.preventDefault();
+    pjTabGo(k);
+  });
+  /* 🔢 탭 이름 옆 숫자 — 접힌 탭 안에 «처리할 것»이 몇 개인지 (2026-09-11)
+     🔴 [안 보이는 탭의 개수를 안 알려주면 그 탭은 없는 것과 같다] 오른쪽 칸 손잡이와 같은 이유.
+     🔴 [세는 규칙은 «한 곳»에서만] 두 군데서 세면 반드시 어긋난다(§1). */
+  function pjTabCount(){
+    try {
+      /* 🔴 줄 클래스는 `.tk` 이고 완료는 `.tk.done` 이다(pjTaskRow). 「없는 클래스」를 세면
+         언제나 0이 나와 «조용히» 안 뜬다 — 만들 때 추측하지 말고 그 함수를 봐야 한다. */
+      var live = document.querySelectorAll('#pjTkZone .tk:not(.done)').length;
+      var el = document.getElementById('pjTabN_todo');
+      if(el){
+        el.textContent = live;
+        el.hidden = !live;
+        el.className = 'tn' + (live ? '' : ' zero');
+      }
+    } catch(e){}
   }
   /* 📐 접힘 상태는 «그 사람 폰»에 남는다 — 대표님이 한 번 펴시면 그 뒤로 계속 펴져 있다.
      🔴 [기본은 «접힘»] 정보는 가장 안 바뀌는 것이고, 접으면 화면이 절반이 된다.
@@ -4872,6 +5041,164 @@
     try { var a = JSON.parse(String(s || '[]')); return (a && a.length !== undefined) ? a : []; }
     catch(e){ return []; }
   }
+  /* ═══ 📝 회고 (2026-09-11 대표 확정) ═══════════════════════════════════
+     대표 지시: *"프로젝트DB에 촬영에대해 배운점, 문제점, 결과물 등을 관리하는 탭"* ·
+               *"회고는 촬영 «중에도» 계속 등록해야되. 준비할때부터 촬영할때까지가
+                 제일 많은 문제점을 파악할 수 있어."*
+     ─────────────────────────────────────────────────────────────────────
+     🔴 [「촬영이 끝난 뒤」로 잠그지 않는다] 제가 처음에 세 안 모두 그렇게 설계했다가
+        대표가 바로잡으셨다. 실측도 대표 쪽이었다 — 옛 노션 9칸 중 실제로 쓰인 것은
+        「문제」 하나(39%)이고, **문제는 «겪는 순간»에 적힌다.**
+     🔴 [칸 9개 → 4개] 옛 노션은 총평·팀리뷰·~할걸·퍼포먼스·문제·인사이트·특이점·질문·
+        땡큐노트 아홉이었는데 대부분 0건이었다. 「결과물」은 **결과물 폴더가 이미 답한다**(§1).
+     🔴 [«누가·언제·어느 단계»는 서버가 정한다] 화면이 보낸 것을 안 믿는다.
+        고르게 하면 틀리게 고르고, 대표가 원하신 「준비 때부터」가 기록으로 안 남는다.
+     🔴 [이 탭은 「관리」 이상만] 사람 평가가 섞인다 — 당사자가 읽는 줄 알면 그 칸은 죽는다.
+        화면에서 탭을 안 그리고, 서버(projSeeFilter_)가 한 번 더 막는다.
+     되돌리기 = **"회고 탭 빼줘"** */
+  var PJ_REV_TAGS = ['팀워크','장비','일정','로케이션','클라이언트','예산',
+                     '날씨','인력','이동','안전'];
+  var PJ_REV_RATE = ['좋음','보통','아쉬움'];
+  var PJ_REV = { lines: [], rate: '', tags: [] };
+  var PJ_REV_PROJ = '';
+  var PJ_REV_BUSY = false;
+
+  function pjRevParse(raw){
+    var o = null;
+    try { o = JSON.parse(String(raw || '')); } catch(e){ o = null; }
+    if(!o || typeof o !== 'object') o = {};
+    return {
+      lines: Object.prototype.toString.call(o.lines) === '[object Array]' ? o.lines : [],
+      rate:  String(o.rate || ''),
+      tags:  Object.prototype.toString.call(o.tags) === '[object Array]' ? o.tags : []
+    };
+  }
+  function pjRevPaint(proj, d){
+    var box = document.getElementById('pjRev');
+    if(!box) return;                       /* 「관리」 미만이면 탭 자체가 없다 */
+    PJ_REV_PROJ = proj;
+    PJ_REV = pjRevParse(d && d.review);
+    pjRevDraw();
+  }
+  function pjRevDraw(){
+    var box = document.getElementById('pjRev');
+    if(!box) return;
+    var L = PJ_REV.lines || [];
+    var h = '<div class="rvbox">';
+    /* ── 적는 칸 (맨 위 — 겪는 순간에 바로) ── */
+    h += '<div class="rvadd">'
+       + '<input type="text" id="pjRevTx" maxlength="300" '
+       + 'placeholder="지금 겪은 것을 한 줄로 — 준비 중에도 · 촬영 중에도">'
+       + '<button type="button" id="pjRevAdd">＋ 남기기</button></div>';
+    /* ── 쌓인 줄 (최신이 위 — 서버가 unshift 한다) ── */
+    if(!L.length){
+      h += '<p class="fn" style="margin:2px 0 4px">아직 없습니다 — '
+         + '<b>촬영이 끝나기 전에도</b> 적어두시면 그때 무슨 일이었는지 남습니다.</p>';
+    }else{
+      h += L.map(function(x, i){
+        var p = String((x && x.p) || '');
+        var pn = p === 'pre' ? '준비' : (p === 'end' ? '끝난 뒤' : (p === 'mid' ? '촬영 중' : '—'));
+        return '<div class="rvline">'
+             + '<span class="ph ' + (p || 'mid') + '">' + pjEsc(pn) + '</span>'
+             + '<span class="tx">' + pjEsc(String((x && x.t) || ''))
+             + '<span class="wd">' + pjEsc(String((x && x.w) || '—'))
+             + ' · ' + pjEsc(String((x && x.d) || '')) + '</span></span>'
+             + '<button type="button" class="dl" data-pjrevdel="' + i + '" title="지웁니다">✕</button>'
+             + '</div>';
+      }).join('');
+    }
+    /* ── 이번 촬영 한 줄 평가 ── */
+    h += '<div class="rvrate">' + PJ_REV_RATE.map(function(r){
+      return '<button type="button" data-pjrevrate="' + pjEsc(r) + '"'
+           + (PJ_REV.rate === r ? ' class="on"' : '') + '>' + pjEsc(r) + '</button>';
+    }).join('') + '<span class="rvmsg" id="pjRevMsg"></span></div>';
+    /* ── 무엇 때문이었나 (되풀이되는 것을 찾으려는 것) ── */
+    h += '<div class="rvtags">' + PJ_REV_TAGS.map(function(t){
+      var on = (PJ_REV.tags || []).indexOf(t) >= 0;
+      return '<button type="button" data-pjrevtag="' + pjEsc(t) + '"'
+           + (on ? ' class="on"' : '') + '>' + pjEsc(t) + '</button>';
+    }).join('') + '</div>';
+    h += '</div>';
+    box.innerHTML = h;
+  }
+  function pjRevMsg(t, err){
+    var el = document.getElementById('pjRevMsg');
+    if(!el) return;
+    el.textContent = t || '';
+    el.className = 'rvmsg' + (err ? ' err' : '');
+  }
+  /* 🔴 [보내고 나서 «서버가 준 것»으로 다시 그린다] 화면이 혼자 고쳐 두면
+     저장이 실패했을 때 «적은 줄 알고» 넘어간다. 서버가 누가·언제·단계를 정하므로
+     그 답을 받아야 화면이 진실이 된다. */
+  function pjRevSend(body, okMsg){
+    if(PJ_REV_BUSY){ pjRevMsg('잠시만요…'); return; }
+    if(!PJ_REV_PROJ){ pjRevMsg('프로젝트를 못 찾았습니다', 1); return; }
+    PJ_REV_BUSY = true;
+    pjRevMsg('저장 중…');
+    var u = FIELD_APP + '?action=projAdmin&act=review&name='
+          + encodeURIComponent(PJ_REV_PROJ) + appTok();
+    for(var k in body){ if(Object.prototype.hasOwnProperty.call(body, k)){
+      u += '&' + k + '=' + encodeURIComponent(body[k]);
+    } }
+    askCount(u, function(d){
+      PJ_REV_BUSY = false;
+      if(!d || !d.ok){
+        pjRevMsg('저장 못 했습니다' + (d && d.why ? ' (' + d.why + ')' : ''), 1);
+        return;
+      }
+      PJ_REV = pjRevParse(d.review);
+      pjRevDraw();
+      pjRevMsg(okMsg || '저장됐습니다');
+      /* 🔴 다음에 이 프로젝트를 다시 열 때 옛 값이 나오지 않게 캐시도 고친다 */
+      try {
+        var c = PJ_CHK_CACHE[PJ_REV_PROJ];
+        if(c) c.review = d.review;
+      } catch(e){}
+    }, 20000);
+  }
+  function pjRevAdd(){
+    var el = document.getElementById('pjRevTx');
+    if(!el) return;
+    var t = String(el.value || '').trim();
+    if(!t){ pjRevMsg('내용을 적어주세요', 1); el.focus(); return; }
+    el.value = '';
+    pjRevSend({ rev: 'add', text: t }, '남겼습니다');
+  }
+  document.addEventListener('click', function(e){
+    var el = e.target, n = 0, hit = null, kind = '';
+    while(el && n++ < 3){
+      if(el.getAttribute){
+        if(el.id === 'pjRevAdd'){ kind = 'add'; hit = '1'; break; }
+        hit = el.getAttribute('data-pjrevdel');  if(hit !== null){ kind = 'del';  break; }
+        hit = el.getAttribute('data-pjrevrate'); if(hit !== null){ kind = 'rate'; break; }
+        hit = el.getAttribute('data-pjrevtag');  if(hit !== null){ kind = 'tag';  break; }
+      }
+      el = el.parentElement;
+    }
+    if(!kind) return;
+    e.preventDefault();
+    if(kind === 'add')  return pjRevAdd();
+    if(kind === 'del'){
+      if(!confirm('이 줄을 지웁니다. 되돌릴 수 없습니다.')) return;
+      return pjRevSend({ rev: 'del', idx: hit }, '지웠습니다');
+    }
+    if(kind === 'rate') return pjRevSend({ rev: 'rate', val: hit });
+    if(kind === 'tag'){
+      var has = (PJ_REV.tags || []).indexOf(hit) >= 0;
+      var next = (PJ_REV.tags || []).slice();
+      if(has) next.splice(next.indexOf(hit), 1); else next.push(hit);
+      return pjRevSend({ rev: 'tags', val: next.join(',') });
+    }
+  });
+  /* 🔴 한글 조합 중 Enter 는 «안» 받는다 — 마지막 글자가 잘린 채 저장된다(§3-5 ⑧) */
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter' || e.isComposing) return;
+    var t = e.target;
+    if(!t || t.id !== 'pjRevTx') return;
+    e.preventDefault();
+    pjRevAdd();
+  });
+
   function pjNotePaint(proj, d){
     var box = document.getElementById('pjNote');
     if(!box) return;
@@ -4923,6 +5250,9 @@
     }
     h += pjBizHtml();
     box.innerHTML = h + '</div>';
+    /* 🔢 탭 숫자를 «여기서도» 다시 센다 — ✔ 상태를 누르거나 줄을 더하면 이 함수가 다시 돈다.
+       안 부르면 숫자가 옛 값에 굳어 «화면이 거짓말»을 한다(§3-5 ⑤). */
+    try { pjTabCount(); } catch(e){}
   }
   /* 🏢 업체 연락처 (2026-09-10 대표 지시 · *"업체 연락처는 접었다 폈다로"*)
      ═══════════════════════════════════════════════════════════════════
