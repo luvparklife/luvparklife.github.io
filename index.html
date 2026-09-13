@@ -688,6 +688,21 @@
        탭 이름이 「📋 정보 _」 처럼 보인다(실물 캡처에서 잡았다). */
     .pjtabs .tn[hidden]{display:none !important}
     .pjtabs .tn.zero{background:#aeb6c4}
+
+    /* ═══ ✅ 끝난 프로젝트 (2026-09-13) ═══════════════════════════════
+       🔴 [왜 보여주나] 「완료」로 바꾸면 목록에서 사라져 «마무리 회고를 적을 화면»이 없어진다.
+          옛 노션 회고가 0건이던 진짜 이유일 수 있다.
+       🔴 [진행 중인 것과 «반드시» 달라 보여야 한다] 흐리게 + 「끝남」 딱지.
+          똑같이 보이면 어느 것이 지금 일인지 모른다. */
+    .card.pjdone{opacity:.62}
+    .card.pjdone:hover{opacity:.92}
+    .pjend{display:inline-block; background:#eceff4; color:#6b7688; border-radius:6px;
+      padding:1px 7px; font-size:11px; font-weight:800; margin-left:6px; vertical-align:2px}
+    .pjmore{margin:14px 0 0; text-align:center}
+    .pjmore button{border:1px solid #c8cfda; background:#fff; font:inherit; font-size:12.5px;
+      color:#4a5465; padding:7px 15px; border-radius:16px; cursor:pointer}
+    .pjmore button:hover{background:#f2f6ff; border-color:#9cb6f0; color:#1a56c4}
+    .pjmore button:disabled{opacity:.6; cursor:default}
     .pjtab[hidden]{display:none !important}
 
     /* ═══ 📝 회고 (2026-09-11) ═══════════════════════════════════════
@@ -2169,7 +2184,10 @@
         '<a href="#" class="pjback">‹ 도구 전체로 돌아가기</a></p>';
       return;
     }
-    if(!force && PJ_CACHE && Date.now()-PJ_AT < 600000){ pjPaint(PJ_CACHE); return; }
+    /* ✅ 2026-09-13 — 「끝난 것도 보기」를 켠 뒤에는 «캐시·서랍을 쓰지 않는다».
+       서랍에 담긴 것은 «진행 중만» 있는 목록이라, 그걸 쓰면 눌러도 아무것도 안 늘어난다. */
+    if(!PJ_ALL && !force && PJ_CACHE && Date.now()-PJ_AT < 600000){ pjPaint(PJ_CACHE); return; }
+    if(PJ_ALL) force = true;
     /* ⚡ 2026-09-02 — 서랍에 있으면 «먼저 그리고» 뒤에서 조용히 갱신한다 (대표 확정: 속도 ①)
        🔴 force(🔄 다시 읽기)일 때는 서랍을 안 쓴다 — 대표가 «지금 것»을 보려고 누른 것이다 */
     var _had = false;
@@ -2199,7 +2217,7 @@
     }, 1000);
     /* 🔴 25초 — 이 창구는 시트를 여러 번 연다(3초쯤). 앱을 새로 배포한 직후엔
        구글이 코드를 다시 준비하느라 몇 초가 더 든다. 9초로는 자주 잘렸다. */
-    askCount(FIELD_APP + '?list=projects' + appTok(), function(d){
+    askCount(FIELD_APP + '?list=projects' + (PJ_ALL ? '&all=1' : '') + appTok(), function(d){
       clearInterval(_tick);
       if(!d || !d.ok){
         /* ⚡ 2026-09-02 — 서랍으로 이미 그렸으면 «덮지 않는다».
@@ -2225,7 +2243,10 @@
       PJ_CACHE = d.rows || []; PJ_AT = Date.now(); PJ_ROLE = d.role || '';
       PJ_MINE = !!d.mine;               /* 👤 서버가 「내가 낀 것만」으로 걸렀나 */
       try { navPjIncoming(d.pj); } catch(ePJ){}   /* 🧭 다른 앱에서 바꾼 프로젝트 (2026-09-10) */
-      pjLsSave(PJ_CACHE, PJ_ROLE, PJ_MINE);  /* ⚡ 2026-09-02 — 다음에 즉시 뜨도록 서랍에 남긴다 */
+      /* ✅ 2026-09-13 — 🔴 「끝난 것도 보기」 목록은 «서랍에 안 담는다».
+         담으면 다음에 허브를 열 때 끝난 프로젝트가 «기본으로» 뜬다 —
+         그건 대표가 고르신 것이 아니라 지난번에 한 번 눌렀던 흔적일 뿐이다. */
+      if(!PJ_ALL) pjLsSave(PJ_CACHE, PJ_ROLE, PJ_MINE);  /* ⚡ 다음에 즉시 뜨도록 */
       pjPaint(PJ_CACHE);                /* 🔴 여기서 다시 그리므로 「저장해둔 것」 띠는 저절로 사라진다 */
     }, 25000);
   }
@@ -2310,7 +2331,7 @@
   var PJ_F = { q:'', cli:'', pho:'', brand:'' };
   function pjRowsPaint(){
     var box = document.getElementById('pjRows'); if(!box) return;
-    var rows = PJ_CACHE || [], h = '', n = 0;
+    var rows = PJ_CACHE || [], h = '', n = 0, nDone = 0;
     rows.forEach(function(p){
       var name = p.name || p, label = p.label || name;
       if(PJ_F.cli   && (p.cli||'')   !== PJ_F.cli)   return;
@@ -2323,9 +2344,13 @@
       n++;
       function tag(ic, v){ return v ? '<span class="pjtag">' + ic + ' ' + pjEsc(v) + '</span>' : ''; }
       var tg = tag('🏢',p.cli) + tag('👤',p.mgr) + tag('📸',p.pho) + tag('🏷',p.brand);
-      h += '<a class="card" href="#p/' + encodeURIComponent(name) + '">' +
-           '<div class="row"><div class="icon">🎬</div><div class="body">' +
-           '<div class="title">' + pjEsc(name) + '</div>' +
+      /* ✅ 2026-09-13 — 끝난 프로젝트는 «흐리게 + 딱지». 진행 중인 것과 섞이면 안 된다 */
+      var _dn = !!p.done;
+      if(_dn) nDone++;
+      h += '<a class="card' + (_dn ? ' pjdone' : '') + '" href="#p/' + encodeURIComponent(name) + '">' +
+           '<div class="row"><div class="icon">' + (_dn ? '✅' : '🎬') + '</div><div class="body">' +
+           '<div class="title">' + pjEsc(name) +
+             (_dn ? '<span class="pjend">끝남</span>' : '') + '</div>' +
            (label !== name ? '<div class="desc">' + pjEsc(label) + '</div>' : '') +
            '<div class="pjtags">' + (tg ||
              '<span class="pjtag em">거래처·포토를 아직 안 적었습니다</span>') + '</div>' +
@@ -2342,9 +2367,37 @@
             : '해당하는 것이 없습니다.') + '</p>') +
       (PJ_MINE ? '<p class="foot">👤 <b>내가 낀 프로젝트만</b> 보입니다 — ' +
                  '견적서 「참여인원」에 내 이름이 있는 프로젝트입니다.</p>' : '') +
+      pjDoneBtn_(nDone) +
       '<p class="foot">「프로젝트목록」을 그대로 읽습니다 — 여기서 관리할 목록을 따로 만들지 않습니다.<br>' +
       '<a href="#" onclick="pjLoad(true);return false;">🔄 다시 읽기</a></p>';
   }
+  /* ═══ ✅ 끝난 프로젝트도 보기 (2026-09-13 · 회고를 적을 화면을 되살린다) ═══
+     🔴 [왜 만들었나] 프로젝트를 「완료」로 바꾸면 서버가 걸러(`projOff_`) **목록에서 통째로 사라진다.**
+        그런데 대표 확정은 「회고는 촬영이 끝난 뒤에도 적는다」이므로, 끝나는 순간
+        **적을 화면이 없어진다.** 2026-09-10 목업에서 양쪽 디베이터가 다 놓친 자리다.
+     🔴 [기본은 «안 보임»] 끝난 것이 늘 섞이면 「지금 뭘 해야 하나」가 흐려진다.
+        누른 그 순간에만 보이고, **기억하지 않는다**(다음에 열면 다시 진행 중만).
+     🔴 [서버를 다시 부른다] 끝난 것은 애초에 안 실려 오므로 화면에서 펼 수가 없다. */
+  var PJ_ALL = false;
+  function pjDoneBtn_(nDone){
+    if(!PJ_ALL){
+      return '<div class="pjmore"><button type="button" onclick="pjShowDone(1)">' +
+             '✅ 끝난 프로젝트도 보기</button></div>' +
+             '<p class="foot" style="text-align:center;margin:6px 0 0;opacity:.8">' +
+             '끝난 촬영에도 <b>회고</b>를 적을 수 있습니다</p>';
+    }
+    return '<div class="pjmore"><button type="button" onclick="pjShowDone(0)">' +
+           '↩ 진행 중인 것만 보기</button></div>' +
+           '<p class="foot" style="text-align:center;margin:6px 0 0;opacity:.8">' +
+           '지금 <b>끝난 것 ' + nDone + '개</b>가 같이 보입니다 (흐린 줄)</p>';
+  }
+  function pjShowDone(on){
+    PJ_ALL = !!on;
+    var box = document.getElementById('pjRows');
+    if(box) box.innerHTML = '<p class="foot">' + (PJ_ALL ? '✅ 끝난 것까지' : '🔄') + ' 불러오는 중…</p>';
+    pjLoad(true);
+  }
+  window.pjShowDone = pjShowDone;
   function pjClearFind(){
     PJ_F = { q:'', cli:'', pho:'', brand:'' };
     var q = document.getElementById('pjQ'); if(q) q.value = '';
@@ -5154,7 +5207,49 @@
         var c = PJ_CHK_CACHE[PJ_REV_PROJ];
         if(c) c.review = d.review;
       } catch(e){}
+      /* 🗒 2026-09-13 — 노션에도 «뒤에서» 보낸다 (대표 확정 🅟) */
+      try { pjRevNotionLater_(); } catch(e){}
     }, 20000);
+  }
+  /* ═══ 🗒 회고를 노션으로 — «뒤에서 조용히» (2026-09-11 대표 확정 🅟) ═══════
+     대표가 고르신 그림 그대로다:
+       한 줄 적음 → 시트에 바로 저장 → **화면은 이미 넘어감** → 뒤에서 노션에 보냄 → 실패하면 다음에 다시.
+     🔴 [기다리게 하지 않는다] 노션까지는 정산앱을 거쳐 1.3~1.5초다(실측).
+        회고는 «촬영 중에 한 줄씩» 적는 것이라 그 기다림이 곧 「안 적음」이 된다.
+     🔴 [3초 모았다 «한 번»만 보낸다] 연달아 세 줄을 적으면 요청도 세 번이다.
+        어차피 «통째로» 덮어쓰므로 마지막 한 번이면 결과가 같다.
+     🔴 [실패는 «조용히 두지 않는다»] 조용한 반복 실패가 제일 위험하다 —
+        노션에 안 갔는데 간 줄 알면 대표가 노션에서 회고를 못 찾는다.
+        다만 «작게» 적는다(저장 자체는 이미 됐으므로 크게 놀랄 일이 아니다). */
+  var PJ_RV_TM = null;
+  function pjRevNotionLater_(){
+    if(PJ_RV_TM) clearTimeout(PJ_RV_TM);
+    PJ_RV_TM = setTimeout(function(){
+      PJ_RV_TM = null;
+      var proj = PJ_REV_PROJ;
+      if(!proj || typeof pjNotion !== 'function') return;
+      /* 🔴 보낼 때의 «그 값»을 담아 둔다 — 응답이 오는 사이 대표가 또 고치실 수 있다 */
+      var snap = { lines: (PJ_REV.lines||[]), rate: PJ_REV.rate||'', tags: (PJ_REV.tags||[]) };
+      try {
+        pjNotion('review', proj, snap, function(d){
+          /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «말하지 않는다» — 엉뚱한 화면에 뜬다 */
+          if(PJ_REV_PROJ !== proj) return;
+          if(!d || !d.ok){
+            pjRevMsg('시트에 저장됨 · 🔴 노션에는 못 보냈습니다 — 다음에 한 줄 더 적으면 다시 갑니다', 1);
+            return;
+          }
+          if(d.skipped){
+            pjRevMsg('시트에 저장됨 · 🗒 노션에 이 프로젝트가 없어 안 보냈습니다');
+            return;
+          }
+          var t = '시트·노션에 저장됨';
+          if(d.made && d.made.length) t += ' · 노션에 「' + d.made.join('」·「') + '」 칸을 만들었습니다';
+          if(d.cut) t += ' · 글이 길어 노션에는 줄여 보냈습니다';
+          if(d.tagSkip) t += ' · ' + d.tagSkip;
+          pjRevMsg(t);
+        });
+      } catch(e){}
+    }, 3000);
   }
   function pjRevAdd(){
     var el = document.getElementById('pjRevTx');
