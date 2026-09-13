@@ -703,6 +703,18 @@
       color:#4a5465; padding:7px 15px; border-radius:16px; cursor:pointer}
     .pjmore button:hover{background:#f2f6ff; border-color:#9cb6f0; color:#1a56c4}
     .pjmore button:disabled{opacity:.6; cursor:default}
+
+    /* ═══ 🗓 카드 안 「지금 어디까지 왔나」 (2026-09-13 대표 지시) ═══════
+       대표 원문: *"프로젝트 상태를 카드 안에서 보여주자"*
+       🔴 [색이 «뜻»을 가진다] 곧 촬영=노랑 · 촬영 중=초록 · 지난 것=회색 · 문제=빨강.
+          색이 없으면 딱지가 늘어난 만큼 읽을 것만 많아진다. */
+    .pjst{display:inline-block; border-radius:6px; padding:2px 8px; font-size:11.5px;
+      font-weight:800; white-space:nowrap}
+    .pjst.soon{background:#fdeccd; color:#95601a}   /* 촬영이 곧 (D-3 이내) */
+    .pjst.pre {background:#eef3ff; color:#1a56c4}   /* 촬영 전 */
+    .pjst.now {background:#e8f4ee; color:#1c6b46}   /* 촬영 중 */
+    .pjst.past{background:#eceff4; color:#6b7688}   /* 끝난 뒤 */
+    .pjst.warn{background:#fdecea; color:#c0392b}   /* 장비가 안 돌아옴 */
     .pjtab[hidden]{display:none !important}
 
     /* ═══ 📝 회고 (2026-09-11) ═══════════════════════════════════════
@@ -2327,6 +2339,62 @@
     pjWireNew();
     pjRowsPaint();
   }
+  /* ═══ 🗓 카드 안 「지금 어디까지 왔나」 (2026-09-13 대표 지시) ═══════════
+     대표 원문: *"프로젝트 상태를 카드 안에서 보여주자"* · 고르신 것 = **「지금 어디까지 왔나」**
+     ─────────────────────────────────────────────────────────────────────
+     🔴 [「활성」은 «안» 적는다] 목록은 기본이 진행 중이라 거의 전부 「활성」이 된다 —
+        자리만 차지하고 새로 알게 되는 것이 없다. **기본값은 말하지 않는다.**
+     🔴 [대신 «캔슬»을 구별한다] 지금까지 캔슬/드롭이 「끝남」으로 뭉뚱그려져 있었다.
+        **끝난 촬영과 엎어진 건은 완전히 다르다** — 회고를 적을 이유도 다르다.
+     🔴 [날짜가 «없으면» 안 그린다] 「시작일·반납일」이 비면 짐작해 칠하지 않는다.
+        틀린 D-day 를 보면 그 숫자를 믿고 일정을 잡으신다(§3-0-C).
+     🔴 [미반납 경고는 «촬영이 끝난 뒤»에만] 촬영 전에는 장비가 안 돌아온 게 당연하다 —
+        늘 떠 있으면 진짜 급한 것이 그 안에 묻힌다(2026-08-17 단가 0원이 빨간 줄 8개에 묻힌 자리).
+     🔴 [숫자는 여기서 새로 «세지 않는다»] 미반납·파손 개수는 시트 「완료 점검」 수식이 이미 만든
+        사람 말(`🔴 미반납 3줄 · 파손 1`)이다. 그대로 보여준다 — 두 곳이 다른 답을 내면 안 된다(§1). */
+  function pjStatTags_(p){
+    var out = '';
+    /* ① 엎어진 건이면 «아무 날짜도» 안 그린다 — 촬영을 안 한 건이라 「끝난 지 2일」이 거짓말이 된다.
+       🔴 [제목 옆 딱지가 이미 「캔슬」이라 말한다] 여기서 또 적으면 «끝남 + 캔슬»이 나란히 붙어
+          모순처럼 읽힌다(실물 캡처에서 잡았다 — 말로만 넘겼으면 그대로 나갔다). */
+    if(pjIsDrop_(p)) return '';
+    /* ② 날짜로 「지금 어디쯤」 */
+    var from = String((p && p.from) || ''), to = String((p && p.to) || '');
+    var d0 = pjDay_(from), d1 = pjDay_(to) || d0;
+    if(d0){
+      var t = new Date(); t.setHours(0,0,0,0);
+      var day = 86400000;
+      if(t < d0){
+        var n = Math.round((d0 - t) / day);
+        out += '<span class="pjst ' + (n <= 3 ? 'soon' : 'pre') + '">🗓 촬영 D-' + n + '</span>';
+      } else if(t <= d1){
+        out += '<span class="pjst now">🎬 촬영 중</span>';
+      } else {
+        var g = Math.round((t - d1) / day);
+        out += '<span class="pjst past">✓ 끝난 지 ' + g + '일</span>';
+      }
+      /* ③ 촬영이 «끝났는데» 장비가 안 돌아왔으면 — 그때만 빨갛게 */
+      var chk = String((p && p.chk) || '');
+      if(t > d1 && chk.indexOf('🔴') === 0){
+        out += '<span class="pjst warn">' + pjEsc(chk.replace(/^🔴\s*/, '⚠ ')) + '</span>';
+      }
+    }
+    return out;
+  }
+  /* 🔴 [엎어진 건인가] 「캔슬/드롭」은 «끝난 것»과 완전히 다르다 — 촬영을 아예 안 했다.
+     그래서 회고를 적을 이유도 다르다. 판단은 «여기 한 곳»에서만 한다(§1). */
+  function pjIsDrop_(p){
+    var st = String((p && p.st) || '');
+    return st.indexOf('캔슬') >= 0 || st.indexOf('드롭') >= 0;
+  }
+  /* 「YYYY-MM-DD」 → 그날 0시. 🔴 «글자로만» 받는다 — 서버가 굳혀 보내므로 시간대가 안 섞인다 */
+  function pjDay_(s){
+    var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return isFinite(d) ? d : null;
+  }
+
   /* 찾기 조건 — 🔴 뼈대는 한 번만 그리고 «줄만» 다시 그린다(글자 칠 때 칸이 사라지지 않게) */
   var PJ_F = { q:'', cli:'', pho:'', brand:'' };
   function pjRowsPaint(){
@@ -2343,14 +2411,18 @@
       }
       n++;
       function tag(ic, v){ return v ? '<span class="pjtag">' + ic + ' ' + pjEsc(v) + '</span>' : ''; }
-      var tg = tag('🏢',p.cli) + tag('👤',p.mgr) + tag('📸',p.pho) + tag('🏷',p.brand);
+      /* 🗓 2026-09-13 — 「지금 어디까지 왔나」를 맨 앞에 (대표 지시) */
+      var tg = pjStatTags_(p) + tag('🏢',p.cli) + tag('👤',p.mgr) + tag('📸',p.pho) + tag('🏷',p.brand);
       /* ✅ 2026-09-13 — 끝난 프로젝트는 «흐리게 + 딱지». 진행 중인 것과 섞이면 안 된다 */
       var _dn = !!p.done;
       if(_dn) nDone++;
+      /* 🗓 2026-09-13 — 「끝남」과 「캔슬」을 «갈라» 적는다.
+         전에는 둘 다 「끝남」이었다 — **끝난 촬영과 엎어진 건은 완전히 다르다.** */
+      var _drop = pjIsDrop_(p);
       h += '<a class="card' + (_dn ? ' pjdone' : '') + '" href="#p/' + encodeURIComponent(name) + '">' +
-           '<div class="row"><div class="icon">' + (_dn ? '✅' : '🎬') + '</div><div class="body">' +
+           '<div class="row"><div class="icon">' + (_drop ? '✖' : (_dn ? '✅' : '🎬')) + '</div><div class="body">' +
            '<div class="title">' + pjEsc(name) +
-             (_dn ? '<span class="pjend">끝남</span>' : '') + '</div>' +
+             (_dn ? '<span class="pjend">' + (_drop ? '캔슬' : '끝남') + '</span>' : '') + '</div>' +
            (label !== name ? '<div class="desc">' + pjEsc(label) + '</div>' : '') +
            '<div class="pjtags">' + (tg ||
              '<span class="pjtag em">거래처·포토를 아직 안 적었습니다</span>') + '</div>' +
