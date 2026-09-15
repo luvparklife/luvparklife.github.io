@@ -747,6 +747,20 @@
        margin-top 만 주면 본문 끝에 «달라붙는다» — 「…미리 확인강문원 · 2026-09-11」
        처럼 보여 문장이 이상해진다(실물 캡처에서 잡았다). */
     .rvline .wd{display:block; font-size:11px; color:#8a93a3; margin-top:3px}
+    /* 🔴💡 2026-09-13 — 줄마다 「문제 / 배운 것」. 적고 «나서» 고른다(대표 확정) */
+    .rvline .kds{margin-left:8px; display:inline-flex; gap:4px}
+    .rvline .kds .kd{border:1px solid #dfe4ec; background:#fff; color:#8a93a3;
+      border-radius:999px; padding:1px 7px; font:inherit; font-size:10.5px; cursor:pointer}
+    .rvline .kds .kd:hover{border-color:#b9c2d0; color:#5b6472}
+    .rvline .kds .kd.on.bad{background:#fdecea; border-color:#f0b7b0; color:#c0392b; font-weight:800}
+    .rvline .kds .kd.on.learn{background:#e8f4ee; border-color:#a9d8c0; color:#1c6b46; font-weight:800}
+    /* 🔴 고른 줄은 «왼쪽 띠»로도 표시 — 단추를 안 봐도 훑을 때 눈에 들어온다 */
+    .rvline.k-bad{border-left:3px solid #e0796c}
+    .rvline.k-learn{border-left:3px solid #4fae85}
+    .rvsum{margin:2px 0 6px}
+    .rvsum .b{color:#c0392b}
+    .rvsum .l{color:#1c6b46}
+    .rvsum .o{color:#95601a}
     .rvline .dl{flex:none; border:none; background:none; cursor:pointer; color:#b9c2d0;
       font-size:13px; padding:0 2px; line-height:1.4}
     .rvline .dl:hover{color:#c0392b}
@@ -5405,6 +5419,8 @@
   ];
   var PJ_REV = { lines: [], rate: '', tags: [] };
   var PJ_REV_PROJ = '';
+  /* 🔴 눌린 단추가 «무엇으로 정하려는지» — 위임 클릭이 줄 번호만 넘겨서 따로 담는다 */
+  var PJ_REV_KTMP = '';
   var PJ_REV_BUSY = false;
 
   function pjRevParse(raw){
@@ -5582,6 +5598,9 @@
         hit = el.getAttribute('data-pjrevdel');  if(hit !== null){ kind = 'del';  break; }
         hit = el.getAttribute('data-pjrevrate'); if(hit !== null){ kind = 'rate'; break; }
         hit = el.getAttribute('data-pjrevtag');  if(hit !== null){ kind = 'tag';  break; }
+        /* 🔴💡 2026-09-13 — 줄의 종류. `hit` 은 «줄 번호», 무엇으로 정할지는 `data-k` */
+        hit = el.getAttribute('data-pjrevkind');
+        if(hit !== null){ kind = 'kind'; PJ_REV_KTMP = el.getAttribute('data-k') || ''; break; }
       }
       el = el.parentElement;
     }
@@ -5593,6 +5612,7 @@
       return pjRevSend({ rev: 'del', idx: hit }, '지웠습니다');
     }
     if(kind === 'rate') return pjRevSend({ rev: 'rate', val: hit });
+    if(kind === 'kind') return pjRevSend({ rev: 'kind', idx: hit, val: PJ_REV_KTMP });
     if(kind === 'tag'){
       var has = (PJ_REV.tags || []).indexOf(hit) >= 0;
       var next = (PJ_REV.tags || []).slice();
