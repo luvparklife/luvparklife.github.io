@@ -757,6 +757,12 @@
     /* 🔴 고른 줄은 «왼쪽 띠»로도 표시 — 단추를 안 봐도 훑을 때 눈에 들어온다 */
     .rvline.k-bad{border-left:3px solid #e0796c}
     .rvline.k-learn{border-left:3px solid #4fae85}
+    /* 📂 2026-09-15 — 회고창에서 결과물 폴더로 바로 */
+    .rvout{margin:8px 0 2px; padding-top:8px; border-top:1px solid #eef1f6}
+    .rvout a{display:inline-block; background:#f2f6ff; border:1px solid #d6e2fb; color:#1a56c4;
+      border-radius:8px; padding:5px 11px; font-size:12.5px; font-weight:800; text-decoration:none}
+    .rvout a:hover{background:#e6eeff}
+    .rvout .fn{display:block; margin-top:4px; font-size:11px; color:#8a93a3}
     .rvsum{margin:2px 0 6px}
     .rvsum .b{color:#c0392b}
     .rvsum .l{color:#1c6b46}
@@ -3284,7 +3290,7 @@
     try { if(d.check) pjNotePaint(proj, d.check); } catch(e){}
     /* 📝 회고 (2026-09-11) — 「관리」 미만이면 #pjRev 가 아예 없어 그냥 넘어간다.
        🔴 [따로 try 로 감싼다] 여기서 터져도 회차·정보·안내는 그려져야 한다. */
-    try { if(d.check) pjRevPaint(proj, d.check); } catch(e){}
+    try { if(d.check) pjRevPaint(proj, d.check, d.items); } catch(e){}
     /* 📐 접힌 「정보」 머리에 «몇 줄인지» 적는다 — 그리기가 다 끝난 «뒤»라야 셀 수 있다 */
     try { pjSecCount(); } catch(e){}
     /* 🔢 탭 이름 옆 숫자 — 그리기가 끝난 «뒤»라야 셀 수 있다 */
@@ -5433,11 +5439,21 @@
       tags:  Object.prototype.toString.call(o.tags) === '[object Array]' ? o.tags : []
     };
   }
-  function pjRevPaint(proj, d){
+  /* 📂 2026-09-15 대표 지시 — 「회고창에서 결과물 폴더 바로가기」
+     🔴 [주소를 코드에 «안» 적는다] 서버가 이미 `items` 에 「결과물폴더」를 실어 보낸다(§1) —
+        바로가기 줄(`pjFdPaint`)이 쓰는 «그 값»을 그대로 쓴다. 두 곳이 어긋날 자리가 없다.
+     🔴 [인자로 받는다 — 전역에 안 담는다] 회고는 «폴더 줄보다 먼저» 그려진다.
+        전역에 담아 쓰면 「폴더가 먼저 그려져야 한다」는 순서 의존이 생겨 조용히 빈 값이 된다. */
+  var PJ_REV_OUT = '';
+  function pjRevPaint(proj, d, items){
     var box = document.getElementById('pjRev');
     if(!box) return;                       /* 「관리」 미만이면 탭 자체가 없다 */
     PJ_REV_PROJ = proj;
     PJ_REV = pjRevParse(d && d.review);
+    PJ_REV_OUT = '';
+    (items || []).forEach(function(x){
+      if(x && x.key === '결과물폴더' && x.link) PJ_REV_OUT = x.link;
+    });
     pjRevDraw();
   }
   function pjRevDraw(){
@@ -5496,6 +5512,18 @@
       return '<button type="button" data-pjrevrate="' + pjEsc(r) + '"'
            + (PJ_REV.rate === r ? ' class="on"' : '') + '>' + pjEsc(r) + '</button>';
     }).join('') + '<span class="rvmsg" id="pjRevMsg"></span></div>';
+    /* ── 📂 결과물 폴더 바로가기 (2026-09-15 대표 지시) ──
+       🔴 [회고를 적으면서 «결과물을 보는» 자리다] 사진·영상을 열어 보며 적어야
+          「무엇이 문제였나」가 구체적으로 나온다.
+       🔴 [주소를 못 받으면 «자리도 안 만든다»] 옛 프로젝트는 결과물 폴더가 없다 —
+          눌러도 안 되는 단추를 만들지 않는다(죽은 링크 금지).
+       🔴 [폴더 여는 방식을 새로 안 만든다] 바로가기 줄과 «같은» `data-pjact="folder"`(§4-1). */
+    if(PJ_REV_OUT){
+      h += '<div class="rvout"><a href="#" data-pjact="folder" data-pjurl="'
+         + pjEsc(PJ_REV_OUT) + '">📂 결과물 폴더 열기</a>'
+         + '<span class="fn">사진·영상을 보며 적으시면 더 구체적으로 남습니다'
+         + ' · <b>BTS</b>(비하인드씬)도 이 안에 있습니다</span></div>';
+    }
     /* ── 무엇 때문이었나 (되풀이되는 것을 찾으려는 것) ── */
     h += '<div class="rvtags">' + PJ_REV_TAGS.map(function(t){
       var on = (PJ_REV.tags || []).indexOf(t) >= 0;
