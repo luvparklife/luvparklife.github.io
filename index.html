@@ -299,6 +299,10 @@
     .kvpop input{width:100%; box-sizing:border-box; border:1px solid var(--line2); border-radius:8px;
                  padding:7px 9px; font-size:13px; font-family:inherit}
     .kvpop input:focus{outline:none; border-color:#3b6cff}
+    /* 🕐 2026-09-16 — 헌팅 날짜 + 시간을 한 줄에. 폰에서도 두 칸이 나란히 들어간다(실측 390px). */
+    .kvpop .kvdt{display:flex; gap:6px}
+    .kvpop .kvdt input{flex:1; min-width:0}
+    .kvpop .kvdt .kvtm{flex:0 0 96px}
     /* 👥 2026-09-01 — 여러 명을 «칩»으로 쌓는다 (참여인원) */
     .kvpop .hint2{color:#9aa3b2; font-size:10.5px}
     .kvpop .chips{display:none; flex-wrap:wrap; gap:5px; margin-bottom:6px}
@@ -370,6 +374,14 @@
     .pj2 .qk a:hover{border-color:var(--daily); color:var(--daily)}
     .pj2 .qk a.off{opacity:.42; pointer-events:none}
     .pj2 .qk a.wide{grid-column:1 / -1}
+    /* 🏷 2026-09-16 대표 지시 — 카드·폴더카드 옆 «권한 딱지» (모두 / 관리 이상 / 대표만)
+       🔴 [카드 이름 «아래» 줄로 내린다] 옆에 붙이면 폰(390px)에서 두 칸 배치가 깨진다.
+       🔴 [색으로도 갈린다] 글자만 다르면 훑을 때 안 걸린다 — 팀 회색 · 관리 파랑 · 대표 빨강. */
+    .pj2 .qk .pjbg{display:block; margin-top:3px; font-size:9.5px; font-weight:700;
+      letter-spacing:-.2px; line-height:1.2}
+    .pj2 .qk .pjbg.team{color:#8a93a3}
+    .pj2 .qk .pjbg.mgr{color:#2563eb}
+    .pj2 .qk .pjbg.own{color:#c62828}
     /* 📁 2026-09-10 대표 확정 — 폴더 바로가기 5개 (자기 묶음)
        🔴 [비었으면 «비었다»고 보인다] 대표 지시 *"내용 없다고 나타나야되고"* —
           점선 테두리 + 빨간 글씨라 목록을 훑기만 해도 눈에 걸린다. */
@@ -3362,6 +3374,20 @@
   }
   window.pjOneLoad = pjOneLoad;
 
+  /* 🔒 「누가 보나」 표 — 화면 쪽 «예비»다 (2026-09-16에 pjOnePaint 밖으로 꺼냈다)
+     ═══════════════════════════════════════════════════════════════════
+     🔴 [진짜 자물쇠는 서버 PJ_NEED_ 하나다] 등급이 안 되는 줄은 서버가 «담지도 않는다».
+        여기는 «옛 배포가 see 를 안 보낼 때»를 받치는 예비이고, 폴더 카드 딱지도 이것을 본다.
+     🔴 [값이 바뀌면 서버·여기·안내문 «셋»을 같이 고친다] 하나만 고치면 글자가 거짓말한다(§3-5 ⑤).
+     🔴 [값의 «역사»는 여기 안 적는다] 경위는 _확정_대표결정.md 한 곳에 있다 —
+        여기 쌓으면 표보다 주석이 길어져 지금 값이 안 보인다. */
+  var PJ_SEE = { '거래처':'mgr', '담당자':'mgr', '내부폴더':'mgr', '외부장비공유':'mgr',
+                 '소싱시트':'mgr', '정산서':'mgr',
+                 /* 🧾 2026-09-15 견적서 · 📋 2026-09-16 장비세부내역 — 대표 지시로 「대표만」 */
+                 '견적서':'owner', '장비세부내역':'owner', '견적폴더':'owner',
+                 '정산폴더':'mgr', '결과물폴더':'mgr' };
+  /* 서버가 보낸 표가 담기는 자리 — pjOnePaint 가 채운다. 없으면 위 PJ_SEE 로 떨어진다. */
+  var PJ_SEE_SRC = {};
   function pjOnePaint(proj, d){
     try { if(d.days) pjDaysPaint(proj, d.days); } catch(e){}
     try {
@@ -3565,9 +3591,12 @@
           그래서 묶음은 언제나 팀 → 관리 이상 → 대표 순으로 «몰아서» 둔다. */
     /* 🔦 2026-09-15 — 「헌팅일」을 촬영일 «바로 뒤»에 (대표: *"이건 모두가 볼 수 있는 것"*).
        PJ_SEE·PJ_NEED_ 어디에도 안 넣는다 = 팀원도 본다. */
-    var PJ_ORDER = ['촬영일','헌팅일','포토그래퍼','브랜드','팀공유폴더',
-                    'PA팀','담당자','거래처','외부장비공유','소싱시트','장비세부내역','정산서',
-                    '견적서'];
+    /* 🔄 2026-09-16 대표 지시 — **PA팀은 모두가 본다** · **장비세부내역은 대표만**.
+       그래서 PA팀은 «팀 묶음»으로 올리고(촬영일·헌팅일 다음 — 「언제 · 누가 가나」가 한 덩어리),
+       장비세부내역은 «대표 묶음»으로 내렸다(견적서 앞). */
+    var PJ_ORDER = ['촬영일','헌팅일','PA팀','포토그래퍼','브랜드','팀공유폴더',
+                    '담당자','거래처','외부장비공유','소싱시트','정산서',
+                    '장비세부내역','견적서'];
     /* 🔴 2026-09-10 대표 지시 — 「관리자이상 보이는 거에 «참여인원»이 빠졌어」.
        [확인함] 「참여인원」은 2026-09-08에 「PA팀」으로 이름이 바뀐 그 줄이다(같은 것).
        🔴 [밝혀 둡니다] 2026-09-01 확정은 *"참여인원은 팀원모두 볼수있고"* 였다 —
@@ -3591,22 +3620,13 @@
           이 9/10부터 적혀 있었다 — 되돌릴 때 «안내문만» 안 되돌린 자국이다. 이제 글자와 실제가 맞는다.
        🔴 [잃는 것] 프리랜서·팀원은 «누가 같이 가는지» 못 본다. 「내 역할」 줄은 따로라 그대로다.
        되돌리기 = **"PA팀 팀원모두로 되돌려줘"** */
-    var PJ_SEE = { '거래처':'mgr', '내부폴더':'mgr', '외부장비공유':'mgr',
-                   /* 🧾 2026-09-15 대표 지시 *"견적서는 대표만 볼수있어야돼"*
-                      🔴 진짜 자물쇠는 서버 PJ_NEED_ 다(담지도 않는다) — 여기는 «옛 배포 대비» 예비다.
-                      되돌리기 = **"견적서 관리자도 보게 해줘"** */
-                   '견적서':'owner',
-                   '소싱시트':'mgr', '장비세부내역':'mgr',
-                   /* 🔒 2026-09-15 대표 지시 — 담당자(거래처 사람 이름)는 「관리」 이상만.
-                      🔴 진짜 자물쇠는 서버 PJ_NEED_ 다 — 여기는 «옛 배포 대비» 예비다. */
-                   '담당자':'mgr',
-                   /* 👥 2026-09-15 대표 지시 — 참여인원(PA팀)도 「관리」 이상만 (위 주석 참고) */
-                   'PA팀':'mgr',
-                   /* 🔄 2026-09-10 대표 지시 *"정산서는 관리자부터 볼수있고"* — owner → mgr */
-                   '정산서':'mgr' };
+    /* 🔴 2026-09-16 — PJ_SEE 정의가 «이 함수 밖»으로 갔다(파일 위쪽 「누가 보나」 표).
+       [왜] 폴더 카드 딱지(pjFdPaint)도 같은 표를 봐야 하는데, 여기 갇혀 있으면
+            그쪽이 표를 «또» 갖게 되어 한쪽만 고쳐질 때 딱지가 조용히 거짓말한다(§1). */
     var IS_MGR = (PJ_ROLE === '대표' || PJ_ROLE === '관리');
-    /* 🔴 서버가 보낸 「누가 보나」 표 — 없으면 빈 객체라 아래 PJ_SEE 가 그대로 쓰인다 */
-    var SEE_SRC = (d && d.see) || {};
+    /* 🔴 서버가 보낸 「누가 보나」 표 — 없으면 빈 객체라 PJ_SEE 가 그대로 쓰인다.
+       🔴 전역 PJ_SEE_SRC 에도 «같은 객체»를 담는다 — 폴더 카드가 그것을 본다(두 벌이 아니다). */
+    var SEE_SRC = PJ_SEE_SRC = (d && d.see) || {};
     var _by = {};
     (d.items||[]).forEach(function(x){ if(x && x.key) _by[x.key] = x; });
     /* 🔴 서버가 «줄»로 안 주는 둘을 여기서 만든다 — 주소는 이미 받아둔 것을 쓴다(새로 안 부른다) */
@@ -4143,7 +4163,7 @@
     try{
       localStorage.setItem(PJ_DRAFT, JSON.stringify({
         from: pjDraftVal('nFrom'), to: pjDraftVal('nTo'),
-        hunt: pjDraftVal('nHunt'),
+        hunt: pjDraftVal('nHunt'), huntT: pjDraftVal('nHuntT'),   /* 🕐 2026-09-16 */
         /* 🔴 2026-08-26 — 폴더명은 «열쇠»다. 손으로 고친 것을 안 지키면
            나갔다 들어왔을 때 자동 제안이 덮어쓴다(교차검증 ⑧). */
         name: pjDraftVal('nName'),
@@ -4191,8 +4211,11 @@
       + '거래처·포토는 나중에 채워도 프로젝트는 만들어집니다.<br>🔴 <b>노션에 없는 이름은 그냥 치시면 됩니다</b> — 그대로 저장되고, 원하시면 <b>[＋ 노션에 추가]</b>도 됩니다.</p>'
       + '<div class="nf"><label>촬영 시작 ~ 끝 <i>*</i></label>'
       +   '<div class="two"><input type="date" id="nFrom"><input type="date" id="nTo"></div></div>'
-      + '<div class="nf"><label>헌팅일 <span class="opt">(없으면 비워두세요)</span></label>'
-      +   '<input type="date" id="nHunt"></div>'
+      /* 🕐 2026-09-16 대표 지시 *"헌팅 시간도 정할 수 있게"* — 날짜 옆에 시간.
+         🔴 [촬영 날짜와 «같은 모양»(two)을 쓴다] 새 모양을 만들지 않는다(§4-1). */
+      + '<div class="nf"><label>헌팅일 <span class="opt">(없으면 비워두세요 · 시간은 정해졌을 때만)</span></label>'
+      +   '<div class="two"><input type="date" id="nHunt">'
+      +   '<input type="time" id="nHuntT" step="300"></div></div>'
       + '<div class="nf"><label>거래처 <span class="opt">— 치면 노션 후보가 뜹니다</span></label>'
       +   '<div id="pkCli">불러오는 중…</div></div>'
       + '<div class="nf"><label>담당자 <span class="opt">— 거래처를 고르면 저절로 들어옵니다</span></label>'
@@ -4273,8 +4296,8 @@
         var _ne = document.getElementById('nName');
         if(_ne){ _ne.value = DR.name; if(DR.nameT) _ne.dataset.touched = '1'; }
       }
-      ['nFrom','nTo','nHunt'].forEach(function(id, i){
-        var v = [DR.from, DR.to, DR.hunt][i];
+      ['nFrom','nTo','nHunt','nHuntT'].forEach(function(id, i){
+        var v = [DR.from, DR.to, DR.hunt, DR.huntT][i];
         var e = document.getElementById(id);
         if(e && v) e.value = v;
       });
@@ -4983,6 +5006,10 @@
             적으신 헌팅일이 «브라우저 임시저장(pjDraftSave)에만» 남고 서버로 안 갔다.
             즉 「만들기」를 누르는 순간 값이 사라졌다 — 정보줄에 안 뜨던 진짜 이유다. */
       hunt:   (document.getElementById('nHunt') || {}).value || '',
+      /* 🕐 2026-09-16 — 헌팅 시간. 🔴 날짜가 비면 시간도 «안 보낸다» —
+         날짜 없는 시간은 화면에 안 뜨므로(Code.js) 시트에만 남는 유령 값이 된다. */
+      huntTime: ((document.getElementById('nHunt') || {}).value
+                   ? ((document.getElementById('nHuntT') || {}).value || '') : ''),
       client: (PJ_NEW.cli   && PJ_NEW.cli.name)   || '',
       mgr:    PJ_NEW.mgr || '',
       photo:  (PJ_NEW.pho   && PJ_NEW.pho.name)   || '',
@@ -5223,8 +5250,10 @@
                🔴 [정산서] 9/10에 대표 지시로 owner → mgr 이 됐는데 «안내문만» 옛말이었다
                   (「대표님만」이라 적혀 있었다) → 관리 이상 줄로 옮겼다.
                🔴 [견적서] 오늘 mgr → owner 가 됐다 → 관리 줄에서 빼고 대표 줄로 옮겼다. */
-            + (isMgr ? '' : '<br>🔒 참여인원(PA팀)·<b>담당자</b>·거래처·정산서·내부폴더·외부장비공유·소싱시트·장비세부내역은 <b>「관리」 이상만</b> 보입니다.')
-            + (isOwner ? '' : '<br>🧾 <b>견적서</b>(차수·상태)와 <b>견적폴더</b>는 <b>대표님만</b> 보입니다 — 청구가가 들어 있습니다.')
+            /* 🔴 2026-09-16 — 이 두 줄은 «실제와 반드시 같아야» 한다. 대표 지시로 오늘만 둘이 옮겼다:
+               PA팀 → 팀(여기서 뺌) · 장비세부내역 → 대표(아래 줄로). 안 고치면 글자가 거짓말한다(§3-5 ⑤). */
+            + (isMgr ? '' : '<br>🔒 <b>담당자</b>·거래처·정산서·내부폴더·외부장비공유·소싱시트는 <b>「관리」 이상만</b> 보입니다.')
+            + (isOwner ? '' : '<br>🧾 <b>견적서</b>(차수·상태)·<b>장비세부내역</b>·<b>견적폴더</b>는 <b>대표님만</b> 보입니다 — 청구가·단가가 들어 있습니다.')
             + '<br>🌐 <b>외부장비공유</b>가 회색이면 그 프로젝트는 <b>아직 안 만든 것</b>입니다 — 그 줄의 <b>「🌐 만들기」</b>로 바로 만듭니다(수십 초).'
             + '<br>⚪ <b>아직 안 봄</b> = 노션·정산앱에 있는 것이라 이 화면이 아직 못 물어봅니다.</p>'; } },
       /* 📝 2026-09-11 대표 확정 — 회고 탭 (🔒 「관리」 이상만)
@@ -5500,8 +5529,13 @@
   function guideLink(cls){
     var u = guideUrl('proj');
     if(!u) return '';
+    /* 🏷 2026-09-16 — 권한 딱지(대표 지시 *"다 붙혀줘"*).
+       🔴 [딱지는 «프로젝트 화면에서만»] 이 함수는 허브 홈에서도 쓰인다 — 거기엔 `.qk` 딱지
+          스타일이 없어 글자가 어색해진다. `cls` 가 있는 홈 쪽은 안 붙인다.
+       🔴 [「모두」가 맞다] 이 문서는 로그인 없이 열린다(프리랜서가 처음 보는 자리다). */
     return '<a class="' + (cls || '') + '" href="' + u + '" target="_blank" rel="noopener"'
-         + ' title="프로젝트 화면 보는 법 — 로그인 없이 열립니다">❓ 사용법</a>';
+         + ' title="프로젝트 화면 보는 법 — 로그인 없이 열립니다">❓ 사용법'
+         + (cls ? '' : pjBadge('team')) + '</a>';
   }
 
   /* 카드 한 장. act = 'field'(장비앱으로) / 'settle'(정산앱으로) */
@@ -5512,10 +5546,23 @@
      🆕 2026-08-31 대표 지시 — *"소싱시트, 해당 프로젝트 공유파일(없으면 없다라고 되어있어야됨)"*
      🔴 소싱시트는 「관리」 이상만 열린다(단가·마진이 보인다) — 서버도 그 등급에만 주소를 준다.
         회색으로 «보여는 준다» — 없는 것처럼 감추면 「왜 없지」를 대표가 물어야 한다. */
+  /* 🏷 2026-09-16 대표 지시 — *"정보 밑에 카드와 폴더카드들 옆에 사용 가능한 권한 다 붙혀줘"*
+     ═══════════════════════════════════════════════════════════════════
+     🔴 [«누가 보나»가 아니라 «누가 쓸 수 있나»다] 대표님 화면에는 어차피 다 보인다.
+        이 딱지는 **「팀원 눈에는 이게 어떻게 보이나」**를 대표님이 아시게 하는 것이다
+        (2026-09-01에 「🔒 대표만」 띠를 넣은 것과 같은 취지).
+     🔴 [등급 셋뿐이라 글자도 셋이다] 모두 / 관리 이상 / 대표만.
+     🔴 [원본을 새로 만들지 않는다] 값은 «그 카드를 그리는 조건»과 같은 자리에서 적는다 —
+        조건과 딱지가 떨어져 있으면 조건만 고쳤을 때 딱지가 조용히 거짓말한다(§3-5 ⑤). */
+  function pjBadge(who){
+    var W = { team:'모두', mgr:'관리 이상', own:'대표만' };
+    return '<span class="pjbg ' + who + '">' + W[who] + '</span>';
+  }
   function pjLinks(proj, isOwner, isMgr){
     var p = pjEsc(proj);
     return '<div class="qk" id="pjQk">'
-      + '<a href="#" data-pjact="field" data-pjproj="' + p + '" data-pjextra="">🎬 장비</a>'
+      + '<a href="#" data-pjact="field" data-pjproj="' + p + '" data-pjextra="">🎬 장비'
+      + pjBadge('team') + '</a>'
 
       /* 📋 2026-09-01 대표 지시 — *"장비세부내역은 정보에서 지우고 카드에 넣어주고"*
          🔴 소싱시트로 간다 — 장비 «세부»는 거기가 원본이다(장비앱은 현장 확인·승인용).
@@ -5524,7 +5571,9 @@
       /* 📋 2026-09-08 대표 신고 — *"프로젝트 생성했는데 탭에는 안들어왔는데"*
          실은 «들어가 있었고» 맨 아래라 못 찾으신 것이다. 그 줄로 바로 데려간다.
          🔴 소싱시트 버튼과 «같은 자물쇠»(관리 이상) — 서버가 주소를 안 주면 회색 그대로 있는다. */
-      + '<a href="#" class="off" data-pjlist="1">📋 목록에서 보기</a>'
+      + '<a href="#" class="off" data-pjlist="1">📋 목록에서 보기'
+      /* 🔴 서버가 주소를 「관리」 이상에게만 준다(projCanSeeSheet_) — 소싱시트와 «같은 자물쇠» */
+      + pjBadge('mgr') + '</a>'
 
       /* 📁 2026-09-01 대표 지시 — *"카드에 있는 폴더 이름은 내부폴더로 바꿔줘"*
          🔴 이름만 바꾸는 게 아니라 «가리키는 곳»도 바꾼다 — 안 그러면 글자가 거짓말한다(§3-5 ⑤).
@@ -5533,16 +5582,19 @@
       /* 💰 정산 — 2026-09-10 확정으로 «껐는데», 그건 대표님 화면 정리가 목적이었다.
          🔴 그 아래 등급에게는 «청구하러 가는 길»이라 끄면 기능이 사라진다 → 팀원에게는 남긴다.
             (대표·관리는 허브 홈 「프리랜서 정산」 카드로 간다) */
-      + (isMgr ? '' : '<a href="#" data-pjact="settle" data-pjproj="' + p + '">💰 내 청구</a>')
+      + (isMgr ? '' : '<a href="#" data-pjact="settle" data-pjproj="' + p + '">💰 내 청구'
+                      + pjBadge('team') + '</a>')
       /* ✏️ 정보 고치기 — 「관리」 이상 (2026-08-26 대표 지시 *"쌓인 정보 수정 및 추가"*)
          🔴 2026-09-14 — «이름 바꾸기»가 이 안으로 들어왔다(대표 지시 *"정보에서 이름 바꿀 수 있게"*). */
-      + (isMgr ? '<a href="#" data-pjact="edit" data-pjproj="' + p + '">✏️ 정보</a>' : '')
+      + (isMgr ? '<a href="#" data-pjact="edit" data-pjproj="' + p + '">✏️ 정보'
+                 + pjBadge('mgr') + '</a>' : '')
       /* 🗑 2026-08-26 대표 지시 *"잘못만들었을때 … 삭제하거나 수정할 수 있게"*
          대표에게만 보인다 — 서버도 대표가 아니면 거절한다(화면만 감추는 게 아니다).
          🔴 2026-09-14 대표 지시 — 이름을 「지우기」 → 「프로젝트삭제」로.
             「지우기」는 «무엇을» 지우는지가 안 드러나서, 정보 한 줄을 지우는 것으로 읽힌다. */
       + (isOwner
-          ? '<a href="#" class="danger" data-pjact="del" data-pjproj="' + p + '">🗑 프로젝트삭제</a>'
+          ? '<a href="#" class="danger" data-pjact="del" data-pjproj="' + p + '">🗑 프로젝트삭제'
+            + pjBadge('own') + '</a>'
           : '')
       /* 🔑 2026-09-14 — 등급을 «아직 못 받았으면» 그 사실을 이 자리에서 말한다.
          [왜 여기인가] 안 보이는 버튼이 여기 있으므로, 설명도 여기 있어야 «없어진 이유»로 읽힌다.
@@ -6359,9 +6411,15 @@
           var txt = url ? (x.text || '있음') : '아직 없습니다';
           /* 🔴 class 를 «한 번»만 쓴다 — 두 번 쓰면 뒤엣것이 통째로 무시된다 */
           var cls = (url ? '' : 'off') + (empty ? (url ? 'emp' : ' emp') : '');
+          /* 🏷 2026-09-16 대표 지시 — 폴더 카드에도 권한 딱지.
+             🔴 [«서버가 보낸 표»를 본다] 등급 판정의 원본은 서버 PJ_NEED_ 하나다(§1).
+                여기에 표를 또 적으면 서버에서 등급을 바꿨을 때 딱지만 옛말이 된다.
+                서버가 아직 안 보내는 옛 배포에서는 화면 예비표(PJ_SEE)로 떨어진다. */
+          var _nd = (PJ_SEE_SRC[k] || PJ_SEE[k] || '');
+          var bg  = pjBadge(_nd === 'owner' ? 'own' : _nd === 'mgr' ? 'mgr' : 'team');
           return '<a' + (cls ? ' class="' + cls + '"' : '')
                + (url ? ' href="#" data-pjact="folder" data-pjurl="' + pjEsc(url) + '"' : '')
-               + '>📁 ' + pjEsc(k) + '<span class="cnt">' + pjEsc(txt) + '</span></a>';
+               + '>📁 ' + pjEsc(k) + bg + '<span class="cnt">' + pjEsc(txt) + '</span></a>';
         }).join('')
       + '</div>';
   }
@@ -6628,8 +6686,14 @@
          : mustPick ? '노션 목록에서 <b>골라야</b> 저장됩니다 · 목록에 없으면 <b>＋ 노션에 등록</b>'
                     : '치면 노션 후보가 뜹니다 · 없으면 그대로 적으셔도 됩니다') + '</div>'
       + '<div class="chips"></div>'
+      /* 🕐 2026-09-16 대표 지시 *"헌팅 시간도 정할 수 있게"* — 날짜 옆에 시간 칸.
+         🔴 [«입력칸» 하나는 그대로 둔다] 아래 save() 가 `pop.querySelector('input')` 로
+            첫 칸을 집는다 — 시간 칸을 «뒤»에 두면 그 코드가 안 깨진다.
+         🔴 [시간은 비워도 된다] 헌팅 시간이 아직 안 정해진 때가 흔하다. */
       + (isDate
-           ? '<input type="date">'
+           ? '<div class="kvdt"><input type="date">'
+             + '<input type="time" class="kvtm" step="300">'
+             + '</div>'
            : '<input type="text" placeholder="' + pjEsc(key) + ' 이름">')
       + '<div class="hits"></div>'
       + '<div class="row"><span class="msg"></span>'
@@ -6642,6 +6706,15 @@
     var msg  = pop.querySelector('.msg');
     var btnOk= pop.querySelector('.ok');
     inp.value = cur;
+    /* 🕐 2026-09-16 — 줄에는 「2026-08-28 14:00」 한 덩어리로 뜬다. 칸 둘로 «쪼개» 채운다.
+       🔴 [쪼개지 않으면] 날짜 칸에 「2026-08-28 14:00」이 통째로 들어가고 `type=date` 는
+          그 값을 «못 읽어 빈 칸»으로 연다 — 열자마자 적어둔 날짜가 사라진 것처럼 보인다. */
+    var inpTime = pop.querySelector('.kvtm');
+    if(isDate){
+      var _cut = String(cur || '').trim().split(/\s+/);
+      inp.value = _cut[0] || '';
+      if(inpTime) inpTime.value = _cut[1] || '';
+    }
     var picked = null;          /* 후보에서 «고른» 것 {id,name} — 노션 연결에 쓴다 */
     var rows = null;
     /* 👥 여러 명 모드 — 「＋ 채우기」로 열면 지금 값(쉼표)을 칩으로 되살린다 */
@@ -6922,6 +6995,9 @@
                      글자가 같아야 한다 — 다르면 저장은 「됐다」고 하는데 값이 안 들어간다. */
                   '헌팅일':'hunt' };
       var info = {}; info[MAP[key]] = val;
+      /* 🕐 2026-09-16 — 헌팅 시간. 🔴 [날짜를 비우면 시간도 «같이» 비운다]
+         날짜 없이 시간만 남으면 화면이 그 시간을 안 보여줘(Code.js) «시트에만 남은 유령 값»이 된다. */
+      if(isDate && inpTime) info.huntTime = val ? String(inpTime.value || '').trim() : '';
       if(picked && key === '거래처')     info.clientId = picked.id;
       if(picked && key === '포토그래퍼') info.photoId  = picked.id;
       /* 👥 노션에 «고른 사람»만 연결한다 — 손으로 친 이름은 노션 id 가 없어 못 잇는다.
@@ -7052,7 +7128,7 @@
     function set(id, v){ var e = document.getElementById(id); if(e && v) e.value = v; }
     /* 🔦 2026-09-15 — 헌팅일도 채운다. 안 채우면 빈 칸이 열리고 「저장」이
        적어둔 날짜를 «빈 값으로 덮는다»(pjEditSave 가 nHunt 를 늘 보낸다). */
-    set('nFrom', c.from); set('nTo', c.to); set('nHunt', c.hunt);
+    set('nFrom', c.from); set('nTo', c.to); set('nHunt', c.hunt); set('nHuntT', c.huntTime);
     var nm = document.getElementById('nName');
     if(nm){ nm.value = c.name; nm.dataset.touched = '1'; nm.disabled = true;
             nm.style.background = '#f2f2f2';
@@ -7141,6 +7217,10 @@
       /* 🔦 2026-09-15 — 헌팅일도 «고칠 수» 있어야 한다. 만들 때만 넣을 수 있으면
          나중에 헌팅 날짜가 잡힌 촬영은 영영 못 적는다(그게 더 흔하다). */
       hunt:   (document.getElementById('nHunt') || {}).value || '',
+      /* 🕐 2026-09-16 — 헌팅 시간. 🔴 날짜가 비면 시간도 «안 보낸다» —
+         날짜 없는 시간은 화면에 안 뜨므로(Code.js) 시트에만 남는 유령 값이 된다. */
+      huntTime: ((document.getElementById('nHunt') || {}).value
+                   ? ((document.getElementById('nHuntT') || {}).value || '') : ''),
       client: (PJ_NEW.cli   && PJ_NEW.cli.name)   || '',
       mgr:    PJ_NEW.mgr || '',
       photo:  (PJ_NEW.pho   && PJ_NEW.pho.name)   || '',
