@@ -982,6 +982,25 @@
            🔴 서비스 안내는 공개 링크(누구나 열림), 단가 PDF는 드라이브에서
               「이메일 지정 공유」라 링크만으론 안 열린다. 성격이 반대라 카드를 나눴다.
            🔴 카드를 감추는 것은 자물쇠가 아니다 — PDF의 진짜 자물쇠는 드라이브 공유 설정이다. -->
+      <!-- ── 🐞 문제 제보 (2026-09-16 신설) ──────────────────────────────
+           직원이 앱에서 「🐞 문제」로 올린 것을 보고 «고치자 / 지금은 안 함»을 정하는 자리.
+           🔴 대표 전용 그룹에 둔다 — 「무엇을 먼저 고칠까」는 돈과 일정을 아는 사람이 정한다.
+              화면에서 감추는 것은 자물쇠가 아니다. 진짜 자물쇠는 서버(Report.js repBoss_)가 건다.
+           🔴 `data-token="1"` — 장비앱과 같은 프로젝트라 통행증을 실어 보낸다(안 실으면 로그인하라고 막힌다).
+           🔴 주소가 «이 파일 안에서» 장비앱 카드와 둘이 된다 — 배포 주소가 바뀌면 «같이» 고친다.
+              (같은 파일이라 `?page=` 로 한 번에 찾을 수 있어 일부러 이렇게 뒀다.
+               JS 로 이어 붙이면 data-token 처리·paCard 찾기와 얽혀 더 위험하다.) -->
+      <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec?page=report" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🐞</div>
+          <div class="body">
+            <div class="title">문제 제보</div>
+            <div class="desc">직원이 알려준 것 · 급한 것부터 · 몇 명이 겪었나</div>
+            <div class="note">「고치자」를 누르면 줄에 섭니다 — 저절로 고쳐지는 것은 아닙니다</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
       <a class="card" href="https://pakorea.notion.site/service" target="_blank" rel="noopener">
         <div class="row">
           <div class="icon">📋</div>
@@ -8150,6 +8169,11 @@
     { ico:'🧾', n:'세무대사',             s:'계산서 발행 확인',          t:'세무대사' },
     { ico:'📋', n:'프로젝트 생애주기 입력', s:'노션에 프로젝트 등록',      t:'프로젝트 생애주기' },
     { ico:'📚', n:'도서관',               s:'자료 · 레퍼런스',           t:'도서관' },
+    /* 🐞 2026-09-16 — 직원이 올린 문제를 보고 승인하는 자리(대표 전용).
+       🔴 `t:` 는 «홈 카드 제목»이다 — 위 카드의 <div class="title">문제 제보</div> 와 «한 글자도» 같아야 한다.
+          다르면 paCard 가 못 찾아 «사이드바에 조용히 안 그려진다».
+       🔴 이름·설명·아이콘·순서를 띠(AppNav.js pages)와 «똑같이» 맞춘다 — navcheck 가 대조한다. */
+    { ico:'🐞', n:'문제 제보',             s:'직원이 알려준 것 · 승인',   t:'문제 제보' },
     { ico:'📋', n:'서비스 안내',           s:'거래처에 보낼 링크',        t:'서비스 안내' },
     { ico:'💰', n:'단가 안내 PDF — 한글',  s:'🔒 보낼 땐 조심',           t:'단가 안내 PDF' },
     { ico:'💵', n:'Price Guide — 영문',   s:'해외팀 · 해외 거래처',      t:'Price Guide' },
