@@ -4445,6 +4445,11 @@
          알아본 뒤 canManage_ 로 권한을 다시 본다. 서버 검사는 그대로다 — 느슨해지지 않는다.
        🔴 2026-08-26에 「1시간 뒤 노션 만들기가 막힌다」를 고쳤는데 «읽기»만 고쳤다. 그 나머지다. */
     if(!base || !payOK()){ done({ ok:false, why:'로그인이 풀렸습니다 — 허브에서 다시 로그인해 주세요' }); return; }
+    /* 🔴 2026-09-17 대표 신고 *"로케이션 노션 저장 오류"* — 등록(쓰기) 창구가 9초(기본값)면
+       포기하도록 되어 있었다. 읽기 창구(netAsk)는 같은 증상을 겪고 9/14에 25초로 늘렸는데
+       쓰기 쪽은 빠져 있었다. 노션 새로 만들기는 중복검사까지 겹쳐 읽기보다 오래 걸린다
+       — 그런데 더 짧은 시간만 기다리고 있었다. 읽기와 같은 값으로 맞춘다.
+       되돌리기 = "로케 저장 타임아웃 되돌려줘" */
     askCount(base + '?add=network'
              + '&name=' + encodeURIComponent(name)
              + '&cat='  + encodeURIComponent(cat)
@@ -4452,9 +4457,11 @@
              + '&sub='  + encodeURIComponent(subName || '')
              + (extra ? '&p=' + encodeURIComponent(JSON.stringify(extra)) : '')
              + (parentId ? '&parent=' + encodeURIComponent(parentId) : '')
-             + payTok(), function(d){
-      done(d || { ok:false, why:'응답이 없습니다' });
-    });
+             + payTok(), function(d, why){
+      done(d || { ok:false, why: why === 'timeout'
+        ? (Math.round(NET_WAIT_MS / 1000) + '초 안에 답이 없음 — 노션이 느리거나 정산앱이 멈췄습니다')
+        : '응답이 없습니다' });
+    }, NET_WAIT_MS);
   }
   /* 🔴 2026-08-22 대표 지시 — 노션에 «무슨 칸이 있나» 물어본다.
      목록을 코드에 박지 않는다 — 노션에서 칸을 늘리면 저절로 따라온다(§1). */
