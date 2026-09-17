@@ -164,6 +164,17 @@
     }
     a.card:hover{transform:translateY(-1px); box-shadow:0 5px 16px rgba(0,0,0,.09)}
     a.card:active{transform:translateY(0)}
+    /* ⏳ 2026-09-17 대표 지시 — "클릭이 작동했는지 몰라서 여러 번 클릭하는 경우가 많다.
+       로딩중 표시를 띄우되, 장비앱 「불러오는 중」 덮개처럼 «계속 뜨면» 작업을 못 하니 그러면 안 된다."
+       🔴 서버 응답을 기다리지 않는다 — «고정 시간»(아래 JS PA_OPEN_MS)이 지나면 무조건 풀린다.
+          장비앱 덮개가 «화면 전체»를 잠갔다 안 풀린 것과 다르게, 여기는 «누른 카드 하나만» 잠그고
+          나머지 카드는 그대로 눌린다 — 하나가 안 풀려도 다른 일은 계속할 수 있다(§3-5). */
+    a.card.pa-opening{cursor:wait; position:relative}
+    a.card.pa-opening::after{
+      content:'⏳ 여는 중…'; position:absolute; inset:0; border-radius:inherit;
+      display:flex; align-items:center; justify-content:center;
+      background:var(--card); font-size:13px; font-weight:700; color:var(--ink);
+    }
     .group.team a.card{border-left:4px solid var(--team-line)}
     .group.adm  a.card{border-left:4px solid var(--adm-line)}
     .row{display:flex; align-items:center; gap:14px}
@@ -2333,6 +2344,22 @@
     ev.preventDefault();
     try{ openApp_(a.href); }catch(e){ try{ window.open(a.href, '_blank'); }catch(e2){} }
   });
+
+  /* ⏳ 2026-09-17 — 카드를 눌렀는지 몰라 여러 번 누르는 것 방지.
+     🔴 «캡처 단계»에서 먼저 잡는다 — 이미 잠긴 카드를 또 누르면 바로 여기서 끝나고,
+        위 openApp_ 등 그 카드의 원래 동작까지 가지 않는다.
+     🔴 PA_OPEN_MS 는 «고정 시간»이다. 서버·새 탭이 늦게 뜨든 실패하든 상관없이 그 시간이
+        지나면 무조건 풀린다 — 장비앱 「불러오는 중」 덮개처럼 안 풀려서 일을 못 하는 일은 없다.
+     🔴 잠그는 범위는 «누른 카드 하나»뿐이다 — 옆 카드·다른 작업은 그대로 된다. */
+  var PA_OPEN_MS = 3000;
+  document.addEventListener('click', function(ev){
+    var el = (ev.target && ev.target.closest) ? ev.target.closest('a.card') : null;
+    if(!el) return;
+    if(el.__paOpen){ ev.preventDefault(); ev.stopImmediatePropagation(); return; }
+    el.__paOpen = true;
+    el.classList.add('pa-opening');
+    setTimeout(function(){ el.__paOpen = false; el.classList.remove('pa-opening'); }, PA_OPEN_MS);
+  }, true);
 
   /* ── 목록 ── */
   /* ═══════════════════════════════════════════════════════════════
