@@ -1316,11 +1316,13 @@
     <p class="foot">각 앱은 서로 독립적으로 작동합니다.<br>앱 링크가 바뀌면 이 페이지(index.html)만 갱신하면 됩니다.</p>
   </div>
 
-  <!-- 🐞 문제 제보 — 어느 화면에 있든 항상 뜬다(위 .group 라우팅과 무관한 자리) -->
-  <button type="button" class="paRepFab" id="paRepFab" onclick="paRepOpen()" title="문제 제보">🐞</button>
+  <!-- 🐞 문제 제보 — 어느 화면에 있든 항상 뜬다(위 .group 라우팅과 무관한 자리)
+       🔴 2026-09-18 대표 지시로 아이콘을 🔧(수리)로 바꿨다 — 벌레 아이콘이 "여기서 문제를
+       알릴 수 있다"는 뜻으로 직관적이지 않다고 하셨다. 장비앱·정산앱도 같은 턴에 맞췄다. -->
+  <button type="button" class="paRepFab" id="paRepFab" onclick="paRepOpen()" title="문제 제보">🔧</button>
   <div class="paRepHov" id="paRepHov" hidden onclick="if(event.target===this) paRepClose()">
     <div class="paRepSheet">
-      <div class="paRepTop"><b>🐞 문제 제보</b><button type="button" class="paRepX" onclick="paRepClose()">✕</button></div>
+      <div class="paRepTop"><b>🔧 문제 제보</b><button type="button" class="paRepX" onclick="paRepClose()">✕</button></div>
       <div class="paRepBody">
         <div class="paRepWhere" id="paRepWhere"></div>
         <label class="paRepL" for="paRepDoing">하려던 일 <span style="font-weight:400">(선택)</span></label>
