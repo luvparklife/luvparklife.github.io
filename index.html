@@ -853,6 +853,45 @@
     .rvtags button.on{background:#eef3ff; border-color:#9cb6f0; color:#1a56c4; font-weight:700}
     .rvmsg{font-size:11.5px; color:#8a93a3; margin-left:auto}
     .rvmsg.err{color:#c0392b; font-weight:700}
+
+    /* 🐞 문제 제보 — 허브 전용 떠 있는 버튼 (2026-09-18 신설)
+       ═══════════════════════════════════════════════════════════════
+       대표 지시(2026-09-16) "모든 페이지마다"가 장비앱 화면 두 곳에만 붙어 있던 것을
+       2026-09-18 대표 신고로 발견해 허브에도 잇는다. 장비앱 ReportUI.html과 같은 모양을
+       쓰되(§4-1 — 새로 발명 안 함) 허브는 <?!= include() ?>가 안 되는 정적 페이지라
+       이 파일 안에 그대로 옮겨 적었다. 클래스 이름은 겹치지 않게 전부 `paRep` 로 시작한다
+       (2026-09-11 정산앱이 이름이 겹쳐 통째로 죽었던 것과 같은 함정 — §3-5 ⑦-C). */
+    .paRepFab{position:fixed; right:16px; bottom:16px; z-index:9700;
+      width:46px; height:46px; border-radius:50%; border:0; cursor:pointer;
+      background:#c0392b; color:#fff; font-size:20px; box-shadow:0 3px 10px rgba(0,0,0,.25)}
+    .paRepHov[hidden]{display:none}
+    .paRepHov{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9800;
+      display:flex; align-items:flex-end; justify-content:center}
+    @media(min-width:700px){ .paRepHov{align-items:center} }
+    .paRepSheet{background:var(--card); color:var(--ink); width:100%; max-width:520px;
+      max-height:86vh; overflow:auto; border-radius:14px 14px 0 0;
+      box-shadow:0 -6px 24px rgba(0,0,0,.3); font-size:14px; line-height:1.55}
+    @media(min-width:700px){ .paRepSheet{border-radius:14px; max-height:82vh} }
+    .paRepTop{position:sticky; top:0; background:#263238; color:#fff; padding:12px 14px;
+      display:flex; align-items:center; gap:8px; border-radius:14px 14px 0 0}
+    .paRepTop b{font-size:15px}
+    .paRepX{margin-left:auto; background:rgba(255,255,255,.18); border:0; color:#fff;
+      width:30px; height:30px; border-radius:8px; font-size:16px; cursor:pointer}
+    .paRepBody{padding:14px}
+    .paRepL{display:block; font-weight:700; font-size:13px; margin:12px 0 5px; color:var(--sub)}
+    .paRepIn,.paRepTa{width:100%; box-sizing:border-box; border:1px solid var(--line);
+      background:var(--bg); color:var(--ink); border-radius:8px; padding:9px 10px; font:inherit}
+    .paRepTa{min-height:72px; resize:vertical}
+    .paRepWhere{background:var(--line2); border-radius:8px; padding:8px 10px; font-size:12px; color:var(--sub)}
+    .paRepUrg{display:flex; align-items:center; gap:8px; margin-top:12px; padding:10px;
+      background:#fff3e0; border:1px solid #ffcc80; border-radius:8px; font-size:13px; cursor:pointer; color:#5c4326}
+    .paRepUrg input{width:18px; height:18px}
+    .paRepGo{width:100%; margin-top:14px; padding:13px; border:0; border-radius:10px;
+      background:#1e88e5; color:#fff; font:inherit; font-weight:800; font-size:15px; cursor:pointer}
+    .paRepGo:disabled{background:#8a97a6; cursor:default}
+    .paRepMsg{margin-top:10px; font-size:13px}
+    .paRepMsg.ok{color:#1e7a46; font-weight:700}
+    .paRepMsg.err{color:#c0392b; font-weight:700}
   </style>
 </head>
 <body>
@@ -1277,6 +1316,25 @@
     <p class="foot">각 앱은 서로 독립적으로 작동합니다.<br>앱 링크가 바뀌면 이 페이지(index.html)만 갱신하면 됩니다.</p>
   </div>
 
+  <!-- 🐞 문제 제보 — 어느 화면에 있든 항상 뜬다(위 .group 라우팅과 무관한 자리) -->
+  <button type="button" class="paRepFab" id="paRepFab" onclick="paRepOpen()" title="문제 제보">🐞</button>
+  <div class="paRepHov" id="paRepHov" hidden onclick="if(event.target===this) paRepClose()">
+    <div class="paRepSheet">
+      <div class="paRepTop"><b>🐞 문제 제보</b><button type="button" class="paRepX" onclick="paRepClose()">✕</button></div>
+      <div class="paRepBody">
+        <div class="paRepWhere" id="paRepWhere"></div>
+        <label class="paRepL" for="paRepDoing">하려던 일 <span style="font-weight:400">(선택)</span></label>
+        <input class="paRepIn" id="paRepDoing" maxlength="300" placeholder="예: 프로젝트 정보에 로케이션 채우던 중">
+        <label class="paRepL" for="paRepProb">무슨 일이 났나요</label>
+        <textarea class="paRepTa" id="paRepProb" maxlength="1000" placeholder="겪으신 것을 그대로 적어 주세요"></textarea>
+        <label class="paRepUrg"><input type="checkbox" id="paRepUrgent"> 지금 일을 못 할 정도로 급합니다</label>
+        <p style="font-size:11.5px;color:var(--faint);margin-top:8px">🔴 비밀번호·계좌·주민번호는 적지 마세요.</p>
+        <button type="button" class="paRepGo" id="paRepGo" onclick="paRepSend()">보내기</button>
+        <div class="paRepMsg" id="paRepMsg"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
   /* ─────────────────────────────────────────────────────────────
      🔧 여기 한 줄만 바꾸면 로그인이 켜집니다.
@@ -1633,6 +1691,62 @@
   }
   /* 앱 창구를 부를 수 있나 — 통행증이 있으면 신분증이 죽어도 된다 */
   function canApp(){ return !!(hubSessGet() || credLive(loadUser())); }
+
+  /* ═══════════════════════════════════════════════════════════════
+     🐞 문제 제보 — 허브에서 장비앱으로 «건너서» 넣는다  (2026-09-18)
+     ═══════════════════════════════════════════════════════════════
+     대표 지시(2026-09-16) "모든 페이지마다"가 장비앱 화면 두 곳에만 붙어 있던 것을
+     2026-09-18 대표 신고로 발견해 허브에도 잇는다.
+     🔴 제보함(_앱제보 탭)은 장비앱 스프레드시트에만 있다(§1) — 그래서 화면은 여기 있어도
+        접수는 장비앱의 새 문(?rep=submit)으로 보낸다. 인증은 이미 있는 appTok() 그대로 쓴다.
+     되돌리기 = "허브 제보버튼 빼줘" */
+  function paRepOpen(){
+    var box = document.getElementById('paRepHov');
+    if(!box) return;
+    document.getElementById('paRepMsg').textContent = '';
+    document.getElementById('paRepWhere').textContent =
+      '지금 보던 자리: ' + (location.hash || document.title || '허브');
+    box.hidden = false;
+    setTimeout(function(){ try{ document.getElementById('paRepProb').focus(); }catch(e){} }, 30);
+  }
+  function paRepClose(){
+    var box = document.getElementById('paRepHov');
+    if(box) box.hidden = true;
+  }
+  function paRepSend(){
+    var prob = String(document.getElementById('paRepProb').value || '').trim();
+    var msg = document.getElementById('paRepMsg');
+    if(!prob){ msg.className = 'paRepMsg err'; msg.textContent = '무슨 일이 났는지 한 줄만 적어 주세요.'; return; }
+    if(!canApp()){
+      msg.className = 'paRepMsg err';
+      msg.textContent = '로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 보내 주세요.';
+      return;
+    }
+    var doing = String(document.getElementById('paRepDoing').value || '').trim();
+    var urgent = document.getElementById('paRepUrgent').checked ? '1' : '';
+    var go = document.getElementById('paRepGo');
+    go.disabled = true; go.textContent = '보내는 중…';
+    msg.className = 'paRepMsg'; msg.textContent = '';
+    askCount(FIELD_APP + '?rep=submit&app=hub'
+             + '&page=' + encodeURIComponent(location.hash || document.title || '허브')
+             + '&doing=' + encodeURIComponent(doing)
+             + '&problem=' + encodeURIComponent(prob)
+             + (urgent ? '&urgent=1' : '')
+             + appTok(), function(d, why){
+      go.disabled = false; go.textContent = '보내기';
+      if(d && d.ok){
+        msg.className = 'paRepMsg ok'; msg.textContent = '✅ ' + (d.msg || '접수했습니다');
+        document.getElementById('paRepProb').value = '';
+        document.getElementById('paRepDoing').value = '';
+        document.getElementById('paRepUrgent').checked = false;
+        setTimeout(paRepClose, 1200);
+      } else {
+        msg.className = 'paRepMsg err';
+        msg.textContent = '🔴 못 보냈습니다 — ' + ((d && (d.error || d.why)) ||
+          (why === 'timeout' ? '시간이 오래 걸립니다. 잠시 뒤 다시 시도해 주세요' : '응답이 없습니다'));
+      }
+    }, 25000);
+  }
 
   /* ═══════════════════════════════════════════════════════════════
      🔑 정산앱 통행증  (2026-08-26)
