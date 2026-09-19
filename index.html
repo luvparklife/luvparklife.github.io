@@ -3958,9 +3958,12 @@
           목록을 못 받았는데 「등록 필요」라고 하면 거짓말이다(§3-5 ⑤). */
     (function(){
       /* 🔴 2026-09-08 — 「참여인원」 → 「PA팀」 (열쇠를 쓰는 «네 번째» 자리 · 서버 add() 와 같아야 한다).
-         안 바꾸면 그 줄에 「🟠 노션 등록 필요」 표시가 영영 안 붙는다. */
-      var CHK = { '거래처':'거래처', '포토그래퍼':'인적자원',
-                  '브랜드':'인적자원', 'PA팀':'인적자원' };
+         안 바꾸면 그 줄에 「🟠 노션 등록 필요」 표시가 영영 안 붙는다.
+         🔴 2026-09-19 — 거래처·포토그래퍼·브랜드는 «전체»(cat='')에서 이름을 찾는다
+         (pjNewPicker·kvPopOpen 과 같은 이유·§1) — 안 그러면 다른 관계에 있는데도
+         「노션 등록 필요」가 뜬다. PA팀(참여인원)은 그대로 인적자원만 본다. */
+      var CHK = { '거래처':'', '포토그래퍼':'',
+                  '브랜드':'', 'PA팀':'인적자원' };
       Object.keys(CHK).forEach(function(k){
         var it = (d.items||[]).filter(function(x){ return x.key===k; })[0];
         if(!it || it.state!=='ok' || !it.text) return;
@@ -4184,6 +4187,28 @@
       if(subName && (x.sub || []).indexOf(subName) < 0) return false;
       return true;
     });
+  }
+  /* 🔴 2026-09-19 대표 지시 — *"거래처에는 거래처가 있고 포토가 직접 거래처가 될때가 있어
+     그리고 브랜드가 될때도있고 … 해당 관계만 하지말고 전체를 조회하고 관련된 것들이
+     맨 위로 올라오는 드롭다운"*
+     [왜] 거래처·포토그래퍼·브랜드는 노션에서 «관계(카테고리)» 하나로 딱 갈리지 않는다 —
+       사람이 거래처로 등록돼 있기도, 거래처가 브랜드 역할이기도 하다. 그런데 지금까지는
+       `netPick` 으로 «그 관계가 아니면 후보에서 아예 뺐다» — 다른 관계에 있으면 안 보였다
+       (실측: 브랜드는 노션에 1건 있는데 «거래처» 밑이라 「인적자원」만 찾는 이 폼에서 0건이었다).
+     [고침] 거르지 않고 «전체를 다 보여주되», 관련 있는 것만 맨 위로 올린다.
+       🔴 [원본은 여기 하나] 새 프로젝트 폼(pjNewPicker)과 정보 수정창(kvPopOpen) 둘 다
+          이 함수 하나를 쓴다 — 각자 따로 정렬을 짜면 둘이 어긋난다(§1).
+       🔴 [로케이션은 그대로] 대표가 로케이션은 안 바꿔도 된다고 확정 — `netPick` 그대로 쓴다. */
+  var NET_FULL_TAG = { cli: '거래처', pho: '포토/감독', brand: '브랜드' };
+  function netRankFull_(rows, wantKey){
+    var tag = NET_FULL_TAG[wantKey];
+    if(!tag) return rows || [];
+    var hit = [], rest = [];
+    (rows || []).forEach(function(x){
+      var m = (wantKey === 'cli') ? (x.cat === tag) : ((x.pos || []).indexOf(tag) >= 0);
+      (m ? hit : rest).push(x);
+    });
+    return hit.concat(rest);
   }
 
   /* 「＋ 새 프로젝트」 — 🔴 2026-08-22 생애주기 화면 대신 «여기서» 만든다.
@@ -4535,10 +4560,15 @@
     pjNewPicker('pkPeople', null, null, null, 'people');
     pjNewMgrPicker(null);
 
-    netAsk('거래처',   function(r){ pjNewPicker('pkCli',   r, null, null, 'cli');
-                                   pjNewMgrPicker(r); });
-    netAsk('인적자원', function(r){ pjNewPicker('pkPho',   r, '포토/감독', null, 'pho');
-                                   pjNewPicker('pkBrand', r, '브랜드',    null, 'brand'); });
+    /* 🔴 2026-09-19 — 거래처·포토그래퍼·브랜드는 «전체»(cat='')에서 함께 찾는다(위 netRankFull_).
+       담당자는 예전 그대로 «거래처 항목»에서만 뽑는다 — 전체를 다 뒤지면 관계없는 사람의
+       담당자 칸까지 섞여 후보가 지저분해진다(대표가 이 셋만 넓히라고 하셨다). */
+    netAsk('', function(r){
+      pjNewPicker('pkCli',   r, null, null, 'cli');
+      pjNewPicker('pkPho',   r, '포토/감독', null, 'pho');
+      pjNewPicker('pkBrand', r, '브랜드',    null, 'brand');
+      pjNewMgrPicker((r || []).filter(function(x){ return x.cat === '거래처'; }));
+    });
     netAsk('업체',     function(r){
       /* 🔴 로케이션은 «회차 안»에서 고른다 — 따로 고르는 칸을 두면 두 군데가 되어 어긋난다(§1) */
       PJ_LOCS = netPick(r, null, '로케이션');
@@ -4674,7 +4704,10 @@
     var cat = { cli:'거래처', pho:'인적자원', brand:'인적자원', loc:'업체',
                 people:'인적자원', locs:'업체' }[key];
     var offline = (rows === null);
-    var list = offline ? [] : netPick(rows, posName, subName);
+    /* 🔴 2026-09-19 — 거래처·포토그래퍼·브랜드는 «걸러내지 않고» 관련도로 정렬만 한다.
+       나머지(로케이션·참여인원)는 예전처럼 하드 필터(netPick) 그대로 — 대표가 로케이션은
+       그대로 두라고 확정했고, 참여인원은 애초에 필터가 없다(posName·subName 이 null). */
+    var list = offline ? [] : (NET_FULL_TAG[key] ? netRankFull_(rows, key) : netPick(rows, posName, subName));
     /* 👥 여러 개를 «쌓는» 칸인가 (참여인원 · 로케이션)
        🔴 판정을 한 곳에서만 한다(§1) — 아래 세 자리(치는 중·Enter·담기)가 어긋나면
           「치는 동안 담기는데 Enter 로는 안 담기는」 반쪽 상태가 된다. */
@@ -4686,10 +4719,13 @@
     box.className = 'cbo';
     box.innerHTML =
       '<input class="cboin" autocomplete="off" spellcheck="false" placeholder="'
+      /* 🔴 2026-09-19 — 거래처·포토그래퍼·브랜드는 이제 노션 전체(약 280건)에서 찾으므로
+         숫자만 보면 「왜 이렇게 많지」로 읽힌다 — 관련 있는 게 위로 온다는 것을 같이 적는다. */
       + (offline ? '직접 입력 — 노션을 못 불렀습니다'
-         : must   ? '목록에서 골라야 합니다 (' + list.length + '개) · 없으면 ＋ 노션에 추가'
+         : must   ? '목록에서 골라야 합니다 (전체 ' + list.length + '개 · 관련된 게 위로) · 없으면 ＋ 노션에 추가'
          /* 👥 쌓는 칸은 «어떻게 넣는지»를 적어준다 — 안 적으면 치기만 하고 안 넣는다 */
          : isMulti ? '이름을 치고 골라 넣으세요 (' + list.length + '명) · Enter 로도 넣습니다'
+         : NET_FULL_TAG[key] ? '치면 후보가 뜹니다 (전체 ' + list.length + '개 · 관련된 게 위로) · 없으면 그냥 쓰세요'
                   : '치면 후보가 뜹니다 (' + list.length + '개) · 없으면 그냥 쓰세요') + '">'
       + '<div class="cbomenu" hidden></div><div class="cbost"></div>';
     var inp  = box.querySelector('.cboin');
@@ -4753,6 +4789,9 @@
               }
               list.push(d.row);
               if(NET_CACHE[cat]) NET_CACHE[cat].push(d.row);
+              /* 🔴 2026-09-19 — 거래처·포토그래퍼·브랜드는 «전체»(NET_CACHE['']) 목록에서 읽는다.
+                 방금 만든 것을 거기에도 넣어야, 이 폼을 다시 열었을 때(같은 세션 안에서) 후보에 뜬다. */
+              if(NET_FULL_TAG[key] && NET_CACHE['']) NET_CACHE[''].push(d.row);
               PJ_NEW[key] = { id:d.row.id, name:d.row.name };
               st.innerHTML = '<span class="ok">✅ ' + (d.already ? '이미 있어서 그것을 씁니다' : '노션에 추가했습니다') + '</span>';
               if(key === 'cli') pjNewFromCli(d.row, d.row.name);
@@ -5159,8 +5198,12 @@
   function pjMustPick(){
     var bad = [];
     var got = function(cat){ return !!(NET_CACHE[cat] && NET_CACHE[cat].length); };
-    if(got('거래처')   && PJ_NEW.cli && PJ_NEW.cli.name && !PJ_NEW.cli.id) bad.push(['거래처',    'pkCli']);
-    if(got('인적자원') && PJ_NEW.pho && PJ_NEW.pho.name && !PJ_NEW.pho.id) bad.push(['포토그래퍼','pkPho']);
+    /* 🔴 2026-09-19 — 거래처·포토그래퍼는 이제 «전체»(cat='')에서 후보를 받는다(netRankFull_).
+       예전처럼 NET_CACHE['거래처']·NET_CACHE['인적자원'] 를 보면, 참여인원 칸이 그 캐시를
+       따로 채워도 이 칸의 실제 목록(NET_CACHE[''])은 못 불렀는데 «불렀다»고 잘못 판단해
+       막아야 할 것을 안 막는다 — 실제로 읽는 자리(NET_CACHE['']) 하나로 본다(§1). */
+    if(got('') && PJ_NEW.cli && PJ_NEW.cli.name && !PJ_NEW.cli.id) bad.push(['거래처',    'pkCli']);
+    if(got('') && PJ_NEW.pho && PJ_NEW.pho.name && !PJ_NEW.pho.id) bad.push(['포토그래퍼','pkPho']);
     return bad;
   }
   /* 막을 때는 «왜»를 말하고 그 칸으로 데려간다 — 어디를 고쳐야 하는지 모르면 그냥 막힌다 */
@@ -6816,9 +6859,13 @@
        새롭게 알게된 사람들 다 등록할 수 있게 해줘"*
        🔴 `many:true` = 여러 명을 «쌓는다». 저장은 쉼표로 한 칸에 담고, 노션엔 여러 명을 연결한다.
        🔴 「PA팀」(견적서에서 «자동으로» 세는 우리 팀)과 «다른 줄»이다 — 그건 채우는 칸이 아니다. */
-    var SRC = { '거래처':{cat:'거래처'},
-                '포토그래퍼':{cat:'인적자원', pos:'포토/감독'},
-                '브랜드':{cat:'인적자원', pos:'브랜드'},
+    /* 🔴 2026-09-19 대표 지시 — 거래처·포토그래퍼·브랜드는 «그 관계만» 찾지 않고 전체에서
+       찾은 뒤 관련된 것을 위로 올린다(큰 폼 pjNewPicker 와 «같은 규칙» — netRankFull_ 하나만 씀,
+       §1). `cat`은 그대로 둔다 — 「＋ 노션에 등록」으로 새로 만들 때는 여전히 이 관계로 만든다.
+       `fetchKey`가 있으면 노션 검색 자체를 전체(cat='')로 보내고, 받은 뒤 그 키로 정렬한다. */
+    var SRC = { '거래처':{cat:'거래처', fetchKey:'cli'},
+                '포토그래퍼':{cat:'인적자원', pos:'포토/감독', fetchKey:'pho'},
+                '브랜드':{cat:'인적자원', pos:'브랜드', fetchKey:'brand'},
                 /* 🔴 2026-09-08 대표 지시로 「참여인원」 → 「PA팀」 (서버 add() 열쇠와 «같아야» 한다).
                    열쇠가 어긋나면 그 줄에 「＋ 채우기」가 아예 안 붙는다(조용히 죽는다). */
                 'PA팀':{cat:'인적자원', many:true},
@@ -6976,13 +7023,20 @@
     }
     if(src){
       msg.textContent = '노션 목록 불러오는 중…';
-      netAsk(src.cat, function(r){
+      /* 🔴 2026-09-19 — fetchKey 가 있으면(거래처·포토그래퍼·브랜드) 노션 검색 자체를
+         전체(cat='')로 보낸다 — 서버가 관계로 먼저 걸러버리면 다른 관계에 있는 것은
+         정렬이고 뭐고 애초에 응답에 안 실려 온다. */
+      netAsk(src.fetchKey ? '' : src.cat, function(r){
         if(!r){ msg.textContent = '🔴 노션 목록을 못 받았습니다 — 직접 적으시면 시트에만 저장됩니다'; return; }
-        /* 🔴 좁히는 계산을 새로 쓰지 않는다 — `netPick` 이 이미 그 일을 한다(§1).
-           x.pos·x.sub 는 «배열»이라 글자로 비교하면 하나도 안 걸린다(실제로 그렇게 짰다가 고쳤다). */
-        rows = src.pos ? netPick(r, src.pos, null) : r;
-        if(!rows.length && src.pos) rows = r;   /* 좁혔더니 0개면 전체를 보여준다 */
-        msg.textContent = '노션 ' + rows.length + '곳 · '
+        /* 🔴 좁히는 계산을 새로 쓰지 않는다 — `netPick`(하드 필터)·`netRankFull_`(정렬만, §1)
+           이미 그 일을 한다. x.pos·x.sub 는 «배열»이라 글자로 비교하면 하나도 안 걸린다
+           (실제로 그렇게 짰다가 고쳤다). */
+        rows = src.fetchKey ? netRankFull_(r, src.fetchKey)
+             : src.pos      ? netPick(r, src.pos, null)
+             : r;
+        if(!rows.length && src.pos && !src.fetchKey) rows = r;   /* 좁혔더니 0개면 전체를 보여준다 */
+        msg.textContent = '노션 ' + rows.length + '곳'
+                        + (src.fetchKey ? '(관련된 게 위로)' : '') + ' · '
                         + (mustPick ? '골라야 저장됩니다' : '골라야 노션에도 들어갑니다');
         drawHits();
       });
@@ -7103,7 +7157,12 @@
               picked = { id: d.row.id, name: d.row.name };
               inp.value = d.row.name;
               if(rows) rows.push(d.row);
-              if(typeof NET_CACHE !== 'undefined' && NET_CACHE[src.cat]) NET_CACHE[src.cat].push(d.row);
+              if(typeof NET_CACHE !== 'undefined'){
+                if(NET_CACHE[src.cat]) NET_CACHE[src.cat].push(d.row);
+                /* 🔴 2026-09-19 — fetchKey 가 있는 칸(거래처·포토그래퍼·브랜드)은 실제로
+                   NET_CACHE[''] 에서 읽는다 — 거기에도 넣어야 이 창을 다시 열었을 때 뜬다. */
+                if(src.fetchKey && NET_CACHE['']) NET_CACHE[''].push(d.row);
+              }
               closePanel();
               /* 🔴 2026-09-01 대표 신고 — *"이게 노션에 제대로 등록된건지 아닌지 몰라"*
                  [무엇이 문제였나] 「이어서 저장합니다…」로 끝나서, 저장이 느리거나 실패하면
