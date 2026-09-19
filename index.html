@@ -4198,14 +4198,19 @@
      [고침] 거르지 않고 «전체를 다 보여주되», 관련 있는 것만 맨 위로 올린다.
        🔴 [원본은 여기 하나] 새 프로젝트 폼(pjNewPicker)과 정보 수정창(kvPopOpen) 둘 다
           이 함수 하나를 쓴다 — 각자 따로 정렬을 짜면 둘이 어긋난다(§1).
-       🔴 [로케이션은 그대로] 대표가 로케이션은 안 바꿔도 된다고 확정 — `netPick` 그대로 쓴다. */
-  var NET_FULL_TAG = { cli: '거래처', pho: '포토/감독', brand: '브랜드' };
+       🔴 [로케이션도 같이 넣었다 — 2026-09-19(2차) 대표 지시] 처음엔 "로케이션은 그대로 가도 돼"
+          였는데, 목업을 보시고 *"그냥 다 똑같은 로직으로 하자"* 로 바꾸셨다. 그래서 로케이션도
+          «관계=업체 하나만» 걸러내던 것에서 «전체를 보고 소속·분야=로케이션인 것만 위로»로 옮겼다. */
+  var NET_FULL_TAG = { cli:   { f:'cat', v:'거래처' },
+                        pho:   { f:'pos', v:'포토/감독' },
+                        brand: { f:'pos', v:'브랜드' },
+                        loc:   { f:'sub', v:'로케이션' } };
   function netRankFull_(rows, wantKey){
-    var tag = NET_FULL_TAG[wantKey];
-    if(!tag) return rows || [];
+    var cfg = NET_FULL_TAG[wantKey];
+    if(!cfg) return rows || [];
     var hit = [], rest = [];
     (rows || []).forEach(function(x){
-      var m = (wantKey === 'cli') ? (x.cat === tag) : ((x.pos || []).indexOf(tag) >= 0);
+      var m = (cfg.f === 'cat') ? (x.cat === cfg.v) : ((x[cfg.f] || []).indexOf(cfg.v) >= 0);
       (m ? hit : rest).push(x);
     });
     return hit.concat(rest);
@@ -4560,18 +4565,19 @@
     pjNewPicker('pkPeople', null, null, null, 'people');
     pjNewMgrPicker(null);
 
-    /* 🔴 2026-09-19 — 거래처·포토그래퍼·브랜드는 «전체»(cat='')에서 함께 찾는다(위 netRankFull_).
-       담당자는 예전 그대로 «거래처 항목»에서만 뽑는다 — 전체를 다 뒤지면 관계없는 사람의
-       담당자 칸까지 섞여 후보가 지저분해진다(대표가 이 셋만 넓히라고 하셨다). */
+    /* 🔴 2026-09-19 — 거래처·포토그래퍼·브랜드·로케이션은 «전체»(cat='')에서 함께 찾는다
+       (위 netRankFull_). 담당자는 예전 그대로 «거래처 항목»에서만 뽑는다 — 전체를 다 뒤지면
+       관계없는 사람의 담당자 칸까지 섞여 후보가 지저분해진다.
+       🔴 [로케이션도 여기로 합쳤다] 처음엔 로케이션만 따로 «업체» 하나로 불렀는데, 대표가
+       "그냥 다 똑같은 로직으로 하자"고 하셔서 같은 전체 목록을 나눠 쓴다 — 호출이 하나 줄어
+       노션 왕복도 그만큼 준다(§1). */
     netAsk('', function(r){
       pjNewPicker('pkCli',   r, null, null, 'cli');
       pjNewPicker('pkPho',   r, '포토/감독', null, 'pho');
       pjNewPicker('pkBrand', r, '브랜드',    null, 'brand');
       pjNewMgrPicker((r || []).filter(function(x){ return x.cat === '거래처'; }));
-    });
-    netAsk('업체',     function(r){
       /* 🔴 로케이션은 «회차 안»에서 고른다 — 따로 고르는 칸을 두면 두 군데가 되어 어긋난다(§1) */
-      PJ_LOCS = netPick(r, null, '로케이션');
+      PJ_LOCS = netRankFull_(r, 'loc');
       var dl = document.getElementById('locList');
       if(dl) dl.innerHTML = PJ_LOCS.map(function(x){ return '<option>' + pjEsc(x.name) + '</option>'; }).join('');
       pjDaysDraw();
@@ -6877,8 +6883,10 @@
                 /* 📍 로케 — 노션 「업체」 분류 안에서 소속이 「로케이션」인 것.
                    🔴 폼의 자동완성(PJ_LOCS)과 «같은 규칙»이다 — 두 군데가 다른 목록을 보면
                       폼에서는 뜨는데 여기서는 안 뜨는 일이 난다(§1).
-                   🔴 many = 한 회차에 로케가 여러 곳일 수 있다(2026-09-01 대표가 짚으신 자리). */
-                '로케이션':{cat:'업체', sub:'로케이션', many:true} };
+                   🔴 many = 한 회차에 로케가 여러 곳일 수 있다(2026-09-01 대표가 짚으신 자리).
+                   🔴 2026-09-19(2차) 대표 지시 — "그냥 다 똑같은 로직으로 하자" · 거래처·포토·
+                      브랜드와 같은 fetchKey('loc')로 전체에서 찾고 관련된 게 위로 오게 옮겼다. */
+                '로케이션':{cat:'업체', sub:'로케이션', many:true, fetchKey:'loc'} };
     var src = SRC[key];
     /* 🔴 2026-09-01 대표 확정 — 거래처·포토그래퍼는 «노션이 원본»이다.
        대표 원문: *"거래처 포토그래퍼는 손입력 없애고 그자리에서 노션에 등록.
