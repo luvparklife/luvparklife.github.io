@@ -1064,22 +1064,6 @@
         </div>
       </a>
 
-      <!-- ⏱ 시간표 기록 (2026-09-20 신설)
-           · 허브 통행증(data-token)을 안 쓴다 — 이 앱은 «자기 자신의» 구글 로그인을 갖고 있어서
-             (Google Identity Services + 서버가 구글에 직접 물어 확인), 대표님 계정이 아니면
-             앱 화면 자체가 안 뜬다. 카드를 감추는 건 허브 UX일 뿐 자물쇠는 앱 서버가 건다. -->
-      <a class="card" href="https://luvparklife.github.io/시간표.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">⏱</div>
-          <div class="body">
-            <div class="title">시간표 기록</div>
-            <div class="desc">시간을 색칠해 기록 · 하루·일주일 보기</div>
-            <div class="note">구글 로그인 후 대표님만 씁니다</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-
       <a class="card" href="pa-claude://run">
         <div class="row">
           <div class="icon">🅰️</div>
@@ -6318,7 +6302,10 @@
           /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «말하지 않는다» — 엉뚱한 화면에 뜬다 */
           if(PJ_REV_PROJ !== proj) return;
           if(!d || !d.ok){
-            pjRevMsg('시트에 저장됨 · 🔴 노션에는 못 보냈습니다 — 다음에 한 줄 더 적으면 다시 갑니다', 1);
+            /* 🔴 2026-09-20 추가 — 실물로 처음 돌려보니 「못 보냈습니다」만 뜨고 «왜»는
+               화면 어디에도 안 남아 알아낼 길이 없었다. 서버가 준 이유(`d.error`)를 그대로 보여준다
+               — 대표님이 이 줄을 캡처해 보내주시면 그게 곧 로그가 된다(§3-5 ⑤). */
+            pjRevMsg('시트에 저장됨 · 🔴 노션에는 못 보냈습니다' + (d && d.error ? ' — ' + d.error : ' — 다음에 한 줄 더 적으면 다시 갑니다'), 1);
             return;
           }
           if(d.skipped){
