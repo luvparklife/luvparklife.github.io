@@ -1983,6 +1983,11 @@
       $('gbtn').hidden = false;
       $('pfOut').hidden = true;
     }
+    /* 🔴 2026-09-20 — 로그인/로그아웃은 주소(hash)를 안 바꾸므로 pjRoute가 다시 안 돈다.
+       그래서 pf(로그인 카드) 숨김 상태를 여기서도 같이 맞춘다 — 로그아웃한 순간
+       프로젝트 화면이어도 로그인 카드가 «바로» 다시 보이게(pjChrome_ 참고, 같은 규칙). */
+    var pfEl = $('pf');
+    if(pfEl && typeof onProjView_ === 'function') pfEl.hidden = !!(u && onProjView_());
   }
 
   /* ask=true 일 때만 「구글 계정도 로그아웃?」을 묻는다.
@@ -8051,14 +8056,23 @@
 
   /* ── 화면 셋 — 그리는 자리는 «한 곳씩»이다 (§1) ── */
   function pjHomeEls_(){ return document.querySelectorAll('.group:not(.pjview)'); }
+  /* 🔴 지금 주소가 「프로젝트 화면」(#p 또는 #p/이름)인지 — pf(로그인 카드) 숨김 여부를
+     로그인 상태와 함께 판단하려고 뽑아냈다(2026-09-20). */
+  function onProjView_(){ var h = location.hash || ''; return h === '#p' || h.indexOf('#p/') === 0; }
   /* 🔴 2026-09-10 대표 확정 — 첨부에 없는 것들을 프로젝트 화면에서 감춘다.
      [무엇] 「🎬 프로덕션 허브」 제목 · 설명 한 줄 · 로그인 카드 · 「프로젝트명 🔄 ‹목록」 줄.
      🔴 [지우지 않고 감춘다] 손님(로그인 전)에게는 그대로 보여야 한다 — 로그인할 자리다.
-     🔴 [로그아웃은 사이드바 맨 아래로] 로그인 카드가 사라져 갈 곳이 거기뿐이다(대표 확정). */
+     🔴 [로그아웃은 사이드바 맨 아래로] 로그인 카드가 사라져 갈 곳이 거기뿐이다(대표 확정).
+     🔴 2026-09-20 실제 사고 — 위 "손님에게는 그대로 보여야 한다"가 «주석에만» 있고 코드는
+        로그인 여부를 안 보고 무조건 숨겼다. 그래서 프로젝트 화면에서 사이드바로 로그아웃하면
+        로그인 카드(#pf 안의 구글 버튼)가 계속 숨은 채로 남아 «로그인할 자리가 화면에서 사라졌다»
+        (대표 신고: "로그아웃했는데 로그인은 없네"). 로그인 상태일 때만 숨기도록 고친다. */
   function pjChrome_(hide){
-    ['pageTitle','pageSub','pf','pjHead'].forEach(function(id){
+    ['pageTitle','pageSub','pjHead'].forEach(function(id){
       var e = document.getElementById(id); if(e) e.hidden = !!hide;
     });
+    var pf = document.getElementById('pf');
+    if(pf) pf.hidden = !!hide && !!(loadUser() && loadUser().email);
   }
   function pjShowOne_(proj){
     pjChrome_(true);
