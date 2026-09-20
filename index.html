@@ -854,6 +854,70 @@
     .rvmsg{font-size:11.5px; color:#8a93a3; margin-left:auto}
     .rvmsg.err{color:#c0392b; font-weight:700}
 
+    /* ═══ 🆕 2026-09-20 회고 개선 4가지 (대표 지적 두 마디) ══════════════
+       *"적은 줄을 고칠 수 없음, 어떤 분류의 회고인지 모름"* · *"기타 추가해서 자주 쓰는거는 자동으로 추가"*
+       ① ✎ 그 자리에서 고치기  ② 고른 줄은 «딱지 하나»  ③ 요약을 눌러 거르기  ④ 줄마다 패턴 태그
+       되돌리기 = **"회고 개선 되돌려줘"** */
+    .rvline .ed{flex:none; border:none; background:none; cursor:pointer; color:#b9c2d0;
+      font-size:12px; padding:0 2px; line-height:1.4}
+    .rvline .ed:hover{color:#2563eb}
+    .rvedit{display:flex; flex-direction:column; gap:5px; width:100%}
+    .rvedit textarea{width:100%; box-sizing:border-box; min-height:52px; font:inherit; font-size:13px;
+      padding:6px 8px; border:1px solid #2563eb; border-radius:7px; resize:vertical; line-height:1.55}
+    .rvedit .eb{display:flex; gap:5px}
+    .rvedit .eb button{border:1px solid #c8cfda; background:#fff; font:inherit; font-size:11.5px;
+      font-weight:700; padding:4px 11px; border-radius:7px; cursor:pointer; color:#4a5465}
+    .rvedit .eb button.pri{background:#2563eb; border-color:#2563eb; color:#fff}
+    .rvedit .eb .fn{margin-left:auto; font-size:10.5px; color:#8a93a3; align-self:center}
+    /* ② 고른 줄은 단추 셋 대신 딱지 하나 — 20줄이면 단추 60개가 딱지 20개가 된다 */
+    .kdtag{border:1px solid #dfe4ec; background:#fff; border-radius:999px;
+      padding:1px 8px; font:inherit; font-size:10.5px; cursor:pointer; font-weight:800}
+    .kdtag.bad{background:#fdecea; border-color:#f0b7b0; color:#c0392b}
+    .kdtag.good{background:#eaf1fd; border-color:#b3caf0; color:#1f4f9e}
+    .kdtag.learn{background:#e8f4ee; border-color:#a9d8c0; color:#1c6b46}
+    .kdtag .cr{opacity:.5; font-weight:400; margin-left:2px}
+    .kdnone{font-size:10.5px; color:#b9c2d0; margin-left:8px}
+    /* ④ 줄마다 태그 */
+    .ltag{display:flex; gap:4px; flex-wrap:wrap; align-items:center; margin-top:4px}
+    .ltag .tg{background:#eef3ff; border:1px solid #cddcfa; color:#1a56c4;
+      border-radius:11px; padding:1px 8px; font-size:10.5px; font-weight:700}
+    .ltag .add{border:1px dashed #cfd6e2; background:#fff; color:#8a93a3; border-radius:11px;
+      padding:1px 8px; font:inherit; font-size:10.5px; cursor:pointer}
+    .ltag .add:hover{border-color:#9cb6f0; color:#1a56c4}
+    .ltagpick{display:flex; gap:4px; flex-wrap:wrap; margin-top:5px; padding:7px 8px;
+      background:#f7f9ff; border:1px solid #dfe7fa; border-radius:8px}
+    .rvpane.own .ltagpick{background:#fffcf2; border-color:#eadfc0}
+    .ltagpick button{border:1px solid #dfe4ec; background:#fff; font:inherit; font-size:11px;
+      padding:3px 9px; border-radius:11px; cursor:pointer; color:#6b7688}
+    .ltagpick button.on{background:#1a56c4; border-color:#1a56c4; color:#fff; font-weight:700}
+    /* 자주 쓰셔서 «저절로» 올라온 것 — 기본 10개와 눈으로 갈린다 */
+    .ltagpick button.hot{border-style:dashed; border-color:#c8b28a; color:#8a6d3b}
+    .ltagpick button.hot.on{background:#8a6d3b; border-color:#8a6d3b; color:#fff; border-style:solid}
+    .ltagpick button.etc{border-style:dashed; border-color:#9cb6f0; color:#1a56c4; font-weight:700}
+    .etcbox{flex-basis:100%; display:flex; gap:5px; align-items:center; margin-top:6px}
+    .etcbox input{flex:1; min-width:0; font:inherit; font-size:12px; padding:5px 8px;
+      border:1px solid #9cb6f0; border-radius:7px}
+    .etcbox button{border:1px solid #1a56c4; background:#1a56c4; color:#fff; font:inherit;
+      font-size:11.5px; font-weight:700; padding:5px 11px; border-radius:7px; cursor:pointer}
+    .etcbox .fn{flex-basis:100%; font-size:10.5px; color:#8a93a3}
+    /* ③ 요약을 «눌러서» 거른다 */
+    .rvfil{display:flex; gap:5px; flex-wrap:wrap; align-items:center;
+      margin:0 0 8px; padding-bottom:8px; border-bottom:1px solid #eef1f6}
+    .rvfil button{border:1px solid #dfe4ec; background:#fff; font:inherit; font-size:11.5px;
+      padding:3px 10px; border-radius:12px; cursor:pointer; color:#6b7688; font-weight:700}
+    .rvfil button.on{background:#1c2330; border-color:#1c2330; color:#fff}
+    .rvfil .cnt{font-size:11px; color:#8a93a3; margin-left:auto}
+    /* 프로젝트에 «모인» 태그 — 사람이 안 누른다 */
+    .rvroll{margin:9px 0 2px; padding-top:9px; border-top:1px solid #eef1f6}
+    .rvroll .ti{font-size:11.5px; font-weight:800; color:#4a5465; margin-bottom:5px}
+    .rvroll .ti span{font-weight:400; color:#8a93a3}
+    .rvroll .rl{display:flex; gap:5px; flex-wrap:wrap}
+    .rvroll .rl button{border:1px solid #dfe4ec; background:#f7f8fa; font:inherit; font-size:11.5px;
+      padding:3px 10px; border-radius:12px; color:#4a5465; cursor:pointer}
+    .rvroll .rl button.on{background:#1a56c4; border-color:#1a56c4; color:#fff; font-weight:700}
+    .rvroll .rl .n{opacity:.6; font-weight:400; margin-left:3px}
+    .rvroll .none{font-size:11.5px; color:#b9c2d0}
+
     /* 🐞 문제 제보 — 허브 전용 떠 있는 버튼 (2026-09-18 신설)
        ═══════════════════════════════════════════════════════════════
        대표 지시(2026-09-16) "모든 페이지마다"가 장비앱 화면 두 곳에만 붙어 있던 것을
@@ -6026,6 +6090,67 @@
      되돌리기 = **"회고 탭 빼줘"** */
   var PJ_REV_TAGS = ['팀워크','장비','일정','로케이션','클라이언트','예산',
                      '날씨','인력','이동','안전'];
+  /* 🏷🆕 2026-09-20 대표 확정 — 태그를 «줄마다» 붙인다 + 「＋ 기타」 · 자주 쓰면 자동 추가
+     ═══════════════════════════════════════════════════════════════════
+     > *"내용마다 붙는 게 분류에 낫지 않냐"* · *"기타 추가해서 자주 쓰는거는 자동으로 추가"*
+     🔴 [프로젝트 태그를 «사람이 안 누른다»] 줄에서 저절로 모은다(`pjRevRoll_`).
+        두 곳에서 누르게 하면 어느 것이 진짜인지 모른다(§1). 노션 「패턴」엔 모인 것이 간다.
+     🔴 [기본 10개는 «여기»에만 있다] 서버는 목록을 모른다 — 그냥 횟수만 센다.
+        목록이 두 곳이 되면 반드시 어긋난다(§1).
+     🔴 [3번] 1번이면 오타까지 목록에 오르고 5번이면 너무 늦다. 떼면 하나 내려간다.
+     🔴 [옛 프로젝트 태그(`rv.tags`)는 «안 지운다»] 모인 것과 합쳐 노션에 보낸다.
+     되돌리기 = **"회고 개선 되돌려줘"** */
+  var PJ_REV_HOT_MIN = 3;
+  var PJ_REV_USE = {};          /* {태그: 몇 번} — 서버가 준다(`revTags`) */
+  var PJ_REV_EDIT = -1;         /* ✎ 로 고치는 중인 줄 ('own:3' 처럼 칸까지 담는다) */
+  var PJ_REV_PICK = '';         /* 🏷 태그를 펼친 줄 */
+  var PJ_REV_ASK  = '';         /* 「＋ 기타」 입력칸을 연 줄 */
+  /* 거르기 — '' | bad | good | learn | none | tag:장비
+     🔴 [칸마다 «따로»다] 하나로 두면 관리자 칸을 거를 때 대표 칸까지 같이 걸러져,
+        대표 칸 줄이 사라진 것처럼 보인다. */
+  var PJ_REV_FIL_ = { mgr: '', own: '' };
+  function pjRevFil_(own){ return PJ_REV_FIL_[own ? 'own' : 'mgr'] || ''; }
+  /* 이 줄을 지금 보여줘야 하나 */
+  function pjRevShow_(x, own){
+    var f = pjRevFil_(own);
+    if(!f) return true;
+    if(f.indexOf('tag:') === 0){
+      var g = (x && x.g) || [];
+      return Object.prototype.toString.call(g) === '[object Array]' && g.indexOf(f.slice(4)) >= 0;
+    }
+    if(f === 'none') return !String((x && x.k) || '');
+    return String((x && x.k) || '') === f;
+  }
+  /* 🔴 [줄을 «칸+번호»로 가리킨다] 두 칸이 한 화면에 있으므로 번호만으로는 모자란다 —
+     관리자 칸 3번을 고치는데 대표 칸 3번이 같이 열리면 안 된다. */
+  function pjRevKey_(own, i){ return (own ? 'own:' : 'mgr:') + i; }
+  /* 자주 쓰여서 «저절로» 올라온 태그 (기본 10개는 뺀다 — 늘 맨 앞에 있으므로) */
+  function pjRevHot_(){
+    var out = [];
+    for(var t in PJ_REV_USE){
+      if(!Object.prototype.hasOwnProperty.call(PJ_REV_USE, t)) continue;
+      if(PJ_REV_TAGS.indexOf(t) >= 0) continue;
+      if(PJ_REV_USE[t] >= PJ_REV_HOT_MIN) out.push(t);
+    }
+    return out.sort(function(a, b){ return PJ_REV_USE[b] - PJ_REV_USE[a]; });
+  }
+  /* 🏷 이 프로젝트에 «모인» 태그 — 줄에서 센다.
+     🔴 [관리자 칸에서만 모은다] 대표 칸 태그가 섞이면 노션 「패턴」으로 새어 나간다. */
+  function pjRevRoll_(R){
+    var m = {}, out = [];
+    ((R && R.lines) || []).forEach(function(x){
+      var g = (x && x.g) || [];
+      if(Object.prototype.toString.call(g) !== '[object Array]') return;
+      g.forEach(function(t){ if(t) m[t] = (m[t] || 0) + 1; });
+    });
+    /* 옛 프로젝트 태그도 «있으면» 같이 보여준다 — 지우지 않는다 */
+    ((R && R.tags) || []).forEach(function(t){ if(t && !m[t]) m[t] = 0; });
+    PJ_REV_TAGS.forEach(function(t){ if(m[t] !== undefined) out.push({ t:t, n:m[t] }); });
+    for(var k in m){
+      if(Object.prototype.hasOwnProperty.call(m, k) && PJ_REV_TAGS.indexOf(k) < 0) out.push({ t:k, n:m[k] });
+    }
+    return out;
+  }
   /* 🔴 [옛 「좋음·보통·아쉬움」] 2026-09-15 대표 지적 *"그런데 좋음 보통 아쉬움이 맞나?"* 로 «화면에서 뺐다».
      [왜 안 맞았나] 회고의 목적은 «문제를 고치고 잘한 것을 키우고 배운 것을 써먹는 것»인데,
        기분 점수는 그 셋 어디에도 안 닿는다. 「아쉬움 3건」이 쌓여도 «무엇이» 아쉬웠는지는 그 안에 없다 —
@@ -6093,6 +6218,16 @@
           빈 화면이 된다 — 그때는 관리자 칸으로 되돌린다. */
     PJ_REV_OWNABLE = !!(d && d.canRevOwn);
     PJ_REV_OWN = pjRevParse(d && d.reviewOwn);
+    /* 🏷 2026-09-20 — 「＋ 기타」로 적힌 태그가 몇 번 쓰였나(서버가 준다).
+       🔴 [안 오면 «비운다»] 옛 배포에서는 이 값이 없다 — 그때는 「자주 쓰는 것」 줄이 그냥 안 뜬다.
+          지난 값을 남겨 두면 다른 프로젝트의 것이 그대로 보인다. */
+    PJ_REV_USE = {};
+    try {
+      var _u = JSON.parse(String((d && d.revTags) || '{}'));
+      if(_u && typeof _u === 'object') PJ_REV_USE = _u;
+    } catch(e){}
+    /* 🔴 [프로젝트가 바뀌면 «열어둔 것»을 닫는다] 안 닫으면 다른 프로젝트의 3번 줄이 펼쳐진 채 뜬다 */
+    PJ_REV_EDIT = -1; PJ_REV_PICK = ''; PJ_REV_ASK = ''; PJ_REV_FIL = '';
     PJ_REV_OUT = ''; PJ_REV_OUT_TX = ''; PJ_REV_OUT_HAS = false;
     (items || []).forEach(function(x){
       if(x && x.key === '결과물폴더'){
@@ -6114,6 +6249,9 @@
   function pjRevPane_(R, own){
     var L = (R && R.lines) || [];
     var sfx = own ? 'Own' : '';
+    /* 🔴 [«어느 칸인지»를 모든 단추에 달고 다닌다] 두 칸이 한 화면에 있으므로
+       이것이 없으면 대표 칸을 눌렀는데 관리자 칸이 바뀐다. */
+    var od0 = own ? ' data-own="1"' : '';
     var h = '<div class="rvpane' + (own ? ' own' : '') + '">'
           + '<div class="rvhd">' + (own ? '🔒 대표 전용' : '👥 관리자와 함께')
           + '<span class="fn">' + (own
@@ -6142,13 +6280,22 @@
         var k = String((x && x.k) || '');
         if(k === 'bad') nBad++; else if(k === 'good') nGood++; else if(k === 'learn') nLrn++;
       });
-      h += '<p class="fn rvsum">' + L.length + '줄'
-         + (nBad  ? ' · <b class="b">🔴 문제 ' + nBad + '</b>' : '')
-         + (nGood ? ' · <b class="g">👍 잘한 점 ' + nGood + '</b>' : '')
-         + (nLrn  ? ' · <b class="l">💡 배운 것 ' + nLrn + '</b>' : '')
-         + ((nBad + nGood + nLrn) < L.length
-             ? ' · <span class="o">아직 안 고른 것 ' + (L.length - nBad - nGood - nLrn) + '</span>' : '')
-         + '</p>';
+      /* ③🆕 2026-09-20 대표 지적 *"어떤 분류의 회고인지 모름"* —
+         세어서 «보여주기만» 하던 이 줄을 «눌러서 거르는» 단추로 바꿨다.
+         🔴 [세는 코드는 그대로다] 위 nBad/nGood/nLrn 을 그대로 쓴다 — 두 곳에서 세지 않는다(§1). */
+      var nNone = L.length - nBad - nGood - nLrn;
+      var _fb = function(v, label){
+        return '<button type="button" data-pjrevfil="' + v + '"' + od0
+             + (pjRevFil_(own) === v ? ' class="on"' : '') + '>' + label + '</button>';
+      };
+      h += '<div class="rvfil">'
+         + _fb('', L.length + '줄 전체')
+         + (nBad  ? _fb('bad',   '🔴 문제 ' + nBad)      : '')
+         + (nGood ? _fb('good',  '👍 잘한 점 ' + nGood)  : '')
+         + (nLrn  ? _fb('learn', '💡 배운 것 ' + nLrn)   : '')
+         + (nNone ? _fb('none',  '아직 안 고른 것 ' + nNone) : '')
+         + '<span class="cnt">' + (pjRevFil_(own) ? '거르는 중 — 다시 누르면 전체' : '') + '</span>'
+         + '</div>';
       h += L.map(function(x, i){
         var p = String((x && x.p) || '');
         var pn = p === 'pre' ? '준비' : (p === 'end' ? '끝난 뒤' : (p === 'mid' ? '촬영 중' : '—'));
@@ -6160,21 +6307,93 @@
         /* 🔴 [줄마다 «어느 칸인지»를 달고 다닌다] 두 칸이 한 화면에 있으므로
            `data-own` 이 없으면 대표 칸 줄을 지웠는데 관리자 칸 줄이 사라진다. */
         var od = own ? ' data-own="1"' : '';
-        var kb = PJ_REV_KIND.map(function(o){
-          return '<button type="button" class="kd' + (kd === o.k ? ' on ' + o.k : '') + '"'
-               + ' data-pjrevkind="' + i + '" data-k="' + o.k + '"' + od
-               + ' title="' + o.tip + '">' + o.n + '</button>';
-        }).join('');
+        var key = pjRevKey_(own, i);
+        /* ③ 걸러진 줄은 «자리도 안 만든다». 🔴 번호(i)는 그대로 쓴다 — 거른 뒤 번호가
+           밀리면 3번 줄을 지웠는데 5번이 지워진다. 그래서 filter 가 아니라 빈 글자를 돌려준다. */
+        if(!pjRevShow_(x, own)) return '';
+
+        /* ①🆕 ✎ 로 고치는 중인 줄 — 그 자리에서 글상자가 된다 */
+        if(PJ_REV_EDIT === key){
+          return '<div class="rvline' + (kd ? ' k-' + kd : '') + '">'
+               + '<span class="ph ' + (p || 'mid') + '">' + pjEsc(pn) + '</span>'
+               + '<div class="rvedit">'
+               + '<textarea id="pjRevEd" maxlength="1000">' + pjEsc(String((x && x.t) || '')) + '</textarea>'
+               + '<div class="eb">'
+               + '<button type="button" class="pri" data-pjreved="' + i + '"' + od + '>저장</button>'
+               + '<button type="button" data-pjrevedx="1">취소</button>'
+               + '<span class="fn">' + pjEsc(String((x && x.w) || '—')) + ' · '
+               + pjEsc(String((x && x.d) || '')) + ' 는 그대로 남습니다</span>'
+               + '</div></div></div>';
+        }
+
+        /* ②🆕 분류 — 고른 줄은 «딱지 하나», 안 고른 줄(과 펼친 줄)은 단추 셋
+           🔴 [펼칠 때 값을 «안» 비운다] 비우면 아무것도 안 고르고 딴 데를 누르는 순간
+              분류가 조용히 사라진다(연습장에서 내가 낸 버그를 여기서 안 되풀이한다). */
+        var kb;
+        if(!kd || PJ_REV_PICK === 'k' + key){
+          kb = '<span class="kds">' + PJ_REV_KIND.map(function(o){
+                 return '<button type="button" class="kd' + (kd === o.k ? ' on ' + o.k : '') + '"'
+                      + ' data-pjrevkind="' + i + '" data-k="' + o.k + '"' + od
+                      + ' title="' + o.tip + '">' + o.n + '</button>';
+               }).join('') + '</span>'
+             + (!kd ? '<span class="kdnone">분류 안 함</span>' : '');
+        }else{
+          var _kn = { bad:'🔴 문제', good:'👍 잘한 점', learn:'💡 배운 것' }[kd] || kd;
+          kb = '<span class="kds"><button type="button" class="kdtag ' + kd + '"'
+             + ' data-pjrevkopen="' + i + '"' + od + ' title="누르면 바꿉니다">'
+             + _kn + '<span class="cr">▾</span></button></span>';
+        }
+
+        /* ④🆕 줄마다 패턴 태그 */
+        var g = (x && x.g) || [];
+        if(Object.prototype.toString.call(g) !== '[object Array]') g = [];
+        var tg = '<div class="ltag">'
+               + g.map(function(t){ return '<span class="tg">🏷 ' + pjEsc(t) + '</span>'; }).join('')
+               + '<button type="button" class="add" data-pjrevpick="' + i + '"' + od + '>'
+               + (g.length ? '＋' : '🏷 ＋ 태그') + '</button></div>';
+        if(PJ_REV_PICK === 't' + key){
+          var hot = pjRevHot_();
+          var _tb = function(t, isHot){
+            return '<button type="button" class="' + (g.indexOf(t) >= 0 ? 'on' : '')
+                 + (isHot ? ' hot' : '') + '" data-pjrevltag="' + i + '" data-t="' + pjEsc(t) + '"' + od
+                 + (isHot ? ' title="자주 쓰셔서 저절로 올라온 것입니다"' : '') + '>' + pjEsc(t) + '</button>';
+          };
+          /* 🔴 [이 줄에 붙은 «목록 밖» 태그도 보여준다] 3번을 안 넘겨 목록엔 없지만
+             이 줄에는 붙어 있는 것 — 안 보여주면 «뗄 방법»이 없다. */
+          var mine = g.filter(function(t){ return PJ_REV_TAGS.indexOf(t) < 0 && hot.indexOf(t) < 0; });
+          tg += '<div class="ltagpick">'
+              + PJ_REV_TAGS.map(function(t){ return _tb(t, false); }).join('')
+              + hot.map(function(t){ return _tb(t, true); }).join('')
+              + mine.map(function(t){ return _tb(t, true); }).join('')
+              + '<button type="button" class="etc" data-pjrevetc="' + i + '"' + od + '>＋ 기타</button>';
+          if(PJ_REV_ASK === key){
+            tg += '<div class="etcbox">'
+                + '<input type="text" id="pjRevEtc" maxlength="20" placeholder="예: 조명 · 통역 · 소품">'
+                + '<button type="button" data-pjrevetcok="' + i + '"' + od + '>붙이기</button>'
+                + '<span class="fn">' + PJ_REV_HOT_MIN + '번 쓰시면 <b>위 목록에 저절로</b> 올라옵니다</span>'
+                + '</div>';
+          }
+          tg += '</div>';
+        }
+
         return '<div class="rvline' + (kd ? ' k-' + kd : '') + '">'
              + '<span class="ph ' + (p || 'mid') + '">' + pjEsc(pn) + '</span>'
              + '<span class="tx">' + pjEsc(String((x && x.t) || ''))
              + '<span class="wd">' + pjEsc(String((x && x.w) || '—'))
              + ' · ' + pjEsc(String((x && x.d) || ''))
-             + '<span class="kds">' + kb + '</span></span></span>'
+             + '<span class="kds">' + kb + '</span></span>'
+             + tg + '</span>'
+             + '<button type="button" class="ed" data-pjrevedit="' + i + '"' + od
+             + ' title="고칩니다">✎</button>'
              + '<button type="button" class="dl" data-pjrevdel="' + i + '"' + od
              + ' title="지웁니다">✕</button>'
              + '</div>';
       }).join('');
+      /* ③ 걸러서 «하나도 안 남았을 때» — 빈 화면은 「고장」으로 읽힌다(§3-5 ⑤) */
+      if(pjRevFil_(own) && !L.some(function(x){ return pjRevShow_(x, own); })){
+        h += '<p class="fn" style="margin:8px 0">이 분류에 해당하는 줄이 없습니다 — '
+           + '위 <b>' + L.length + '줄 전체</b>를 누르면 다 보입니다.</p>';
+      }
     }
     return h + '</div>';
   }
@@ -6200,8 +6419,9 @@
        🔴 안 적으면 「대표 칸에도 따로 체크·태그가 있나」로 읽혀 두 번 누르시게 된다. */
     if(PJ_REV_OWNABLE){
       h += '<p class="fn rvshr">'
-         + '↓ 아래 <b>✅ 회고 끝 · 📂 결과물 폴더 · 🏷 패턴</b>은 <b>두 칸 공용</b>입니다 — '
-         + '프로젝트 하나에 하나입니다.</p>';
+         + '↓ 아래 <b>✅ 회고 끝 · 📂 결과물 폴더 · 🏷 모인 것</b>은 <b>두 칸 공용</b>입니다 — '
+         + '프로젝트 하나에 하나입니다. '
+         + '🔒 <b>「🏷 모인 것」에는 대표 전용 칸의 태그가 안 들어갑니다</b>(노션으로 새지 않게).</p>';
     }
     h += '<div class="rvdone">'
        + '<button type="button" data-pjrevdone="1"' + (_dn ? ' class="on"' : '') + '>'
@@ -6239,12 +6459,24 @@
              : '이 프로젝트 폴더에 <b>3_결과물</b> 폴더가 없습니다 — 옛 프로젝트이거나 아직 안 만든 것입니다')
          + '</span></div>';
     }
-    /* ── 무엇 때문이었나 (되풀이되는 것을 찾으려는 것) ── */
-    h += '<div class="rvtags">' + PJ_REV_TAGS.map(function(t){
-      var on = (PJ_REV.tags || []).indexOf(t) >= 0;
-      return '<button type="button" data-pjrevtag="' + pjEsc(t) + '"'
-           + (on ? ' class="on"' : '') + '>' + pjEsc(t) + '</button>';
-    }).join('') + '</div>';
+    /* ── 🏷 무엇 때문이었나 (되풀이되는 것을 찾으려는 것) ──
+       🆕 2026-09-20 대표 확정 — 태그는 «줄마다» 붙이고, 여기는 «모인 것»을 보여준다.
+       🔴 [사람이 안 누른다] 전에는 여기서 눌러 붙였다 — 그러면 「어느 줄이 장비 얘기인지」가
+          안 남는다. 이제 줄에서 저절로 모인다. 누르면 «그 태그 줄만» 보인다.
+       🔴 [관리자 칸에서만 모은다] 대표 칸 태그가 섞이면 노션 「패턴」으로 새어 나간다. */
+    var _roll = pjRevRoll_(PJ_REV);
+    h += '<div class="rvroll"><div class="ti">🏷 이 프로젝트에 모인 것 '
+       + '<span>— 줄에서 저절로 모입니다. 누르면 그 줄만 보입니다</span></div>';
+    if(!_roll.length){
+      h += '<div class="none">아직 없습니다 — 줄 밑 <b>🏷 ＋ 태그</b>로 하나 붙여보세요.</div>';
+    }else{
+      h += '<div class="rl">' + _roll.map(function(o){
+        return '<button type="button" data-pjrevfil="tag:' + pjEsc(o.t) + '"'
+             + (pjRevFil_(false) === ('tag:' + o.t) ? ' class="on"' : '') + '>'
+             + pjEsc(o.t) + (o.n ? '<span class="n">' + o.n + '</span>' : '') + '</button>';
+      }).join('') + '</div>';
+    }
+    h += '</div>';
     h += '</div>';
     box.innerHTML = h;
   }
@@ -6262,7 +6494,9 @@
      · 공용   = ✅ 회고 끝 · 🏷 패턴 · 옛 평가 — 프로젝트 하나에 하나면 된다
      🔴 [여기를 틀리면 «대표 칸 글이 관리자에게 샌다»] 그래서 목록으로 «적어» 둔다 —
         「own 이면 무조건 own:1」로 두면 패턴·회고끝이 대표 칸에 따로 쌓여 두 벌이 된다. */
-  var PJ_REV_PERTAB = { add:1, del:1, kind:1 };
+  /* 🆕 2026-09-20 — `edit`(줄 고치기)·`ltag`(줄 태그)도 «칸마다 따로»다.
+     🔴 여기 안 넣으면 대표 칸에서 고쳤는데 «관리자 칸» 줄이 바뀐다 — 그대로 새는 사고다. */
+  var PJ_REV_PERTAB = { add:1, del:1, kind:1, edit:1, ltag:1 };
   /* 🔒 `own` = 누른 단추가 「대표 칸 것」이었나(`data-own`). 🔴 «전역 상태»가 아니라
      «누른 그 단추»가 말해준다 — 두 칸이 한 화면에 있으므로 이것만이 정확하다. */
   function pjRevSend(body, okMsg, own){
@@ -6288,6 +6522,14 @@
          이름이 같으므로 «어디로 보냈는지»는 우리가 기억하고 있어야 한다. */
       if(toOwn) PJ_REV_OWN = pjRevParse(d.review);
       else      PJ_REV     = pjRevParse(d.review);
+      /* 🏷 [태그 쓰임새를 «그 답»에서 갱신한다] 「＋ 기타」로 적은 것이 3번째가 되면
+         그 자리에서 목록에 올라와야 한다 — 다시 부르지 않는다(왕복을 안 늘린다). */
+      if(d.revTags){
+        try {
+          var _u2 = JSON.parse(String(d.revTags));
+          if(_u2 && typeof _u2 === 'object') PJ_REV_USE = _u2;
+        } catch(e3){}
+      }
       pjRevDraw();
       pjRevMsg(okMsg || '저장됐습니다');
       /* 🔴 다음에 이 프로젝트를 다시 열 때 옛 값이 나오지 않게 캐시도 고친다 */
@@ -6319,7 +6561,11 @@
       var proj = PJ_REV_PROJ;
       if(!proj || typeof pjNotion !== 'function') return;
       /* 🔴 보낼 때의 «그 값»을 담아 둔다 — 응답이 오는 사이 대표가 또 고치실 수 있다 */
-      var snap = { lines: (PJ_REV.lines||[]), rate: PJ_REV.rate||'', tags: (PJ_REV.tags||[]) };
+      /* 🏷 2026-09-20 — 노션 「패턴」 칸에는 «줄에서 모인 것»이 간다(사람이 안 누른다).
+         🔴 [옛 프로젝트 태그도 같이 간다] `pjRevRoll_` 이 `rv.tags` 를 합쳐 준다 — 안 버린다.
+         🔴 [대표 칸은 여기 없다] 애초에 이 함수는 관리자 칸(`PJ_REV`)만 보낸다. */
+      var snap = { lines: (PJ_REV.lines||[]), rate: PJ_REV.rate||'',
+                   tags: pjRevRoll_(PJ_REV).map(function(o){ return o.t; }) };
       try {
         pjNotion('review', proj, snap, function(d){
           /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «말하지 않는다» — 엉뚱한 화면에 뜬다 */
@@ -6362,6 +6608,17 @@
         hit = el.getAttribute('data-pjrevrate'); if(hit !== null){ kind = 'rate'; break; }
         hit = el.getAttribute('data-pjrevdone'); if(hit !== null){ kind = 'done'; break; }
         hit = el.getAttribute('data-pjrevtag');  if(hit !== null){ kind = 'tag';  break; }
+        /* 🆕 2026-09-20 — 고치기 · 딱지 펼치기 · 거르기 · 줄 태그 · ＋ 기타 */
+        hit = el.getAttribute('data-pjrevedit');  if(hit !== null){ kind = 'edit';  break; }
+        hit = el.getAttribute('data-pjreved');    if(hit !== null){ kind = 'edok';  break; }
+        hit = el.getAttribute('data-pjrevedx');   if(hit !== null){ kind = 'edx';   break; }
+        hit = el.getAttribute('data-pjrevkopen'); if(hit !== null){ kind = 'kopen'; break; }
+        hit = el.getAttribute('data-pjrevfil');   if(hit !== null){ kind = 'fil';   break; }
+        hit = el.getAttribute('data-pjrevpick');  if(hit !== null){ kind = 'pick';  break; }
+        hit = el.getAttribute('data-pjrevetc');   if(hit !== null){ kind = 'etc';   break; }
+        hit = el.getAttribute('data-pjrevetcok'); if(hit !== null){ kind = 'etcok'; break; }
+        hit = el.getAttribute('data-pjrevltag');
+        if(hit !== null){ kind = 'ltag'; PJ_REV_KTMP = el.getAttribute('data-t') || ''; break; }
         /* 🔴💡 2026-09-13 — 줄의 종류. `hit` 은 «줄 번호», 무엇으로 정할지는 `data-k` */
         hit = el.getAttribute('data-pjrevkind');
         if(hit !== null){ kind = 'kind'; PJ_REV_KTMP = el.getAttribute('data-k') || ''; break; }
@@ -6382,7 +6639,75 @@
        🔴 [날짜는 «서버»가 찍는다] 화면이 보낸 날짜를 믿으면 폰 시계가 틀어졌을 때 그대로 들어간다.
           그래서 「켠다/끈다」만 보낸다(`on`). */
     if(kind === 'done') return pjRevSend({ rev: 'done', val: (PJ_REV.done ? '' : 'on') });
-    if(kind === 'kind') return pjRevSend({ rev: 'kind', idx: hit, val: PJ_REV_KTMP }, '', own);
+    if(kind === 'kind'){
+      /* 🔴 [고르고 나면 «펼침»을 닫는다] 안 닫으면 딱지로 안 돌아가 무엇이 고쳐졌는지 안 보인다 */
+      PJ_REV_PICK = '';
+      return pjRevSend({ rev: 'kind', idx: hit, val: PJ_REV_KTMP }, '', own);
+    }
+    /* ①🆕 ✎ 고치기 — 화면에서만 여닫는다(서버에 안 간다) */
+    if(kind === 'edit'){
+      PJ_REV_EDIT = pjRevKey_(own, parseInt(hit, 10));
+      PJ_REV_PICK = ''; PJ_REV_ASK = '';
+      pjRevDraw();
+      var _ed = document.getElementById('pjRevEd');
+      if(_ed){ _ed.focus(); try { _ed.setSelectionRange(_ed.value.length, _ed.value.length); } catch(e2){} }
+      return;
+    }
+    if(kind === 'edx'){ PJ_REV_EDIT = -1; pjRevDraw(); return; }
+    if(kind === 'edok'){
+      var _ta = document.getElementById('pjRevEd');
+      var _nv = _ta ? String(_ta.value || '').trim() : '';
+      if(!_nv){ pjRevMsg('내용이 비었습니다 — 지우시려면 ✕ 를 눌러주세요', 1); return; }
+      PJ_REV_EDIT = -1;
+      return pjRevSend({ rev: 'edit', idx: hit, text: _nv }, '고쳤습니다', own);
+    }
+    /* ② 딱지를 눌러 단추 셋을 펼친다 — 🔴 값은 «안» 건드린다 */
+    if(kind === 'kopen'){
+      var _kk = 'k' + pjRevKey_(own, parseInt(hit, 10));
+      PJ_REV_PICK = (PJ_REV_PICK === _kk) ? '' : _kk;
+      PJ_REV_EDIT = -1;
+      pjRevDraw(); return;
+    }
+    /* ③ 거르기 — 화면에서만. 같은 것을 다시 누르면 전체로 돌아온다 */
+    if(kind === 'fil'){
+      var _sl = own ? 'own' : 'mgr';
+      PJ_REV_FIL_[_sl] = (PJ_REV_FIL_[_sl] === hit) ? '' : hit;
+      PJ_REV_EDIT = -1; PJ_REV_PICK = ''; PJ_REV_ASK = '';
+      pjRevDraw(); return;
+    }
+    /* ④ 줄 태그 펼치기 / 고르기 / ＋ 기타 */
+    if(kind === 'pick'){
+      var _tk = 't' + pjRevKey_(own, parseInt(hit, 10));
+      PJ_REV_PICK = (PJ_REV_PICK === _tk) ? '' : _tk;
+      PJ_REV_EDIT = -1; PJ_REV_ASK = '';
+      pjRevDraw(); return;
+    }
+    if(kind === 'etc'){
+      var _ak = pjRevKey_(own, parseInt(hit, 10));
+      PJ_REV_ASK = (PJ_REV_ASK === _ak) ? '' : _ak;
+      pjRevDraw();
+      var _ei = document.getElementById('pjRevEtc'); if(_ei) _ei.focus();
+      return;
+    }
+    if(kind === 'etcok' || kind === 'ltag'){
+      var _li = parseInt(hit, 10);
+      var _R = own ? PJ_REV_OWN : PJ_REV;
+      var _ln = (_R.lines || [])[_li] || {};
+      var _g  = (Object.prototype.toString.call(_ln.g) === '[object Array]') ? _ln.g.slice() : [];
+      var _t;
+      if(kind === 'etcok'){
+        var _in = document.getElementById('pjRevEtc');
+        _t = _in ? String(_in.value || '').trim().slice(0, 20) : '';
+        if(!_t){ pjRevMsg('붙일 이름을 적어주세요', 1); return; }
+        if(_g.indexOf(_t) < 0) _g.push(_t);
+        PJ_REV_ASK = '';
+      }else{
+        _t = PJ_REV_KTMP;
+        var _at = _g.indexOf(_t);
+        if(_at >= 0) _g.splice(_at, 1); else _g.push(_t);
+      }
+      return pjRevSend({ rev: 'ltag', idx: _li, text: _g.join(',') }, '', own);
+    }
     if(kind === 'tag'){
       var has = (PJ_REV.tags || []).indexOf(hit) >= 0;
       var next = (PJ_REV.tags || []).slice();
@@ -6394,7 +6719,24 @@
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Enter' || e.isComposing) return;
     var t = e.target;
-    if(!t || (t.id !== 'pjRevTx' && t.id !== 'pjRevTxOwn')) return;
+    if(!t) return;
+    /* 🆕 「＋ 기타」 입력칸에서도 엔터로 붙인다 — 🔴 조합 중 엔터는 위에서 이미 걸렀다 */
+    if(t.id === 'pjRevEtc'){
+      e.preventDefault();
+      var b = document.querySelector('[data-pjrevetcok]');
+      if(b) b.click();
+      return;
+    }
+    /* 🔴 [고치는 글상자에서는 엔터가 «줄바꿈»이다] 여기서 저장으로 가로채면
+       여러 줄짜리 회고를 고칠 수 없다. ⌘/Ctrl+Enter 만 저장으로 받는다. */
+    if(t.id === 'pjRevEd'){
+      if(!(e.metaKey || e.ctrlKey)) return;
+      e.preventDefault();
+      var b2 = document.querySelector('[data-pjreved]');
+      if(b2) b2.click();
+      return;
+    }
+    if(t.id !== 'pjRevTx' && t.id !== 'pjRevTxOwn') return;
     e.preventDefault();
     pjRevAdd(t.id === 'pjRevTxOwn');
   });
