@@ -962,6 +962,8 @@
     .rpis .hd .dl{flex:none; border:none; background:none; cursor:pointer; color:#b9c2d0;
       font-size:13px; padding:0 2px}
     .rpis .hd .dl:hover{color:#c0392b}
+    /* 🎬 장비앱에서 «저절로» 올라온 것 — 사람이 적은 것과 한눈에 갈린다(지울 수도 없다) */
+    .rpis.auto{border-color:#f0d9a8; background:#fffdf6}
     /* 처리 경로 */
     .rprt{display:flex; gap:5px; flex-wrap:wrap; margin-top:7px}
     .rprt button{border:1px solid #dfe4ec; background:#fff; font:inherit; font-size:11.5px;
@@ -6954,6 +6956,24 @@
     PJ_RP_CAN = !!(d && d.canRp);
     PJ_RP = pjRpParse(d && d.report);
   }
+  /* 🎬 2026-09-21 — 소싱시트에서 «자동으로 올라오는» 파손·분실
+     🔴 [보고서를 열 때만 부른다] 소싱시트를 여는 데 2초쯤 든다(실측) —
+        프로젝트 화면 부트에 얹으면 모든 사람이 매번 그 2초를 낸다.
+     🔴 [«기다리게 하지 않는다»] 화면은 바로 열리고, 이 값은 오는 대로 그 칸만 다시 그린다. */
+  var PJ_RP_EQ = null;        /* null = 아직 안 받음 · [] = 받았는데 없음 */
+  var PJ_RP_EQ_ST = '';       /* '' | 'load' | 'err' */
+  function pjRpLoadEquip_(proj){
+    PJ_RP_EQ = null; PJ_RP_EQ_ST = 'load';
+    var u = FIELD_APP + '?action=projAdmin&act=rpequip&name='
+          + encodeURIComponent(proj) + appTok();
+    askCount(u, function(d){
+      /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «버린다» — 엉뚱한 장비가 뜬다 */
+      if(PJ_RP_PROJ !== proj) return;
+      if(d && d.ok){ PJ_RP_EQ = d.equip || []; PJ_RP_EQ_ST = ''; }
+      else { PJ_RP_EQ = null; PJ_RP_EQ_ST = 'err'; }
+      pjRpDraw();
+    }, 30000);
+  }
   function pjRpOpen(proj){
     if(!PJ_RP_CAN){
       alert('프로젝트 보고서는 「관리」 이상만 볼 수 있습니다.\n\n등급을 아직 못 받았다면 잠시 뒤 다시 눌러주세요.');
@@ -6962,6 +6982,7 @@
     PJ_RP_PROJ = proj || PJ_NOW;
     PJ_RP_OPEN = true;
     pjRpDraw();
+    pjRpLoadEquip_(PJ_RP_PROJ);
     var b = document.getElementById('pjRpBox');
     if(b) b.scrollIntoView({ behavior:'smooth', block:'start' });
   }
@@ -6977,8 +6998,15 @@
   }
   /* ⏳ 아직 안 끝난 일 — 「고르면 할 일이 생기고, 안 끝나면 계속 보인다」 */
   function pjRpTodo_(){
-    var n = 0, noWho = 0;
+    var n = 0, noWho = 0, noRoute = 0;
     var A = (PJ_RP && PJ_RP.act) || {};
+    /* 🔴🆕 [«경로를 안 고른 파손»이 제일 위험하다] 파손이 있는데 아무 방법도 안 고르면
+       할 일이 하나도 안 생겨 «안 끝난 것 0건»으로 조용히 넘어간다 —
+       그게 바로 *"거래처한테 늦게 전달해 청구하지 못했다"* 가 나는 자리다. */
+    (PJ_RP_EQ || []).forEach(function(eq){
+      var a = A['e' + String(eq.id || '')] || {};
+      if(!String(a.route || '')){ n++; noRoute++; }
+    });
     for(var k in A){
       if(!Object.prototype.hasOwnProperty.call(A, k)) continue;
       var a = A[k] || {}, R = PJ_RP_ROUTES[a.route];
@@ -6991,7 +7019,7 @@
     ((PJ_RP && PJ_RP.asks) || []).forEach(function(q){
       if(String((q && q.st) || '') !== 'done'){ n++; if(!String((q && q.who) || '').trim()) noWho++; }
     });
-    return { n: n, noWho: noWho };
+    return { n: n, noWho: noWho, noRoute: noRoute };
   }
 
   function pjRpDraw(){
@@ -7058,10 +7086,62 @@
        + '<div class="rprow"><input type="text" id="pjRpIs" maxlength="200" '
        + 'placeholder="예: 선바운스 5in1 그립헤드 파손 — 볼베어링 빠짐">'
        + '<button type="button" data-pjrp="issue">＋ 이슈 추가</button></div>';
+
+    /* 🎬🆕 2026-09-21 — 소싱시트에서 «자동으로 올라온» 파손·분실.
+       🔴 [사람이 다시 안 적는다] 현장에서 이미 고른 값이다 — 다시 적게 하면 그 마찰이 「안 적음」이 된다.
+       🔴 [«지울 수 없다»] 이건 기록이 아니라 «비추는 것»이다. 고치려면 현장 장비앱에서 고친다(§1). */
+    if(PJ_RP_EQ_ST === 'load'){
+      h += '<p class="fn" style="margin:2px 0 6px; font-size:11.5px; color:#8a93a3">'
+         + '🎬 장비에서 파손·분실을 불러오는 중… <b>(소싱시트를 여느라 2초쯤 걸립니다)</b></p>';
+    }else if(PJ_RP_EQ_ST === 'err'){
+      h += '<p class="fn" style="margin:2px 0 6px; font-size:11.5px; color:#c0392b">'
+         + '🔴 장비 목록을 못 불러왔습니다 — 아래에 직접 적으셔도 됩니다. '
+         + '<a href="#" data-pjrp="eqretry" style="color:#1a56c4">다시 시도</a></p>';
+    }else if(PJ_RP_EQ && PJ_RP_EQ.length){
+      h += '<p class="fn" style="margin:2px 0 6px; font-size:11.5px; color:#95601a">'
+         + '🎬 <b>장비에서 저절로 올라온 것 ' + PJ_RP_EQ.length + '건</b> — '
+         + '현장 장비앱에서 고른 값입니다. <b>여기서는 못 고칩니다</b>(고치려면 장비앱에서).</p>';
+      h += PJ_RP_EQ.map(function(eq){
+        var key = 'e' + String(eq.id || '');
+        var a = (R.act || {})[key] || { route:'', steps:[] };
+        var s = '<div class="rpis auto">'
+              + '<div class="hd"><span class="tx"><b>🎬 ' + pjEsc(String(eq.name || '')) + '</b>'
+              + (eq.what ? ' <span style="color:#c0392b">' + pjEsc(eq.what) + '</span>' : '')
+              + (eq.note ? '<span class="wd">📝 ' + pjEsc(eq.note) + '</span>' : '')
+              + '<span class="wd">' + pjEsc(String(eq.who || '—'))
+              + (eq.date ? ' · ' + pjEsc(eq.date) : '') + ' · 장비앱에서 옴</span>'
+              + '</span></div>';
+        s += '<div class="rprt">' + PJ_RP_ORDER.map(function(k){
+               var o = PJ_RP_ROUTES[k];
+               return '<button type="button" data-pjrprt="' + key + '" data-rt="' + k + '"'
+                    + (a.route === k ? ' class="on"' : '') + '>' + o.ic + ' ' + o.n + '</button>';
+             }).join('') + '</div>';
+        if(a.route && PJ_RP_ROUTES[a.route]){
+          var RT = PJ_RP_ROUTES[a.route];
+          s += '<div class="rpwhy">' + RT.why + '</div>';
+          if(RT.steps.length){
+            s += '<div class="rpst">' + RT.steps.map(function(nm, si){
+                   var st = (a.steps || [])[si] || {};
+                   return '<label class="' + (st.done ? 'done' : '') + '">'
+                        + '<input type="checkbox" data-pjrpst="' + key + '" data-si="' + si + '"'
+                        + (st.done ? ' checked' : '') + '>'
+                        + (st.done ? '✅ ' : '☐ ') + pjEsc(nm)
+                        + (st.done ? '<span class="d">' + pjEsc(String(st.w || '')) + ' · '
+                                   + pjEsc(String(st.d || '')) + '</span>' : '')
+                        + '</label>';
+                 }).join('') + '</div>';
+          }
+        }
+        return s + '</div>';
+      }).join('');
+    }else if(PJ_RP_EQ){
+      h += '<p class="fn" style="margin:2px 0 6px; font-size:11.5px; color:#1c6b46">'
+         + '✅ 장비에 <b>파손·분실이 없습니다</b>(소싱시트 기준).</p>';
+    }
+
     if(!(R.issues || []).length){
       h += '<p class="fn" style="margin:2px 0 0; font-size:11.5px; color:#8a93a3">'
-         + '아직 없습니다. 🟡 <b>장비앱에서 고른 파손·분실이 자동으로 올라오는 것은 아직 안 만들었습니다</b> — '
-         + '지금은 직접 적어주세요.</p>';
+         + '직접 적은 이슈는 아직 없습니다 — 장비 말고 다른 일(로케·일정·인력)은 위에 적어주세요.</p>';
     }
     h += (R.issues || []).map(function(it, i){
       var key = 'i' + i;
@@ -7144,7 +7224,9 @@
     h += '<div class="rptodo' + (td.n ? '' : ' ok') + '">'
        + (td.n
            ? '⏳ <b>아직 안 끝난 것 ' + td.n + '건</b>입니다 — 위 체크를 채우면 사라집니다.'
-             + (td.noWho ? ' 🔴 그중 <b>' + td.noWho + '건은 담당이 비어</b> 있습니다.' : '')
+             + (td.noRoute ? ' 🔴 그중 <b>' + td.noRoute + '건은 파손·분실인데 처리 방법을 아직 안 골랐습니다</b>'
+                             + ' — 이게 「거래처에 늦게 알려 청구를 놓치는」 자리입니다.' : '')
+             + (td.noWho ? ' 🔴 <b>' + td.noWho + '건은 담당이 비어</b> 있습니다.' : '')
            : '✅ 안 끝난 것이 없습니다.')
        + '</div>';
 
@@ -7209,6 +7291,11 @@
       /* 🔴 보낼 때의 «그 값»을 담아 둔다 — 답이 오는 사이 대표님이 또 고치실 수 있다 */
       var snap = PJ_RP ? JSON.parse(JSON.stringify(PJ_RP)) : null;
       if(!snap) return;
+      /* 🎬 [자동으로 올라온 파손·분실도 «같이» 보낸다] 시트에는 «저장하지 않는다» —
+         원본은 소싱시트다(§1). 다만 노션은 «비추는 곳»이라, 안 보내면
+         「무엇이 파손됐는지」 없이 처리 경로만 남아 읽을 수가 없다.
+         🔴 아직 안 받았으면(null) 그냥 안 보낸다 — 빈 배열을 보내면 「없음」으로 굳는다. */
+      if(PJ_RP_EQ && PJ_RP_EQ.length) snap.eq = PJ_RP_EQ;
       try {
         pjNotion('report', proj, snap, function(d){
           /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «말하지 않는다» — 엉뚱한 화면에 뜬다 */
@@ -7248,6 +7335,7 @@
     e.preventDefault();
     var v;
     if(kind === 'close'){ pjRpClose(); return; }
+    if(kind === 'eqretry'){ pjRpDraw(); pjRpLoadEquip_(PJ_RP_PROJ); return; }
     if(kind === 'sum'){
       v = document.getElementById('pjRpSum');
       return pjRpSend({ rp:'sum', text: v ? v.value : '' }, '요약을 저장했습니다');
