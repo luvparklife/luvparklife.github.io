@@ -1000,6 +1000,18 @@
     .rpdone .fn{flex-basis:100%; font-size:11px; color:#8a93a3}
     .rpmsg{font-size:11.5px; color:#8a93a3; margin-left:auto}
     .rpmsg.err{color:#c0392b; font-weight:700}
+    /* 🎬 2026-09-21 — 장비 반납 DB 표 (정상 반납분까지 전부 · 기본 접힘) */
+    .rpfullbtn{border:1px solid #dfe4ec; background:#f7f8fa; color:#4a5465; font:inherit;
+      font-size:12px; font-weight:700; padding:6px 12px; border-radius:8px; cursor:pointer; width:100%}
+    .rpfullbtn:hover{border-color:#9aa6b8}
+    .rpfulltbl{margin-top:8px; overflow-x:auto; border:1px solid #e2e6ee; border-radius:9px}
+    .rpfulltbl table{width:100%; border-collapse:collapse; font-size:12px}
+    .rpfulltbl th{background:#f7f8fa; text-align:left; padding:6px 8px; font-weight:800;
+      color:#4a5465; white-space:nowrap; border-bottom:1px solid #e2e6ee}
+    .rpfulltbl td{padding:5px 8px; border-bottom:1px solid #eef1f6; vertical-align:top}
+    .rpfulltbl tr:last-child td{border-bottom:none}
+    .rpfulltbl td.ok{color:#1c6b46}
+    .rpfulltbl td.ng{color:#c0392b; font-weight:700}
 
     /* 🐞 문제 제보 — 허브 전용 떠 있는 버튼 (2026-09-18 신설)
        ═══════════════════════════════════════════════════════════════
@@ -6970,6 +6982,11 @@
   var PJ_RP_EQ_ST = '';       /* '' | 'load' | 'err' */
   /* 🔧 2026-09-21 — 수리시트에서 «비춰오는» 상태. 🔴 원본은 수리시트다 — 여기서 못 고친다(§1). */
   var PJ_RP_REPAIR = null;
+  /* 🎬 2026-09-21 — 「장비 반납 DB (표)」 · 9/17 연습장 ⑨ 그대로.
+     🔴 [정상 반납분까지 «전부»] 위 파손·분실 이슈와 달리 이건 «빠진 것 없이 다 왔나» 확인용이다.
+     🔴 [기본은 접혀 있다] 줄이 많으면(수십~200) 펼쳐 보이면 화면이 길어진다 — 필요할 때만 편다. */
+  var PJ_RP_FULL = null;      /* 서버가 준 전체 목록 */
+  var PJ_RP_FULLOPEN = false; /* 펼쳤나 */
   function pjRpLoadEquip_(proj){
     PJ_RP_EQ = null; PJ_RP_EQ_ST = 'load';
     var u = FIELD_APP + '?action=projAdmin&act=rpequip&name='
@@ -6977,8 +6994,12 @@
     askCount(u, function(d){
       /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «버린다» — 엉뚱한 장비가 뜬다 */
       if(PJ_RP_PROJ !== proj) return;
-      if(d && d.ok){ PJ_RP_EQ = d.equip || []; PJ_RP_EQ_ST = ''; PJ_RP_REPAIR = d.repair || null; }
-      else { PJ_RP_EQ = null; PJ_RP_EQ_ST = 'err'; PJ_RP_REPAIR = null; }
+      if(d && d.ok){
+        PJ_RP_EQ = d.equip || []; PJ_RP_EQ_ST = '';
+        PJ_RP_REPAIR = d.repair || null; PJ_RP_FULL = d.full || [];
+      } else {
+        PJ_RP_EQ = null; PJ_RP_EQ_ST = 'err'; PJ_RP_REPAIR = null; PJ_RP_FULL = null;
+      }
       pjRpDraw();
     }, 30000);
   }
@@ -6989,6 +7010,7 @@
     }
     PJ_RP_PROJ = proj || PJ_NOW;
     PJ_RP_OPEN = true;
+    PJ_RP_FULLOPEN = false;      /* 🔴 프로젝트가 바뀌면 «접힌 채로» 새로 연다 */
     pjRpDraw();
     pjRpLoadEquip_(PJ_RP_PROJ);
     var b = document.getElementById('pjRpBox');
@@ -7222,6 +7244,35 @@
          + '</div></div>';
     }
 
+    /* ── 🎬 장비 반납 DB (표) — 정상 반납분까지 «전부» (2026-09-21) ──
+       🔴 [새로 입력받지 않는다] 현장 장비앱 「반납」 탭 값을 그대로 비춘다(9/17 연습장 ⑨ 그대로).
+       🔴 [기본은 접힌다] 줄이 많으면 화면이 길어진다 — 필요할 때만 편다. */
+    if(PJ_RP_FULL && PJ_RP_FULL.length){
+      h += '<div class="rpsec"><div class="t">🎬 장비 반납 DB — 전체 ' + PJ_RP_FULL.length + '건'
+         + '<span class="fn">새로 입력받지 않습니다 — 현장 장비앱 「반납」 탭 값을 그대로 보여줍니다. '
+         + '<b>여기서는 못 고칩니다.</b></span></div>'
+         + '<button type="button" class="rpfullbtn" data-pjrp="fulltoggle">'
+         + (PJ_RP_FULLOPEN ? '▲ 접기' : '▼ 펼쳐서 전부 보기 (' + PJ_RP_FULL.length + '건)') + '</button>';
+      if(PJ_RP_FULLOPEN){
+        h += '<div class="rpfulltbl"><table><thead><tr>'
+           + '<th>품목</th><th>수량</th><th>반납상태</th><th>반납담당</th><th>반납노트</th>'
+           + '</tr></thead><tbody>'
+           + PJ_RP_FULL.map(function(x){
+               var st = String(x.st || '—');
+               var ok = (st === '정상' || st === '반납완료');
+               return '<tr>'
+                    + '<td>' + pjEsc(String(x.name || '')) + '</td>'
+                    + '<td>' + pjEsc(String(x.qty || '')) + '</td>'
+                    + '<td class="' + (ok ? 'ok' : 'ng') + '">' + pjEsc(st) + '</td>'
+                    + '<td>' + pjEsc(String(x.who || '—')) + '</td>'
+                    + '<td>' + pjEsc(String(x.note || '')) + '</td>'
+                    + '</tr>';
+             }).join('')
+           + '</tbody></table></div>';
+      }
+      h += '</div>';
+    }
+
     /* ── ⑤ 실무자 확인 요청 ── */
     h += '<div class="rpsec"><div class="t">⑤ 🙋 실무자 확인 요청'
        + '<span class="fn">답을 받아야 하는 것 — 상태는 <b>「답 기다림 → 답함」 2단계</b>뿐입니다'
@@ -7387,6 +7438,7 @@
     var v;
     if(kind === 'close'){ pjRpClose(); return; }
     if(kind === 'eqretry'){ pjRpDraw(); pjRpLoadEquip_(PJ_RP_PROJ); return; }
+    if(kind === 'fulltoggle'){ PJ_RP_FULLOPEN = !PJ_RP_FULLOPEN; pjRpDraw(); return; }
     if(kind === 'sum'){
       v = document.getElementById('pjRpSum');
       return pjRpSend({ rp:'sum', text: v ? v.value : '' }, '요약을 저장했습니다');
