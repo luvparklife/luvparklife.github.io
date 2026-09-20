@@ -97,6 +97,11 @@ p{margin:7px 0}
 .wk.paint td.c{cursor:pointer}
 .wk.paint td.c:hover{outline:2px solid rgba(0,0,0,.28); outline-offset:-2px}
 .wk td.c.seld{box-shadow:inset 0 0 0 3px #2c2c2c; z-index:1}
+.wk tr.pastday td.d{color:#9a7a3a}
+.wk tr.empty td.d{color:#ccc}
+.wk.paint td.c.past{cursor:not-allowed}
+.wk.paint td.c.past:hover{outline:none}
+.wk td.c.past input{cursor:not-allowed}
 
 /* ── 하루 보기(폰) ── */
 .grid{background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; max-width:520px}
@@ -213,7 +218,8 @@ p{margin:7px 0}
 
 <div id="viewWeek">
   <div class="scroll"><table class="wk paint" id="wk"></table></div>
-  <p class="calcnote">오늘은 <b>굵은 줄</b>입니다. 나머지 13일은 <b>이미 저장된 실제 기록</b>입니다.
+  <p class="calcnote">오늘은 <b>굵은 줄</b>입니다. 📗 표시가 붙은 날은 <b>에버노트 원본 기록(읽기 전용)</b>입니다 — 아직
+  칠 안 한 날은 새로 칠할 수 있습니다.
   <br>폰에서는 옆으로 밀어서 봅니다.</p>
 </div>
 
@@ -312,8 +318,8 @@ p{margin:7px 0}
   <button id="bPastLoad" class="pri" style="border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:9px;padding:7px 13px;font:inherit;font-weight:800;cursor:pointer">🔎 보기</button>
 </div>
 <p class="calcnote" id="pastStatus">년·월(또는 분기)을 고르고 [🔎 보기]를 누르세요.</p>
-<div class="scroll"><table class="tb" id="pastTable" hidden>
-  <thead><tr><th>날짜</th><th>요일</th><th>시간</th><th>활동</th><th>색</th><th>카테고리</th><th>그룹</th></tr></thead>
+<div class="scroll"><table class="wk" id="pastTable" hidden>
+  <thead><tr id="pastHead"></tr></thead>
   <tbody id="pastBody"></tbody>
 </table></div>
 </div>
@@ -464,6 +470,10 @@ p{margin:7px 0}
   var HOURS=[]; for(var h=6;h<=29;h++){ HOURS.push(h%24); }   /* 6시~다음날5시, 24칸(하루 전체) — 2026-09-20 확장 */
   function hlabel(h){ return (h<10?'0':'')+h+':00'; }
   var DAYS=14;   /* 0 = 오늘 — 2026-09-20 7일→14일(2주) 기본 보기로 확장 */
+  /* 🔴 2026-09-20 — 「기록」탭(오늘 쓰는 새 시스템)에 그 날 자료가 없으면 서버가 과거기록(에버노트)
+     원본을 대신 채워 준다(tsLoadWeek_). 그런 날은 읽기전용 · 원본 색 그대로 보여준다.
+     DAY_PAST[d] = 그 날이 과거기록에서 채워진 날인지. PAST_COLORS = hex→{label,group} */
+  var DAY_PAST=[], PAST_COLORS={};
 
   function blank(){ return HOURS.map(function(h){ return {h:h, t:'', c:null}; }); }
   var data=[]; for(var dd0=0; dd0<DAYS; dd0++) data.push(blank());
@@ -746,24 +756,28 @@ p{margin:7px 0}
     for(var d=0; d<DAYS; d++){
       (function(d){
         var dt=new Date(now.getTime()-d*86400000);
-        var tr=document.createElement('tr'); if(d===0) tr.className='today';
+        var past=!!DAY_PAST[d];
+        var tr=document.createElement('tr'); if(d===0) tr.className='today'; if(past) tr.className=(tr.className+' pastday').trim();
         var td=document.createElement('td'); td.className='d';
-        td.textContent=(dt.getMonth()+1)+'/'+dt.getDate()+' '+'일월화수목금토'[dt.getDay()]+(d===0?' ←오늘':'');
+        td.textContent=(dt.getMonth()+1)+'/'+dt.getDate()+' '+'일월화수목금토'[dt.getDay()]+(d===0?' ←오늘':(past?' 📗':''));
+        if(past) td.title='에버노트 원본 기록(읽기 전용)';
         tr.appendChild(td);
         HOURS.forEach(function(h,i){
           var cell=data[d][i];
-          var c=document.createElement('td'); c.className='c';
-          var inp=document.createElement('input'); inp.type='text'; inp.value=cell.t;
+          var c=document.createElement('td'); c.className='c'+(past?' past':'');
+          var inp=document.createElement('input'); inp.type='text'; inp.value=cell.t; inp.readOnly=past;
           var ime=false;
           inp.addEventListener('compositionstart',function(){ ime=true; });
           inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; });
           inp.addEventListener('input',function(){ cell.t=inp.value; });
           inp.addEventListener('blur',function(){
+            if(cell.past) return;
             cell.t=inp.value; inp.style.pointerEvents='';
             autoColor(cell); refreshCell(d,i); totals();
           });
           c.appendChild(inp);
           c.addEventListener('mousedown', function(e){
+            if(cell.past) return;
             if(mode==='type'||typing) return;
             if(e.button!==0) return;
             e.preventDefault();
@@ -775,16 +789,18 @@ p{margin:7px 0}
             } else startPaint(d,i);
           });
           c.addEventListener('contextmenu', function(e){
+            if(cell.past) return;
             e.preventDefault(); miniOpen(e.clientX, e.clientY, [{d:d,i:i}]);
           });
           c.addEventListener('mouseenter', function(){
-            if(!dragging) return;
+            if(!dragging || cell.past) return;
             if(pickMode==='cell'){
               if(!didDrag){ didDrag=true; miniClose(); }
               if(d===pend.d) extendSelection(pend.d, pend.i, i);
             } else applyPaint(d,i,dragMode);
           });
           c.addEventListener('dblclick', function(){
+            if(cell.past) return;
             inp.style.pointerEvents='auto'; inp.focus(); inp.select();
           });
           cell.el=c; cell.inp=inp;
@@ -850,6 +866,7 @@ p{margin:7px 0}
   }
   function applyPaint(d,i,m){
     var cell=data[d][i];
+    if(cell.past) return;   /* 지난 기록(에버노트 원본)은 못 칠한다 */
     cell.c = (m==='erase') ? null : brush;
     if(cell.t.trim() && cell.c) memory[key(cell.t)]=cell.c;
     refreshCell(d,i); totals();
@@ -862,7 +879,26 @@ p{margin:7px 0}
   }
 
   function refreshCell(d,i){
-    var cell=data[d][i], C=cell.c?CMAP[cell.c]:null;
+    var cell=data[d][i];
+    if(cell.past){
+      var hex=cell.c||'', info=hex?PAST_COLORS[hex]:null;
+      if(cell.el){
+        cell.el.style.background = hex||'';
+        if(hex && isDark(hex)) cell.el.classList.add('dark'); else cell.el.classList.remove('dark');
+        cell.el.title = '(지난 기록) '+(cell.t||'')+(info?(' · '+info.label):'');
+        if(cell.inp) cell.inp.value=cell.t;
+      }
+      if(d===0 && cell.el2){
+        cell.el2.style.background = hex||'';
+        if(hex && isDark(hex)) cell.el2.classList.add('dark'); else cell.el2.classList.remove('dark');
+        if(cell.tag2){ cell.tag2.textContent='지난 기록'; cell.tag2.style.display=hex?'':'none'; }
+        if(cell.x2) cell.x2.style.display='none';
+        if(cell.pk2) cell.pk2.textContent='🔒';
+        if(cell.inp2) cell.inp2.value=cell.t;
+      }
+      return;
+    }
+    var C=cell.c?CMAP[cell.c]:null;
     var hide = C && C.id==='slp' && !useSleep();
     if(hide) C=null;
     if(cell.el){
@@ -1031,13 +1067,25 @@ p{margin:7px 0}
       setSaveStatus('🔴 저장 실패 — '+((err&&err.error)||'알 수 없음')+' (다시 시도하려면 [지금 바로 저장])');
     });
   }
+  /* 🔴 2026-09-20 — 1.2초 대기 «중»에 창이 닫히거나 숨겨지면(탭 전환·닫기·폰 홈버튼) 그 저장이
+     안 나갈 수 있었다. 숨겨지는 «순간» 밀린 저장이 있으면 기다리지 말고 바로 내보낸다.
+     (beforeunload 대신 visibilitychange/pagehide를 쓴다 — 폰 브라우저에서 더 안정적으로 온다) */
+  function flushPendingSave(){
+    if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
+    var json=JSON.stringify(cellsForSave());
+    if(json!==lastSavedJSON) doSave(json);
+  }
+  window.addEventListener('pagehide', flushPendingSave);
+  document.addEventListener('visibilitychange', function(){ if(document.hidden) flushPendingSave(); });
   function loadFromServer(cb){
     setSaveStatus('불러오는 중…');
     tsCall('tsLoad', {date: todayDateStr()}, function(res){
+      PAST_COLORS = res.colors || {};
+      DAY_PAST = res.days.map(function(day){ return !!day.past; });
       data = res.days.map(function(day){
         return HOURS.map(function(h, i){
           var c=day.cells[i]||{};
-          return {h:h, t:c.t||'', c:c.c||null};
+          return {h:h, t:c.t||'', c:c.c||null, past:!!day.past};
         });
       });
       lastSavedJSON = JSON.stringify(cellsForSave());
@@ -1045,7 +1093,7 @@ p{margin:7px 0}
       cb && cb();
     }, function(err){
       setSaveStatus('🔴 서버에서 못 불러왔습니다('+((err&&err.error)||'')+') — 빈 화면으로 시작합니다');
-      data=[]; for(var d=0;d<DAYS;d++) data.push(blank());
+      data=[]; DAY_PAST=[]; for(var d=0;d<DAYS;d++){ data.push(blank()); DAY_PAST.push(false); }
       lastSavedJSON = JSON.stringify(cellsForSave());
       cb && cb();
     });
@@ -1135,23 +1183,38 @@ p{margin:7px 0}
     function syncMode(){ mSel.disabled=!rM.checked; qSel.disabled=rM.checked; }
     rM.addEventListener('change', syncMode); rQ.addEventListener('change', syncMode); syncMode();
 
+    /* 🔴 2026-09-20 — 목록이 아니라 «날짜×시간 그리드»로 그린다(대표 지시).
+       위 ①의 주간 그리드와 같은 HOURS·hlabel을 그대로 써서 두 표가 같은 모양으로 보인다. */
     document.getElementById('bPastLoad').onclick=function(){
-      var status=document.getElementById('pastStatus'), table=document.getElementById('pastTable'), body=document.getElementById('pastBody');
+      var status=document.getElementById('pastStatus'), table=document.getElementById('pastTable'),
+          head=document.getElementById('pastHead'), body=document.getElementById('pastBody');
       status.textContent='불러오는 중…'; table.hidden=true;
       var params={year: ySel.value};
       if(rM.checked) params.month=mSel.value; else params.quarter=qSel.value;
       tsCall('tsLoadPast', params, function(res){
-        body.innerHTML='';
-        if(!res.rows.length){ status.textContent='이 기간엔 기록이 없습니다.'; return; }
-        res.rows.forEach(function(r){
-          var tr=document.createElement('tr');
-          var hex=r.colorHex||''; var info=res.colors[hex]||{};
-          var chip = hex ? '<span class="chip" style="background:'+hex+'"></span> ' : '';
-          tr.innerHTML='<td>'+r.date+'</td><td>'+(r.weekday||'')+'</td><td>'+(r.start||'')+'~'+(r.end||'')+' ('+(r.hours||'')+'h)</td>'
-            +'<td>'+(r.text||'')+'</td><td>'+chip+(info.label||hex)+'</td><td>'+(r.category||'')+'</td><td>'+(r.group||'')+'</td>';
+        head.innerHTML=''; body.innerHTML='';
+        var th0=document.createElement('th'); th0.className='dh'; head.appendChild(th0);
+        HOURS.forEach(function(h){ var th=document.createElement('th'); th.textContent=hlabel(h).replace(':00',''); head.appendChild(th); });
+        var withData=0;
+        res.days.forEach(function(day){
+          if(day.has) withData++;
+          var tr=document.createElement('tr'); if(!day.has) tr.className='empty';
+          var dt=new Date(day.date+'T00:00:00');
+          var td0=document.createElement('td'); td0.className='d';
+          td0.textContent=(dt.getMonth()+1)+'/'+dt.getDate()+' '+'일월화수목금토'[dt.getDay()];
+          tr.appendChild(td0);
+          day.cells.forEach(function(c){
+            var td=document.createElement('td'); td.className='c';
+            var hex=c.c||''; var info=hex?(res.colors[hex]||{}):null;
+            if(hex){ td.style.background=hex; if(isDark(hex)) td.classList.add('dark'); }
+            td.title=(c.t||'')+(info&&info.label?(' · '+info.label):'');
+            tr.appendChild(td);
+          });
           body.appendChild(tr);
         });
-        status.textContent=res.rows.length+'건 · 원본 색 그대로 표시했습니다(수정 안 됨).';
+        status.textContent = withData
+          ? ('이 기간 '+res.days.length+'일 중 기록이 있는 날 '+withData+'일 · 원본 색 그대로(수정 안 됨)')
+          : '이 기간엔 기록이 없습니다.';
         table.hidden=false;
       }, function(err){
         status.textContent='🔴 못 불러왔습니다 — '+((err&&err.error)||'알 수 없음');
