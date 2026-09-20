@@ -1064,6 +1064,24 @@
         </div>
       </a>
 
+      <!-- ⏱ 시간표 기록 (2026-09-20 신설)
+           · 허브 통행증(data-token)을 안 쓴다 — 이 앱은 «자기 자신의» 구글 로그인을 갖고 있어서
+             (Google Identity Services + 서버가 구글에 직접 물어 확인), 대표님 계정이 아니면
+             앱 화면 자체가 안 뜬다. 카드를 감추는 건 허브 UX일 뿐 자물쇠는 앱 서버가 건다.
+           🔴 2026-09-20 21:17 다른 창이 자기 변경분을 올리며 이 카드를 실수로 지웠다가
+             21:35 다시 넣음 — 두 창이 같은 index.html을 각자 편집 중이라 생긴 충돌(§3-0-D⑥) -->
+      <a class="card" href="https://luvparklife.github.io/시간표.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">⏱</div>
+          <div class="body">
+            <div class="title">시간표 기록</div>
+            <div class="desc">시간을 색칠해 기록 · 2주 보기 · 지난 기록도 확인</div>
+            <div class="note">구글 로그인 후 대표님만 씁니다</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+
       <a class="card" href="pa-claude://run">
         <div class="row">
           <div class="icon">🅰️</div>
