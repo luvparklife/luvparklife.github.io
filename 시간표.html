@@ -34,21 +34,6 @@ p{margin:7px 0}
   font:inherit; font-size:13.5px; font-weight:800; cursor:pointer; color:var(--sub); border-bottom:0}
 .tabs button.on{background:var(--ink); color:#fff; border-color:var(--ink)}
 
-/* ── 붓 팔레트 — 스크롤해도 따라온다 ── */
-.brushbox{background:var(--card); border:1px solid var(--line); border-radius:0 12px 12px 12px; padding:10px 12px;
-  margin:0 0 10px; position:sticky; top:0; z-index:40; box-shadow:0 3px 10px rgba(0,0,0,.06)}
-.favrow{display:flex; flex-wrap:wrap; gap:6px; align-items:center}
-.favrow .fav{border:2px solid transparent; border-radius:10px; padding:9px 12px; cursor:pointer;
-  font:inherit; font-size:13px; font-weight:800; min-width:96px; line-height:1.3; position:relative}
-.favrow .fav.on{border-color:var(--ink); box-shadow:0 0 0 2px #fff inset}
-.favrow .fav small{display:block; font-weight:600; font-size:10px; opacity:.85}
-.kbd{position:absolute; top:3px; right:5px; font-size:9px; font-weight:800; opacity:.75;
-  background:rgba(255,255,255,.55); border-radius:4px; padding:0 3px; color:#222}
-.sw button{position:relative}
-.more{border:1px dashed var(--line)!important; background:#fff!important; color:var(--sub)!important;
-  font-size:11.5px!important; min-width:74px!important}
-#allPal{display:none; margin-top:9px; border-top:1px dashed var(--line); padding-top:8px}
-#allPal.open{display:block}
 .sleeprow{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:9px;
   border-top:1px dashed var(--line); padding-top:8px; font-size:12px; color:var(--sub)}
 .sleeprow select{font:inherit; font-size:12px; padding:3px 6px; border:1px solid var(--line); border-radius:6px}
@@ -65,20 +50,6 @@ p{margin:7px 0}
 #mini .mdel{grid-column:1/-1; background:#fff!important; color:var(--warn)!important; border-style:dashed!important}
 #mini button.hover{border-color:var(--ink); border-width:2px; transform:scale(1.06);
   box-shadow:0 3px 10px rgba(0,0,0,.28); z-index:1}
-.modes{display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center}
-.modes button{border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 11px;
-  font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; color:var(--sub)}
-.modes button.on{background:var(--ink); color:#fff; border-color:var(--ink)}
-.grp{margin-top:9px}
-.grpname{font-size:11.5px; font-weight:800; color:var(--sub); margin-bottom:4px}
-.sw{display:flex; flex-wrap:wrap; gap:6px}
-.sw button{border:2px solid transparent; border-radius:9px; padding:7px 10px; cursor:pointer;
-  font:inherit; font-size:12px; font-weight:700; min-width:70px; text-align:center; line-height:1.35}
-.sw button.on{border-color:var(--ink); box-shadow:0 0 0 2px #fff inset}
-.sw button small{display:block; font-weight:600; font-size:10px; opacity:.82}
-.brushnow{font-size:12.5px; color:var(--sub); margin-top:11px; border-top:1px dashed var(--line); padding-top:8px}
-.brushnow b{color:var(--ink)}
-
 /* ── 주간 그리드 ── */
 .wk{border-collapse:collapse; background:var(--card); table-layout:fixed}
 .wk th,.wk td{border:1px solid var(--line); padding:0; text-align:center}
@@ -93,14 +64,10 @@ p{margin:7px 0}
 .wk td.c.dark input{color:#fff}
 .wk tr.today td.d{color:var(--warn)}
 .wk tr.today td{border-top:2px solid var(--ink); border-bottom:2px solid var(--ink)}
-.wk.paint td.c input{pointer-events:none}
-.wk.paint td.c{cursor:pointer}
-.wk.paint td.c:hover{outline:2px solid rgba(0,0,0,.28); outline-offset:-2px}
 .wk td.c.seld{box-shadow:inset 0 0 0 3px #2c2c2c; z-index:1}
 .wk tr.pastday td.d{color:#9a7a3a}
 .wk tr.empty td.d{color:#ccc}
-.wk.paint td.c.past{cursor:not-allowed}
-.wk.paint td.c.past:hover{outline:none}
+.wk td.c.past{cursor:not-allowed}
 .wk td.c.past input{cursor:not-allowed}
 
 /* ── 하루 보기(폰) ── */
@@ -122,6 +89,9 @@ p{margin:7px 0}
 .hr.dark input::placeholder{color:rgba(255,255,255,.55)}
 .hr.dark .pk,.hr.dark .xx{background:rgba(255,255,255,.22)}
 .hr.seld{box-shadow:inset 0 0 0 3px #2c2c2c}
+.hr.past .hh{color:#9a7a3a}
+.hr.past input{cursor:not-allowed}
+.hr .pk:disabled{opacity:.4; cursor:not-allowed}
 
 /* ── 합계 ── */
 .tot{display:grid; grid-template-columns:repeat(auto-fit,minmax(134px,1fr)); gap:8px; margin:10px 0}
@@ -177,10 +147,10 @@ p{margin:7px 0}
 <p class="sp">색을 칠하면 몇 초 뒤 구글시트에 자동 저장됩니다. 노션·아침보고서 연동은 다음 단계입니다.</p>
 
 <div class="note">
-  🎨 <b>칸을 누르면 즉시 색판</b>이 뜹니다. <b>누른 채 원하는 색 위로 밀어서 손을 떼면</b> 그 색이 골라집니다(이모지 반응처럼).
-  그냥 <b>톡 누르기만</b> 해도 색판이 열려 있으니 이어서 클릭해도 됩니다. 숫자키 1~9로도 되고, <b>맨 위 넓은 칸이 방금 쓴 색</b>입니다.
-  <br>🆕 <b>여러 칸을 한 번에 칠하려면(주간 보기)</b> — 첫 칸을 누른 채 옆으로 쭉 밀면 지나간 칸들이 선택되고,
-  손을 떼면 색판이 뜨고 고른 색이 <b>전부에 한 번에</b> 적용됩니다(촬영 6시간을 한 번에).
+  🖱 <b>왼쪽 클릭 = 그 칸에 글자 입력.</b> 칸을 누르면 바로 커서가 생겨 타이핑할 수 있습니다.
+  <br>🎨 <b>오른쪽 클릭 = 색판</b>이 그 칸에 뜹니다. <b>오른쪽 클릭한 채로 옆으로 밀면</b> 지나간 칸들이 함께 선택되고,
+  손을 떼면 고른 색이 <b>전부에 한 번에</b> 적용됩니다(촬영 6시간을 한 번에). 숫자키 1~9로도 색을 바로 고를 수 있습니다.
+  <br>⌨️ <b>방향키로 칸을 옮겨 다닙니다</b> — ↑↓ 는 위·아래 날짜로, ←→ 는 (글자 맨 끝/맨 앞에서) 옆 시간으로.
   <br><span style="color:#6b6b6b">글자만 쳐도 색이 저절로 칠해집니다 — 「운동」→초록, 「티비」→빨강.</span>
 </div>
 
@@ -193,31 +163,15 @@ p{margin:7px 0}
   <button id="tDay">📱 하루 (폰)</button>
 </div>
 
-<div class="brushbox">
-  <div class="modes">
-    <button id="mPaint" class="on">🖌 칠하기</button>
-    <button id="mType">⌨️ 글자 쓰기</button>
-    <button id="pCell" class="on">🅐 눌러서 밀어 놓기</button>
-    <button id="pBrush">🅑 붓 방식</button>
-    <span style="font-size:11.5px;color:#6b6b6b">방금 쓴 색: <b id="brushNow">아직 안 고름</b></span>
-  </div>
-</div>
 <div id="mini"><div class="mhead" id="miniHead"></div><div class="mrow" id="miniRow"></div></div>
 
-<div class="note" style="margin-top:8px">
-  <span id="pickHow">🅐 칸을 누르면 즉시 색판이 뜹니다. 누른 채 밀어서 원하는 색 위에서 손을 떼면 그 색이 골라집니다.</span>
-</div>
-<div id="brushPal" hidden>
-  <div class="favrow" id="fav"></div>
-  <div id="allPal"></div>
-</div>
 <div class="sleeprow">
   😴 수면 표시 — 기상 <select id="wake"></select> · 취침 <select id="bed"></select>
   <span style="font-size:11px">(노션 연동 전이라 지금은 여기서 고릅니다. 다음 단계에서 노션의 실제 기상·취침 시각을 자동으로 읽어옵니다)</span>
 </div>
 
 <div id="viewWeek">
-  <div class="scroll"><table class="wk paint" id="wk"></table></div>
+  <div class="scroll"><table class="wk" id="wk"></table></div>
   <p class="calcnote">오늘은 <b>굵은 줄</b>입니다. 📗 표시가 붙은 날은 <b>에버노트 원본 기록(읽기 전용)</b>입니다 — 아직
   칠 안 한 날은 새로 칠할 수 있습니다.
   <br>폰에서는 옆으로 밀어서 봅니다.</p>
@@ -479,8 +433,9 @@ p{margin:7px 0}
   var data=[]; for(var dd0=0; dd0<DAYS; dd0++) data.push(blank());
   var today=function(){ return data[0]; };
 
-  var brush=null, mode='color', memory={}, dragging=false, dragMode='paint', typing=false;
-  var pickMode='cell', didDrag=false, pend=null;
+  /* 🔴 2026-09-20 — 왼쪽=글자/오른쪽=색으로 고정하면서 모드 전환(칠하기·글자쓰기·붓방식)이 필요 없어져 뺐다.
+     brush는 이제 «마지막으로 고른 색»만 기억해 오른쪽 클릭 색판 맨 위에 빠른 버튼으로 보여준다. */
+  var brush=null, memory={}, dragging=false, didDrag=false, pend=null;
 
   document.addEventListener('mousemove', function(e){
     var m=document.getElementById('mini');
@@ -493,7 +448,7 @@ p{margin:7px 0}
     for(var k2=0;k2<btns.length;k2++) btns[k2].classList.toggle('hover', btns[k2]===hit);
   });
   document.addEventListener('mouseup', function(e){
-    if(pickMode==='cell' && dragging){
+    if(dragging){
       if(didDrag && selection.length>1){
         miniOpen(e.clientX, e.clientY, selection.slice());
       } else if(!didDrag){
@@ -532,6 +487,7 @@ p{margin:7px 0}
   function applyToTargets(targets, colorId){
     targets.forEach(function(t){
       var cell=data[t.d][t.i];
+      if(cell.past) return;
       cell.c=colorId;
       if(cell.t.trim()) memory[key(cell.t)]=colorId;
       refreshCell(t.d, t.i);
@@ -539,7 +495,7 @@ p{margin:7px 0}
     totals();
   }
   function clearTargets(targets){
-    targets.forEach(function(t){ data[t.d][t.i].c=null; refreshCell(t.d, t.i); });
+    targets.forEach(function(t){ if(data[t.d][t.i].past) return; data[t.d][t.i].c=null; refreshCell(t.d, t.i); });
     totals();
   }
 
@@ -569,61 +525,8 @@ p{margin:7px 0}
     ids.sort(function(a,b){ return (cnt[b]||0)-(cnt[a]||0); });
     return ids;
   }
-  function palette(){
-    var fav=document.getElementById('fav'); fav.innerHTML='';
-    var top=usedTop().slice(0,6);
-    top.forEach(function(id,i){ fav.appendChild(bigSwatch(CMAP[id], i+1)); });
-    var more=document.createElement('button'); more.type='button'; more.className='fav more';
-    more.textContent='＋ 전체 색';
-    more.onclick=function(){
-      var p=document.getElementById('allPal');
-      p.className = (p.className==='open') ? '' : 'open';
-      more.textContent = (p.className==='open') ? '✖ 접기' : '＋ 전체 색';
-    };
-    fav.appendChild(more);
-
-    var box=document.getElementById('allPal'); var openState=box.className;
-    box.innerHTML='';
-    ['삶','업무','촬영','쉼','낭비'].forEach(function(g){
-      var list=COLORS.filter(function(c){ return c.grp===g; });
-      if(!list.length) return;
-      var wrap=document.createElement('div'); wrap.className='grp';
-      var t=document.createElement('div'); t.className='grpname'; t.textContent=GRPNAME[g];
-      wrap.appendChild(t);
-      var d=document.createElement('div'); d.className='sw';
-      list.forEach(function(c){
-        var k=PICK.indexOf(c.id);
-        d.appendChild(swatch(c, c.nm, NOTE[c.id]||'', k>=0?k+1:null));
-      });
-      wrap.appendChild(d); box.appendChild(wrap);
-    });
-    box.className=openState;
-  }
-  function setBrush(id){
-    var c=CMAP[id]; if(!c) return;
-    brush=id; palette();
-    document.getElementById('brushNow').textContent=c.nm+' — '+(NOTE[c.id]||'')+' ('+c.cat+' '+c.val+')';
-  }
-  function bigSwatch(c, num){
-    var b=document.createElement('button'); b.type='button'; b.className='fav'+(brush===c.id?' on':'');
-    b.style.background=c.hex; b.style.color=isDark(c.hex)?'#fff':'#222';
-    b.appendChild(document.createTextNode(NOTE[c.id]||c.nm));
-    var s=document.createElement('small'); s.textContent=c.nm+' · '+c.val; b.appendChild(s);
-    var k=PICK.indexOf(c.id);
-    if(k>=0){ var kb=document.createElement('span'); kb.className='kbd'; kb.textContent=k+1; b.appendChild(kb); }
-    b.onclick=function(){ setBrush(c.id); };
-    return b;
-  }
-  function swatch(c, title, sub, num){
-    var b=document.createElement('button'); b.type='button';
-    b.style.background=c.hex; b.style.color=isDark(c.hex)?'#fff':'#222';
-    b.appendChild(document.createTextNode(title));
-    var s=document.createElement('small'); s.textContent=sub; b.appendChild(s);
-    if(num){ var kb=document.createElement('span'); kb.className='kbd'; kb.textContent=num; b.appendChild(kb); }
-    if(brush===c.id) b.className='on';
-    b.onclick=function(){ setBrush(c.id); };
-    return b;
-  }
+  /* 방금 고른 색만 기억해 둔다 — 오른쪽 클릭 색판 맨 위 빠른 버튼(miniOpen)에 쓰인다 */
+  function setBrush(id){ if(CMAP[id]) brush=id; }
 
   document.addEventListener('keydown', function(e){
     var t=e.target && e.target.tagName;
@@ -632,6 +535,34 @@ p{margin:7px 0}
     var n=parseInt(e.key,10);
     if(n>=1 && n<=9 && PICK[n-1]){ e.preventDefault(); setBrush(PICK[n-1]); }
   });
+
+  /* 🔴 2026-09-20 대표 지시 — 방향키로 칸 이동. ←→ 는 «글자 끝에 있을 때만» 옆 칸으로 넘어가서
+     (그 전엔 그냥 글자 커서 이동) 한 글자 안에서 오가는 것과 안 부딪힌다. ↑↓ 는 한 줄짜리 입력칸이라
+     텍스트 커서와 겹칠 일이 없어 곧바로 위·아래(주간)/이전·다음시간(하루) 칸으로 옮긴다. */
+  document.addEventListener('keydown', function(e){
+    var el=e.target;
+    if(!el || el.tagName!=='INPUT' || !el.__pos) return;
+    if(e.metaKey||e.ctrlKey||e.altKey||e.shiftKey) return;
+    var pos=el.__pos, target=null;
+    if(pos.view==='week'){
+      if(e.key==='ArrowUp') target=cellInput_(pos.d-1, pos.i);
+      else if(e.key==='ArrowDown') target=cellInput_(pos.d+1, pos.i);
+      else if(e.key==='ArrowLeft' && el.selectionStart===0 && el.selectionEnd===0) target=cellInput_(pos.d, pos.i-1);
+      else if(e.key==='ArrowRight' && el.selectionStart===el.value.length && el.selectionEnd===el.value.length) target=cellInput_(pos.d, pos.i+1);
+    } else if(pos.view==='day'){
+      if(e.key==='ArrowUp') target=dayInput_(pos.i-1);
+      else if(e.key==='ArrowDown') target=dayInput_(pos.i+1);
+    }
+    if(target){ e.preventDefault(); target.focus(); target.select(); }
+  });
+  function cellInput_(d, i){
+    if(d<0 || d>=DAYS || i<0 || i>=HOURS.length) return null;
+    return data[d][i].inp || null;
+  }
+  function dayInput_(i){
+    if(i<0 || i>=HOURS.length) return null;
+    return data[0][i].inp2 || null;
+  }
 
   function miniOpen(x,y,targets){
     var m=document.getElementById('mini'), row=document.getElementById('miniRow');
@@ -766,42 +697,32 @@ p{margin:7px 0}
           var cell=data[d][i];
           var c=document.createElement('td'); c.className='c'+(past?' past':'');
           var inp=document.createElement('input'); inp.type='text'; inp.value=cell.t; inp.readOnly=past;
+          inp.__pos={d:d, i:i, view:'week'};
           var ime=false;
           inp.addEventListener('compositionstart',function(){ ime=true; });
           inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; });
           inp.addEventListener('input',function(){ cell.t=inp.value; });
           inp.addEventListener('blur',function(){
             if(cell.past) return;
-            cell.t=inp.value; inp.style.pointerEvents='';
+            cell.t=inp.value;
             autoColor(cell); refreshCell(d,i); totals();
           });
           c.appendChild(inp);
+          /* 🔴 2026-09-20 — 왼쪽 클릭은 «그냥 둔다»(브라우저 기본 동작 = input 포커스 = 글자 입력).
+             오른쪽 클릭(누르기·끌기·떼기)만 색상을 다룬다. */
           c.addEventListener('mousedown', function(e){
-            if(cell.past) return;
-            if(mode==='type'||typing) return;
-            if(e.button!==0) return;
+            if(cell.past || e.button!==2) return;
             e.preventDefault();
-            if(pickMode==='cell'){
-              dragging=true; didDrag=false; dragMode='paint';
-              pend={d:d, i:i, x:e.clientX, y:e.clientY};
-              selection=[]; clearSelectionVisual();
-              miniOpen(e.clientX, e.clientY, [{d:d,i:i}]);
-            } else startPaint(d,i);
+            dragging=true; didDrag=false;
+            pend={d:d, i:i};
+            selection=[]; clearSelectionVisual();
+            miniOpen(e.clientX, e.clientY, [{d:d,i:i}]);
           });
-          c.addEventListener('contextmenu', function(e){
-            if(cell.past) return;
-            e.preventDefault(); miniOpen(e.clientX, e.clientY, [{d:d,i:i}]);
-          });
+          c.addEventListener('contextmenu', function(e){ e.preventDefault(); });
           c.addEventListener('mouseenter', function(){
             if(!dragging || cell.past) return;
-            if(pickMode==='cell'){
-              if(!didDrag){ didDrag=true; miniClose(); }
-              if(d===pend.d) extendSelection(pend.d, pend.i, i);
-            } else applyPaint(d,i,dragMode);
-          });
-          c.addEventListener('dblclick', function(){
-            if(cell.past) return;
-            inp.style.pointerEvents='auto'; inp.focus(); inp.select();
+            if(!didDrag){ didDrag=true; miniClose(); }
+            if(d===pend.d) extendSelection(pend.d, pend.i, i);
           });
           cell.el=c; cell.inp=inp;
           tr.appendChild(c);
@@ -816,66 +737,41 @@ p{margin:7px 0}
   function buildDay(){
     var g=document.getElementById('grid'); g.innerHTML='';
     today().forEach(function(cell,i){
-      var el=document.createElement('div'); el.className='hr';
+      var past=!!cell.past;
+      var el=document.createElement('div'); el.className='hr'+(past?' past':'');
       var hh=document.createElement('span'); hh.className='hh'; hh.textContent=hlabel(cell.h);
       var bd=document.createElement('div'); bd.className='hbody';
       var inp=document.createElement('input'); inp.type='text'; inp.value=cell.t; inp.placeholder='한 일을 적으세요';
+      inp.readOnly=past; inp.__pos={d:0, i:i, view:'day'};
       var ime=false;
       inp.addEventListener('compositionstart',function(){ ime=true; });
       inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; });
       inp.addEventListener('input',function(){ cell.t=inp.value; });
       inp.addEventListener('blur',function(){
+        if(cell.past) return;
         cell.t=inp.value; autoColor(cell); refreshCell(0,i); totals();
       });
       bd.appendChild(inp);
       var tg=document.createElement('span'); tg.className='tag'; bd.appendChild(tg);
-      var pk=document.createElement('button'); pk.className='pk'; pk.type='button'; pk.title='여기를 눌러 칠합니다';
+      var pk=document.createElement('button'); pk.className='pk'; pk.type='button';
+      pk.title = past ? '지난 기록(읽기 전용)' : '여기를 눌러 색을 고릅니다';
+      pk.disabled = past;
       var x=document.createElement('button'); x.className='xx'; x.textContent='×'; x.title='색 지우기';
-      x.onclick=function(e){ e.stopPropagation(); cell.c=null; refreshCell(0,i); totals(); };
+      x.hidden = past;
+      x.onclick=function(e){ e.stopPropagation(); if(cell.past) return; cell.c=null; refreshCell(0,i); totals(); };
       bd.appendChild(pk); bd.appendChild(x);
-      hh.addEventListener('mousedown', function(e){
-        e.preventDefault();
-        if(pickMode==='cell'){
-          dragging=true; didDrag=false; dragMode='paint';
-          pend={d:0, i:i, x:e.clientX, y:e.clientY};
-          selection=[]; clearSelectionVisual();
-          miniOpen(e.clientX, e.clientY, [{d:0,i:i}]);
-        }
-        else startPaint(0,i);
-      });
-      hh.addEventListener('mouseenter', function(){
-        if(!dragging) return;
-        if(pickMode==='cell'){
-          if(!didDrag){ didDrag=true; miniClose(); }
-        } else applyPaint(0,i,dragMode);
+      /* 왼쪽 클릭은 그대로 둔다(글자 입력) · 오른쪽 클릭(그 줄 어디든) 또는 🎨 버튼(폰용) = 색상 */
+      el.addEventListener('contextmenu', function(e){
+        e.preventDefault(); if(cell.past) return;
+        miniOpen(e.clientX, e.clientY, [{d:0,i:i}]);
       });
       pk.addEventListener('click', function(e){
-        e.stopPropagation();
-        if(pickMode==='cell') miniOpen(e.clientX, e.clientY, [{d:0,i:i}]);
-        else paintOne(0,i);
+        e.stopPropagation(); if(cell.past) return;
+        miniOpen(e.clientX, e.clientY, [{d:0,i:i}]);
       });
       el.appendChild(hh); el.appendChild(bd); g.appendChild(el);
       cell.el2=el; cell.inp2=inp; cell.tag2=tg; cell.pk2=pk; cell.x2=x;
     });
-  }
-
-  /* ══════════ 칠하기(붓 방식) ══════════ */
-  function needBrush(){
-    if(!brush){ alert('먼저 위에서 색을 하나 고르세요.'); return false; }
-    return true;
-  }
-  function applyPaint(d,i,m){
-    var cell=data[d][i];
-    if(cell.past) return;   /* 지난 기록(에버노트 원본)은 못 칠한다 */
-    cell.c = (m==='erase') ? null : brush;
-    if(cell.t.trim() && cell.c) memory[key(cell.t)]=cell.c;
-    refreshCell(d,i); totals();
-  }
-  function paintOne(d,i){ if(!needBrush()) return; applyPaint(d,i, data[d][i].c===brush ? 'erase' : 'paint'); }
-  function startPaint(d,i){
-    if(!needBrush()) return;
-    dragMode = (data[d][i].c===brush) ? 'erase' : 'paint';
-    dragging = true; applyPaint(d,i,dragMode);
   }
 
   function refreshCell(d,i){
@@ -904,7 +800,8 @@ p{margin:7px 0}
     if(cell.el){
       cell.el.style.background = C?C.hex:'';
       if(C && isDark(C.hex)) cell.el.classList.add('dark'); else cell.el.classList.remove('dark');
-      cell.el.title = C ? (C.nm+' · '+(NOTE[C.id]||'')) : '';
+      /* 🔴 2026-09-20 — 칸이 좁아 글자가 잘리므로, 실제 적은 글자를 title로 걸어 hover하면 다 보이게 */
+      cell.el.title = (cell.t?cell.t:'') + (C ? (cell.t?' · ':'')+C.nm+' · '+(NOTE[C.id]||'') : '');
       if(document.activeElement!==cell.inp && cell.inp.value!==cell.t) cell.inp.value=cell.t;
     }
     if(d===0 && cell.el2){
@@ -1110,26 +1007,6 @@ p{margin:7px 0}
   document.getElementById('tWeek').onclick=function(){ tab('week'); };
   document.getElementById('tDay').onclick=function(){ tab('day'); };
 
-  document.getElementById('pCell').onclick=function(){
-    pickMode='cell'; this.className='on'; document.getElementById('pBrush').className='';
-    document.getElementById('brushPal').hidden=true;
-    document.getElementById('pickHow').innerHTML='🅐 칸을 누르면 즉시 색판이 뜹니다. 누른 채 밀어서 원하는 색 위에서 손을 떼면 그 색이 골라집니다.';
-  };
-  document.getElementById('pBrush').onclick=function(){
-    pickMode='brush'; this.className='on'; document.getElementById('pCell').className='';
-    miniClose();
-    document.getElementById('brushPal').hidden=false;
-    document.getElementById('pickHow').innerHTML='🅑 위 색판에서 색을 먼저 고르고(또는 숫자키 1~9) 칸을 누릅니다.';
-  };
-
-  document.getElementById('mPaint').onclick=function(){
-    mode='color'; typing=false; this.className='on'; document.getElementById('mType').className='';
-    document.getElementById('wk').className='wk paint'; palette();
-  };
-  document.getElementById('mType').onclick=function(){
-    mode='type'; typing=true; this.className='on'; document.getElementById('mPaint').className='';
-    document.getElementById('wk').className='wk'; palette();
-  };
   document.getElementById('bDemo').onclick=function(){
     if(!confirm('서버에서 다시 불러올까요? 지금 화면에서 저장 안 된 변경은 사라집니다.')) return;
     try{ document.activeElement.blur(); }catch(e){}
@@ -1226,7 +1103,7 @@ p{margin:7px 0}
   function boot(){
     hourOptions('wake', 5, 12, restoreNum('ts_wake', 8));
     hourOptions('bed', 20, 26, restoreNum('ts_bed', 25));
-    palette(); buildWeek(); buildDay(); ruletable();
+    buildWeek(); buildDay(); ruletable();
     loadFromServer(function(){
       buildWeek(); buildDay();
       if(useSleep()) applySleep(); else totals();
