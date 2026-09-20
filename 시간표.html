@@ -59,9 +59,18 @@ p{margin:7px 0}
   position:sticky; left:0; z-index:2; box-shadow:1px 0 0 var(--line); width:78px}
 .wk td.c{height:42px; position:relative; vertical-align:top}
 .wk td.c input{width:100%; height:100%; border:0; background:transparent; font:inherit; font-size:9.5px;
-  line-height:1.25; padding:3px 3px; color:inherit; outline:none; text-align:left; display:block}
+  line-height:1.25; padding:3px 15px 3px 3px; color:inherit; outline:none; text-align:left; display:block}
 .wk td.c input::placeholder{color:rgba(0,0,0,.18)}
 .wk td.c.dark input{color:#fff}
+/* 🔴 2026-09-21 대표 지시 — 오른쪽 클릭은 폰에서 안 되고(길게 누르면 아이폰 자체 메뉴랑 겹침),
+   칸 오른쪽 위 작은 아이콘을 누르면(마우스든 손가락이든 «똑같이» click 하나로) 색판이 뜨게 —
+   웹·폰 둘 다 이 아이콘 하나로 통일한다. 오른쪽 클릭(드래그 다중선택)은 데스크톱 보너스로 남긴다. */
+.wk td.c .pick{position:absolute; top:1px; right:1px; width:15px; height:15px; line-height:15px;
+  font-size:9px; text-align:center; cursor:pointer; border-radius:4px; background:rgba(0,0,0,.08); z-index:2}
+.wk td.c:hover .pick{background:rgba(0,0,0,.18)}
+.wk td.c.dark .pick{background:rgba(255,255,255,.28)}
+.wk td.c.dark:hover .pick{background:rgba(255,255,255,.45)}
+.wk td.c.past .pick{display:none}
 .wk tr.today td.d{color:var(--warn)}
 .wk tr.today td{border-top:2px solid var(--ink); border-bottom:2px solid var(--ink)}
 .wk td.c.seld{box-shadow:inset 0 0 0 3px #2c2c2c; z-index:1}
@@ -147,9 +156,10 @@ p{margin:7px 0}
 <p class="sp">색을 칠하면 몇 초 뒤 구글시트에 자동 저장됩니다. 노션·아침보고서 연동은 다음 단계입니다.</p>
 
 <div class="note">
-  🖱 <b>왼쪽 클릭 = 그 칸에 글자 입력.</b> 칸을 누르면 바로 커서가 생겨 타이핑할 수 있습니다.
-  <br>🎨 <b>오른쪽 클릭 = 색판</b>이 그 칸에 뜹니다. <b>오른쪽 클릭한 채로 옆으로 밀면</b> 지나간 칸들이 함께 선택되고,
-  손을 떼면 고른 색이 <b>전부에 한 번에</b> 적용됩니다(촬영 6시간을 한 번에). 숫자키 1~9로도 색을 바로 고를 수 있습니다.
+  🖱 <b>칸을 누르면 그냥 글자 입력.</b> 커서가 바로 생겨 타이핑할 수 있습니다.
+  <br>🎨 <b>칸 오른쪽 위 작은 <span style="background:rgba(0,0,0,.08);border-radius:3px;padding:0 3px">🎨</span> 를 누르면 색판</b>이 뜹니다 — 마우스로 클릭해도, 폰에서 손가락으로 눌러도 똑같이 됩니다.
+  <br><span style="color:#6b6b6b">(데스크톱 보너스) 칸에서 오른쪽 클릭한 채로 옆으로 밀면 지나간 칸들이 함께 선택되고,
+  손을 떼면 고른 색이 전부에 한 번에 적용됩니다(촬영 6시간을 한 번에). 숫자키 1~9로도 색을 바로 고를 수 있습니다.</span>
   <br>⌨️ <b>방향키로 칸을 옮겨 다닙니다</b> — ↑↓ 는 위·아래 날짜로, ←→ 는 (글자 맨 끝/맨 앞에서) 옆 시간으로.
   <br><span style="color:#6b6b6b">글자만 쳐도 색이 저절로 칠해집니다 — 「운동」→초록, 「티비」→빨강.</span>
 </div>
@@ -719,7 +729,7 @@ p{margin:7px 0}
           });
           c.appendChild(inp);
           /* 🔴 2026-09-20 — 왼쪽 클릭은 «그냥 둔다»(브라우저 기본 동작 = input 포커스 = 글자 입력).
-             오른쪽 클릭(누르기·끌기·떼기)만 색상을 다룬다. */
+             오른쪽 클릭(누르기·끌기·떼기)은 데스크톱 보너스 — 여러 칸 골라 한번에 칠할 때. */
           c.addEventListener('mousedown', function(e){
             if(cell.past || e.button!==2) return;
             e.preventDefault();
@@ -734,6 +744,16 @@ p{margin:7px 0}
             if(!didDrag){ didDrag=true; miniClose(); }
             if(d===pend.d) extendSelection(pend.d, pend.i, i);
           });
+          /* 🔴 2026-09-21 대표 지시 — 폰에서는 오른쪽 클릭이 없다(길게 누르면 iOS 자체 메뉴랑 겹친다).
+             칸 오른쪽 위 작은 아이콘 하나로 마우스·손가락 «똑같이» click 한 번에 색판이 뜨게 한다. */
+          if(!past){
+            var pick=document.createElement('span'); pick.className='pick'; pick.textContent='🎨';
+            pick.addEventListener('click', function(e){
+              e.stopPropagation();
+              miniOpen(e.clientX, e.clientY, [{d:d,i:i}]);
+            });
+            c.appendChild(pick);
+          }
           cell.el=c; cell.inp=inp;
           tr.appendChild(c);
         });
