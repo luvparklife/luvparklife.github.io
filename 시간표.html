@@ -181,10 +181,10 @@ p{margin:7px 0}
 
 <!-- ══════════ ① 칠하기 ══════════ -->
 <div class="sec">
-<h2>① 시간표 칠하기 <span class="sp">주간 보기가 기본입니다. 폰에서는 「하루」 탭으로 봅니다.</span></h2>
+<h2>① 시간표 칠하기 <span class="sp">2주 보기가 기본입니다. 폰에서는 「하루」 탭으로 봅니다.</span></h2>
 
 <div class="tabs">
-  <button id="tWeek" class="on">📅 주간 (기본)</button>
+  <button id="tWeek" class="on">📅 2주 (기본)</button>
   <button id="tDay">📱 하루 (폰)</button>
 </div>
 
@@ -213,7 +213,7 @@ p{margin:7px 0}
 
 <div id="viewWeek">
   <div class="scroll"><table class="wk paint" id="wk"></table></div>
-  <p class="calcnote">오늘은 <b>굵은 줄</b>입니다. 나머지 6일은 <b>이미 저장된 실제 기록</b>입니다.
+  <p class="calcnote">오늘은 <b>굵은 줄</b>입니다. 나머지 13일은 <b>이미 저장된 실제 기록</b>입니다.
   <br>폰에서는 옆으로 밀어서 봅니다.</p>
 </div>
 
@@ -293,6 +293,29 @@ p{margin:7px 0}
   <tbody id="rulebody"></tbody>
 </table>
 </div>
+</div>
+
+<!-- ══════════ ⑥ 지난 기록 보기 ══════════ -->
+<div class="sec">
+<h2>⑥ 지난 기록 보기 <span class="sp">에버노트에서 가져온 15.5개월치 — 원본 색 그대로, 읽기 전용입니다.</span></h2>
+<div class="note">
+  🔴 여기는 <b>보기만</b> 됩니다 — 위 ①에서 칠하는 것과는 별개 자료입니다. 그때 쓰시던 색 체계가 지금 색과 달라서
+  바꾸지 않고 <b>원래 쓰신 색 그대로</b> 두었습니다.
+</div>
+<div class="sleeprow">
+  년 <select id="pastYear"></select>
+  <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="pastMode" id="pastModeMonth" checked> 월별 <select id="pastMonth"></select></label>
+  <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="pastMode" id="pastModeQ"> 분기별 <select id="pastQ">
+    <option value="1">1분기(1~3월)</option><option value="2">2분기(4~6월)</option>
+    <option value="3">3분기(7~9월)</option><option value="4">4분기(10~12월)</option>
+  </select></label>
+  <button id="bPastLoad" class="pri" style="border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:9px;padding:7px 13px;font:inherit;font-weight:800;cursor:pointer">🔎 보기</button>
+</div>
+<p class="calcnote" id="pastStatus">년·월(또는 분기)을 고르고 [🔎 보기]를 누르세요.</p>
+<div class="scroll"><table class="tb" id="pastTable" hidden>
+  <thead><tr><th>날짜</th><th>요일</th><th>시간</th><th>활동</th><th>색</th><th>카테고리</th><th>그룹</th></tr></thead>
+  <tbody id="pastBody"></tbody>
+</table></div>
 </div>
 
 </div><!-- /wrap -->
@@ -438,9 +461,9 @@ p{margin:7px 0}
   var CATREPORT={'낭비':'⚠️ 낭비','쉼':'🌿 쉼(그외)','촬영':'🎬 촬영','성장':'📚 성장','업무':'💰 영업(업무)'};
 
   /* ══════════ 시간·날짜 ══════════ */
-  var HOURS=[]; for(var h=6;h<=25;h++){ HOURS.push(h%24); }
+  var HOURS=[]; for(var h=6;h<=29;h++){ HOURS.push(h%24); }   /* 6시~다음날5시, 24칸(하루 전체) — 2026-09-20 확장 */
   function hlabel(h){ return (h<10?'0':'')+h+':00'; }
-  var DAYS=7;   /* 0 = 오늘 */
+  var DAYS=14;   /* 0 = 오늘 — 2026-09-20 7일→14일(2주) 기본 보기로 확장 */
 
   function blank(){ return HOURS.map(function(h){ return {h:h, t:'', c:null}; }); }
   var data=[]; for(var dd0=0; dd0<DAYS; dd0++) data.push(blank());
@@ -1094,6 +1117,47 @@ p{margin:7px 0}
   })();
   document.getElementById('wake').addEventListener('change', function(){ saveNum('ts_wake', this.value); applySleep(); });
   document.getElementById('bed').addEventListener('change', function(){ saveNum('ts_bed', this.value); applySleep(); });
+
+  /* ══════════ ⑥ 지난 기록 보기 — 읽기 전용, 원본 색 그대로 (2026-09-20) ══════════ */
+  (function(){
+    var ySel=document.getElementById('pastYear');
+    var nowY=new Date().getFullYear();
+    for(var y=nowY; y>=nowY-3; y--){
+      var oy=document.createElement('option'); oy.value=y; oy.textContent=y+'년'; ySel.appendChild(oy);
+    }
+    var mSel=document.getElementById('pastMonth');
+    for(var m=1;m<=12;m++){
+      var om=document.createElement('option'); om.value=m; om.textContent=m+'월';
+      if(m===new Date().getMonth()+1) om.selected=true;
+      mSel.appendChild(om);
+    }
+    var rM=document.getElementById('pastModeMonth'), rQ=document.getElementById('pastModeQ'), qSel=document.getElementById('pastQ');
+    function syncMode(){ mSel.disabled=!rM.checked; qSel.disabled=rM.checked; }
+    rM.addEventListener('change', syncMode); rQ.addEventListener('change', syncMode); syncMode();
+
+    document.getElementById('bPastLoad').onclick=function(){
+      var status=document.getElementById('pastStatus'), table=document.getElementById('pastTable'), body=document.getElementById('pastBody');
+      status.textContent='불러오는 중…'; table.hidden=true;
+      var params={year: ySel.value};
+      if(rM.checked) params.month=mSel.value; else params.quarter=qSel.value;
+      tsCall('tsLoadPast', params, function(res){
+        body.innerHTML='';
+        if(!res.rows.length){ status.textContent='이 기간엔 기록이 없습니다.'; return; }
+        res.rows.forEach(function(r){
+          var tr=document.createElement('tr');
+          var hex=r.colorHex||''; var info=res.colors[hex]||{};
+          var chip = hex ? '<span class="chip" style="background:'+hex+'"></span> ' : '';
+          tr.innerHTML='<td>'+r.date+'</td><td>'+(r.weekday||'')+'</td><td>'+(r.start||'')+'~'+(r.end||'')+' ('+(r.hours||'')+'h)</td>'
+            +'<td>'+(r.text||'')+'</td><td>'+chip+(info.label||hex)+'</td><td>'+(r.category||'')+'</td><td>'+(r.group||'')+'</td>';
+          body.appendChild(tr);
+        });
+        status.textContent=res.rows.length+'건 · 원본 색 그대로 표시했습니다(수정 안 됨).';
+        table.hidden=false;
+      }, function(err){
+        status.textContent='🔴 못 불러왔습니다 — '+((err&&err.error)||'알 수 없음');
+      });
+    };
+  })();
 
   /* ══════════ 시작 — 로그인이 끝나야 돈다(startApp → boot) ══════════ */
   function boot(){
