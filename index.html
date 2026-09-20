@@ -6934,8 +6934,14 @@
               why:'할 일은 없지만 <b>「우리가 떠안았다」는 사실이 기록으로 남습니다</b>' },
     team:   { ic:'👥', n:'팀원 미팅·재발방지', steps:['미팅 잡기','재발방지 대책 정하기'],
               why:'같은 일이 <b>몇 번째인지 세어야</b> 대책이 설득됩니다' },
-    repair: { ic:'🔧', n:'수리 보내기',        steps:['업체에 보냄','결제','다시 찾아옴'],
-              why:'🔴 <b>이 3단계가 끊겨서 「수리시트가 안 닫힌다」가 생깁니다</b>' }
+    /* 🔧 2026-09-21 대표 확정 — **수리는 「수리시트」가 «원본»이다. 여기서 체크하지 않는다.**
+       🔴 [왜] 파손을 저장하면 **수리시트에 줄이 이미 자동으로 생긴다**(`writeRepairSheet_`).
+          거기 진행상태(접수·수리중·완료·폐기)·업체·비용·결제·완료일이 다 있고
+          「완료」로 바꾸면 **재고까지 자동 복구**된다. 두 곳에서 관리하면 반드시 어긋난다(§1).
+       🔴 [그래서 `steps` 가 비었다] 고르면 «할 일»이 아니라 **수리시트 상태를 비춰 준다**. */
+    repair: { ic:'🔧', n:'수리 보내기',        steps:[],
+              why:'🔧 <b>수리는 「수리시트」에서 관리합니다</b> — 파손을 저장하면 <b>줄이 이미 자동으로 생겨 있습니다.</b> '
+                 + '진행상태를 「완료」로 바꾸면 <b>재고까지 저절로 돌아옵니다.</b> 아래에 지금 상태가 비칩니다' }
   };
   var PJ_RP_ORDER = ['client','ours','team','repair'];
 
@@ -6962,6 +6968,8 @@
      🔴 [«기다리게 하지 않는다»] 화면은 바로 열리고, 이 값은 오는 대로 그 칸만 다시 그린다. */
   var PJ_RP_EQ = null;        /* null = 아직 안 받음 · [] = 받았는데 없음 */
   var PJ_RP_EQ_ST = '';       /* '' | 'load' | 'err' */
+  /* 🔧 2026-09-21 — 수리시트에서 «비춰오는» 상태. 🔴 원본은 수리시트다 — 여기서 못 고친다(§1). */
+  var PJ_RP_REPAIR = null;
   function pjRpLoadEquip_(proj){
     PJ_RP_EQ = null; PJ_RP_EQ_ST = 'load';
     var u = FIELD_APP + '?action=projAdmin&act=rpequip&name='
@@ -6969,8 +6977,8 @@
     askCount(u, function(d){
       /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «버린다» — 엉뚱한 장비가 뜬다 */
       if(PJ_RP_PROJ !== proj) return;
-      if(d && d.ok){ PJ_RP_EQ = d.equip || []; PJ_RP_EQ_ST = ''; }
-      else { PJ_RP_EQ = null; PJ_RP_EQ_ST = 'err'; }
+      if(d && d.ok){ PJ_RP_EQ = d.equip || []; PJ_RP_EQ_ST = ''; PJ_RP_REPAIR = d.repair || null; }
+      else { PJ_RP_EQ = null; PJ_RP_EQ_ST = 'err'; PJ_RP_REPAIR = null; }
       pjRpDraw();
     }, 30000);
   }
@@ -7019,7 +7027,14 @@
     ((PJ_RP && PJ_RP.asks) || []).forEach(function(q){
       if(String((q && q.st) || '') !== 'done'){ n++; if(!String((q && q.who) || '').trim()) noWho++; }
     });
-    return { n: n, noWho: noWho, noRoute: noRoute };
+    /* 🔧🆕 [«안 닫힌 수리»도 안 끝난 일이다] 대표가 말씀하신 *"수리업체 보내기→결제→다시찾기"* 가
+       끊기는 자리다. 🔴 수리시트가 원본이므로 «세기만» 한다 — 여기서 못 고친다(§1). */
+    var openRep = 0;
+    ((PJ_RP_REPAIR && PJ_RP_REPAIR.lines) || []).forEach(function(x){
+      var st = String((x && x.st) || '접수');
+      if(st !== '완료' && st !== '폐기'){ n++; openRep++; }
+    });
+    return { n: n, noWho: noWho, noRoute: noRoute, openRep: openRep };
   }
 
   function pjRpDraw(){
@@ -7175,6 +7190,38 @@
     }).join('');
     h += '</div>';
 
+    /* ── 🔧 수리시트에서 «비춰오는» 상태 (2026-09-21 대표 확정) ──
+       🔴 [원본은 수리시트다] 여기서 못 고친다 — 고치면 두 곳이 어긋난다(§1).
+       🔴 [파손이 있으면 «줄이 이미 있다»] 사람이 등록할 일이 없다는 것을 글자로 밝힌다. */
+    var RPX = PJ_RP_REPAIR;
+    if(RPX && (RPX.lines || []).length){
+      var _c = RPX.count || {};
+      var _sum = ['접수','수리중','완료','폐기'].filter(function(k){ return _c[k]; })
+                   .map(function(k){ return k + ' ' + _c[k]; }).join(' · ');
+      h += '<div class="rpsec"><div class="t">🔧 수리시트 — 지금 상태'
+         + '<span class="fn">🔴 <b>원본은 수리시트입니다</b> — 여기서는 못 고칩니다. '
+         + '파손을 저장하면 <b>줄이 이미 자동으로 생겨 있습니다</b>(등록하실 일이 없습니다). '
+         + '진행상태를 <b>「완료」</b>로 바꾸면 <b>재고까지 저절로 돌아옵니다</b></span></div>'
+         + '<div class="rpmir">'
+         + '<div class="ln" style="font-weight:800">📊 ' + RPX.lines.length + '건 — ' + pjEsc(_sum) + '</div>'
+         + RPX.lines.map(function(x){
+             var st = String(x.st || '접수');
+             var col = st === '완료' ? '#1c6b46' : (st === '폐기' ? '#8a93a3' : '#95601a');
+             return '<div class="ln">'
+                  + '<span class="ph" style="background:#fff;border-color:' + col + ';color:' + col + '">'
+                  + pjEsc(st) + '</span>'
+                  + pjEsc(String(x.item || ''))
+                  + (x.shop ? '<span class="who">🏪 ' + pjEsc(x.shop) + '</span>' : '')
+                  + (x.cost ? '<span class="who">💰 ' + pjEsc(x.cost)
+                            + (x.pay ? ' (' + pjEsc(x.pay) + ')' : '') + '</span>' : '')
+                  + (x.end  ? '<span class="who">✅ ' + pjEsc(x.end) + '</span>' : '')
+                  + '</div>';
+           }).join('')
+         + '<span class="fn">🔴 <b>「접수」·「수리중」으로 남은 것이 곧 「안 닫힌 수리」</b>입니다 — '
+         + '수리시트에서 업체·비용을 채우고 진행상태를 바꿔주세요.</span>'
+         + '</div></div>';
+    }
+
     /* ── ⑤ 실무자 확인 요청 ── */
     h += '<div class="rpsec"><div class="t">⑤ 🙋 실무자 확인 요청'
        + '<span class="fn">답을 받아야 하는 것 — 상태는 <b>「답 기다림 → 답함」 2단계</b>뿐입니다'
@@ -7226,6 +7273,8 @@
            ? '⏳ <b>아직 안 끝난 것 ' + td.n + '건</b>입니다 — 위 체크를 채우면 사라집니다.'
              + (td.noRoute ? ' 🔴 그중 <b>' + td.noRoute + '건은 파손·분실인데 처리 방법을 아직 안 골랐습니다</b>'
                              + ' — 이게 「거래처에 늦게 알려 청구를 놓치는」 자리입니다.' : '')
+             + (td.openRep ? ' 🔧 <b>' + td.openRep + '건은 수리시트에서 아직 안 닫혔습니다</b>'
+                             + '(접수·수리중) — 수리시트에서 진행상태를 바꿔주세요.' : '')
              + (td.noWho ? ' 🔴 <b>' + td.noWho + '건은 담당이 비어</b> 있습니다.' : '')
            : '✅ 안 끝난 것이 없습니다.')
        + '</div>';
@@ -7296,6 +7345,8 @@
          「무엇이 파손됐는지」 없이 처리 경로만 남아 읽을 수가 없다.
          🔴 아직 안 받았으면(null) 그냥 안 보낸다 — 빈 배열을 보내면 「없음」으로 굳는다. */
       if(PJ_RP_EQ && PJ_RP_EQ.length) snap.eq = PJ_RP_EQ;
+      /* 🔧 수리시트 상태도 «비추는 것»이라 같이 보낸다 — 시트에는 저장하지 않는다(원본은 수리시트) */
+      if(PJ_RP_REPAIR && (PJ_RP_REPAIR.lines || []).length) snap.rep = PJ_RP_REPAIR;
       try {
         pjNotion('report', proj, snap, function(d){
           /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «말하지 않는다» — 엉뚱한 화면에 뜬다 */
