@@ -918,6 +918,87 @@
     .rvroll .rl .n{opacity:.6; font-weight:400; margin-left:3px}
     .rvroll .none{font-size:11.5px; color:#b9c2d0}
 
+    /* ═══ 📋 프로젝트 보고서 (2026-09-20 대표 확정 · 9/17 반납보고서와 같은 것) ═══
+       🔴 [«살아있는 화면»이다] 회고는 열 때마다 읽어와 비춘다 — 여기서 못 고친다(§1).
+       되돌리기 = **"프로젝트 보고서 빼줘"** */
+    .rpbox{border:1px solid #e2e6ee; border-radius:12px; background:#fff; padding:12px 13px 13px;
+      margin-top:10px}
+    .rphd{display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; margin-bottom:3px}
+    .rphd b{font-size:14.5px; color:#1c2330}
+    .rphd .pj{font-size:12px; color:#8a93a3}
+    .rphd .x{margin-left:auto; border:1px solid #dfe4ec; background:#fff; color:#6b7688;
+      border-radius:8px; padding:3px 10px; font:inherit; font-size:11.5px; cursor:pointer}
+    .rpsub{font-size:11.5px; color:#8a93a3; margin:0 0 10px; line-height:1.6}
+    .rpsec{border-top:1px solid #eef1f6; padding-top:10px; margin-top:10px}
+    .rpsec:first-of-type{border-top:none; padding-top:0; margin-top:0}
+    .rpsec>.t{font-size:12.5px; font-weight:800; color:#2f3a4c; margin-bottom:6px}
+    .rpsec>.t .fn{display:block; margin-top:2px; font-size:11px; font-weight:400; color:#8a93a3}
+    .rprow{display:flex; gap:6px; margin-bottom:7px}
+    .rprow input, .rprow textarea{flex:1; min-width:0; font:inherit; font-size:13px; padding:7px 9px;
+      border:1px solid #c8cfda; border-radius:8px}
+    .rprow textarea{min-height:46px; resize:vertical; line-height:1.55}
+    .rprow button{border:none; background:#2563eb; color:#fff; font:inherit; font-weight:700;
+      font-size:12.5px; padding:7px 12px; border-radius:8px; cursor:pointer; white-space:nowrap}
+    .rprow select{font:inherit; font-size:12.5px; padding:7px 8px; border:1px solid #c8cfda;
+      border-radius:8px; background:#fff; max-width:130px}
+    /* 회고에서 비춰오는 줄 — 읽기 전용 */
+    .rpmir{background:#f7f9ff; border:1px solid #dfe7fa; border-radius:9px; padding:8px 10px}
+    .rpmir .ln{font-size:12.5px; line-height:1.6; padding:3px 0; color:#2f3a4c}
+    .rpmir .ln .ph{font-size:10px; font-weight:800; background:#fff; border:1px solid #cddcfa;
+      color:#1a56c4; border-radius:6px; padding:1px 5px; margin-right:5px}
+    .rpmir .ln .who{color:#8a93a3; font-size:11px; margin-left:4px}
+    .rpmir .none{font-size:12px; color:#8a93a3}
+    .rpmir .fn{display:block; margin-top:6px; font-size:11px; color:#8a93a3}
+    /* 오염·청결 버튼 (반납특이사항과 같은 방식) */
+    .rpcl{display:flex; gap:5px; flex-wrap:wrap; margin-bottom:7px}
+    .rpcl button{border:1px solid #dfe4ec; background:#fff; font:inherit; font-size:12px;
+      padding:4px 10px; border-radius:13px; cursor:pointer; color:#6b7688}
+    .rpcl button.on{background:#8a6d3b; border-color:#8a6d3b; color:#fff; font-weight:700}
+    /* 이슈 한 줄 */
+    .rpis{border:1px solid #e2e6ee; border-radius:9px; padding:8px 10px; margin-bottom:7px}
+    .rpis .hd{display:flex; gap:6px; align-items:flex-start}
+    .rpis .hd .tx{flex:1; min-width:0; font-size:13px; line-height:1.55}
+    .rpis .hd .wd{display:block; font-size:11px; color:#8a93a3; margin-top:3px}
+    .rpis .hd .dl{flex:none; border:none; background:none; cursor:pointer; color:#b9c2d0;
+      font-size:13px; padding:0 2px}
+    .rpis .hd .dl:hover{color:#c0392b}
+    /* 처리 경로 */
+    .rprt{display:flex; gap:5px; flex-wrap:wrap; margin-top:7px}
+    .rprt button{border:1px solid #dfe4ec; background:#fff; font:inherit; font-size:11.5px;
+      padding:4px 10px; border-radius:12px; cursor:pointer; color:#6b7688}
+    .rprt button.on{background:#1c2330; border-color:#1c2330; color:#fff; font-weight:700}
+    .rpwhy{font-size:11px; color:#95601a; margin-top:5px; line-height:1.6}
+    .rpst{margin-top:6px; display:flex; flex-direction:column; gap:4px}
+    .rpst label{display:flex; gap:6px; align-items:center; font-size:12px; color:#4a5465; cursor:pointer}
+    .rpst label.done{color:#1c6b46}
+    .rpst .d{font-size:11px; color:#8a93a3; margin-left:auto}
+    /* 확인 요청 */
+    .rpask{border:1px solid #e2e6ee; border-radius:9px; padding:8px 10px; margin-bottom:7px}
+    .rpask.wait{border-left:3px solid #e0a33c}
+    .rpask.done{border-left:3px solid #4fae85}
+    .rpask .q{font-size:13px; line-height:1.55}
+    .rpask .m{font-size:11px; color:#8a93a3; margin-top:3px}
+    .rpask .ans{margin-top:6px; display:flex; gap:5px}
+    .rpask .ans input{flex:1; min-width:0; font:inherit; font-size:12.5px; padding:5px 8px;
+      border:1px solid #c8cfda; border-radius:7px}
+    .rpask .ans button{border:1px solid #4fae85; background:#4fae85; color:#fff; font:inherit;
+      font-size:11.5px; font-weight:700; padding:5px 10px; border-radius:7px; cursor:pointer}
+    .rpask .a{margin-top:5px; font-size:12.5px; color:#1c6b46; background:#f2faf6;
+      border-radius:7px; padding:5px 8px}
+    /* 남은 일 · 다 적었다 */
+    .rptodo{background:#fff7e6; border:1px solid #f0d9a8; border-radius:9px; padding:8px 11px;
+      font-size:12.5px; color:#95601a; line-height:1.6; margin-top:10px}
+    .rptodo b{color:#8a5a12}
+    .rptodo.ok{background:#f2faf6; border-color:#bfe3d0; color:#1c6b46}
+    .rpdone{display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin-top:10px;
+      padding-top:10px; border-top:1px solid #eef1f6}
+    .rpdone button{border:1px solid #c8cfda; background:#fff; font:inherit; font-size:12.5px;
+      padding:6px 12px; border-radius:9px; cursor:pointer; color:#4a5465; font-weight:700}
+    .rpdone button.on{background:#e8f4ee; border-color:#4fae85; color:#1c6b46}
+    .rpdone .fn{flex-basis:100%; font-size:11px; color:#8a93a3}
+    .rpmsg{font-size:11.5px; color:#8a93a3; margin-left:auto}
+    .rpmsg.err{color:#c0392b; font-weight:700}
+
     /* 🐞 문제 제보 — 허브 전용 떠 있는 버튼 (2026-09-18 신설)
        ═══════════════════════════════════════════════════════════════
        대표 지시(2026-09-16) "모든 페이지마다"가 장비앱 화면 두 곳에만 붙어 있던 것을
@@ -6103,7 +6184,10 @@
       /* 📁 2026-09-10 대표 확정 — 폴더 바로가기 «5개». 서버가 준 것만 그린다(pjFdPaint).
          🔴 [등급은 서버가 이미 걸렀다] 못 보는 폴더는 «담겨 오지도 않는다»(PJ_NEED_).
             화면에서 감추는 방식이 아니라, 응답 원문에도 안 남는다. */
-      + '<div id="pjFd"></div>';
+      + '<div id="pjFd"></div>'
+      /* 📋 2026-09-20 — 프로젝트 보고서가 «펼쳐지는 자리».
+         🔴 [늘 만들어 둔다 — 비워 둘 뿐이다] 누를 때 만들면 그릴 자리가 없어 조용히 아무 일도 안 난다. */
+      + '<div id="pjRpBox"></div>';
   }
   /* ═══════════════════════════════════════════════════════════════════
      📌 촬영 안내 · ✔ 확인할 것   (2026-09-10 대표 확정)
@@ -6277,7 +6361,15 @@
       if(_u && typeof _u === 'object') PJ_REV_USE = _u;
     } catch(e){}
     /* 🔴 [프로젝트가 바뀌면 «열어둔 것»을 닫는다] 안 닫으면 다른 프로젝트의 3번 줄이 펼쳐진 채 뜬다 */
-    PJ_REV_EDIT = -1; PJ_REV_PICK = ''; PJ_REV_ASK = ''; PJ_REV_FIL = '';
+    PJ_REV_EDIT = -1; PJ_REV_PICK = ''; PJ_REV_ASK = '';
+    PJ_REV_FIL_ = { mgr: '', own: '' };
+    /* 📋 2026-09-20 — 보고서도 «같은 응답»에 실려 온다. 여기서 같이 받는다(왕복을 안 늘린다).
+       🔴 [프로젝트가 바뀌면 «닫는다»] 안 닫으면 앞 프로젝트 보고서가 펼쳐진 채로 남는다. */
+    try {
+      pjRpTake(d);
+      if(PJ_RP_PROJ !== proj){ PJ_RP_OPEN = false; PJ_RP_PROJ = proj; }
+      pjRpDraw();
+    } catch(eRp){}
     PJ_REV_OUT = ''; PJ_REV_OUT_TX = ''; PJ_REV_OUT_HAS = false;
     (items || []).forEach(function(x){
       if(x && x.key === '결과물폴더'){
@@ -6789,6 +6881,386 @@
     if(t.id !== 'pjRevTx' && t.id !== 'pjRevTxOwn') return;
     e.preventDefault();
     pjRevAdd(t.id === 'pjRevTxOwn');
+  });
+
+  /* ═══ 📋 프로젝트 보고서 (2026-09-20 대표 확정) ═══════════════════════
+     > 대표: *"랩업보고서는 프로젝트 보고서 안에 들어있는거야"* ·
+     >       *"같은 것 — 이름만 「프로젝트 보고서」로"* (9/17 만든 「반납보고서」와 같은 것)
+     > 설계·검증(39/39)은 `1_장비시스템/260917_반납보고서_연습장.html` 에서 이미 끝났다.
+     ─────────────────────────────────────────────────────────────────────
+     🔴 [«살아있는 화면»이다 — 굳히지 않는다] 2026-09-19 대표 확정 🅐.
+        회고는 **열 때마다 읽어와 비춘다.** 여기서 못 고친다 — 고치는 곳은 회고 탭 하나다(§1).
+     🔴 [«4번째 탭»을 안 만든다] 탭은 셋(2026-09-10 확정)이고 폰 390px에 딱 맞다.
+        견적서·정산서와 같은 자리인 «바로가기»에서 연다.
+     🔴 [🔒 대표 전용 회고 칸은 여기 «안» 나온다] 금액이 섞인다 — 서버가 관리자에겐 안 보내고,
+        화면도 `PJ_REV`(관리자 칸)만 비춘다. `PJ_REV_OWN` 은 이 코드가 쳐다보지도 않는다.
+     🔴 [회고가 0건이어도 보고서는 나온다] 회고를 필수로 걸면 보고서까지 같이 죽는다.
+        대신 「회고가 아직 없습니다」라고 그 자리에 적는다.
+     🟡 [아직 «안» 된 것 — 장비 파손·분실이 자동으로 안 올라온다]
+        서버(`fieldPjCheck_`)가 허브에 주는 것은 note·tasks·review·report 뿐이라
+        **장비 목록이 여기 오지 않는다.** 그래서 이슈는 «사람이 적는» 것부터 시작한다.
+        나중에 장비앱 파손·분실을 실어 보내면 «자동으로 올라오는 이슈»가 여기 그대로 붙는다.
+     되돌리기 = **"프로젝트 보고서 빼줘"** */
+  var PJ_RP = null;           /* 보고서 내용 (서버가 준 JSON) */
+  var PJ_RP_CAN = false;      /* 서버가 「볼 수 있다」고 했나 */
+  var PJ_RP_PROJ = '';
+  var PJ_RP_OPEN = false;
+  var PJ_RP_BUSY = false;
+  /* 🧼 오염·청결 — 연습장에서 대표가 보신 그 목록 그대로 */
+  var PJ_RP_CLEAN = ['세척 필요','정비 필요','냄새·곰팡이','파손 우려','기타'];
+  /* 🛠 처리 경로 — 2026-09-18 대표가 주신 «4갈래» 그대로.
+     🔴 서버 `PROJ_REPORT_ROUTE_` 와 «같은 값»이어야 한다(§1) — 한쪽만 고치면 서버가 거절한다. */
+  var PJ_RP_ROUTES = {
+    client: { ic:'💰', n:'거래처 청구',        steps:['거래처에 알리기','청구서 발행'],
+              why:'🔴 늦으면 못 받습니다 — 체크하면 <b>알린 날짜가 그 자리에서 박힙니다</b>' },
+    ours:   { ic:'🏢', n:'우리가 떠안음',      steps:[],
+              why:'할 일은 없지만 <b>「우리가 떠안았다」는 사실이 기록으로 남습니다</b>' },
+    team:   { ic:'👥', n:'팀원 미팅·재발방지', steps:['미팅 잡기','재발방지 대책 정하기'],
+              why:'같은 일이 <b>몇 번째인지 세어야</b> 대책이 설득됩니다' },
+    repair: { ic:'🔧', n:'수리 보내기',        steps:['업체에 보냄','결제','다시 찾아옴'],
+              why:'🔴 <b>이 3단계가 끊겨서 「수리시트가 안 닫힌다」가 생깁니다</b>' }
+  };
+  var PJ_RP_ORDER = ['client','ours','team','repair'];
+
+  function pjRpParse(raw){
+    var o = null;
+    try { o = JSON.parse(String(raw || '')); } catch(e){ o = null; }
+    if(!o || typeof o !== 'object' || (o instanceof Array)) o = {};
+    var arr = function(v){ return Object.prototype.toString.call(v) === '[object Array]' ? v : []; };
+    var cl = (o.clean && typeof o.clean === 'object') ? o.clean : {};
+    return { sum: String(o.sum || ''),
+             clean: { picks: arr(cl.picks), memo: String(cl.memo || '') },
+             issues: arr(o.issues), asks: arr(o.asks),
+             act: (o.act && typeof o.act === 'object' && !(o.act instanceof Array)) ? o.act : {},
+             imp: arr(o.imp), done: String(o.done || '') };
+  }
+  /* 서버 응답이 올 때마다 여기서 받아 둔다(회고 탭과 같은 자리에서 부른다) */
+  function pjRpTake(d){
+    PJ_RP_CAN = !!(d && d.canRp);
+    PJ_RP = pjRpParse(d && d.report);
+  }
+  function pjRpOpen(proj){
+    if(!PJ_RP_CAN){
+      alert('프로젝트 보고서는 「관리」 이상만 볼 수 있습니다.\n\n등급을 아직 못 받았다면 잠시 뒤 다시 눌러주세요.');
+      return;
+    }
+    PJ_RP_PROJ = proj || PJ_NOW;
+    PJ_RP_OPEN = true;
+    pjRpDraw();
+    var b = document.getElementById('pjRpBox');
+    if(b) b.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+  function pjRpClose(){ PJ_RP_OPEN = false; pjRpDraw(); }
+
+  /* 📝 회고에서 «촬영 진행 관련 문제»만 골라 비춘다 (2026-09-19 대표 확정 🅐)
+     🔴 [고르기만 하면 된다] 회고 줄에는 단계(p)와 종류(k)가 이미 붙어 있다 —
+        「문제」 = `k === 'bad'`. 새로 만들 게 없다(§4-1).
+     🔴 [관리자 칸만 본다] `PJ_REV_OWN`(대표 전용)은 쳐다보지 않는다 — 금액이 섞인다. */
+  function pjRpMirror_(){
+    var L = (PJ_REV && PJ_REV.lines) || [];
+    return L.filter(function(x){ return String((x && x.k) || '') === 'bad'; });
+  }
+  /* ⏳ 아직 안 끝난 일 — 「고르면 할 일이 생기고, 안 끝나면 계속 보인다」 */
+  function pjRpTodo_(){
+    var n = 0, noWho = 0;
+    var A = (PJ_RP && PJ_RP.act) || {};
+    for(var k in A){
+      if(!Object.prototype.hasOwnProperty.call(A, k)) continue;
+      var a = A[k] || {}, R = PJ_RP_ROUTES[a.route];
+      if(!R) continue;
+      for(var i = 0; i < R.steps.length; i++){
+        var st = (a.steps || [])[i];
+        if(!(st && st.done)) n++;
+      }
+    }
+    ((PJ_RP && PJ_RP.asks) || []).forEach(function(q){
+      if(String((q && q.st) || '') !== 'done'){ n++; if(!String((q && q.who) || '').trim()) noWho++; }
+    });
+    return { n: n, noWho: noWho };
+  }
+
+  function pjRpDraw(){
+    var box = document.getElementById('pjRpBox');
+    if(!box) return;
+    if(!PJ_RP_OPEN || !PJ_RP_CAN){ box.innerHTML = ''; return; }
+    var R = PJ_RP || pjRpParse('');
+    var h = '<div class="rpbox" id="pjRpTop">'
+          + '<div class="rphd"><b>📋 프로젝트 보고서</b>'
+          + '<span class="pj">' + pjEsc(PJ_RP_PROJ) + '</span>'
+          + '<button type="button" class="x" data-pjrp="close">닫기</button></div>'
+          + '<p class="rpsub">촬영이 끝나면 <b>여기 한 장</b>으로 모입니다 — 랩업 보고서도 이 안입니다. '
+          + '적으신 것은 <b>바로 저장</b>됩니다(저장 버튼이 없습니다).</p>';
+
+    /* ── ① 한 줄 요약 ── */
+    h += '<div class="rpsec"><div class="t">① 한 줄 요약'
+       + '<span class="fn">이 촬영이 어땠는지 한 줄로 — 나중에 목록에서 이 줄만 봅니다</span></div>'
+       + '<div class="rprow"><input type="text" id="pjRpSum" maxlength="200" '
+       + 'placeholder="예: 큰 사고 없이 끝남 · 조명 렌탈 입고가 늦어 세팅이 1시간 밀림" '
+       + 'value="' + pjEsc(R.sum) + '">'
+       + '<button type="button" data-pjrp="sum">저장</button></div></div>';
+
+    /* ── ② 촬영 중 있었던 문제 (회고에서 비춰옴) ── */
+    var M = pjRpMirror_();
+    h += '<div class="rpsec"><div class="t">② 📝 촬영 중 있었던 문제'
+       + '<span class="fn">회고 탭에서 <b>읽어옵니다 · 여기서는 못 고칩니다</b> — '
+       + '고치려면 회고 탭에서. 🔒 대표 전용 칸은 여기 안 나옵니다</span></div>'
+       + '<div class="rpmir">';
+    if(!M.length){
+      h += '<div class="none">회고에 <b>🔴 문제</b>로 표시된 줄이 아직 없습니다 — '
+         + '회고 탭에서 한 줄 적으면 여기에도 바로 나타납니다.</div>';
+    }else{
+      h += M.map(function(x){
+        var p = String((x && x.p) || '');
+        var pn = p === 'pre' ? '준비' : (p === 'end' ? '끝난 뒤' : '촬영 중');
+        var g = (x && x.g) || [];
+        if(Object.prototype.toString.call(g) !== '[object Array]') g = [];
+        return '<div class="ln"><span class="ph">' + pjEsc(pn) + '</span>'
+             + pjEsc(String((x && x.t) || ''))
+             + (g.length ? ' <span class="who">🏷 ' + pjEsc(g.join('·')) + '</span>' : '')
+             + '<span class="who">' + pjEsc(String((x && x.w) || '')) + ' · '
+             + pjEsc(String((x && x.d) || '')) + '</span></div>';
+      }).join('');
+      h += '<span class="fn">회고를 한 줄 더 적으면 <b>여기에도 바로</b> 나타납니다 (늘 지금 내용입니다)</span>';
+    }
+    h += '</div></div>';
+
+    /* ── ③ 오염·청결 ── */
+    h += '<div class="rpsec"><div class="t">③ 🧼 오염·청결 상태'
+       + '<span class="fn">해당하는 것을 고르세요(여러 개 가능) — 「반납특이사항」과 같은 방식입니다</span></div>'
+       + '<div class="rpcl">' + PJ_RP_CLEAN.map(function(c){
+           var on = (R.clean.picks || []).indexOf(c) >= 0;
+           return '<button type="button" data-pjrpcl="' + pjEsc(c) + '"'
+                + (on ? ' class="on"' : '') + '>' + pjEsc(c) + '</button>';
+         }).join('') + '</div>'
+       + '<div class="rprow"><input type="text" id="pjRpClMemo" maxlength="200" '
+       + 'placeholder="무슨 일이었는지 한 줄로 (없으면 비워두세요)" value="' + pjEsc(R.clean.memo) + '">'
+       + '<button type="button" data-pjrp="clean">저장</button></div></div>';
+
+    /* ── ④ 이슈 + 처리 경로 ── */
+    h += '<div class="rpsec"><div class="t">④ 🛠 이슈와 «처리 경로»'
+       + '<span class="fn">🔴 여기가 핵심입니다 — <b>고르면 할 일이 저절로 생기고, 안 끝나면 계속 보입니다.</b> '
+       + '「거래처한테 늦게 전달해 청구하지 못했다」를 막는 자리입니다</span></div>'
+       + '<div class="rprow"><input type="text" id="pjRpIs" maxlength="200" '
+       + 'placeholder="예: 선바운스 5in1 그립헤드 파손 — 볼베어링 빠짐">'
+       + '<button type="button" data-pjrp="issue">＋ 이슈 추가</button></div>';
+    if(!(R.issues || []).length){
+      h += '<p class="fn" style="margin:2px 0 0; font-size:11.5px; color:#8a93a3">'
+         + '아직 없습니다. 🟡 <b>장비앱에서 고른 파손·분실이 자동으로 올라오는 것은 아직 안 만들었습니다</b> — '
+         + '지금은 직접 적어주세요.</p>';
+    }
+    h += (R.issues || []).map(function(it, i){
+      var key = 'i' + i;
+      var a = (R.act || {})[key] || { route:'', steps:[] };
+      var s = '<div class="rpis"><div class="hd"><span class="tx">' + pjEsc(String((it && it.t) || ''))
+            + '<span class="wd">' + pjEsc(String((it && it.w) || '—')) + ' · '
+            + pjEsc(String((it && it.d) || '')) + '</span></span>'
+            + '<button type="button" class="dl" data-pjrpisdel="' + i + '" title="지웁니다">✕</button></div>';
+      s += '<div class="rprt">' + PJ_RP_ORDER.map(function(k){
+             var o = PJ_RP_ROUTES[k];
+             return '<button type="button" data-pjrprt="' + key + '" data-rt="' + k + '"'
+                  + (a.route === k ? ' class="on"' : '') + '>' + o.ic + ' ' + o.n + '</button>';
+           }).join('') + '</div>';
+      if(a.route && PJ_RP_ROUTES[a.route]){
+        var RT = PJ_RP_ROUTES[a.route];
+        s += '<div class="rpwhy">' + RT.why + '</div>';
+        if(RT.steps.length){
+          s += '<div class="rpst">' + RT.steps.map(function(nm, si){
+                 var st = (a.steps || [])[si] || {};
+                 return '<label class="' + (st.done ? 'done' : '') + '">'
+                      + '<input type="checkbox" data-pjrpst="' + key + '" data-si="' + si + '"'
+                      + (st.done ? ' checked' : '') + '>'
+                      + (st.done ? '✅ ' : '☐ ') + pjEsc(nm)
+                      + (st.done ? '<span class="d">' + pjEsc(String(st.w || '')) + ' · '
+                                 + pjEsc(String(st.d || '')) + '</span>' : '')
+                      + '</label>';
+               }).join('') + '</div>';
+        }
+      }
+      return s + '</div>';
+    }).join('');
+    h += '</div>';
+
+    /* ── ⑤ 실무자 확인 요청 ── */
+    h += '<div class="rpsec"><div class="t">⑤ 🙋 실무자 확인 요청'
+       + '<span class="fn">답을 받아야 하는 것 — 상태는 <b>「답 기다림 → 답함」 2단계</b>뿐입니다'
+       + '(시킨 일 3단계와 헷갈리지 않게 일부러 다르게 뒀습니다)</span></div>'
+       + '<div class="rprow"><input type="text" id="pjRpAsk" maxlength="200" '
+       + 'placeholder="예: 스탠드 3번 어디 뒀는지 확인 부탁">'
+       + '<input type="text" id="pjRpAskWho" maxlength="20" placeholder="누구에게" style="max-width:110px">'
+       + '<button type="button" data-pjrp="ask">＋ 요청</button></div>';
+    h += (R.asks || []).map(function(q, i){
+      var wait = String((q && q.st) || '') !== 'done';
+      var s = '<div class="rpask ' + (wait ? 'wait' : 'done') + '">'
+            + '<div class="hd" style="display:flex;gap:6px"><span class="q" style="flex:1">'
+            + pjEsc(String((q && q.q) || '')) + '</span>'
+            + '<button type="button" class="dl" data-pjrpaskdel="' + i + '" '
+            + 'style="border:none;background:none;cursor:pointer;color:#b9c2d0;font-size:13px">✕</button></div>'
+            + '<div class="m">' + (String((q && q.who) || '').trim()
+                ? '👤 ' + pjEsc(q.who) : '<b style="color:#c0392b">담당이 비었습니다</b>')
+            + ' · ' + pjEsc(String((q && q.w) || '')) + ' 가 ' + pjEsc(String((q && q.d) || '')) + ' 에 요청'
+            + '</div>';
+      if(wait){
+        s += '<div class="ans"><input type="text" id="pjRpAns' + i + '" maxlength="200" '
+           + 'placeholder="답을 받으면 여기 적어주세요">'
+           + '<button type="button" data-pjrpans="' + i + '">답함</button></div>';
+      }else{
+        s += '<div class="a">✅ ' + pjEsc(String((q && q.a) || ''))
+           + ' <span style="color:#8a93a3;font-size:11px">— ' + pjEsc(String((q && q.aw) || ''))
+           + ' · ' + pjEsc(String((q && q.ad) || '')) + '</span>'
+           + ' <button type="button" data-pjrpans="' + i + '" data-undo="1" '
+           + 'style="border:none;background:none;color:#8a93a3;font-size:11px;cursor:pointer">되돌리기</button></div>';
+      }
+      return s + '</div>';
+    }).join('');
+    h += '</div>';
+
+    /* ── ⑥ 다음부터 개선 ── */
+    h += '<div class="rpsec"><div class="t">⑥ 🔧 다음부터 개선 (1~3개)'
+       + '<span class="fn">다음 촬영 때 <b>바꿀 것</b>만 — 적은 것은 바로 저장됩니다</span></div>';
+    for(var ii = 0; ii < 3; ii++){
+      h += '<div class="rprow"><input type="text" id="pjRpImp' + ii + '" maxlength="200" '
+         + 'placeholder="' + (ii + 1) + '." value="' + pjEsc(String((R.imp || [])[ii] || '')) + '">'
+         + '<button type="button" data-pjrpimp="' + ii + '">저장</button></div>';
+    }
+    h += '</div>';
+
+    /* ── ⏳ 아직 안 끝난 것 ── */
+    var td = pjRpTodo_();
+    h += '<div class="rptodo' + (td.n ? '' : ' ok') + '">'
+       + (td.n
+           ? '⏳ <b>아직 안 끝난 것 ' + td.n + '건</b>입니다 — 위 체크를 채우면 사라집니다.'
+             + (td.noWho ? ' 🔴 그중 <b>' + td.noWho + '건은 담당이 비어</b> 있습니다.' : '')
+           : '✅ 안 끝난 것이 없습니다.')
+       + '</div>';
+
+    /* ── ✅ 보고서 다 적었다 ── */
+    h += '<div class="rpdone">'
+       + '<button type="button" data-pjrp="done"' + (R.done ? ' class="on"' : '') + '>'
+       + (R.done ? '✅ 이 보고서 다 적었습니다' : '☐ 이 보고서 다 적었다') + '</button>'
+       + '<span class="rpmsg" id="pjRpMsg"></span>'
+       + '<span class="fn">' + (R.done
+           ? pjEsc(R.done) + ' 에 체크하셨습니다 — 다시 누르면 풀립니다'
+           : '안 눌러도 적은 것은 그대로 저장됩니다')
+       + '</span></div>';
+
+    h += '</div>';
+    box.innerHTML = h;
+  }
+  function pjRpMsg(t, err){
+    var el = document.getElementById('pjRpMsg');
+    if(!el) return;
+    el.textContent = t || '';
+    el.className = 'rpmsg' + (err ? ' err' : '');
+  }
+  /* 🔴 [보내고 «서버가 준 것»으로 다시 그린다] 화면이 혼자 고쳐 두면 저장이 실패했을 때
+     «적은 줄 알고» 넘어간다. 날짜·누가는 서버가 정하므로 그 답을 받아야 화면이 진실이 된다. */
+  function pjRpSend(body, okMsg){
+    if(PJ_RP_BUSY){ pjRpMsg('잠시만요…'); return; }
+    if(!PJ_RP_PROJ){ pjRpMsg('프로젝트를 못 찾았습니다', 1); return; }
+    PJ_RP_BUSY = true;
+    pjRpMsg('저장 중…');
+    var u = FIELD_APP + '?action=projAdmin&act=report&name='
+          + encodeURIComponent(PJ_RP_PROJ) + appTok();
+    for(var k in body){ if(Object.prototype.hasOwnProperty.call(body, k)){
+      u += '&' + k + '=' + encodeURIComponent(body[k]);
+    } }
+    askCount(u, function(d){
+      PJ_RP_BUSY = false;
+      if(!d || !d.ok){
+        pjRpMsg('저장 못 했습니다' + (d && d.error ? ' (' + d.error + ')' : ''), 1);
+        return;
+      }
+      PJ_RP = pjRpParse(d.report);
+      pjRpDraw();
+      pjRpMsg(okMsg || '저장됐습니다');
+      /* 🔴 다음에 이 프로젝트를 다시 열 때 옛 값이 나오지 않게 캐시도 고친다 */
+      try { var c = PJ_CHK_CACHE[PJ_RP_PROJ]; if(c) c.report = d.report; } catch(e){}
+    }, 20000);
+  }
+  /* 누르기 — 🔴 회고와 «같은 방식»(위임). 새로 발명하지 않는다 */
+  document.addEventListener('click', function(e){
+    var el = e.target, n = 0, hit = null, kind = '', extra = '';
+    while(el && n++ < 3){
+      if(el.getAttribute){
+        hit = el.getAttribute('data-pjrp');
+        if(hit !== null){ kind = hit; break; }
+        hit = el.getAttribute('data-pjrpcl');    if(hit !== null){ kind = 'cl';    break; }
+        hit = el.getAttribute('data-pjrpisdel'); if(hit !== null){ kind = 'isdel'; break; }
+        hit = el.getAttribute('data-pjrpaskdel');if(hit !== null){ kind = 'askdel';break; }
+        hit = el.getAttribute('data-pjrpans');   if(hit !== null){ kind = 'ans';
+          extra = el.getAttribute('data-undo') || ''; break; }
+        hit = el.getAttribute('data-pjrpimp');   if(hit !== null){ kind = 'imp';   break; }
+        hit = el.getAttribute('data-pjrprt');
+        if(hit !== null){ kind = 'rt'; extra = el.getAttribute('data-rt') || ''; break; }
+        hit = el.getAttribute('data-pjrpst');
+        if(hit !== null){ kind = 'st'; extra = el.getAttribute('data-si') || ''; break; }
+      }
+      el = el.parentElement;
+    }
+    if(!kind) return;
+    e.preventDefault();
+    var v;
+    if(kind === 'close'){ pjRpClose(); return; }
+    if(kind === 'sum'){
+      v = document.getElementById('pjRpSum');
+      return pjRpSend({ rp:'sum', text: v ? v.value : '' }, '요약을 저장했습니다');
+    }
+    if(kind === 'cl'){
+      var cur = ((PJ_RP && PJ_RP.clean && PJ_RP.clean.picks) || []).slice();
+      var at = cur.indexOf(hit);
+      if(at >= 0) cur.splice(at, 1); else cur.push(hit);
+      /* 🔴 [전부 끄면 «비웠다»고 서버에 알려야 한다] 빈 글자만 보내면 서버가 「안 바꿈」으로 읽는다 */
+      var mm = document.getElementById('pjRpClMemo');
+      return pjRpSend(cur.length
+        ? { rp:'clean', text: cur.join(','), memo: mm ? mm.value : '' }
+        : { rp:'clean', pick:'clear', memo: mm ? mm.value : '' }, '');
+    }
+    if(kind === 'clean'){
+      var m2 = document.getElementById('pjRpClMemo');
+      var pk = ((PJ_RP && PJ_RP.clean && PJ_RP.clean.picks) || []);
+      return pjRpSend(pk.length
+        ? { rp:'clean', text: pk.join(','), memo: m2 ? m2.value : '' }
+        : { rp:'clean', pick:'clear', memo: m2 ? m2.value : '' }, '저장했습니다');
+    }
+    if(kind === 'issue'){
+      v = document.getElementById('pjRpIs');
+      var t1 = v ? String(v.value || '').trim() : '';
+      if(!t1){ pjRpMsg('무슨 이슈인지 적어주세요', 1); if(v) v.focus(); return; }
+      if(v) v.value = '';
+      return pjRpSend({ rp:'issue', text: t1 }, '이슈를 더했습니다');
+    }
+    if(kind === 'isdel'){
+      if(!confirm('이 이슈를 지웁니다. 처리 경로도 같이 사라집니다.')) return;
+      return pjRpSend({ rp:'issuedel', idx: hit }, '지웠습니다');
+    }
+    if(kind === 'ask'){
+      var q1 = document.getElementById('pjRpAsk');
+      var w1 = document.getElementById('pjRpAskWho');
+      var qq = q1 ? String(q1.value || '').trim() : '';
+      if(!qq){ pjRpMsg('무엇을 확인할지 적어주세요', 1); if(q1) q1.focus(); return; }
+      if(q1) q1.value = ''; if(w1) w1.value = '';
+      return pjRpSend({ rp:'ask', text: qq, who: w1 ? w1.value : '' }, '요청을 남겼습니다');
+    }
+    if(kind === 'askdel'){
+      if(!confirm('이 확인 요청을 지웁니다.')) return;
+      return pjRpSend({ rp:'askdel', idx: hit }, '지웠습니다');
+    }
+    if(kind === 'ans'){
+      if(extra) return pjRpSend({ rp:'askst', idx: hit, ans: '' }, '되돌렸습니다');
+      var a1 = document.getElementById('pjRpAns' + hit);
+      var aa = a1 ? String(a1.value || '').trim() : '';
+      if(!aa){ pjRpMsg('무슨 답을 받았는지 적어주세요', 1); if(a1) a1.focus(); return; }
+      return pjRpSend({ rp:'askst', idx: hit, ans: aa }, '답을 적었습니다');
+    }
+    if(kind === 'imp'){
+      v = document.getElementById('pjRpImp' + hit);
+      return pjRpSend({ rp:'imp', idx: hit, text: v ? v.value : '' }, '저장했습니다');
+    }
+    if(kind === 'rt') return pjRpSend({ rp:'route', eq: hit, text: extra }, '');
+    if(kind === 'st') return pjRpSend({ rp:'step', eq: hit, si: extra }, '');
+    if(kind === 'done'){
+      return pjRpSend({ rp:'done', text: (PJ_RP && PJ_RP.done) ? '' : 'on' }, '');
+    }
   });
 
   /* 👤 2026-09-15 대표 지시 — 「안내, 할일에서 담당자 선택할 수 있게」
@@ -8263,6 +8735,8 @@
       }
       if(act === 'rename'){ pjRename(el.getAttribute('data-pjproj')); return; }
       if(act === 'del'){    pjDelete(el.getAttribute('data-pjproj')); return; }
+      /* 📋 2026-09-20 — 프로젝트 보고서 (9/17 만든 「반납보고서」와 같은 것) */
+      if(act === 'report'){ pjRpOpen(el.getAttribute('data-pjproj') || PJ_NOW); return; }
       if(act === 'folder' || act === 'sheet' || act === 'share'){
         var fu = el.getAttribute('data-pjurl');
         if(!fu){
