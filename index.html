@@ -4454,7 +4454,9 @@
             «안 보이는 사고»가 안 난다. 고르는 것은 그대로 되신다.
          🔴 [옵션은 DB_촬영리뷰와 «똑같다»] 대표가 나중에 두 DB 를 합치실 때 어긋나면 안 된다. */
       + '<div class="nf"><label>종류 <span class="opt">— 노션 「종류」. 안 고르면 기본 뷰에서 안 보입니다</span></label>'
-      +   '<select id="nKind">'
+      /* 🚚 2026-09-20 대표 확정 — 렌탈을 고르면 이름 양식도 렌탈용으로 바뀐다.
+         onchange 로 pjNewName() 을 다시 불러 이름 제안 + 아래 rulebox 둘 다 새로 그린다(§1 — 새 통로 안 만듦). */
+      +   '<select id="nKind" onchange="pjNewName()">'
       +     '<option value="프로덕션" selected>프로덕션</option>'
       +     '<option value="외주촬영">외주촬영</option>'
       +     '<option value="어씨">어씨</option>'
@@ -4485,27 +4487,10 @@
       +   '마음에 안 들면 <b>직접 고쳐도 됩니다</b>.</div></div>'
       /* 🔴 2026-08-22 대표 지시: *"프로젝트 이름 양식 설명 밑에 적어줘.
             다른사람이 만들어도 보고 같은 양식으로 쓰게."*
-         🔴 규칙을 여기서 «새로 만들지» 않았다 — 회사 이름 규칙(CLAUDE.md §4)을 그대로 옮긴 것이다. */
-      + '<div class="rulebox">'
-      +   '<div class="rt">📐 이름 양식 — 누가 만들어도 이대로</div>'
-      +   '<div class="rex"><b>260910</b>_<b>lalala</b>_<b>킷튼프로덕션</b></div>'
-      +   '<table class="rtb">'
-      +     '<tr><td>① 날짜</td><td><b>촬영 첫날</b> · 260910 = 2026년 9월 10일'
-      +       '<div class="rs">위 날짜 칸을 고르면 저절로 들어옵니다</div></td></tr>'
-      +     '<tr><td>② 가운데</td><td><b>브랜드</b>'
-      +       '<div class="rs">브랜드를 고르면 저절로 들어옵니다. '
-      +       '브랜드가 없으면 <b>직접 적으세요</b> — 짧을수록 좋습니다</div></td></tr>'
-      +     '<tr><td>③ 뒤</td><td><b>거래처</b>'
-      +       '<div class="rs">거래처를 고르면 저절로 들어옵니다</div></td></tr>'
-      +     '<tr><td>사이</td><td>밑줄 <b>_</b> 하나 — 띄어쓰기 대신</td></tr>'
-      +   '</table>'
-      +   '<div class="rbad">🚫 <b>쓰지 않는 것</b> — 띄어쓰기 · '
-      +     '<b>최종 · 진짜최종 · v2 · 복사본 · 무제</b> · 20260910(8자리)</div>'
-      +   '<div class="rbad">🔴 <b>만든 뒤에는 시트·드라이브에서 직접 고치지 마세요</b> — '
-      +     '이름은 서로를 찾는 <b>열쇠</b>라 한 곳만 바꾸면 나머지가 못 찾습니다.<br>'
-      +     '고칠 일이 생기면 프로젝트를 열고 <b>✏️ 이름</b>을 쓰세요 — '
-      +     '시트·회차·소싱·견적·수리·매입·드라이브 폴더와 <b>그 안 파일 이름</b>·<b>노션</b>까지 한 번에 바뀝니다.</div>'
-      + '</div>'
+         🔴 규칙을 여기서 «새로 만들지» 않았다 — 회사 이름 규칙(CLAUDE.md §4)을 그대로 옮긴 것이다.
+         🚚 2026-09-20 — 「종류=렌탈」이면 내용이 통째로 바뀐다(pjRuleBoxHtml_). #ruleBox 를
+            pjNewName() 이 다시 그린다 — 이 div 자체는 «처음 그릴 때 값»만 담는 자리다. */
+      + '<div id="ruleBox">' + pjRuleBoxHtml_('프로덕션') + '</div>'
       + '<div id="nWill" class="willbox"></div>'
       + '<button class="mkbtn" id="nMk" disabled>만들기</button>'
       + '<p class="foot" style="text-align:center;margin-top:8px">'
@@ -5063,8 +5048,51 @@
           그 칸 자체를 없앴다(이름은 하나). 제안만 다시 만든다. */
     if(typeof pjNewName === 'function') pjNewName();
   }
+  /* 📐 이름 양식 설명 상자 — 일반/렌탈 둘로 갈린다 (2026-09-20 대표 확정)
+     🔴 규칙을 여기서 새로 만들지 않는다 — CLAUDE.md §4 를 그대로 옮긴 것(§1). */
+  function pjRuleBoxHtml_(kind){
+    if(kind === '렌탈'){
+      return '<div class="rt">📐 이름 양식 — 렌탈</div>'
+        + '<div class="rex"><b>260910</b>_<b>렌탈</b>_<b>홍길동</b>_<b>클레이튼</b></div>'
+        + '<table class="rtb">'
+        +   '<tr><td>① 날짜</td><td><b>대여 시작일</b> · 260910 = 2026년 9월 10일'
+        +     '<div class="rs">위 날짜 칸을 고르면 저절로 들어옵니다</div></td></tr>'
+        +   '<tr><td>② 렌탈</td><td>렌탈 프로젝트라는 표시 — 고정 글자</td></tr>'
+        +   '<tr><td>③ 사람이름</td><td><b>거래처</b> 칸에 적은 이름'
+        +     '<div class="rs">거래처 칸이 여기로 들어갑니다 — 고르거나 직접 치세요</div></td></tr>'
+        +   '<tr><td>④ 프로젝트명</td><td><b>브랜드</b> 칸에 적은 것'
+        +     '<div class="rs">없으면 비워도 됩니다</div></td></tr>'
+        +   '<tr><td>사이</td><td>밑줄 <b>_</b> 하나 — 띄어쓰기 대신</td></tr>'
+        + '</table>'
+        + '<div class="rbad">🚫 <b>쓰지 않는 것</b> — 띄어쓰기 · '
+        +   '<b>최종 · 진짜최종 · v2 · 복사본 · 무제</b> · 20260910(8자리)</div>'
+        + '<div class="rbad">🔴 <b>만든 뒤에는 시트·드라이브에서 직접 고치지 마세요</b> — '
+        +   '이름은 서로를 찾는 <b>열쇠</b>라 한 곳만 바꾸면 나머지가 못 찾습니다.<br>'
+        +   '고칠 일이 생기면 프로젝트를 열고 <b>✏️ 이름</b>을 쓰세요.</div>';
+    }
+    return '<div class="rt">📐 이름 양식 — 누가 만들어도 이대로</div>'
+      + '<div class="rex"><b>260910</b>_<b>lalala</b>_<b>킷튼프로덕션</b></div>'
+      + '<table class="rtb">'
+      +   '<tr><td>① 날짜</td><td><b>촬영 첫날</b> · 260910 = 2026년 9월 10일'
+      +     '<div class="rs">위 날짜 칸을 고르면 저절로 들어옵니다</div></td></tr>'
+      +   '<tr><td>② 가운데</td><td><b>브랜드</b>'
+      +     '<div class="rs">브랜드를 고르면 저절로 들어옵니다. '
+      +     '브랜드가 없으면 <b>직접 적으세요</b> — 짧을수록 좋습니다</div></td></tr>'
+      +   '<tr><td>③ 뒤</td><td><b>거래처</b>'
+      +     '<div class="rs">거래처를 고르면 저절로 들어옵니다</div></td></tr>'
+      +   '<tr><td>사이</td><td>밑줄 <b>_</b> 하나 — 띄어쓰기 대신</td></tr>'
+      + '</table>'
+      + '<div class="rbad">🚫 <b>쓰지 않는 것</b> — 띄어쓰기 · '
+      +   '<b>최종 · 진짜최종 · v2 · 복사본 · 무제</b> · 20260910(8자리)</div>'
+      + '<div class="rbad">🔴 <b>만든 뒤에는 시트·드라이브에서 직접 고치지 마세요</b> — '
+      +   '이름은 서로를 찾는 <b>열쇠</b>라 한 곳만 바꾸면 나머지가 못 찾습니다.<br>'
+      +   '고칠 일이 생기면 프로젝트를 열고 <b>✏️ 이름</b>을 쓰세요 — '
+      +   '시트·회차·소싱·견적·수리·매입·드라이브 폴더와 <b>그 안 파일 이름</b>·<b>노션</b>까지 한 번에 바뀝니다.</div>';
+  }
   /* 🔴 2026-08-26 대표 확정 — 프로젝트명 양식 = 날짜_브랜드_거래처
      대표 원문: *"이름 양식이 다른데 날짜_브랜드or프로젝트명_거래처로 바꿔줘."*
+     🚚 2026-09-20 대표 확정 — 종류가 «렌탈»이면 날짜_렌탈_거래처(사람이름)_브랜드(프로젝트명)로 갈린다.
+        새 칸을 만들지 않았다 — 거래처=사람이름, 브랜드=프로젝트명 자리로 그대로 쓴다(§1).
      🔴 «제안»일 뿐이다 — 대표가 칸을 직접 고치면 그것을 그대로 쓴다. */
   function pjNewName(){
     var d = document.getElementById('nFrom').value;
@@ -5072,10 +5100,15 @@
     var brand = (PJ_NEW && PJ_NEW.brand && PJ_NEW.brand.name) ? PJ_NEW.brand.name.trim() : '';
     var cli   = (PJ_NEW && PJ_NEW.cli   && PJ_NEW.cli.name)   ? PJ_NEW.cli.name.trim()   : '';
     var mid   = brand;                                            /* 가운데 = 브랜드 */
+    var kindEl = document.getElementById('nKind');
+    var kind = kindEl ? kindEl.value : '프로덕션';
+    var rb = document.getElementById('ruleBox');
+    if(rb) rb.innerHTML = pjRuleBoxHtml_(kind);
     var nameEl = document.getElementById('nName');
     /* 🔴 대표가 손으로 고쳤으면 덮어쓰지 않는다. 고치는 중이면 이름은 «열쇠»라 아예 안 건드린다 */
     if(!nameEl.dataset.touched && !PJ_EDIT){
-      nameEl.value = [ymd, mid, cli].filter(function(x){return x;}).join('_');
+      var parts = (kind === '렌탈') ? [ymd, '렌탈', cli, mid] : [ymd, mid, cli];
+      nameEl.value = parts.filter(function(x){return x;}).join('_');
     }
     document.getElementById('nMk').disabled = !(ymd && nameEl.value.trim());
     var w = document.getElementById('nWill');
