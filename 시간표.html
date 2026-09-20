@@ -491,11 +491,16 @@ p{margin:7px 0}
       cell.c=colorId;
       if(cell.t.trim()) memory[key(cell.t)]=colorId;
       refreshCell(t.d, t.i);
+      scheduleSaveForDay(t.d);
     });
     totals();
   }
   function clearTargets(targets){
-    targets.forEach(function(t){ if(data[t.d][t.i].past) return; data[t.d][t.i].c=null; refreshCell(t.d, t.i); });
+    targets.forEach(function(t){
+      if(data[t.d][t.i].past) return;
+      data[t.d][t.i].c=null; refreshCell(t.d, t.i);
+      scheduleSaveForDay(t.d);
+    });
     totals();
   }
 
@@ -643,6 +648,8 @@ p{margin:7px 0}
   function applySleep(){
     var wake=+document.getElementById('wake').value, bed=+document.getElementById('bed').value;
     for(var d=0; d<DAYS; d++){
+      if(DAY_PAST[d]) continue;   /* 🔴 2026-09-20 — 에버노트 원본 날은 수면 덧칠 대상이 아니다.
+        (이걸 안 걸러서 과거 날 새벽 시간칸에 원본 hex 대신 문자열 'slp'가 들어가 색이 깨졌었다) */
       for(var i=0;i<HOURS.length;i++){
         var abs=6+i;
         var sleeping = (abs<wake) || (abs>=bed);
@@ -650,6 +657,8 @@ p{margin:7px 0}
         if(sleeping){ if(!cell.c || cell.c==='slp') cell.c='slp'; }
         else if(cell.c==='slp'){ cell.c=null; }
       }
+      /* 🔴 수면 자동 덧칠은 «보기용»이다 — 오늘 말고 다른 날짜까지 서버에 저장하지 않는다
+         (예전부터 그래왔다 — 다른 날은 사용자가 직접 만졌을 때만 저장한다). */
     }
     refreshAll(); totals();
   }
@@ -706,6 +715,7 @@ p{margin:7px 0}
             if(cell.past) return;
             cell.t=inp.value;
             autoColor(cell); refreshCell(d,i); totals();
+            scheduleSaveForDay(d);
           });
           c.appendChild(inp);
           /* 🔴 2026-09-20 — 왼쪽 클릭은 «그냥 둔다»(브라우저 기본 동작 = input 포커스 = 글자 입력).
@@ -750,6 +760,7 @@ p{margin:7px 0}
       inp.addEventListener('blur',function(){
         if(cell.past) return;
         cell.t=inp.value; autoColor(cell); refreshCell(0,i); totals();
+        scheduleSaveForDay(0);
       });
       bd.appendChild(inp);
       var tg=document.createElement('span'); tg.className='tag'; bd.appendChild(tg);
@@ -758,7 +769,7 @@ p{margin:7px 0}
       pk.disabled = past;
       var x=document.createElement('button'); x.className='xx'; x.textContent='×'; x.title='색 지우기';
       x.hidden = past;
-      x.onclick=function(e){ e.stopPropagation(); if(cell.past) return; cell.c=null; refreshCell(0,i); totals(); };
+      x.onclick=function(e){ e.stopPropagation(); if(cell.past) return; cell.c=null; refreshCell(0,i); totals(); scheduleSaveForDay(0); };
       bd.appendChild(pk); bd.appendChild(x);
       /* 왼쪽 클릭은 그대로 둔다(글자 입력) · 오른쪽 클릭(그 줄 어디든) 또는 🎨 버튼(폰용) = 색상 */
       el.addEventListener('contextmenu', function(e){
@@ -945,35 +956,58 @@ p{margin:7px 0}
     tb.appendChild(tr2);
   }
 
-  /* ══════════ 저장 — 오늘 바뀐 게 있으면 1.2초 뒤 자동으로 ══════════ */
-  var lastSavedJSON=null, saveTimer=null;
-  function cellsForSave(){ return today().map(function(c){ return {c:c.c, t:c.t}; }); }
-  function scheduleSaveIfChanged(){
-    var json=JSON.stringify(cellsForSave());
-    if(json===lastSavedJSON) return;
-    if(saveTimer) clearTimeout(saveTimer);
-    setSaveStatus('입력 중…');
-    saveTimer=setTimeout(function(){ doSave(json); }, 1200);
+  /* ══════════ 저장 — 어느 날이든 바뀐 게 있으면 1.2초 뒤 자동으로 ══════════
+     🔴 2026-09-20 실제 사고 — 예전엔 「오늘(d=0)」만 서버에 저장됐다. 2주 그리드가 되면서
+     대표님이 «어제·그제 칸도 고칠 수 있어 보여» 실제로 고치셨는데, 그 날들은 저장 호출 자체가
+     없어 조용히 사라졌다("어제하고 금요일 데이터가 사라졌어"). 날짜별로 따로 기억·저장한다. */
+  var lastSavedJSON={}, saveTimers={};
+  function dateStrForDay(d){
+    var dt=new Date(); dt.setDate(dt.getDate()-d);
+    var p=function(n){return (n<10?'0':'')+n;};
+    return dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate());
   }
-  function doSave(json){
-    saveTimer=null;
+  function cellsForDay(d){ return data[d].map(function(c){ return {c:c.c, t:c.t}; }); }
+  function cellsForSave(){ return cellsForDay(0); }
+  function scheduleSaveForDay(d){
+    if(DAY_PAST[d]) return;   /* 에버노트 원본(읽기전용) 날은 애초에 저장할 게 없다 */
+    var ds=dateStrForDay(d), json=JSON.stringify(cellsForDay(d));
+    if(json===lastSavedJSON[ds]) return;
+    if(saveTimers[d]) clearTimeout(saveTimers[d]);
+    setSaveStatus('입력 중…');
+    saveTimers[d]=setTimeout(function(){ doSaveDay(d, ds, json); }, 1200);
+  }
+  function scheduleSaveIfChanged(){ scheduleSaveForDay(0); }
+  function doSaveDay(d, ds, json){
+    saveTimers[d]=null;
     setSaveStatus('저장 중…');
-    tsCall('tsSave', {date: todayDateStr(), cells: json}, function(){
-      lastSavedJSON=json; setSaveStatus('저장됨 · '+nowTime());
+    tsCall('tsSave', {date: ds, cells: json}, function(){
+      lastSavedJSON[ds]=json; setSaveStatus('저장됨 · '+nowTime());
     }, function(err){
       setSaveStatus('🔴 저장 실패 — '+((err&&err.error)||'알 수 없음')+' (다시 시도하려면 [지금 바로 저장])');
     });
   }
   /* 🔴 2026-09-20 — 1.2초 대기 «중»에 창이 닫히거나 숨겨지면(탭 전환·닫기·폰 홈버튼) 그 저장이
-     안 나갈 수 있었다. 숨겨지는 «순간» 밀린 저장이 있으면 기다리지 말고 바로 내보낸다.
+     안 나갈 수 있었다. 숨겨지는 «순간» 밀린 저장이 있으면(어느 날이든) 기다리지 말고 바로 내보낸다.
      (beforeunload 대신 visibilitychange/pagehide를 쓴다 — 폰 브라우저에서 더 안정적으로 온다) */
   function flushPendingSave(){
-    if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
-    var json=JSON.stringify(cellsForSave());
-    if(json!==lastSavedJSON) doSave(json);
+    for(var d=0; d<DAYS; d++){
+      if(DAY_PAST[d]) continue;
+      if(saveTimers[d]) clearTimeout(saveTimers[d]);
+      var ds=dateStrForDay(d), json=JSON.stringify(cellsForDay(d));
+      if(json!==lastSavedJSON[ds]) doSaveDay(d, ds, json);
+      else saveTimers[d]=null;
+    }
   }
   window.addEventListener('pagehide', flushPendingSave);
   document.addEventListener('visibilitychange', function(){ if(document.hidden) flushPendingSave(); });
+  /* 🔴 2026-09-20 — 지금 화면 상태를 «이미 저장된 것」으로 찍는다. loadFromServer 직후 «뿐만 아니라»
+     그 다음 자동으로 도는 수면 덧칠(applySleep)까지 «끝난 뒤에도 한 번 더» 찍어야 한다 — 안 그러면
+     수면 자동 덧칠만으로 다른 날(오늘 아닌 날)까지 «바뀐 것」으로 오인해 매번 서버에 저장하려 든다
+     (사용자가 손댄 적 없는 날짜에 불필요한 저장이 나가는 것을 막는 것). */
+  function captureSaveBaseline(){
+    lastSavedJSON={}; saveTimers={};
+    for(var d=0; d<DAYS; d++) lastSavedJSON[dateStrForDay(d)]=JSON.stringify(cellsForDay(d));
+  }
   function loadFromServer(cb){
     setSaveStatus('불러오는 중…');
     tsCall('tsLoad', {date: todayDateStr()}, function(res){
@@ -985,14 +1019,16 @@ p{margin:7px 0}
           return {h:h, t:c.t||'', c:c.c||null, past:!!day.past};
         });
       });
-      lastSavedJSON = JSON.stringify(cellsForSave());
+      captureSaveBaseline();
       setSaveStatus('불러왔습니다 · '+nowTime());
       cb && cb();
+      captureSaveBaseline();
     }, function(err){
       setSaveStatus('🔴 서버에서 못 불러왔습니다('+((err&&err.error)||'')+') — 빈 화면으로 시작합니다');
       data=[]; DAY_PAST=[]; for(var d=0;d<DAYS;d++){ data.push(blank()); DAY_PAST.push(false); }
-      lastSavedJSON = JSON.stringify(cellsForSave());
+      captureSaveBaseline();
       cb && cb();
+      captureSaveBaseline();
     });
   }
 
@@ -1019,8 +1055,8 @@ p{margin:7px 0}
     refreshAll(); totals();
   };
   document.getElementById('bSave').onclick=function(){
-    if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
-    doSave(JSON.stringify(cellsForSave()));
+    try{ document.activeElement.blur(); }catch(e){}   /* 지금 타이핑 중이던 칸의 최신 글자까지 반영 */
+    flushPendingSave();
   };
   ['optB','optC','optF','optSky'].forEach(function(id){
     var el=document.getElementById(id);
@@ -1034,7 +1070,10 @@ p{margin:7px 0}
       saveBool('ts_optS', el.checked);
       if(el.checked) applySleep();
       else {
-        for(var d=0; d<DAYS; d++) data[d].forEach(function(c){ if(c.c==='slp') c.c=null; });
+        for(var d=0; d<DAYS; d++){
+          if(DAY_PAST[d]) continue;
+          data[d].forEach(function(c){ if(c.c==='slp') c.c=null; });
+        }
         refreshAll(); totals();
       }
       ruletable();
