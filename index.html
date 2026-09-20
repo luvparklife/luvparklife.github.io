@@ -4431,29 +4431,44 @@
     return false;
   }
   window.netLogin = netLogin;
+  /* ═══════════════════════════════════════════════════════════════
+     🔑 «통행증부터 받고 다시 해본다» — 되살리기는 여기 하나뿐이다 (2026-09-21)
+     ═══════════════════════════════════════════════════════════════
+     🔴 [무엇이 문제였나] 노션을 못 불렀을 때 「다시 불러오기」는 «캐시만» 비우고 목록을
+        다시 불렀다. 그런데 못 부른 이유가 «통행증·신분증이 없어서»면 다시 불러봐야
+        같은 자리에서 또 막힌다 — 대표가 몇 번을 눌러도 화면이 한 글자도 안 바뀌었다
+        (9/14 · 9/15 · 9/21 세 번 신고).
+     🔴 [왜 «한 곳»인가] 노션 목록은 두 화면이 쓴다 — 「＋ 새 프로젝트」 폼(netRetry)과
+        프로젝트 「정보」 고치기 창(kvPopOpen). 처음에 새 프로젝트 쪽만 고쳤더니
+        **대표는 정보 창에서 똑같이 막히셨다.** 두 군데에 같은 코드를 쓰면 또 어긋난다(§1).
+     · again = 통행증이 준비된 뒤 «다시 해볼 일»(목록 다시 불러 그리기)
+     · 돌려주는 값 = true 면 «통행증을 받는 중»(부른 쪽이 그 사실을 화면에 보여주면 된다) */
+  function netRecover_(again){
+    NET_CACHE = {}; NET_PROPS = null;
+    if(typeof payOK === 'function' && !payOK()){
+      NET_WHY = '통행증을 받는 중…';
+      SESS_TRY = 0;                       /* 앞서 3번 써서 멈춰 있었어도 다시 센다 */
+      try{ sessEnsure(); }catch(e){}
+      setTimeout(function(){
+        NET_CACHE = {}; NET_PROPS = null; NET_WHY = '다시 불러오는 중…';
+        try{ again(); }catch(e){}
+      }, 3500);
+      return true;
+    }
+    NET_WHY = '다시 불러오는 중…';        /* 통행증은 멀쩡 — 전과 똑같이 목록만 다시 (헛물 없음) */
+    try{ again(); }catch(e){}
+    return false;
+  }
+  window.netRecover_ = netRecover_;
+
   /* 🔄 노션을 다시 불러온다 — 못 불렀을 때 대표가 눌러 다시 시도할 수 있게 (2026-08-26) */
   function netRetry(){
     /* 🔴 적다 만 것을 «먼저» 저장한다 — 화면을 다시 그리면 칸이 새로 만들어지므로,
        0.5초 뒤에 저장되기를 기다리는 사이에 방금 친 글자가 날아간다. */
     try{ if(typeof pjDraftSave === 'function') pjDraftSave(); }catch(e){}
-    NET_CACHE = {}; NET_PROPS = null;
-    /* 🔴 2026-09-21 — «통행증이 없으면 그것부터 받는다» (대표 신고 3번째)
-       [무엇이 문제였나] 여기는 캐시만 비우고 목록을 다시 불렀다. 그런데 못 부른 이유가
-         «통행증·신분증이 없어서»일 때는, 다시 불러봐야 같은 자리에서 또 막힌다 —
-         대표가 이 버튼을 몇 번을 눌러도 화면이 한 글자도 안 바뀌었다.
-       [고침] 못 부른 이유가 통행증이면 sessEnsure() 로 «통행증부터» 받고, 3.5초 뒤에
-         목록을 다시 부른다. 통행증이 멀쩡하면 전과 똑같이 목록만 다시 부른다(헛물 없음). */
-    var needPass = (typeof payOK === 'function') && !payOK();
-    NET_WHY = needPass ? '통행증을 받는 중…' : '다시 불러오는 중…';
-    if(needPass){
-      SESS_TRY = 0;                       /* 앞서 3번 써서 멈춰 있었어도 다시 센다 */
-      try{ sessEnsure(); }catch(e){}
-      setTimeout(function(){
-        NET_CACHE = {}; NET_PROPS = null; NET_WHY = '다시 불러오는 중…';
-        if(typeof pjNewOpen === 'function') pjNewOpen();
-      }, 3500);
-    }
-    if(typeof pjNewOpen === 'function') pjNewOpen();
+    var redraw = function(){ if(typeof pjNewOpen === 'function') pjNewOpen(); };
+    /* 통행증을 받는 중이면 «지금» 그 사실을 화면에 보여준다. 아니면 netRecover_ 가 바로 다시 그린다 */
+    if(netRecover_(redraw)) redraw();
     return false;
   }
   window.netRetry = netRetry;
@@ -7175,7 +7190,39 @@
       pjRpMsg(okMsg || '저장됐습니다');
       /* 🔴 다음에 이 프로젝트를 다시 열 때 옛 값이 나오지 않게 캐시도 고친다 */
       try { var c = PJ_CHK_CACHE[PJ_RP_PROJ]; if(c) c.report = d.report; } catch(e){}
+      /* 🗒 노션에도 «뒤에서» 보낸다 — 회고와 «같은 방식»(3초 모았다 한 번) */
+      try { pjRpNotionLater_(); } catch(e2){}
     }, 20000);
+  }
+  /* ═══ 🗒 보고서를 노션으로 — «뒤에서 조용히» (2026-09-21) ═══════════
+     🔴 [회고가 쓰는 그 길 그대로다] `pjNotion` 창구 · 3초 모으기 · 통째로 덮어쓰기.
+        새로 발명한 것이 없다(§4-1) — 다른 점은 `act` 가 'report' 인 것 하나뿐.
+     🔴 [기다리게 하지 않는다] 노션까지 1.3~1.5초다(실측). 화면은 시트에 저장되는 즉시 넘어간다.
+     🔴 [실패를 조용히 두지 않는다] 안 갔는데 간 줄 알면 대표님이 노션에서 못 찾으신다. */
+  var PJ_RP_TM = null;
+  function pjRpNotionLater_(){
+    if(PJ_RP_TM) clearTimeout(PJ_RP_TM);
+    PJ_RP_TM = setTimeout(function(){
+      PJ_RP_TM = null;
+      var proj = PJ_RP_PROJ;
+      if(!proj || typeof pjNotion !== 'function') return;
+      /* 🔴 보낼 때의 «그 값»을 담아 둔다 — 답이 오는 사이 대표님이 또 고치실 수 있다 */
+      var snap = PJ_RP ? JSON.parse(JSON.stringify(PJ_RP)) : null;
+      if(!snap) return;
+      try {
+        pjNotion('report', proj, snap, function(d){
+          /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «말하지 않는다» — 엉뚱한 화면에 뜬다 */
+          if(PJ_RP_PROJ !== proj) return;
+          if(!d || !d.ok){
+            pjRpMsg('시트에 저장됨 · 🔴 노션에는 못 보냈습니다'
+                    + (d && d.error ? ' — ' + d.error : ' — 다음에 한 글자 더 적으면 다시 갑니다'), 1);
+            return;
+          }
+          if(d.skipped){ pjRpMsg('시트에 저장됨 · 🗒 노션에 이 프로젝트가 없어 안 보냈습니다'); return; }
+          pjRpMsg('시트·노션에 저장됨');
+        });
+      } catch(e){}
+    }, 3000);
   }
   /* 누르기 — 🔴 회고와 «같은 방식»(위임). 새로 발명하지 않는다 */
   document.addEventListener('click', function(e){
@@ -8030,12 +8077,32 @@
       hits.className = 'hits on';
     }
     if(src){
+      /* 🔴 2026-09-21 — «다시 부를 수 있게» 함수로 묶었다 (대표 신고 — 캡처로 잡혔다)
+         [무엇이 문제였나] 전에는 여기서 한 번 부르고 끝이었다. 못 받으면 빨간 글자만 뜨고
+           **버튼이 하나도 없어** 이 창에서 대표님이 하실 수 있는 일이 없었다.
+           「＋ 새 프로젝트」 쪽만 고쳤더니 대표님은 «정보 고치기 창»에서 똑같이 막히셨다. */
+      var kvLoad = function(){
       msg.textContent = '노션 목록 불러오는 중…';
       /* 🔴 2026-09-19 — fetchKey 가 있으면(거래처·포토그래퍼·브랜드) 노션 검색 자체를
          전체(cat='')로 보낸다 — 서버가 관계로 먼저 걸러버리면 다른 관계에 있는 것은
          정렬이고 뭐고 애초에 응답에 안 실려 온다. */
       netAsk(src.fetchKey ? '' : src.cat, function(r){
-        if(!r){ msg.textContent = '🔴 노션 목록을 못 받았습니다 — 직접 적으시면 시트에만 저장됩니다'; return; }
+        if(!r){
+          /* 🔴 2026-09-21 — «길»을 준다. 되살리는 일은 netRecover_ 하나가 한다(§1) —
+             「＋ 새 프로젝트」 폼도 같은 것을 쓰므로 둘이 어긋날 수 없다. */
+          msg.innerHTML = '🔴 노션 목록을 못 받았습니다 — 직접 적으시면 시트에만 저장됩니다 '
+            + '<a href="#" class="kvre" style="font-size:12px">🔄 다시 받기</a>'
+            + ((typeof payOK === 'function' && !payOK())
+                ? '<br><span style="font-size:12px">🔑 그래도 안 되면 <b>맨 위로 올라가 구글 로그인을 다시</b> 눌러 주세요 — 그게 가장 확실합니다.</span>'
+                : '');
+          var re = msg.querySelector('.kvre');
+          if(re) re.onclick = function(){
+            msg.textContent = '다시 받는 중…';
+            if(netRecover_(kvLoad)) msg.textContent = '통행증을 받는 중…';
+            return false;
+          };
+          return;
+        }
         /* 🔴 좁히는 계산을 새로 쓰지 않는다 — `netPick`(하드 필터)·`netRankFull_`(정렬만, §1)
            이미 그 일을 한다. x.pos·x.sub 는 «배열»이라 글자로 비교하면 하나도 안 걸린다
            (실제로 그렇게 짰다가 고쳤다). */
@@ -8048,6 +8115,8 @@
                         + (mustPick ? '골라야 저장됩니다' : '골라야 노션에도 들어갑니다');
         drawHits();
       });
+      };            /* ← kvLoad 끝 (2026-09-21) */
+      kvLoad();
     } else {
       msg.textContent = '';
     }
