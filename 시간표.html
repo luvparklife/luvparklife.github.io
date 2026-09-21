@@ -809,8 +809,12 @@ p{margin:7px 0}
              빠져나갈 때 방금 친 글자가 저장 표시조차 안 돼 통째로 사라졌다. 치는 «중»에도 표시한다. */
           inp.addEventListener('input',function(){ cell.t=inp.value; markDirty(d); });
           inp.addEventListener('blur',function(){
+            /* 🔴 2026-09-21 실제 사고 — claimPastDay_가 이 날 모든 칸의 inp.value를 ''로 밀어버리는데,
+               그 다음 줄에서 inp.value를 다시 읽으면 방금 친 글자가 통째로 사라진다.
+               claim «전에» 값을 먼저 붙잡아 둔다. */
+            var typed=inp.value;
             if(DAY_PAST[d]) claimPastDay_(d);
-            cell.t=inp.value; inp.style.pointerEvents='';
+            cell.t=typed; inp.value=typed; inp.style.pointerEvents='';
             autoColor(cell); refreshCell(d,i); totals();
             markDirty(d);
           });
@@ -868,8 +872,9 @@ p{margin:7px 0}
       inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; markDirty(0); });
       inp.addEventListener('input',function(){ cell.t=inp.value; markDirty(0); });
       inp.addEventListener('blur',function(){
+        var typed=inp.value;
         if(DAY_PAST[0]) claimPastDay_(0);
-        cell.t=inp.value; autoColor(cell); refreshCell(0,i); totals();
+        cell.t=typed; inp.value=typed; autoColor(cell); refreshCell(0,i); totals();
         markDirty(0);
       });
       bd.appendChild(inp);
