@@ -99,9 +99,9 @@ p{margin:7px 0}
 .wk td.c.seld{box-shadow:inset 0 0 0 3px #2c2c2c; z-index:1}
 .wk tr.pastday td.d{color:#9a7a3a}
 .wk tr.empty td.d{color:#ccc}
-.wk.paint td.c.past{cursor:not-allowed}
-.wk.paint td.c.past:hover{outline:none}
-.wk td.c.past input{cursor:not-allowed}
+/* 🔴 2026-09-21 — 과거 날도 손대면 칠할 수 있어 not-allowed 커서를 뺐다. .past는 이제
+   «옅은 배경 힌트»만 준다(진짜 원본 색은 자바스크립트가 style.background로 직접 칠함). */
+.wk td.c.past{box-shadow:inset 0 0 0 1px rgba(154,122,58,.35)}
 
 /* ── 하루 보기(폰) ── */
 .grid{background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; max-width:520px}
@@ -218,8 +218,9 @@ p{margin:7px 0}
 
 <div id="viewWeek">
   <div class="scroll"><table class="wk paint" id="wk"></table></div>
-  <p class="calcnote">오늘은 <b>굵은 줄</b>입니다. 📗 표시가 붙은 날은 <b>에버노트 원본 기록(읽기 전용)</b>입니다 — 아직
-  칠 안 한 날은 새로 칠할 수 있습니다.
+  <p class="calcnote">오늘은 <b>굵은 줄</b>입니다. 📗 표시가 붙은 날은 <b>에버노트 원본 기록</b>입니다 — 이 날도 칠하거나
+  글자를 쓸 수 있습니다. 단, <b>손대는 순간 그 날 전체가 지금 색 체계로 새로 시작</b>합니다(원본 14색은 지금 11색과
+  안 겹쳐서 자동으로 못 옮깁니다). 원본은 지워지지 않고 ⑥ 지난 기록 보기에서 언제든 볼 수 있습니다.
   <br>폰에서는 옆으로 밀어서 봅니다.</p>
 </div>
 
@@ -379,8 +380,9 @@ p{margin:7px 0}
     try{ saved = localStorage.getItem('ts_idtoken'); }catch(e){}
     var payload = saved && decodeJWT(saved);
     if(saved && payload && payload.exp*1000 > Date.now()+60000){
+      /* 🔴 2026-09-21 교차검증 지적 — startApp() 안에서도 scheduleSilentRefresh()를 부르는데
+         여기서 «또» 불러서 갱신 타이머가 두 벌 돌고 있었다(작은 낭비지만 불필요). */
       ID_TOKEN = saved; hideGate(payload.email); startApp();
-      scheduleSilentRefresh();
     } else {
       google.accounts.id.prompt(function(notification){
         if(notification.isNotDisplayed() || notification.isSkippedMoment()){
@@ -432,7 +434,14 @@ p{margin:7px 0}
   }
   function setSaveStatus(t){ var e=document.getElementById('saveStatus'); if(e) e.textContent=t; }
   function nowTime(){ var d=new Date(),p=function(n){return (n<10?'0':'')+n;}; return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
-  function todayDateStr(){ var d=new Date(),p=function(n){return (n<10?'0':'')+n;}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  /* 🔴 2026-09-21 교차검증 지적 — 자정을 넘겨 탭을 계속 켜두면(늦게까지 일할 때 실제로 있는 일)
+     "오늘"이 새로 바뀌어 버려서, 화면엔 여전히 어제 날짜로 보이는 줄(예: "9/21")을 고쳐도
+     저장은 «새 오늘»(9/22) 날짜로 나가는 어긋남이 생길 수 있었다. 화면을 그릴 때 쓴 "오늘"을
+     페이지를 연 순간 한 번 고정해서, 이 세션 동안은 자정이 지나도 안 바뀌게 한다. */
+  var ANCHOR_DATE = new Date();
+  function pad2_(n){ return (n<10?'0':'')+n; }
+  function fmtDate_(dt){ return dt.getFullYear()+'-'+pad2_(dt.getMonth()+1)+'-'+pad2_(dt.getDate()); }
+  function todayDateStr(){ return fmtDate_(ANCHOR_DATE); }
 
   /* 설정값 저장 — 다음에 열어도 그대로 */
   function restoreBool(k,def){ try{ var v=localStorage.getItem(k); return v===null?def:v==='1'; }catch(e){ return def; } }
@@ -474,6 +483,26 @@ p{margin:7px 0}
      원본을 대신 채워 준다(tsLoadWeek_). 그런 날은 읽기전용 · 원본 색 그대로 보여준다.
      DAY_PAST[d] = 그 날이 과거기록에서 채워진 날인지. PAST_COLORS = hex→{label,group} */
   var DAY_PAST=[], PAST_COLORS={};
+  /* 🔴 2026-09-21 대표 지시 — "2주 그리드는 모두 수정 가능하게 해줘." 과거(에버노트) 날짜도
+     이제 손댈 수 있다. 단, 원본 14색과 지금 쓰는 11색은 겹치는 색이 0개라 자동으로 못 옮긴다 —
+     그래서 그 날을 «처음 손대는 순간» 그 날 전체가 새 색 체계로 다시 시작한다(빈 칸에서 새로
+     칠하는 것). 원본은 지우지 않는다 — «과거기록» 시트와 ⑥ 지난 기록 보기에는 그대로 남는다. */
+  function claimPastDay_(d){
+    if(!DAY_PAST[d]) return;
+    DAY_PAST[d]=false;
+    data[d].forEach(function(c){
+      c.past=false; c.c=null; c.t='';
+      if(c.inp){ c.inp.readOnly=false; c.inp.value=''; }
+      if(c.el){ c.el.classList.remove('past'); c.el.title=''; }
+    });
+    var tr = data[d][0].el && data[d][0].el.closest('tr');
+    if(tr){
+      tr.classList.remove('pastday');
+      var dcell=tr.querySelector('td.d');
+      if(dcell){ dcell.textContent=dcell.textContent.replace(/\s*📗$/,''); dcell.title=''; }
+    }
+    for(var idx=0; idx<HOURS.length; idx++) refreshCell(d, idx);   /* 🔴 배경색(원본 hex)도 다시 그린다 */
+  }
 
   function blank(){ return HOURS.map(function(h){ return {h:h, t:'', c:null}; }); }
   var data=[]; for(var dd0=0; dd0<DAYS; dd0++) data.push(blank());
@@ -531,8 +560,8 @@ p{margin:7px 0}
   }
   function applyToTargets(targets, colorId){
     targets.forEach(function(t){
+      if(DAY_PAST[t.d]) claimPastDay_(t.d);
       var cell=data[t.d][t.i];
-      if(cell.past) return;
       cell.c=colorId;
       if(cell.t.trim()) memory[key(cell.t)]=colorId;
       refreshCell(t.d, t.i);
@@ -542,7 +571,7 @@ p{margin:7px 0}
   }
   function clearTargets(targets){
     targets.forEach(function(t){
-      if(data[t.d][t.i].past) return;
+      if(DAY_PAST[t.d]) claimPastDay_(t.d);
       data[t.d][t.i].c=null; refreshCell(t.d, t.i);
       markDirty(t.d);
     });
@@ -759,7 +788,7 @@ p{margin:7px 0}
     var th0=document.createElement('th'); th0.className='dh'; th0.textContent=''; head.appendChild(th0);
     HOURS.forEach(function(h){ var th=document.createElement('th'); th.textContent=hlabel(h).replace(':00',''); head.appendChild(th); });
     wk.appendChild(head);
-    var now=new Date();
+    var now=ANCHOR_DATE;   /* 🔴 페이지 연 순간에 고정 — 자정 넘겨도 화면 날짜가 안 바뀐다(위 설명 참고) */
     for(var d=0; d<DAYS; d++){
       (function(d){
         var dt=new Date(now.getTime()-d*86400000);
@@ -767,7 +796,7 @@ p{margin:7px 0}
         var tr=document.createElement('tr'); if(d===0) tr.className='today'; if(past) tr.className=(tr.className+' pastday').trim();
         var td=document.createElement('td'); td.className='d';
         td.textContent=(dt.getMonth()+1)+'/'+dt.getDate()+' '+'일월화수목금토'[dt.getDay()]+(d===0?' ←오늘':(past?' 📗':''));
-        if(past) td.title='에버노트 원본 기록(읽기 전용)';
+        if(past) td.title='에버노트 원본 기록 — 손대면 이 날은 새 색 체계로 다시 시작합니다';
         tr.appendChild(td);
         HOURS.forEach(function(h,i){
           var cell=data[d][i];
@@ -775,17 +804,23 @@ p{margin:7px 0}
           var inp=document.createElement('input'); inp.type='text'; inp.value=cell.t; inp.readOnly=past;
           var ime=false;
           inp.addEventListener('compositionstart',function(){ ime=true; });
-          inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; });
-          inp.addEventListener('input',function(){ cell.t=inp.value; });
+          inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; markDirty(d); });
+          /* 🔴 2026-09-21 교차검증 지적 — blur에서만 markDirty하면, blur 없이(예: 탭을 그냥 닫음)
+             빠져나갈 때 방금 친 글자가 저장 표시조차 안 돼 통째로 사라졌다. 치는 «중»에도 표시한다. */
+          inp.addEventListener('input',function(){ cell.t=inp.value; markDirty(d); });
           inp.addEventListener('blur',function(){
-            if(cell.past) return;
+            if(DAY_PAST[d]) claimPastDay_(d);
             cell.t=inp.value; inp.style.pointerEvents='';
             autoColor(cell); refreshCell(d,i); totals();
             markDirty(d);
           });
           c.appendChild(inp);
+          /* 🔴 2026-09-21 교차검증 지적 — 색판을 «열어보기만」 해도(아직 색을 고르지도 않았는데)
+             그 날 전체가 지워지는 건 위험했다("구경만 했는데 다 지워짐"). claimPastDay_는 실제로
+             색을 고르거나(applyToTargets/applyPaint) 글자를 바꿨을 때(blur)만 부른다 —
+             여기(mousedown/contextmenu/dblclick)는 «그냥 열기만» 하므로 claim을 빼고,
+             dblclick은 입력만 열어준다(읽기전용 해제) — 실제 반영은 blur에서 한다. */
           c.addEventListener('mousedown', function(e){
-            if(cell.past) return;
             if(mode==='type'||typing) return;
             if(e.button!==0) return;
             e.preventDefault();
@@ -797,18 +832,18 @@ p{margin:7px 0}
             } else startPaint(d,i);
           });
           c.addEventListener('contextmenu', function(e){
-            if(cell.past) return;
-            e.preventDefault(); miniOpen(e.clientX, e.clientY, [{d:d,i:i}]);
+            e.preventDefault();
+            miniOpen(e.clientX, e.clientY, [{d:d,i:i}]);
           });
           c.addEventListener('mouseenter', function(){
-            if(!dragging || cell.past) return;
+            if(!dragging) return;
             if(pickMode==='cell'){
               if(!didDrag){ didDrag=true; miniClose(); }
               if(d===pend.d) extendSelection(pend.d, pend.i, i);
             } else applyPaint(d,i,dragMode);
           });
           c.addEventListener('dblclick', function(){
-            if(cell.past) return;
+            inp.readOnly=false;
             inp.style.pointerEvents='auto'; inp.focus(); inp.select();
           });
           cell.el=c; cell.inp=inp;
@@ -830,9 +865,10 @@ p{margin:7px 0}
       var inp=document.createElement('input'); inp.type='text'; inp.value=cell.t; inp.placeholder='한 일을 적으세요';
       var ime=false;
       inp.addEventListener('compositionstart',function(){ ime=true; });
-      inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; });
-      inp.addEventListener('input',function(){ cell.t=inp.value; });
+      inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; markDirty(0); });
+      inp.addEventListener('input',function(){ cell.t=inp.value; markDirty(0); });
       inp.addEventListener('blur',function(){
+        if(DAY_PAST[0]) claimPastDay_(0);
         cell.t=inp.value; autoColor(cell); refreshCell(0,i); totals();
         markDirty(0);
       });
@@ -840,7 +876,7 @@ p{margin:7px 0}
       var tg=document.createElement('span'); tg.className='tag'; bd.appendChild(tg);
       var pk=document.createElement('button'); pk.className='pk'; pk.type='button'; pk.title='여기를 눌러 칠합니다';
       var x=document.createElement('button'); x.className='xx'; x.textContent='×'; x.title='색 지우기';
-      x.onclick=function(e){ e.stopPropagation(); cell.c=null; refreshCell(0,i); totals(); markDirty(0); };
+      x.onclick=function(e){ e.stopPropagation(); if(DAY_PAST[0]) claimPastDay_(0); cell.c=null; refreshCell(0,i); totals(); markDirty(0); };
       bd.appendChild(pk); bd.appendChild(x);
       hh.addEventListener('mousedown', function(e){
         e.preventDefault();
@@ -874,8 +910,8 @@ p{margin:7px 0}
     return true;
   }
   function applyPaint(d,i,m){
+    if(DAY_PAST[d]) claimPastDay_(d);   /* 🔴 2026-09-21 — 과거 날도 손대는 순간부터 칠할 수 있다 */
     var cell=data[d][i];
-    if(cell.past) return;   /* 지난 기록(에버노트 원본)은 못 칠한다 */
     cell.c = (m==='erase') ? null : brush;
     if(cell.t.trim() && cell.c) memory[key(cell.t)]=cell.c;
     refreshCell(d,i); totals();
@@ -937,6 +973,8 @@ p{margin:7px 0}
     rows.forEach(function(r){
       if(!r.c) return;
       var C=CMAP[r.c];
+      if(!C) return;   /* 🔴 2026-09-21 교차검증 지적 — 알 수 없는 색값(예: 과거 hex가 잘못 섞임)이면
+        여기서 죽지 않고 그냥 건너뛴다(refreshCell은 이미 이렇게 방어돼 있었는데 여긴 안 돼 있었다) */
       if(C.id==='slp'){ if(useSleep()){ sleepN++; painted++; } return; }
       pt[C.cat]+=C.val; cells[C.cat]+=1; painted++;
       if(C.sub) grow[C.sub]+=C.val;
@@ -1060,45 +1098,66 @@ p{margin:7px 0}
 
   /* ══════════ 저장 — 「어디를 고쳤나 표시만」 + 「2초마다 안전망이 훑어서 저장」 ══════════
      🔴 2026-09-21 대표 지시 — "저장 로직 어떻게 할건지 정해." 그 전 방식(칠할 때마다 그 자리에서
-     scheduleSaveForDay(d)를 일일이 붙이는 것)은 붙이는 곳을 하나라도 빠뜨리면 그 자리만 조용히
-     저장이 안 됐다("어디는 되고 어디는 안 되는데") — 실제로 세 번이나 그렇게 됐다(글자 입력은
-     고쳤는데 붓칠하기는 빠뜨리는 식). 그래서 구조를 바꾼다:
+     그때그때 저장을 걸어주는 것)은 붙이는 곳을 하나라도 빠뜨리면 그 자리만 조용히 저장이 안
+     됐다("어디는 되고 어디는 안 되는데"). 그래서 구조를 바꿨다:
        ①고칠 때는 그 날짜를 «더러움(DIRTY)»으로 표시만 한다(markDirty) — 이것 하나만 빠뜨리기 어렵다.
        ②2초마다 도는 안전망(flushDirty)이 더러운 날짜를 훑어 실제로 서버에 보낸다.
-       ③실패하면 다시 더러움으로 남겨 «다음 2초에 저절로 재시도»한다(예전엔 실패하면 그걸로 끝이었다).
-     한 곳(flushDirty)만 서버로 나가므로, 새 기능을 추가할 때도 markDirty(d) 한 줄만 잊지 않으면 된다. */
-  var lastSavedJSON={}, DIRTY={};
+       ③실패하면 다시 더러움으로 남겨 다음 tick에 저절로 재시도한다.
+     🔴 2026-09-21 코덱스 교차검증 반영 — 하루당 «동시에 최대 하나»의 저장 요청만 내보낸다
+     (INFLIGHT). 느린 네트워크에서 두 요청이 겹치면 늦게 «도착한» 쪽이 이겨서 방금 고친 내용이
+     예전 것에 덮일 수 있다는 지적 — 애초에 겹쳐 나가지 않게 막는다. 연달아 실패하면(오프라인 등)
+     매 2초 계속 두드리지 않고 실패 횟수만큼 간격을 늘린다(최대 10초). */
+  var lastSavedJSON={}, DIRTY={}, INFLIGHT={}, FAIL_STREAK={}, RETRY_AT={};
+  var SAVE_ERROR=null;   /* 마지막 실패 이유 — 다른 날짜가 성공해도 이 메시지가 안 지워진다 */
   function dateStrForDay(d){
-    var dt=new Date(); dt.setDate(dt.getDate()-d);
-    var p=function(n){return (n<10?'0':'')+n;};
-    return dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate());
+    var dt=new Date(ANCHOR_DATE.getTime()); dt.setDate(dt.getDate()-d);
+    return fmtDate_(dt);
   }
   function cellsForDay(d){ return data[d].map(function(c){ return {c:c.c, t:c.t}; }); }
   function cellsForSave(){ return cellsForDay(0); }
+  function pendingSaveCount_(){
+    var n=0;
+    Object.keys(DIRTY).forEach(function(k){ if(!DAY_PAST[k]) n++; });
+    Object.keys(INFLIGHT).forEach(function(k){ if(INFLIGHT[k]) n++; });
+    return n;
+  }
+  function refreshSaveStatus_(){
+    if(SAVE_ERROR){ setSaveStatus('🔴 저장 실패 — '+SAVE_ERROR+' (다시 시도하려면 [지금 바로 저장])'); return; }
+    setSaveStatus(pendingSaveCount_()>0 ? '저장 중…' : ('저장됨 · '+nowTime()));
+  }
   function markDirty(d){
     if(DAY_PAST[d]) return;   /* 에버노트 원본(읽기전용) 날은 애초에 저장할 게 없다 */
     DIRTY[d]=true;
-    setSaveStatus('입력 중…');
+    refreshSaveStatus_();
   }
   function scheduleSaveIfChanged(){ markDirty(0); }
   function flushDirty(){
-    var days=Object.keys(DIRTY); if(!days.length) return;
-    DIRTY={};
-    days.forEach(function(dKey){
+    var now=Date.now();
+    Object.keys(DIRTY).forEach(function(dKey){
       var d=Number(dKey);
-      if(DAY_PAST[d]) return;
+      if(DAY_PAST[d]){ delete DIRTY[d]; return; }
+      if(INFLIGHT[d]) return;                              /* 이미 나가 있는 요청 — 끝날 때까지 대기 */
+      if(RETRY_AT[d] && now < RETRY_AT[d]) return;          /* 실패 후 대기 시간 — 아직 재시도할 때 아님 */
+      delete DIRTY[d];
       var ds=dateStrForDay(d), json=JSON.stringify(cellsForDay(d));
-      if(json===lastSavedJSON[ds]) return;   /* 이미 그 내용 그대로 저장돼 있다 */
-      setSaveStatus('저장 중…');
+      if(json===lastSavedJSON[ds]) return;                  /* 이미 그 내용 그대로 저장돼 있다 */
+      INFLIGHT[d]=true;
+      refreshSaveStatus_();
       tsCall('tsSave', {date: ds, cells: json}, function(){
-        lastSavedJSON[ds]=json; setSaveStatus('저장됨 · '+nowTime());
+        INFLIGHT[d]=false; FAIL_STREAK[d]=0; RETRY_AT[d]=0; SAVE_ERROR=null;
+        lastSavedJSON[ds]=json;
+        refreshSaveStatus_();
       }, function(err){
-        DIRTY[d]=true;   /* 🔴 실패하면 다시 더럽혀 둬서 다음 2초 안전망 때 저절로 재시도 */
-        setSaveStatus('🔴 저장 실패 — '+((err&&err.error)||'알 수 없음')+' (다시 시도하려면 [지금 바로 저장])');
+        INFLIGHT[d]=false;
+        FAIL_STREAK[d]=(FAIL_STREAK[d]||0)+1;
+        RETRY_AT[d]=Date.now() + Math.min(FAIL_STREAK[d], 5)*2000;   /* 최대 10초 간격 */
+        SAVE_ERROR=(err&&err.error)||'알 수 없음';
+        DIRTY[d]=true;   /* 다시 더럽혀 다음 tick(들) 중 하나에서 재시도 */
+        refreshSaveStatus_();
       });
     });
   }
-  setInterval(flushDirty, 2000);   /* 🔴 이게 «유일한» 안전망이다 — 이 한 줄만 믿으면 된다 */
+  setInterval(flushDirty, 2000);   /* 🔴 이게 「유일한」 안전망이다 — 이 한 줄만 믿으면 된다 */
   /* 🔴 창이 닫히거나 숨겨지면(탭 전환·닫기·폰 홈버튼) 2초를 기다리지 말고 바로 내보낸다.
      (beforeunload 대신 visibilitychange/pagehide를 쓴다 — 폰 브라우저에서 더 안정적으로 온다) */
   window.addEventListener('pagehide', flushDirty);
@@ -1107,7 +1166,7 @@ p{margin:7px 0}
      그 다음 자동으로 도는 수면 덧칠(applySleep)까지 «끝난 뒤에도 한 번 더» 찍어야 한다 — 안 그러면
      수면 자동 덧칠만으로 다른 날(오늘 아닌 날)까지 «바뀐 것」으로 오인해 매번 서버에 저장하려 든다. */
   function captureSaveBaseline(){
-    lastSavedJSON={}; DIRTY={};
+    lastSavedJSON={}; DIRTY={}; INFLIGHT={}; FAIL_STREAK={}; RETRY_AT={}; SAVE_ERROR=null;
     for(var d=0; d<DAYS; d++) lastSavedJSON[dateStrForDay(d)]=JSON.stringify(cellsForDay(d));
   }
   function loadFromServer(cb){
@@ -1263,7 +1322,10 @@ p{margin:7px 0}
 
   /* ══════════ 시작 — 로그인이 끝나야 돈다(startApp → boot) ══════════ */
   function boot(){
-    hourOptions('wake', 5, 12, restoreNum('ts_wake', 8));
+    /* 🔴 2026-09-21 교차검증 지적 — 기상을 5시로 고르면 그리드가 6시부터 시작해서 "5시보다
+       이르면 수면"이라는 계산 자체가 항상 거짓이 돼(그리드 안엔 5시보다 이른 칸이 없음)
+       기상 설정이 있으나 마나였다. 그리드 시작(6시)보다 이른 값은 애초에 고를 수 없게 뺐다. */
+    hourOptions('wake', 6, 12, restoreNum('ts_wake', 8));
     hourOptions('bed', 20, 26, restoreNum('ts_bed', 25));
     palette(); buildWeek(); buildDay(); ruletable();
     loadFromServer(function(){
