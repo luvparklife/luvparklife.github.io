@@ -1448,6 +1448,154 @@
       </a>
     </div>
 
+    <!-- ============ 📚 사용법 · 매뉴얼 (2026-09-22 신설 · 대표 지시) ============
+         대표 원문: *"허브에 매뉴얼/사용법 만들어서 그 안에 넣어줘. 앞으로 계속 업데이트 되는거야."*
+         계기 = 관리자가 *"프로젝트 리스트에 ○○이 안 보입니다"* 라고 물어보셨는데,
+                답이 이미 문서에 있었지만 **그 문서를 찾을 자리가 허브에 없었다.**
+
+         🔴 [위 「📱 앱 사용법」 카드를 «한 글자도» 안 건드렸다] 그 카드의 주소는
+            허브 프로젝트 화면 ❓ · 장비앱 · 정산앱 «세 곳»이 읽어 쓴다(guideUrl).
+            `data-guide="app"` 표식도 **1개여야** 한다 — 그래서 여기 카드에는 그 표식을 안 붙인다.
+            (2026-09-04 대표 확정 「사용법은 한 벌」·「그 앱 사용법만 보여줘」가 그대로 산다)
+
+         🔴 [data-see="team" = «로그인한 사람만»] 2026-09-22 대표 확정.
+            손님(로그인 전)은 이 그룹을 통째로 못 본다. 처음 오는 프리랜서는
+            위 「📱 앱 사용법」 카드 하나를 여전히 로그인 없이 본다 — 그래서 아무도 안 막힌다.
+            🔴 그 안에서 «관리 업무» 문서만 `data-see="admin"` 을 따로 단다
+               (장비매입·세무사·HK — 프리랜서가 볼 것이 아니다).
+
+         🔴 [data-gid="guides" 를 FIXED 에 «안» 넣었다] 넣으면 대표님 «저장된 배치»에
+            이 그룹이 없다는 이유로 「대표가 지운 것」으로 오해해 **통째로 사라진다**
+            (2026-08-26에 카드가 실제로 사라졌던 그 자리). 안 넣으면 제자리에 그대로 남는다.
+            대신 「✥ 배치 바꾸기」로 이 그룹의 «순서»는 저장되지 않는다 — 카드는 끌어낼 수 있다.
+
+         🔴 [문서를 새로 발행하면 여기 «저절로» 한 줄이 는다] `~/dev/publish-doc.sh` 가
+            아래 두 표식 사이를 갈아끼운다. 손으로 고치지 않는다(§1 · 원본은 자료 폴더의 파일들).
+            표식을 지우거나 이름을 바꾸면 자동 갱신이 조용히 멈춘다.
+
+         ⚠️ [진짜 자물쇠가 아니다] 허브는 정적 사이트라 «주소를 아는 사람»은 소스에서
+            이 목록을 읽을 수 있다. 지금 관리자 카드들과 «같은 수준»이다.
+            정말 못 보게 해야 하는 문서는 애초에 발행하지 않는다(§3-3). -->
+    <div class="group guides" data-gid="guides" data-see="team" hidden>
+      <div class="ghead">
+        <span class="dot"></span>
+        <span class="gt">📚 사용법 · 매뉴얼</span>
+        <span class="gd">막히면 여기서 찾으세요</span>
+      </div>
+<!-- GUIDE_LIST_START — 여기부터 publish-doc.sh 가 자동으로 갈아끼운다. 손으로 고치지 말 것 -->
+      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_%ED%94%84%EB%A6%AC%EB%9E%9C%EC%84%9C.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">📱</div>
+          <div class="body">
+            <div class="title">프리랜서 · 외부 스태프 사용법</div>
+            <div class="desc">첫날 3분 · 장비앱 · 정산앱 · 막힐 때</div>
+            <div class="note">외부 스태프 · 프리랜서</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_PA%ED%8C%80%EC%A7%81%EC%9B%90.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🎬</div>
+          <div class="body">
+            <div class="title">장비앱 · 정산앱 사용법 — PA팀 직원용</div>
+            <div class="desc">프로젝트 목록 · 촬영 회차 · 준비/반납 · 인건비 청구</div>
+            <div class="note">PA팀 직원</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260919_%EC%82%AC%EC%9A%A9%EB%B2%95_%ED%95%B4%EC%99%B8%EC%9E%A5%EB%B9%84%EB%A6%AC%EC%8A%A4%ED%8A%B8%EC%A0%95%EB%A6%AC.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🌐</div>
+          <div class="body">
+            <div class="title">해외 장비리스트 정리 매뉴얼</div>
+            <div class="desc">해외에서 장비 리스트가 오면 뭐부터 하나</div>
+            <div class="note">관리자</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260918_%EC%9E%A5%EB%B9%84%EB%A7%A4%EB%89%B4%EC%96%BC_%EC%B9%B4%ED%83%88%EB%A1%9C%EA%B7%B8_%EC%82%AC%EC%9A%A9%EB%B2%95.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">📘</div>
+          <div class="body">
+            <div class="title">장비 매뉴얼 · 이슈 — 카탈로그에서 쓰는 법</div>
+            <div class="desc">설명서를 올리고 겪은 일을 적어두는 법</div>
+            <div class="note">관리자</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_%EC%A7%81%EC%9B%90.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">📦</div>
+          <div class="body">
+            <div class="title">장비매입 적는 법 — 담당자용</div>
+            <div class="desc">매입탭 적는 법 · 어디까지 내가 하고 어디부터 대표님께</div>
+            <div class="note">관리자</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_HK.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🧾</div>
+          <div class="body">
+            <div class="title">장비 매입 확인하는 법 — HK님께</div>
+            <div class="desc">밖에 보내는 안내 · 링크로 전달</div>
+            <div class="note">관리자</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_%EC%84%B8%EB%AC%B4%EC%82%AC.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🧮</div>
+          <div class="body">
+            <div class="title">장비 매입 비용처리 확인하는 법 — 세무사님께</div>
+            <div class="desc">밖에 보내는 안내 · 링크로 전달</div>
+            <div class="note">관리자</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260817_%EC%A0%95%EC%82%B0%EC%95%B1_%EC%82%AC%EC%9A%A9%EB%B2%95_%EC%8A%A4%ED%83%9C%ED%94%84%EC%9A%A9.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🕘</div>
+          <div class="body">
+            <div class="title">(옛) 정산앱 사용법</div>
+            <div class="desc">옛 안내 — 지금은 맨 위 「앱 사용법」에 들어 있습니다</div>
+            <div class="note">옛 안내 · 참고용</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260820_%EC%9E%A5%EB%B9%84_%EC%A4%80%EB%B9%84%EB%B0%98%EB%82%A9_%EA%B8%B0%EB%A1%9D_%EC%95%88%EB%82%B4_%EC%8A%A4%ED%83%9C%ED%94%84%EC%9A%A9.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🕘</div>
+          <div class="body">
+            <div class="title">(옛) 장비 준비 · 반납 기록</div>
+            <div class="desc">옛 안내 — 지금은 맨 위 「앱 사용법」에 들어 있습니다</div>
+            <div class="note">옛 안내 · 참고용</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/%EC%A7%81%EC%9B%90%EB%A7%A4%EB%89%B4%EC%96%BC_%EC%9E%A5%EB%B9%84%EC%A4%80%EB%B9%84%EB%B0%98%EB%82%A9.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🕘</div>
+          <div class="body">
+            <div class="title">(옛) 장비 준비부터 반납까지 — 직원 매뉴얼</div>
+            <div class="desc">옛 안내 — 지금은 「PA팀 직원용」에 들어 있습니다</div>
+            <div class="note">옛 안내 · 참고용</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+<!-- GUIDE_LIST_END -->
+    </div>
+
     <!-- ============ 관리자 ============
          data-see="admin" = 대표 또는 관리자(명진)로 로그인했을 때만 보인다. -->
     <div class="group adm" data-gid="adm" data-see="admin" hidden>
@@ -1859,12 +2007,23 @@
     return 'team';
   }
 
+  /* 🎚 2026-09-22 — 「로그인한 사람만」(team)을 받을 수 있게 «등급 순위»로 바꿨다.
+     대표 확정: 사용법 목록은 «로그인한 사람만» 본다.
+     🔴 [owner·admin 의 동작은 한 글자도 안 바뀐다] 넷을 표로 대조해 확인했다:
+        need=owner → owner만 ✅ (전과 같다)   ·   need=admin → owner·admin ✅ (전과 같다)
+        need=team  → owner·admin·team (새로 생긴 것)   ·   손님(guest)은 셋 다 못 본다 ✅
+     🔴 [모르는 값은 «가장 엄하게» 본다] 오타가 나면 owner 만 보게 떨어진다 —
+        조용히 모두에게 열리는 쪽이 훨씬 위험하기 때문이다(전에는 owner 만 보였으므로 이것도 같다).
+     되돌리기 = **"등급 team 빼줘"** */
+  var SEE_RANK = { guest:0, team:1, admin:2, owner:3 };
   /* 역할에 맞는 그룹만 보여준다 */
   function applyRole(role){
+    var mine = SEE_RANK[role]; if(mine === undefined) mine = 0;
     var els = document.querySelectorAll('[data-see]');
     for(var i = 0; i < els.length; i++){
       var need = els[i].getAttribute('data-see');
-      els[i].hidden = !( role === 'owner' || (role === 'admin' && need === 'admin') );
+      var want = SEE_RANK[need]; if(want === undefined) want = SEE_RANK.owner;
+      els[i].hidden = (mine < want);
     }
     /* 🔴 2026-08-31 — 이 함수는 «화면이 어디인지»를 모르고 [data-see] 를 전부 켠다.
        그래서 프로젝트 화면에서 로그인하면 홈 카드가 그 아래 «딸려 나왔다».
