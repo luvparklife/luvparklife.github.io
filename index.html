@@ -10046,7 +10046,13 @@
     }
     try { document.body.classList.add('pa-on'); } catch(e){}
     var nm = paProjNow();
-    var h = '<button class="s home" type="button" data-pa="home" title="전체 앱·페이지">🏠</button>'
+    /* 🏠 와 ☰ 를 «나눴다» (2026-09-22 대표 지시)
+       대표 원문: *"홈화면 옆에 메뉴화면. 홈화면은 허브 홈으로 가는거고 지금 홈화면은 메뉴화면으로 바꿔줘."*
+       🔴 [왜 하나였나] 2026-09-10 에 «갈 홈이 없어져서» 🏠 가 사이드바를 여는 단추로 바뀌어 있었다.
+          오늘 첫 화면을 대시보드로 되돌려 **갈 곳이 다시 생겼으므로** 원래 뜻으로 되돌린다.
+       🏠 = 허브 홈(대시보드)으로 «간다»   ·   ☰ = 전체 앱·페이지 «메뉴»를 연다 */
+    var h = '<button class="s home" type="button" data-pa="hubhome" title="허브 홈으로">🏠</button>'
+          + '<button class="s" type="button" data-pa="menu" title="전체 앱·페이지 메뉴">☰</button>'
           + '<button class="pjb" type="button" data-pa="pick" id="paPjBtn">📁 '
           + pjEsc(nm || '프로젝트 고르기') + ' ▾</button>'
           + '<button class="bell" type="button" data-pa="bell" title="오늘 할 일">🔔</button>'
@@ -10102,7 +10108,10 @@
     if(on) paDrawerPaint();
     dw.hidden = !on; if(mk) mk.hidden = !on;
     paPick(false);
-    var hb = document.querySelector('#paStrip .home');
+    /* 🔴 2026-09-22 — 「지금 열려 있음」 표시를 «☰» 에 붙인다.
+       전에는 🏠 가 메뉴를 열었으므로 `.home` 에 붙였는데, 이제 🏠 는 «허브 홈으로 가는» 단추다.
+       그대로 두면 메뉴를 열었는데 🏠 가 켜진 것처럼 보여 «어디 있는지»를 거짓으로 알린다. */
+    var hb = document.querySelector('#paStrip [data-pa="menu"]');
     if(hb) hb.classList.toggle('now', !!on);
   }
   window.paDrawer = paDrawer;
@@ -10164,7 +10173,19 @@
       return;
     }
     ev.preventDefault();
-    if(act === 'home')  { paDrawer(); return; }
+    /* 🏠 허브 홈(대시보드)으로 «간다» — 2026-09-22 대표 지시로 ☰ 와 나눴다.
+       🔴 해시를 «비워야» 첫 화면(대시보드)이다 — `#home` 은 옛 주소라 되돌려보내진다.
+       🔴 발자국을 «남긴다»(pushState) — 뒤로 누르면 보던 프로젝트로 돌아온다. */
+    if(act === 'hubhome'){
+      paDrawer(false); paPick(false); pjEditLeave();
+      try{ history.pushState({}, '', location.pathname + location.search); }catch(e){}
+      location.hash = '';
+      try{ pjRoute(); }catch(e){}
+      try{ window.scrollTo(0, 0); }catch(e){}
+      return;
+    }
+    if(act === 'menu')  { paDrawer(); return; }   /* ☰ 전체 앱·페이지 메뉴 */
+    if(act === 'home')  { paDrawer(); return; }   /* 옛 표식 — 아직 남은 화면 대비 */
     if(act === 'out')   { paDrawer(false);
                           var ob = document.getElementById('pfOut'); if(ob) ob.click(); return; }
     if(act === 'close') { paDrawer(false); return; }
