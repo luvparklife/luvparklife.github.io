@@ -2693,12 +2693,12 @@
 
     /* ② 뒤에서 받아와 «숫자만» 바꾼다 */
     var got = { at: Date.now() };
-    if(live){
-      got.pj = live.pj; got.rev = live.rev; got.soon = live.soon;
-      got.shoot = live.shoot; got.rent = live.rent;
-      stBump('pj', live.pj, 'good'); stBump('soon', live.soon, 'good'); stBump('rev', live.rev);
+    function applyLivePj(l){
+      got.pj = l.pj; got.rev = l.rev; got.soon = l.soon;
+      got.shoot = l.shoot; got.rent = l.rent;
+      stBump('pj', l.pj, 'good'); stBump('soon', l.soon, 'good'); stBump('rev', l.rev);
       /* 📅 큰 숫자만 바꾸면 «촬영/렌탈 갈래»가 옛 값으로 남는다 — 같이 갈아끼운다 */
-      var nw = stSplit(live.shoot, live.rent);
+      var nw = stSplit(l.shoot, l.rent);
       var sp = document.getElementById('stsp_soon');
       if(sp && nw){ if(sp.outerHTML !== nw) sp.outerHTML = nw; }
       else if(nw){
@@ -2706,6 +2706,40 @@
         var vv = document.getElementById('stv_soon');
         if(vv) vv.insertAdjacentHTML('afterend', nw);
       }
+      stKeep();
+    }
+    if(live){
+      applyLivePj(live);
+    } else {
+      /* 🔴 2026-09-23 대표 신고 「안보이는데」— 진짜 원인.
+         [무엇이 잘못돼 있었나] `stFromPj()` 는 이미 있는 `PJ_CACHE` 를 «읽기만» 했다.
+           그런데 대표님이 «프로젝트 목록 화면을 한 번도 안 들어가신» 세션에서는
+           `PJ_CACHE` 가 애초에 null 이라 여기 다시는 손님만 뜬다 — 정산(💰)만 실제로 물어보고,
+           다가오는 일정·진행 중 프로젝트·회고는 «물어보지도 않은 채» 영원히 「아직 못 받음」이었다.
+         [고친 법] `pjLoad()` 는 이미 있는 «프로젝트 목록을 받아오는 길»이다(§3-0 — 새로 안 만든다).
+           그 길을 여기서도 불러 PJ_CACHE 를 채우고, 채워지면 같은 계산을 다시 돌린다.
+         🔴 [pjListBody 는 화면에 안 보여도 DOM에 그대로 있다] `pjLoad()` 가 그 안에 목록을 그려도
+           `hidden` 이라 대표 눈에는 안 띈다 — 부작용 없이 같은 길을 빌려 쓸 수 있다.
+         🔴 [중복 호출 방지] 이미 다른 화면이 요청 중이면(600초 캐시 안이면) `pjLoad()` 가
+           스스로 서랍·캐시를 먼저 본다 — 여기서 또 부른다고 왕복이 늘 걱정은 없다. */
+      var f = document.getElementById('stFoot');
+      if(f) f.textContent = '📁 프로젝트 목록을 받아오는 중…';
+      try{ pjLoad(); }catch(e){}
+      var tries = 0;
+      var poll = setInterval(function(){
+        tries++;
+        var l = stFromPj();
+        if(l){
+          clearInterval(poll);
+          applyLivePj(l);
+          if(f) f.textContent = '✅ 방금 받아온 숫자 · ' + new Date().toTimeString().slice(0, 5);
+          return;
+        }
+        if(tries >= 28){                 /* 0.5초 × 28 = 14초 — pjLoad 자체 상한(25초)보다 짧게 */
+          clearInterval(poll);
+          if(f) f.textContent = '🔴 프로젝트 목록을 못 받았습니다 — 접었다 다시 눌러보세요';
+        }
+      }, 500);
     }
     function stKeep(){ var k = stLoad(); for(var x in got) k[x] = got[x]; stSave(k); }
     var bc = document.querySelector('a[data-badge]');
