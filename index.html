@@ -208,6 +208,9 @@
     .sttile .v{font-size:26px; font-weight:800; margin:4px 0 3px; color:var(--ink); line-height:1.15}
     .sttile .v small{font-size:13px; color:var(--sub); font-weight:700; margin-left:1px}
     .sttile .v.na{font-size:20px; color:var(--sub)}
+    /* 📅 한 칸 «안»에서 촬영/렌탈로 갈리는 줄 (2026-09-22 대표 지시) */
+    .stsp{display:flex; gap:9px; flex-wrap:wrap; margin:1px 0 5px; font-size:11.5px; color:var(--sub)}
+    .stsp b{color:var(--ink); font-size:13px; margin-left:1px}
     .stw{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:var(--sub)}
     .stw i{width:8px; height:8px; border-radius:50%; display:inline-block; font-style:normal}
     /* 🔴 숫자가 «조용히» 바뀌면 옛 값으로 판단하시게 된다 → 바뀔 때 반짝인다 */
@@ -2577,7 +2580,7 @@
      🔴 [회고 판정은 pjRevTag_ 한 곳에서] 따로 적으면 화면 태그와 숫자가 어긋난다(§1). */
   function stFromPj(){
     if(!PJ_CACHE || !PJ_CACHE.length) return null;      /* 아직 모른다 — 0 이 아니다 */
-    var rev = 0, soon = 0, dated = 0;
+    var rev = 0, soon = 0, dated = 0, shoot = 0, rent = 0;
     var t0 = new Date(); t0.setHours(0, 0, 0, 0);
     var t7 = new Date(t0.getTime() + 7 * 86400000);
     for(var i = 0; i < PJ_CACHE.length; i++){
@@ -2585,31 +2588,56 @@
       try{ if(pjRevTag_(p).indexOf('norev') >= 0) rev++; }catch(e){}
       var d = null;
       try{ d = pjDay_(p.from) || pjDay_(p.to); }catch(e){}
-      if(d){ dated++; if(d >= t0 && d <= t7) soon++; }
+      if(d){
+        dated++;
+        if(d >= t0 && d <= t7){ soon++; if(stIsRent(p)) rent++; else shoot++; }
+      }
     }
-    return { pj: PJ_CACHE.length, rev: rev, soon: dated ? soon : null };
+    return { pj: PJ_CACHE.length, rev: rev, soon: dated ? soon : null,
+             shoot: dated ? shoot : null, rent: dated ? rent : null };
+  }
+  /* 🚚 «렌탈인가» — 2026-09-20 대표 확정 이름 규칙 `YYMMDD_렌탈_사람이름_프로젝트명` 을 읽는다.
+     🔴 [판정은 여기 «한 곳»에만] 여러 군데서 각자 가리면 화면과 숫자가 어긋난다(§1).
+     🔴 [옛 렌탈은 «못» 가린다] 대표 확정이 *"기존 폴더는 안 건드림 — 앞으로 만들 것만"* 이라
+        2026-09-20 이전 렌탈은 이름에 표시가 없다. 그런 것은 «촬영»으로 세어진다 —
+        틀린 게 아니라 «가릴 재료가 없는 것»이고, 화면에도 그렇게 적어 둔다. */
+  function stIsRent(p){
+    var nm = String((p && (p.name || p.label)) || p || '');
+    return nm.indexOf('렌탈') >= 0;
   }
   function stIsNum(v){ return typeof v === 'number' && !isNaN(v); }
   /* 상태 4단계 — dataviz 가이드 원본 hex. 점·왼쪽 띠에만 쓰고 «글자엔 안 쓴다» */
   var ST_HUE = { good:'#0ca30c', warn:'#fab219', serious:'#ec835a', crit:'#d03b3b' };
   var ST_WORD = { good:'정상', warn:'주의', serious:'심각', crit:'위급' };
-  function stTile(id, ico, nm, v, unit, st){
+  function stTile(id, ico, nm, v, unit, st, extra){
     var na = !stIsNum(v);
     return '<div class="sttile" id="stt_' + id + '" onclick="stGo(\'' + id + '\')"'
       + ' style="border-left-color:' + (na ? 'var(--line)' : ST_HUE[st]) + '">'
       + '<div class="k">' + ico + ' ' + nm + '</div>'
       + '<div class="v' + (na ? ' na' : '') + '" id="stv_' + id + '">'
       + (na ? '—' : (v + '<small>' + unit + '</small>')) + '</div>'
+      + (extra || '')                       /* 📅 타일의 «촬영/렌탈» 갈래가 여기 들어간다 */
       + '<div class="stw" id="stw_' + id + '">'
       + (na ? '아직 못 받음' : ('<i style="background:' + ST_HUE[st] + '"></i>' + ST_WORD[st])) + '</div></div>';
   }
   /* 「손이 가야 하나」로 상태를 정한다 — 0 이면 정상, 있으면 주의 */
   function stSt(v, hotAt){ return (!stIsNum(v) || v <= 0) ? 'good' : (v >= (hotAt || 99) ? 'crit' : 'warn'); }
+  /* 📅 이 타일만 «한 칸 안에서 둘로 갈린다» (2026-09-22 대표 지시
+     *"오늘현황에서 하나의 카드안에 촬영과 렌탈을 나눠줘."*)
+     🔴 제목을 「다가오는 촬영」 → 「다가오는 일정」으로 바꿨다 — 렌탈이 같이 들어가는데
+        「촬영」이라고 하면 이름이 거짓말을 한다(§3-2-D ② 이름과 뜻이 같은지).
+     🔴 [갈래가 안 잡히면 «안 그린다»] 날짜를 아는 프로젝트가 없으면 «—» 한 칸으로 둔다. */
+  function stSplit(shoot, rent){
+    if(!stIsNum(shoot) && !stIsNum(rent)) return '';
+    return '<div class="stsp" id="stsp_soon">'
+      + '<span>🎬 촬영 <b>' + (stIsNum(shoot) ? shoot : '—') + '</b></span>'
+      + '<span>🚚 렌탈 <b>' + (stIsNum(rent)  ? rent  : '—') + '</b></span></div>';
+  }
   function stPaint(d){
     var b = document.getElementById('stBody'); if(!b) return;
     b.innerHTML = '<div class="stgrid">'
       + stTile('pay',  '💰', '정산 승인 대기',  d.pay,  '건', stSt(d.pay))
-      + stTile('soon', '📅', '다가오는 촬영',   d.soon, '건', 'good')
+      + stTile('soon', '📅', '다가오는 일정',   d.soon, '건', 'good', stSplit(d.shoot, d.rent))
       + stTile('pj',   '📁', '진행 중 프로젝트', d.pj,   '건', 'good')
       + stTile('rev',  '📝', '회고 안 쓴 것',   d.rev,  '건', stSt(d.rev))
       + '</div>'
@@ -2644,17 +2672,31 @@
 
     /* ① 0초 — «지금 당장» 그린다 */
     var last = stLoad(), live = stFromPj();
-    stPaint({ pay:  stIsNum(last.pay) ? last.pay : null,
-              soon: live ? live.soon : (stIsNum(last.soon) ? last.soon : null),
-              pj:   live ? live.pj   : (stIsNum(last.pj)   ? last.pj   : null),
-              rev:  live ? live.rev  : (stIsNum(last.rev)  ? last.rev  : null),
-              at:   last.at || 0 });
+    stPaint({ pay:   stIsNum(last.pay) ? last.pay : null,
+              soon:  live ? live.soon  : (stIsNum(last.soon)  ? last.soon  : null),
+              /* 📅 촬영/렌탈 갈래도 «처음 그릴 때부터» 넘긴다 — 안 넘기면 칸이 아예 안 생겨
+                 나중에 숫자가 와도 끼울 자리가 없다(2026-09-22에 실제로 그랬다) */
+              shoot: live ? live.shoot : (stIsNum(last.shoot) ? last.shoot : null),
+              rent:  live ? live.rent  : (stIsNum(last.rent)  ? last.rent  : null),
+              pj:    live ? live.pj    : (stIsNum(last.pj)    ? last.pj    : null),
+              rev:   live ? live.rev   : (stIsNum(last.rev)   ? last.rev   : null),
+              at:    last.at || 0 });
 
     /* ② 뒤에서 받아와 «숫자만» 바꾼다 */
     var got = { at: Date.now() };
     if(live){
       got.pj = live.pj; got.rev = live.rev; got.soon = live.soon;
+      got.shoot = live.shoot; got.rent = live.rent;
       stBump('pj', live.pj, 'good'); stBump('soon', live.soon, 'good'); stBump('rev', live.rev);
+      /* 📅 큰 숫자만 바꾸면 «촬영/렌탈 갈래»가 옛 값으로 남는다 — 같이 갈아끼운다 */
+      var nw = stSplit(live.shoot, live.rent);
+      var sp = document.getElementById('stsp_soon');
+      if(sp && nw){ if(sp.outerHTML !== nw) sp.outerHTML = nw; }
+      else if(nw){
+        /* 처음 그릴 때 갈래를 몰라 칸이 없었으면 «지금» 끼워 넣는다 */
+        var vv = document.getElementById('stv_soon');
+        if(vv) vv.insertAdjacentHTML('afterend', nw);
+      }
     }
     function stKeep(){ var k = stLoad(); for(var x in got) k[x] = got[x]; stSave(k); }
     var bc = document.querySelector('a[data-badge]');
