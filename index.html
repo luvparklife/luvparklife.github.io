@@ -1510,152 +1510,29 @@
       </a>
     </div>
 
-    <!-- ============ 📚 사용법 · 매뉴얼 (2026-09-22 신설 · 대표 지시) ============
-         대표 원문: *"허브에 매뉴얼/사용법 만들어서 그 안에 넣어줘. 앞으로 계속 업데이트 되는거야."*
-         계기 = 관리자가 *"프로젝트 리스트에 ○○이 안 보입니다"* 라고 물어보셨는데,
-                답이 이미 문서에 있었지만 **그 문서를 찾을 자리가 허브에 없었다.**
-
-         🔴 [위 「📱 앱 사용법」 카드를 «한 글자도» 안 건드렸다] 그 카드의 주소는
-            허브 프로젝트 화면 ❓ · 장비앱 · 정산앱 «세 곳»이 읽어 쓴다(guideUrl).
-            `data-guide="app"` 표식도 **1개여야** 한다 — 그래서 여기 카드에는 그 표식을 안 붙인다.
-            (2026-09-04 대표 확정 「사용법은 한 벌」·「그 앱 사용법만 보여줘」가 그대로 산다)
-
-         🔴 [data-see="team" = «로그인한 사람만»] 2026-09-22 대표 확정.
-            손님(로그인 전)은 이 그룹을 통째로 못 본다. 처음 오는 프리랜서는
-            위 「📱 앱 사용법」 카드 하나를 여전히 로그인 없이 본다 — 그래서 아무도 안 막힌다.
-            🔴 그 안에서 «관리 업무» 문서만 `data-see="admin"` 을 따로 단다
-               (장비매입·세무사·HK — 프리랜서가 볼 것이 아니다).
-
-         🔴 [data-gid="guides" 를 FIXED 에 «안» 넣었다] 넣으면 대표님 «저장된 배치»에
-            이 그룹이 없다는 이유로 「대표가 지운 것」으로 오해해 **통째로 사라진다**
-            (2026-08-26에 카드가 실제로 사라졌던 그 자리). 안 넣으면 제자리에 그대로 남는다.
-            대신 「✥ 배치 바꾸기」로 이 그룹의 «순서»는 저장되지 않는다 — 카드는 끌어낼 수 있다.
-
-         🔴 [문서를 새로 발행하면 여기 «저절로» 한 줄이 는다] `~/dev/publish-doc.sh` 가
-            아래 두 표식 사이를 갈아끼운다. 손으로 고치지 않는다(§1 · 원본은 자료 폴더의 파일들).
-            표식을 지우거나 이름을 바꾸면 자동 갱신이 조용히 멈춘다.
-
-         ⚠️ [진짜 자물쇠가 아니다] 허브는 정적 사이트라 «주소를 아는 사람»은 소스에서
-            이 목록을 읽을 수 있다. 지금 관리자 카드들과 «같은 수준»이다.
-            정말 못 보게 해야 하는 문서는 애초에 발행하지 않는다(§3-3). -->
+        <!-- 📚 사용법 · 매뉴얼 — 2026-09-22 대표 지시로 «목록을 페이지로 뺐다»
+         대표 원문: *"사용법/매뉴얼은 페이지로 만들어서 그 안에 들어가면 목록 보이게
+                    허브 자체에서 목록 보이게 하지말고"*
+         🔴 [목록의 «원본»은 이제 그 페이지 하나다] 허브엔 문 하나만 둔다 — 두 군데면 어긋난다(§1).
+            자동 갱신(publish-doc.sh → guideadd.py)도 그 페이지를 고친다.
+         🔴 [카드 10장이 빠져 홈이 그만큼 짧아졌다] 그게 이 변경의 목적이다. -->
     <div class="group guides" data-gid="guides" data-see="team" hidden>
       <div class="ghead">
         <span class="dot"></span>
-        <span class="gt">📚 사용법 · 매뉴얼</span>
-        <span class="gd">막히면 여기서 찾으세요</span>
+        <span class="gt">📚 사용법</span>
+        <span class="gd">막히면 여기</span>
       </div>
-<!-- GUIDE_LIST_START — 여기부터 publish-doc.sh 가 자동으로 갈아끼운다. 손으로 고치지 말 것 -->
-      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_%ED%94%84%EB%A6%AC%EB%9E%9C%EC%84%9C.html" target="_blank" rel="noopener">
+      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260922_%ED%8C%80_%EB%AC%B8%EC%84%9C%ED%95%A8.html" target="_blank" rel="noopener">
         <div class="row">
-          <div class="icon">📱</div>
+          <div class="icon">📚</div>
           <div class="body">
-            <div class="title">프리랜서 · 외부 스태프 사용법</div>
-            <div class="desc">첫날 3분 · 장비앱 · 정산앱 · 막힐 때</div>
-            <div class="note">외부 스태프 · 프리랜서</div>
+            <div class="title">사용법 · 매뉴얼 모음</div>
+            <div class="desc">앱 쓰는 법 · 장비 · 정산 · 견적 — 들어가면 목록이 나옵니다</div>
+            <div class="note">로그인한 사람만 이 카드가 보입니다</div>
           </div>
           <div class="arrow">›</div>
         </div>
       </a>
-      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_PA%ED%8C%80%EC%A7%81%EC%9B%90.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">🎬</div>
-          <div class="body">
-            <div class="title">장비앱 · 정산앱 사용법 — PA팀 직원용</div>
-            <div class="desc">프로젝트 목록 · 촬영 회차 · 준비/반납 · 인건비 청구</div>
-            <div class="note">PA팀 직원</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260919_%EC%82%AC%EC%9A%A9%EB%B2%95_%ED%95%B4%EC%99%B8%EC%9E%A5%EB%B9%84%EB%A6%AC%EC%8A%A4%ED%8A%B8%EC%A0%95%EB%A6%AC.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">🌐</div>
-          <div class="body">
-            <div class="title">해외 장비리스트 정리 매뉴얼</div>
-            <div class="desc">해외에서 장비 리스트가 오면 뭐부터 하나</div>
-            <div class="note">관리자</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260918_%EC%9E%A5%EB%B9%84%EB%A7%A4%EB%89%B4%EC%96%BC_%EC%B9%B4%ED%83%88%EB%A1%9C%EA%B7%B8_%EC%82%AC%EC%9A%A9%EB%B2%95.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">📘</div>
-          <div class="body">
-            <div class="title">장비 매뉴얼 · 이슈 — 카탈로그에서 쓰는 법</div>
-            <div class="desc">설명서를 올리고 겪은 일을 적어두는 법</div>
-            <div class="note">관리자</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_%EC%A7%81%EC%9B%90.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">📦</div>
-          <div class="body">
-            <div class="title">장비매입 적는 법 — 담당자용</div>
-            <div class="desc">매입탭 적는 법 · 어디까지 내가 하고 어디부터 대표님께</div>
-            <div class="note">관리자</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_HK.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">🧾</div>
-          <div class="body">
-            <div class="title">장비 매입 확인하는 법 — HK님께</div>
-            <div class="desc">밖에 보내는 안내 · 링크로 전달</div>
-            <div class="note">관리자</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-      <a class="card" data-see="admin" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260901_%EC%82%AC%EC%9A%A9%EB%B2%95_%EC%84%B8%EB%AC%B4%EC%82%AC.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">🧮</div>
-          <div class="body">
-            <div class="title">장비 매입 비용처리 확인하는 법 — 세무사님께</div>
-            <div class="desc">밖에 보내는 안내 · 링크로 전달</div>
-            <div class="note">관리자</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260817_%EC%A0%95%EC%82%B0%EC%95%B1_%EC%82%AC%EC%9A%A9%EB%B2%95_%EC%8A%A4%ED%83%9C%ED%94%84%EC%9A%A9.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">🕘</div>
-          <div class="body">
-            <div class="title">(옛) 정산앱 사용법</div>
-            <div class="desc">옛 안내 — 지금은 맨 위 「앱 사용법」에 들어 있습니다</div>
-            <div class="note">옛 안내 · 참고용</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260820_%EC%9E%A5%EB%B9%84_%EC%A4%80%EB%B9%84%EB%B0%98%EB%82%A9_%EA%B8%B0%EB%A1%9D_%EC%95%88%EB%82%B4_%EC%8A%A4%ED%83%9C%ED%94%84%EC%9A%A9.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">🕘</div>
-          <div class="body">
-            <div class="title">(옛) 장비 준비 · 반납 기록</div>
-            <div class="desc">옛 안내 — 지금은 맨 위 「앱 사용법」에 들어 있습니다</div>
-            <div class="note">옛 안내 · 참고용</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/%EC%A7%81%EC%9B%90%EB%A7%A4%EB%89%B4%EC%96%BC_%EC%9E%A5%EB%B9%84%EC%A4%80%EB%B9%84%EB%B0%98%EB%82%A9.html" target="_blank" rel="noopener">
-        <div class="row">
-          <div class="icon">🕘</div>
-          <div class="body">
-            <div class="title">(옛) 장비 준비부터 반납까지 — 직원 매뉴얼</div>
-            <div class="desc">옛 안내 — 지금은 「PA팀 직원용」에 들어 있습니다</div>
-            <div class="note">옛 안내 · 참고용</div>
-          </div>
-          <div class="arrow">›</div>
-        </div>
-      </a>
-<!-- GUIDE_LIST_END -->
     </div>
 
     <!-- ============ 관리자 ============
@@ -2787,16 +2664,40 @@
       if(f0) f0.textContent = '🔑 로그인해야 정산 숫자를 받아옵니다';
       stKeep(); return;
     }
-    askCount(base + '?action=badge' + tokFor(base), function(d){
-      var n = (d && d.ok && stIsNum(d.n)) ? d.n : null;
-      stBump('pay', n);
-      if(n !== null) got.pay = n;
-      var f = document.getElementById('stFoot');
-      if(f) f.textContent = (n === null)
-        ? '🔴 정산 숫자를 못 받았습니다 — 접었다 다시 눌러보세요'
-        : '✅ 방금 받아온 숫자 · ' + new Date().toTimeString().slice(0, 5);
-      stKeep();
-    });
+    /* 🔴 2026-09-22 대표 신고 — 화면에 *"정산 숫자를 못 받았습니다"* 가 떴다.
+       [무엇이 잘못돼 있었나] 셋이 겹쳤다:
+         ①첫 화면이 대시보드가 되면서 **페이지를 열자마자** 물어보는데, 그때는 아직
+           «정산앱 통행증(paySess)»이 준비 전일 수 있다 → 신원 없이 물어 실패한다.
+         ②실패하면 `stBump('pay', null)` 로 **지난 숫자까지 «—» 로 덮어썼다** —
+           있던 정보를 잃는 것이라 안 하느니만 못하다.
+         ③한 번 실패하면 끝이었다. 사람이 접었다 펴야 다시 물었다(그 안내가 저 문구다).
+       [고친 법] ㉮실패해도 **숫자를 안 건드린다**(지난 값 유지) ㉯첫 실패면 **통행증부터 받아오고**
+         다시 시도(paySessFetch — 이미 있는 길을 쓴다 §3-0) ㉰그래도 안 되면 **간격을 늘려 3번까지**
+         조용히 재시도 ㉱끝내 안 되면 «무엇을 하면 풀리는지»를 알려준다. */
+    var payTry = 0;
+    function askPay(){
+      askCount(base + '?action=badge' + tokFor(base), function(d){
+        var f = document.getElementById('stFoot');
+        var n = (d && d.ok && stIsNum(d.n)) ? d.n : null;
+        if(n !== null){
+          stBump('pay', n); got.pay = n; stKeep();
+          if(f) f.textContent = '✅ 방금 받아온 숫자 · ' + new Date().toTimeString().slice(0, 5);
+          return;
+        }
+        payTry++;
+        if(payTry === 1 && typeof paySessFetch === 'function'){
+          if(f) f.textContent = '🔑 정산앱 통행증을 받는 중…';
+          try{ paySessFetch(function(){ setTimeout(askPay, 400); }); return; }catch(e){}
+        }
+        if(payTry <= 3){
+          if(f) f.textContent = '정산 숫자를 받아오는 중… (' + payTry + '/3)';
+          setTimeout(askPay, 1500 * payTry);
+          return;
+        }
+        if(f) f.textContent = '🔴 정산 숫자만 못 받았습니다 — 아래 「💰 정산앱」을 한 번 열면 풀립니다';
+      });
+    }
+    askPay();
   }
   window.stTog = stTog; window.stGo = stGo;
 
