@@ -192,6 +192,23 @@
     .badge{display:inline-block; font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px; margin-top:6px}
     .badge.soon{background:var(--adm-bg); color:var(--adm); border:1px solid var(--adm-line)}
     .badge.key{background:var(--adm-bg); color:var(--adm); border:1px solid var(--adm-line)}
+    /* 📊 오늘 현황 — 카드 «바로 아래»에서 펼쳐진다 (2026-09-22 대표 확정 「D + 🅔 방식」) */
+    #stBody{margin:-4px 0 10px; padding:10px 12px; background:var(--card);
+      border:1px solid var(--line); border-radius:12px}
+    .strow{display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line);
+      cursor:pointer; border-radius:8px}
+    .strow:last-child{border-bottom:none}
+    .strow:hover{background:var(--soft)}
+    .strow .si{font-size:17px; flex:0 0 auto}
+    .strow .sn{flex:1; min-width:0; font-size:13.5px; font-weight:600}
+    .strow .sd{font-size:11.5px; color:var(--sub); font-weight:400}
+    .strow .sv{flex:0 0 auto; border-radius:999px; padding:2px 10px; font-size:12.5px; font-weight:800;
+      background:var(--chip); color:var(--sub)}
+    .strow .sv.hot{background:#fdeeec; color:#a3352a; border:1px solid #e9a9a0}
+    .strow .sv.na{background:transparent; color:var(--sub); font-weight:600}
+    /* 🔴 숫자가 «조용히» 바뀌면 옛 값으로 판단하시게 된다 → 바뀔 때 반짝인다 */
+    @keyframes stfl{0%{box-shadow:0 0 0 7px rgba(255,196,60,.55)}100%{box-shadow:0 0 0 0 rgba(255,196,60,0)}}
+    #stBody .stfoot{font-size:11px; color:var(--sub); padding:7px 4px 1px; text-align:center}
     .arrow{font-size:20px; color:var(--faint); flex-shrink:0}
     a.card.disabled{opacity:.62; pointer-events:none}
 
@@ -1605,6 +1622,32 @@
         <span class="gd">확정 · 지급 · 전체 관리</span>
       </div>
 
+      <!-- 📊 오늘 현황 (2026-09-22 신설 · 대표 확정) ═══════════════════════════
+           대표 지시: *"허브 메인을 대시보드 형식으로. 각 앱들 현 상태 보고 조회 가능하게"*
+                    → 연습장에서 다섯 안을 눌러보시고 **「D」 + 「🅔 방식으로」** 확정.
+           🅓 = 카드를 «하나 더» 둔다 (열면 나오는 첫 화면은 지금 그대로 — 9/10 확정 🅐를 안 건드린다)
+           🅔 = 기다림 0초 · 그 자리에서 펼친다 (다른 화면으로 «안 간다»)
+
+           🔴 [왜 <a href="#"> 인가] 카드 배치(markHome·paCard)가 `a.card` 를 찾는다.
+              div 로 만들면 배치에서 조용히 빠진다 — 모양만 카드인 것이 된다.
+           🔴 [주소를 여기 안 적는다] 정산앱 주소는 아래 「정산앱」 카드의 data-badge 를
+              읽어 쓴다(§1). 주소가 바뀌어도 한 곳만 고치면 된다.
+           🔴 [모르는 값을 0 으로 쓰지 않는다] 아직 안 받아왔으면 «—» 로 둔다.
+              0 으로 단정하면 「밀린 게 없다」는 거짓말이 된다(§3-5 ⑤).
+           되돌리기 = **"현황판 되돌려줘"** -->
+      <a class="card" id="stCard" href="#" data-inline="1" onclick="stTog();return false;">
+        <div class="row">
+          <div class="icon">📊</div>
+          <div class="body">
+            <div class="title">오늘 현황</div>
+            <div class="desc" id="stDesc">눌러서 펼치기 — 밀린 것을 한눈에</div>
+            <div class="note">여기서 바로 펼쳐집니다 · 화면을 안 떠납니다</div>
+          </div>
+          <div class="arrow" id="stArw">›</div>
+        </div>
+      </a>
+      <div id="stBody" hidden></div>
+
       <a class="card" href="https://docs.google.com/spreadsheets/d/1-0EpnQ0sLw1nSj6hWAT1XaTO2zR_FfYYLScvAwhq5Ho/edit" target="_blank" rel="noopener">
         <div class="row">
           <div class="icon">📊</div>
@@ -2579,6 +2622,99 @@
     }
   }
 
+  /* ═══ 📊 오늘 현황 — 🅓 자리 + 🅔 방식 (2026-09-22 대표 확정) ═══
+     대표 확정: 연습장에서 다섯 안을 눌러보시고 **「D」 + 「🅔 방식으로」**.
+     🔴 [기다리지 않는다] 펼치는 «즉시» 지난번 숫자로 그린다. 그 다음 진짜 값이 오면
+        «숫자만» 갈아끼우고 반짝인다 — 화면을 다시 안 그리므로 깜빡이지 않는다.
+     🔴 [모르는 것을 0 으로 쓰지 않는다] 아직 못 받았으면 «—» 로 둔다.
+        0 으로 단정하면 「밀린 게 없다」는 거짓말이 된다(§3-5 ⑤ · pjRevTag_ 와 같은 정신).
+     🔴 [셈을 두 군데 두지 않는다] 「회고를 적어야 하나」는 pjRevTag_ 가 이미 판단한다 —
+        그 결과에 'norev' 가 들었는지로 센다. 따로 적으면 화면과 숫자가 어긋난다(§1).
+     🔴 [서버를 새로 안 부른다] 프로젝트 수·회고는 «이미 받아둔» PJ_CACHE 로 센다(§3-0).
+        그래서 이 둘은 진짜로 0초다. 정산만 한 번 물어본다.
+     🔴 [주소를 안 적는다] 정산앱 주소는 data-badge 카드에서 읽는다(§1).
+     되돌리기 = **"현황판 되돌려줘"** */
+  var ST_KEY = 'hubStat260922', ST_OPEN = false;
+  function stLoad(){ try{ return JSON.parse(localStorage.getItem(ST_KEY) || 'null') || {}; }catch(e){ return {}; } }
+  function stSave(o){ try{ localStorage.setItem(ST_KEY, JSON.stringify(o)); }catch(e){} }
+  function stFromPj(){
+    if(!PJ_CACHE || !PJ_CACHE.length) return null;      /* 아직 모른다 — 0 이 아니다 */
+    var rev = 0;
+    for(var i = 0; i < PJ_CACHE.length; i++){
+      try{ if(pjRevTag_(PJ_CACHE[i]).indexOf('norev') >= 0) rev++; }catch(e){}
+    }
+    return { pj: PJ_CACHE.length, rev: rev };
+  }
+  function stIsNum(v){ return typeof v === 'number' && !isNaN(v); }
+  function stTxt(v){ return stIsNum(v) ? (v + '건') : '—'; }
+  function stRow(id, ico, nm, sub, v, hot){
+    return '<div class="strow" onclick="stGo(\'' + id + '\')">'
+      + '<span class="si">' + ico + '</span>'
+      + '<span class="sn">' + nm + '<span class="sd"><br>' + sub + '</span></span>'
+      + '<span class="sv ' + (!stIsNum(v) ? 'na' : (hot ? 'hot' : '')) + '" id="stv_' + id + '">'
+      + stTxt(v) + '</span></div>';
+  }
+  function stPaint(d){
+    var b = document.getElementById('stBody'); if(!b) return;
+    b.innerHTML =
+        stRow('pay', '💰', '정산 승인 대기',     '누르면 정산앱으로',      d.pay, d.pay > 0)
+      + stRow('pj',  '📁', '진행 중 프로젝트',   '누르면 프로젝트 화면으로', d.pj,  false)
+      + stRow('rev', '📝', '회고를 적어야 할 것', '끝났는데 안 적은 촬영',   d.rev, d.rev > 0)
+      + '<div class="stfoot" id="stFoot">' + (d.at ? '지난번에 본 숫자입니다 — 새로 받아오는 중…' : '받아오는 중…') + '</div>';
+  }
+  function stBump(id, v){
+    var el = document.getElementById('stv_' + id); if(!el) return;
+    var now = stTxt(v);
+    if(el.textContent === now) return;                   /* 안 바뀌었으면 조용히 */
+    el.textContent = now;
+    el.className = 'sv ' + (!stIsNum(v) ? 'na' : (v > 0 ? 'hot' : ''));
+    el.style.animation = 'stfl 1.2s';                    /* 🔴 바뀐 것을 «보이게» */
+  }
+  function stGo(id){
+    if(id === 'pay'){ var c = document.querySelector('a[data-badge]'); if(c) c.click(); return; }
+    location.hash = '#p';
+  }
+  function stTog(){
+    var b = document.getElementById('stBody'), dz = document.getElementById('stDesc'),
+        ar = document.getElementById('stArw');
+    if(!b) return;
+    ST_OPEN = !ST_OPEN;
+    b.hidden = !ST_OPEN;
+    if(ar) ar.textContent = ST_OPEN ? '⌄' : '›';
+    if(dz) dz.textContent = ST_OPEN ? '접으려면 다시 누르세요' : '눌러서 펼치기 — 밀린 것을 한눈에';
+    if(!ST_OPEN) return;
+
+    /* ① 0초 — «지금 당장» 그린다 */
+    var last = stLoad(), live = stFromPj();
+    stPaint({ pay: stIsNum(last.pay) ? last.pay : null,
+              pj:  live ? live.pj  : (stIsNum(last.pj)  ? last.pj  : null),
+              rev: live ? live.rev : (stIsNum(last.rev) ? last.rev : null),
+              at:  last.at || 0 });
+
+    /* ② 뒤에서 받아와 «숫자만» 바꾼다 */
+    var got = { at: Date.now() };
+    if(live){ got.pj = live.pj; got.rev = live.rev; stBump('pj', live.pj); stBump('rev', live.rev); }
+    function stKeep(){ var k = stLoad(); for(var x in got) k[x] = got[x]; stSave(k); }
+    var bc = document.querySelector('a[data-badge]');
+    var base = bc ? bc.getAttribute('data-badge') : '';
+    if(!base || !loadUser() || !canApp()){
+      var f0 = document.getElementById('stFoot');
+      if(f0) f0.textContent = '🔑 로그인해야 정산 숫자를 받아옵니다';
+      stKeep(); return;
+    }
+    askCount(base + '?action=badge' + tokFor(base), function(d){
+      var n = (d && d.ok && stIsNum(d.n)) ? d.n : null;
+      stBump('pay', n);
+      if(n !== null) got.pay = n;
+      var f = document.getElementById('stFoot');
+      if(f) f.textContent = (n === null)
+        ? '🔴 정산 숫자를 못 받았습니다 — 접었다 다시 눌러보세요'
+        : '✅ 방금 받아온 숫자 · ' + new Date().toTimeString().slice(0, 5);
+      stKeep();
+    });
+  }
+  window.stTog = stTog; window.stGo = stGo;
+
   /* 화면에 돌아오면 다시 센다 — 앱에서 처리하고 돌아왔을 때 숫자가 남아 있으면 안 된다 */
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) loadCounts(false); });
   window.addEventListener('focus', function(){ loadCounts(false); });
@@ -2906,6 +3042,14 @@
   document.addEventListener('click', function(ev){
     var el = (ev.target && ev.target.closest) ? ev.target.closest('a.card') : null;
     if(!el) return;
+    /* 🔴 2026-09-22 — «그 자리에서 펼치는» 카드(data-inline)는 «안» 잠근다.
+       [무엇이 터졌나] 📊 오늘 현황 카드를 만들었더니 «펼치기»는 되는데 «접기»가 안 됐다.
+         두 번째 클릭이 여기서 stopImmediatePropagation 으로 잘려 onclick 이 아예 안 불렸다
+         (캡처 단계라 인라인 onclick 보다 먼저 돈다 — 화면엔 아무 표시도 안 나서 원인을 찾기 어렵다).
+       [왜 예외가 맞나] 잠금은 «새 화면·새 탭을 여는 것»이 늦을 때 두 번 누르는 걸 막으려는 것이다.
+         제자리에서 펼쳤다 접는 것은 «즉시»이고 «다시 눌러야» 하는 동작이라 잠글 이유가 없다.
+         사이드바(.nav-dw .it)를 일부러 안 잠근 것과 «같은 이유»다(2026-09-17). */
+    if(el.getAttribute('data-inline')) return;
     if(el.__paOpen){ ev.preventDefault(); ev.stopImmediatePropagation(); return; }
     el.__paOpen = true;
     el.classList.add('pa-opening');
