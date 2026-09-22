@@ -2096,7 +2096,14 @@
          이제 해시가 «없어도» 프로젝트 화면일 수 있고(첫 화면), `#home` 은 홈이다.
          → 판단을 hubOnHome() 한 곳에 맡긴다(§1). 안 그러면 🏠 홈에서 카드가 통째로 사라진다. */
       if(!hubCardScreen()){
-        var hs = document.querySelectorAll('.group:not(.pjview)');
+        /* 🔴 2026-09-22 — 「📊 오늘 현황」(.stat)만 «어느 화면에서든» 남긴다.
+           [무엇이 잘못돼 있었나] 현황을 홈 맨 위에 올렸는데, 대표님은 허브를 열면
+             «마지막에 보던 프로젝트 화면»으로 바로 가신다(2026-09-09 확정 🅐).
+             그 화면에서는 이 줄이 홈 그룹을 통째로 숨겨서 **현황이 영영 안 보였다** —
+             대표님 신고: *"바뀐게 없는데?"*
+           [왜 예외가 맞나] 현황은 «어느 화면에 있든 지금 회사가 어떤지»를 보는 것이다.
+             홈에서만 보이면 「홈에 들어가야 보이는 대시보드」가 되어 올린 뜻이 없다. */
+        var hs = document.querySelectorAll('.group:not(.pjview):not(.stat)');
         for(var k = 0; k < hs.length; k++) hs[k].hidden = true;
         var eb2 = document.getElementById('edBar'); if(eb2) eb2.hidden = true;
       }
@@ -2667,7 +2674,8 @@
     var c = document.getElementById('stCard'); if(!c) return;
     var g = c.closest ? c.closest('.group') : null;
     if(!g || g.hidden) return;                 /* 등급이 아직 안 정해졌다 — 다음에 다시 부른다 */
-    try{ if(typeof hubCardScreen === 'function' && !hubCardScreen()) return; }catch(e){}
+    /* 🔴 2026-09-22 — 전에는 «홈일 때만» 펼쳤다. 그런데 대표님은 프로젝트 화면으로 바로
+       들어오시므로 그러면 영영 안 펼쳐진다(*"바뀐게 없는데?"*). 어느 화면이든 펼친다. */
     ST_AUTO = true;
     if(!ST_OPEN) stTog();
   }
