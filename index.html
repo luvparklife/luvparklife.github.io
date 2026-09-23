@@ -513,6 +513,24 @@
       color:var(--sub); background:var(--bg); white-space:nowrap}
     .pjtag.em{border-style:dashed; color:var(--adm); background:var(--adm-bg); border-color:var(--adm-line)}
 
+    /* 🚦 프로젝트 목록에서 바로 상태 바꾸기 (2026-09-23 대표 지시)
+       🔴 [카드 «안»에 안 넣는다] 카드 전체가 `<a>` 링크라, 그 안에 `<select>` 를 넣으면
+          누른 게 상태칸인지 카드 이동인지 갈린다(중첩 인터랙티브 요소는 표준에도 안 맞는다).
+          → 카드 «옆»에 형제 요소로 둔다. `.pjrow` 로 감싸 절대좌표로 카드 위 오른쪽에 얹는다. */
+    .pjrow{position:relative; margin-bottom:10px}
+    .pjrow>a.card{margin-bottom:0}
+    .pjstwrap{position:absolute; top:12px; right:44px; z-index:2}
+    .pjstwrap select{font:inherit; font-size:11px; font-weight:700; border-radius:999px;
+      padding:2px 18px 2px 9px; border:1px solid var(--line); background:var(--card); color:var(--sub);
+      -webkit-appearance:none; appearance:none; cursor:pointer; max-width:110px}
+    .pjstwrap select:disabled{opacity:.5; cursor:wait}
+    .pjstbadge{font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px;
+      background:var(--bg); border:1px solid var(--line); color:var(--sub); white-space:nowrap}
+    .pjstmsg{position:absolute; top:36px; right:14px; font-size:10.5px; font-weight:700; z-index:2;
+      white-space:nowrap}
+    .pjstmsg.ok{color:#1c6b3a}
+    .pjstmsg.bad{color:#a3352a}
+
     /* ── ➕ 새 프로젝트 폼 (2026-08-22) ── */
     .pjnew{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:15px 14px}
     .pjnew .nf{margin-bottom:11px}
@@ -2615,9 +2633,15 @@
   /* 상태 4단계 — dataviz 가이드 원본 hex. 점·왼쪽 띠에만 쓰고 «글자엔 안 쓴다» */
   var ST_HUE = { good:'#0ca30c', warn:'#fab219', serious:'#ec835a', crit:'#d03b3b' };
   var ST_WORD = { good:'정상', warn:'주의', serious:'심각', crit:'위급' };
-  function stTile(id, ico, nm, v, unit, st, extra){
+  /* 🎚 2026-09-23 대표 지시 — *"현황은 각 권한마다 확인이 필요한 거를 나타내줘."*
+     🔴 [실제로 걸러서 보여준다] «딱지만 붙이기」가 아니라 applyRole() 이 이미 하는 [data-see]
+        방식을 타일 하나하나에 그대로 붙였다 — 새 걸러내기 코드를 안 만들었다(§4-1, 있는 것을 쓴다).
+     🔴 [see 를 안 주면 전과 같다] 기존 4칸 중 「일정」·「프로젝트」는 태그를 안 줘 지금처럼
+        관리(명진)·대표 둘 다 본다 — 동작이 «한 글자도» 안 바뀐다. */
+  function stTile(id, ico, nm, v, unit, st, extra, see){
     var na = !stIsNum(v);
     return '<div class="sttile" id="stt_' + id + '" onclick="stGo(\'' + id + '\')"'
+      + (see ? ' data-see="' + see + '"' : '')
       + ' style="border-left-color:' + (na ? 'var(--line)' : ST_HUE[st]) + '">'
       + '<div class="k">' + ico + ' ' + nm + '</div>'
       + '<div class="v' + (na ? ' na' : '') + '" id="stv_' + id + '">'
@@ -2642,15 +2666,29 @@
       + '<div class="stspb"><span class="i">🚚</span><span class="n">' + (stIsNum(rent)  ? rent  : '—') + '</span><span class="t">렌탈</span></div>'
       + '</div>';
   }
+  /* 🆕 2026-09-23 — 견적 미발송·반납 미완·소싱 부족·계산서 미발행 4칸.
+     🔴 [숫자는 각 앱 서버가 낸다] quote·back·src 는 장비앱(Code.js)의 `?list=dashcount`
+        (fieldDashCountJsonp_) 한 번으로, inv 는 정산앱의 `?action=invoicePending`
+        (isAdmin_ 전용)으로 받는다 — stTog() 의 askDash()/askInvoice() 가 부른다.
+     🔴 [못 받았을 때만 —] d.quote 등이 null 이면 stTile 이 자동으로 「—·아직 못 받음」을 그린다
+        — 0 으로 채워 「미발송이 0건」이라는 거짓말을 하지 않는다(§3-5 ⑤ 같은 원리). */
   function stPaint(d){
     var b = document.getElementById('stBody'); if(!b) return;
     b.innerHTML = '<div class="stgrid">'
-      + stTile('pay',  '💰', '정산 승인 대기',  d.pay,  '건', stSt(d.pay))
+      + stTile('pay',  '💰', '정산 승인 대기',  d.pay,  '건', stSt(d.pay), '', 'owner')
       + stTile('soon', '📅', '다가오는 일정',   d.soon, '건', 'good', stSplit(d.shoot, d.rent))
       + stTile('pj',   '📁', '진행 중 프로젝트', d.pj,   '건', 'good')
-      + stTile('rev',  '📝', '회고 안 쓴 것',   d.rev,  '건', stSt(d.rev))
+      + stTile('rev',  '📝', '회고 안 쓴 것',   d.rev,  '건', stSt(d.rev), '', 'owner')
+      + stTile('quote','📨', '견적 미발송',     d.quote, '건', stSt(d.quote), '', 'owner')
+      + stTile('back', '📦', '반납 미완',       d.back,  '건', stSt(d.back))
+      + stTile('src',  '🧰', '소싱 부족',       d.src,   '건', stSt(d.src))
+      + stTile('inv',  '🧾', '계산서 미발행',   d.inv,   '건', stSt(d.inv), '', 'owner')
       + '</div>'
-      + '<div class="stfoot" id="stFoot">' + (d.at ? '지난번에 본 숫자입니다 — 새로 받아오는 중…' : '받아오는 중…') + '</div>';
+      + '<div class="stfoot" id="stFoot">' + (d.at ? '지난번에 본 숫자입니다 — 새로 받아오는 중…' : '받아오는 중…') + '</div>'
+      + '<div class="stfoot" style="opacity:.7">📨🧾 견적·계산서·정산·회고는 대표님만 · 📦🧰 반납·소싱은 명진님도 봅니다</div>';
+    /* 방금 새로 그린 타일에 [data-see] 가 실려 있다 — 지금 바로 걸러야 한다.
+       안 하면 applyRole 이 다음 로그인 때까지 다시 안 불려 «명진님 화면에 대표 전용 칸이 잠깐 보인다». */
+    try{ applyRole(roleOf(loadUser())); }catch(e){}
   }
   function stBump(id, v, st){
     var el = document.getElementById('stv_' + id); if(!el) return;
@@ -2689,6 +2727,11 @@
               rent:  live ? live.rent  : (stIsNum(last.rent)  ? last.rent  : null),
               pj:    live ? live.pj    : (stIsNum(last.pj)    ? last.pj    : null),
               rev:   live ? live.rev   : (stIsNum(last.rev)   ? last.rev   : null),
+              /* 🆕 2026-09-23 — 넷 다 지난번 값으로 먼저 그리고, 아래 askDash()/askInvoice() 가 뒤에서 갱신 */
+              quote: stIsNum(last.quote) ? last.quote : null,
+              back:  stIsNum(last.back)  ? last.back  : null,
+              src:   stIsNum(last.src)   ? last.src   : null,
+              inv:   stIsNum(last.inv)   ? last.inv   : null,
               at:    last.at || 0 });
 
     /* ② 뒤에서 받아와 «숫자만» 바꾼다 */
@@ -2783,6 +2826,36 @@
       });
     }
     askPay();
+
+    /* 🆕 2026-09-23 — 견적 미발송·반납 미완·소싱 부족 셋을 장비앱에 한 번에 묻는다.
+       🔴 pjLoad() 와 «같은 문»(FIELD_APP + appTok()) — 새 인증 방식을 안 만든다(§1).
+       🔴 실패해도 pay 처럼 조용히 두 번만 더 시도하고, 값은 안 지운다(지난 값 유지). */
+    var dashTry = 0;
+    function askDash(){
+      askCount(FIELD_APP + '?list=dashcount' + appTok(), function(d){
+        if(d && d.ok){
+          stBump('quote', d.quote); stBump('back', d.back); stBump('src', d.src);
+          got.quote = d.quote; got.back = d.back; got.src = d.src; stKeep();
+          return;
+        }
+        dashTry++;
+        if(dashTry <= 2) setTimeout(askDash, 1500 * dashTry);
+      });
+    }
+    askDash();
+
+    /* 🆕 2026-09-23 — 계산서 미발행 하나만 정산앱(같은 base)에 따로 묻는다 — 대표 전용 창구라서. */
+    var invTry = 0;
+    function askInvoice(){
+      if(!base) return;                 /* 정산앱 배지 주소를 못 찾았으면 이 칸은 그냥 지난 값대로 */
+      askCount(base + '?action=invoicePending' + tokFor(base), function(d){
+        var n = (d && d.ok && stIsNum(d.n)) ? d.n : null;
+        if(n !== null){ stBump('inv', n); got.inv = n; stKeep(); return; }
+        invTry++;
+        if(invTry <= 2) setTimeout(askInvoice, 1500 * invTry);
+      });
+    }
+    askInvoice();
   }
   window.stTog = stTog; window.stGo = stGo;
 
@@ -3420,8 +3493,58 @@
 
   /* 찾기 조건 — 🔴 뼈대는 한 번만 그리고 «줄만» 다시 그린다(글자 칠 때 칸이 사라지지 않게) */
   var PJ_F = { q:'', cli:'', pho:'', brand:'' };
+  /* 🚦 2026-09-23 — 서버 `PROJ_STATES`(Code.js)와 «같은 값». 두 곳을 같이 고친다(§1 — 이미
+     정산앱 MINE_TEST_EMAILS 같은 다른 값도 같은 이유로 두 곳을 나눠 갖고 있다). */
+  var PJ_ST_LIST = ['활성', '완료', '캔슬/드롭'];
+  function pjStOptions_(cur){
+    return PJ_ST_LIST.map(function(s){
+      return '<option value="' + s + '"' + (s === cur ? ' selected' : '') + '>' + s + '</option>';
+    }).join('');
+  }
+  function pjStChange(sel){
+    var name = sel.getAttribute('data-pan') || '';
+    var prev = sel.getAttribute('data-prev') || '';
+    var next = sel.value;
+    if(next === prev) return;
+    /* 🔴 「돈이 드나」— 완료·캔슬로 바꾸면 그 프로젝트로 정산 청구가 막힌다. 한 번 확인한다(§3-0-D ②) */
+    if(prev === '활성' && next !== '활성'){
+      if(!confirm('「' + name + '」을(를) 「' + next + '」로 바꾸시겠어요?\n\n' +
+                  '이 프로젝트로는 더 이상 정산 청구를 할 수 없게 됩니다.\n' +
+                  '아직 정산이 안 끝났으면 취소해 주세요.')){
+        sel.value = prev; return;
+      }
+    }
+    var wrap = sel.closest('.pjstwrap');
+    var msg = wrap ? wrap.parentNode.querySelector('.pjstmsg') : null;
+    if(!msg && wrap){
+      msg = document.createElement('div'); msg.className = 'pjstmsg';
+      wrap.parentNode.appendChild(msg);
+    }
+    sel.disabled = true;
+    if(msg){ msg.hidden = false; msg.className = 'pjstmsg'; msg.textContent = '⏳ 바꾸는 중…'; }
+    pjAdmin('status', name, '&st=' + encodeURIComponent(next), function(d){
+      sel.disabled = false;
+      if(!d || !d.ok){
+        sel.value = prev;
+        if(msg){ msg.className = 'pjstmsg bad'; msg.textContent = '⚠ ' + pjEsc((d && d.error) || '실패 — 다시 시도해 주세요'); }
+        return;
+      }
+      sel.setAttribute('data-prev', next);
+      /* 🔴 캐시에도 반영 — 다음에 다시 그릴 때(정렬·필터) 어긋나지 않게 */
+      (PJ_CACHE || []).forEach(function(p){
+        if((p.name || p) === name){ p.st = next; p.done = d.off ? 1 : 0; }
+      });
+      try{ if(!PJ_ALL) pjLsSave(PJ_CACHE, PJ_ROLE, PJ_MINE); }catch(e){}
+      if(msg){ msg.className = 'pjstmsg ok'; msg.textContent = '✓ 바뀜'; }
+      /* 🔴 목록을 다시 그린다 — 「끝남·캔슬」 딱지와 흐림 표시가 바로 맞아야 한다.
+         0.7초 두는 이유 = 「✓ 바뀜」을 보실 시간을 준다(조용히 성공하면 실패다). */
+      setTimeout(function(){ pjRowsPaint(); }, 700);
+    });
+  }
   function pjRowsPaint(){
     var box = document.getElementById('pjRows'); if(!box) return;
+    /* 🔴 「관리」 등급부터 상태를 «바꿀 수» 있다 — 완료로 바뀌면 정산 청구가 막히므로(§1) */
+    var PJ_ST_CAN = (PJ_ROLE === '대표' || PJ_ROLE === '관리');
     var rows = PJ_CACHE || [], h = '', n = 0, nDone = 0;
     rows.forEach(function(p){
       var name = p.name || p, label = p.label || name;
@@ -3448,14 +3571,27 @@
       /* 🗓 2026-09-13 — 「끝남」과 「캔슬」을 «갈라» 적는다.
          전에는 둘 다 「끝남」이었다 — **끝난 촬영과 엎어진 건은 완전히 다르다.** */
       var _drop = pjIsDrop_(p);
-      h += '<a class="card' + (_dn ? ' pjdone' : '') + '" href="#p/' + encodeURIComponent(name) + '">' +
+      /* 🚦 2026-09-23 — 카드 «옆»에 상태 배지/셀렉트. 카드는 그대로 두고 pjrow 로 감싼다.
+         🔴 [관리 이상만 «바꿀 수」 있다] 완료로 바뀌면 그 프로젝트로 정산 청구를 못 하게 되므로
+            (§1 — PA팀 매뉴얼에도 적어 뒀다) 아무나 누르게 두지 않는다.
+         🔴 [모르는 값·빈칸은 «활성»으로 보여준다] 서버가 그렇게 다루는 것과 맞춘다(§1). */
+      var _stRaw = String(p.st || '').trim();
+      var _stShow = (_stRaw === '완료' || _stRaw === '캔슬/드롭') ? _stRaw : '활성';
+      var _stCtl = PJ_ST_CAN
+        ? ('<div class="pjstwrap" onclick="event.preventDefault();event.stopPropagation();">' +
+             '<select data-pan="' + pjEsc(name) + '" data-prev="' + pjEsc(_stShow) + '" ' +
+             'onclick="event.stopPropagation()" onchange="pjStChange(this)">' +
+             pjStOptions_(_stShow) + '</select></div>')
+        : ('<div class="pjstwrap"><span class="pjstbadge">' + pjEsc(_stShow) + '</span></div>');
+      h += '<div class="pjrow">' +
+           '<a class="card' + (_dn ? ' pjdone' : '') + '" href="#p/' + encodeURIComponent(name) + '">' +
            '<div class="row"><div class="icon">' + (_drop ? '✖' : (_dn ? '✅' : '🎬')) + '</div><div class="body">' +
            '<div class="title">' + pjEsc(name) +
              (_dn ? '<span class="pjend">' + (_drop ? '캔슬' : '끝남') + '</span>' : '') + '</div>' +
            (label !== name ? '<div class="desc">' + pjEsc(label) + '</div>' : '') +
            '<div class="pjtags">' + (tg ||
              '<span class="pjtag em">거래처·포토를 아직 안 적었습니다</span>') + '</div>' +
-           '</div><div class="arrow">›</div></div></a>';
+           '</div><div class="arrow">›</div></div></a>' + _stCtl + '</div>';
     });
     var on = (PJ_F.q || PJ_F.cli || PJ_F.pho || PJ_F.brand);
     box.innerHTML = (on ? '<p class="foot" style="margin:0 0 8px">🔎 찾은 것 <b>' + n + '개</b> · ' +
