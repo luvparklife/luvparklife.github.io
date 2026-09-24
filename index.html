@@ -205,6 +205,10 @@
       padding:11px 12px; background:var(--bg); cursor:pointer}
     .sttile:hover{border-color:var(--accent)}
     .sttile .k{font-size:11.5px; color:var(--sub); font-weight:700; display:flex; align-items:center; gap:4px}
+    /* 🏷 2026-09-24 대표 지시 — "대표,관리자,팀원 태그된것도... 장비안내에서는 태그해서 담당자를 정하니깐"
+       장비안내(카탈로그)가 이미 하는 방식과 같다 — 딱지 하나로 담당자를 보인다. */
+    .sttile .k .tag{margin-left:auto; font-size:10px; font-weight:700; color:var(--accent);
+      background:var(--soft,#eaf0ff); border-radius:999px; padding:1px 7px; white-space:nowrap}
     .sttile .v{font-size:26px; font-weight:800; margin:4px 0 3px; color:var(--ink); line-height:1.15}
     .sttile .v small{font-size:13px; color:var(--sub); font-weight:700; margin-left:1px}
     .sttile .v.na{font-size:20px; color:var(--sub)}
@@ -212,6 +216,7 @@
        작은 글씨 한 줄(2026-09-22 판)은 안 눈에 띈다고 하셔서, 각각 자기 숫자를 가진
        작은 박스 두 개로 나란히 둔다. 🔴 카드 자체는 안 쪼갠다 — 큰 숫자(합계)는 그대로 위에 있다. */
     .stsp{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:2px 0 7px}
+    .stsp.s3{grid-template-columns:1fr 1fr 1fr}  /* 🆕 2026-09-24 — 준비·랩업·반납 세 갈래용 */
     .stspb{display:flex; align-items:baseline; gap:5px; background:var(--card);
       border:1px solid var(--line); border-radius:8px; padding:5px 8px}
     .stspb .i{font-size:13px}
@@ -1250,8 +1255,11 @@
          🔴 [열면 나오는 첫 화면은 «안» 건드렸다] 2026-09-10 확정 🅐(열면 프로젝트 화면)는 그대로다.
             여기는 🏠 홈이다.
          🔴 [data-gid="stat" 를 FIXED 에 «안» 넣는다] 넣으면 대표님 저장된 배치에 없다는 이유로
-            「지운 것」으로 오해해 통째로 사라진다(2026-08-26 사고 · 📚 사용법 그룹과 같은 이유). -->
-    <div class="group stat" data-gid="stat" data-see="admin" hidden>
+            「지운 것」으로 오해해 통째로 사라진다(2026-08-26 사고 · 📚 사용법 그룹과 같은 이유).
+         🔴 [2026-09-24 대표 확정 "팀원이 프리랜서야"] 문 자체를 admin → team 으로 낮췄다 —
+            팀원(=프리랜서)도 이 카드를 이제 연다. 안에서 새는 칸은 stTile 마다 붙인
+            see="admin"/"owner" 가 막는다 — 문을 낮췄다고 안이 다 보이는 게 아니다. -->
+    <div class="group stat" data-gid="stat" data-see="team" hidden>
       <div class="ghead">
         <span class="dot"></span>
         <span class="gt">📊 오늘</span>
@@ -2637,13 +2645,17 @@
      🔴 [실제로 걸러서 보여준다] «딱지만 붙이기」가 아니라 applyRole() 이 이미 하는 [data-see]
         방식을 타일 하나하나에 그대로 붙였다 — 새 걸러내기 코드를 안 만들었다(§4-1, 있는 것을 쓴다).
      🔴 [see 를 안 주면 전과 같다] 기존 4칸 중 「일정」·「프로젝트」는 태그를 안 줘 지금처럼
-        관리(명진)·대표 둘 다 본다 — 동작이 «한 글자도» 안 바뀐다. */
+        관리(명진)·대표 둘 다 본다 — 동작이 «한 글자도» 안 바뀐다.
+     🏷 2026-09-24 대표 지시 — "대표,관리자,팀원 태그된것도... 장비안내에서는 태그해서 담당자를
+        정하니깐" — 이미 붙여둔 see 값을 그대로 담당자 딱지로도 보여준다(새 자료 안 만듦 · §1). */
+  var SEE_BADGE = { owner:'👑 대표', admin:'🛠 관리', team:'🎒 팀원' };
   function stTile(id, ico, nm, v, unit, st, extra, see){
     var na = !stIsNum(v);
     return '<div class="sttile" id="stt_' + id + '" onclick="stGo(\'' + id + '\')"'
       + (see ? ' data-see="' + see + '"' : '')
       + ' style="border-left-color:' + (na ? 'var(--line)' : ST_HUE[st]) + '">'
-      + '<div class="k">' + ico + ' ' + nm + '</div>'
+      + '<div class="k">' + ico + ' ' + nm
+      + (see ? '<span class="tag">' + SEE_BADGE[see] + '</span>' : '') + '</div>'
       + '<div class="v' + (na ? ' na' : '') + '" id="stv_' + id + '">'
       + (na ? '—' : (v + '<small>' + unit + '</small>')) + '</div>'
       + (extra || '')                       /* 📅 타일의 «촬영/렌탈» 갈래가 여기 들어간다 */
@@ -2666,29 +2678,54 @@
       + '<div class="stspb"><span class="i">🚚</span><span class="n">' + (stIsNum(rent)  ? rent  : '—') + '</span><span class="t">렌탈</span></div>'
       + '</div>';
   }
-  /* 🆕 2026-09-23 — 견적 미발송·반납 미완·소싱 부족·계산서 미발행 4칸.
-     🔴 [숫자는 각 앱 서버가 낸다] quote·back·src 는 장비앱(Code.js)의 `?list=dashcount`
-        (fieldDashCountJsonp_) 한 번으로, inv 는 정산앱의 `?action=invoicePending`
-        (isAdmin_ 전용)으로 받는다 — stTog() 의 askDash()/askInvoice() 가 부른다.
-     🔴 [못 받았을 때만 —] d.quote 등이 null 이면 stTile 이 자동으로 「—·아직 못 받음」을 그린다
+  /* 🆕 2026-09-24 대표 피드백 — 반납만 따로 있던 것을 준비·랩업·반납 «세 갈래」로.
+     stSplit(위)과 같은 모양을 셋으로 늘린 것뿐이다(새 패턴 발명 안 함). */
+  function stSplit3(prep, wrap, back){
+    if(!stIsNum(prep) && !stIsNum(wrap) && !stIsNum(back)) return '';
+    return '<div class="stsp s3" id="stsp_prep">'
+      + '<div class="stspb"><span class="i">🧳</span><span class="n">' + (stIsNum(prep) ? prep : '—') + '</span><span class="t">준비</span></div>'
+      + '<div class="stspb"><span class="i">🎒</span><span class="n">' + (stIsNum(wrap) ? wrap : '—') + '</span><span class="t">랩업</span></div>'
+      + '<div class="stspb"><span class="i">📦</span><span class="n">' + (stIsNum(back) ? back : '—') + '</span><span class="t">반납</span></div>'
+      + '</div>';
+  }
+  /* 🆕 2026-09-23 신설 · 2026-09-24 대표 피드백으로 확장 — 견적·준비랩업반납·소싱·계산서 +
+     팀원(=프리랜서) 전용 「내 랩업」·「내 프로젝트」.
+     🔴 [숫자는 각 앱 서버가 낸다] quote·prep·wrap·back·src·myWrap·mySoon 은 장비앱(Code.js)의
+        `?list=dashcount`(fieldDashCountJsonp_ — 서버가 role 보고 어느 쪽을 줄지 이미 가른다)로,
+        inv 는 정산앱의 `?action=invoicePending`(isAdmin_ 전용)으로 받는다.
+     🔴 [같은 자리, 역할에 따라 다른 칸] data-see 는 "이 등급 이상"이라 admin·owner 도 team 전용
+        칸을 같이 보게 된다 — 그래서 어느 칸을 만들지 자체를 여기서 먼저 가른다(대표 피드백:
+        "반납 미완 대신 랩업 미완" · "팀원 다가오는 나의 프로젝트 있어야돼").
+     🔴 [못 받았을 때만 —] 값이 null 이면 stTile 이 자동으로 「—·아직 못 받음」을 그린다
         — 0 으로 채워 「미발송이 0건」이라는 거짓말을 하지 않는다(§3-5 ⑤ 같은 원리). */
   function stPaint(d){
     var b = document.getElementById('stBody'); if(!b) return;
+    var role = roleOf(loadUser());
+    var isAdminUp = (SEE_RANK[role] !== undefined) && SEE_RANK[role] >= SEE_RANK.admin;
+    var prepOrWrap = isAdminUp
+      ? stTile('prep', '🧰', '준비·랩업·반납', stIsNum(d.prep)||stIsNum(d.wrap)||stIsNum(d.back)
+          ? (stIsNum(d.prep)?d.prep:0)+(stIsNum(d.wrap)?d.wrap:0)+(stIsNum(d.back)?d.back:0) : null,
+          '건', stSt((stIsNum(d.prep)?d.prep:0)+(stIsNum(d.wrap)?d.wrap:0)+(stIsNum(d.back)?d.back:0)),
+          stSplit3(d.prep, d.wrap, d.back), 'admin')
+      : stTile('mywrap', '🎒', '내 랩업 미완', d.myWrap, '건', stSt(d.myWrap), '', 'team');
+    var mySoon = isAdminUp ? '' :
+      stTile('mysoon', '📅', '다가오는 나의 프로젝트', d.mySoon, '건', 'good', '', 'team');
     b.innerHTML = '<div class="stgrid">'
       + stTile('pay',  '💰', '정산 승인 대기',  d.pay,  '건', stSt(d.pay), '', 'owner')
-      + stTile('soon', '📅', '다가오는 일정',   d.soon, '건', 'good', stSplit(d.shoot, d.rent))
-      + stTile('pj',   '📁', '진행 중 프로젝트', d.pj,   '건', 'good')
-      + stTile('rev',  '📝', '회고 안 쓴 것',   d.rev,  '건', stSt(d.rev), '', 'owner')
+      + stTile('soon', '📅', '다가오는 일정',   d.soon, '건', 'good', stSplit(d.shoot, d.rent), 'admin')
+      + stTile('pj',   '📁', '진행 중 프로젝트', d.pj,   '건', 'good', '', 'admin')
+      + stTile('rev',  '📝', '회고 안 쓴 것',   d.rev,  '건', stSt(d.rev), '', 'admin')
       + stTile('quote','📨', '견적 미발송',     d.quote, '건', stSt(d.quote), '', 'owner')
-      + stTile('back', '📦', '반납 미완',       d.back,  '건', stSt(d.back))
-      + stTile('src',  '🧰', '소싱 부족',       d.src,   '건', stSt(d.src))
+      + prepOrWrap
+      + mySoon
+      + stTile('src',  '🧰', '소싱 부족',       d.src,   '건', stSt(d.src), '', 'admin')
       + stTile('inv',  '🧾', '계산서 미발행',   d.inv,   '건', stSt(d.inv), '', 'owner')
       + '</div>'
       + '<div class="stfoot" id="stFoot">' + (d.at ? '지난번에 본 숫자입니다 — 새로 받아오는 중…' : '받아오는 중…') + '</div>'
-      + '<div class="stfoot" style="opacity:.7">📨🧾 견적·계산서·정산·회고는 대표님만 · 📦🧰 반납·소싱은 명진님도 봅니다</div>';
+      + '<div class="stfoot" style="opacity:.7">📨🧾 견적·계산서·정산·회고는 대표님만 · 🧰 준비랩업반납·소싱은 명진님도 봅니다 · 🎒 팀원은 내 것만 봅니다</div>';
     /* 방금 새로 그린 타일에 [data-see] 가 실려 있다 — 지금 바로 걸러야 한다.
        안 하면 applyRole 이 다음 로그인 때까지 다시 안 불려 «명진님 화면에 대표 전용 칸이 잠깐 보인다». */
-    try{ applyRole(roleOf(loadUser())); }catch(e){}
+    try{ applyRole(role); }catch(e){}
   }
   function stBump(id, v, st){
     var el = document.getElementById('stv_' + id); if(!el) return;
@@ -2727,11 +2764,15 @@
               rent:  live ? live.rent  : (stIsNum(last.rent)  ? last.rent  : null),
               pj:    live ? live.pj    : (stIsNum(last.pj)    ? last.pj    : null),
               rev:   live ? live.rev   : (stIsNum(last.rev)   ? last.rev   : null),
-              /* 🆕 2026-09-23 — 넷 다 지난번 값으로 먼저 그리고, 아래 askDash()/askInvoice() 가 뒤에서 갱신 */
-              quote: stIsNum(last.quote) ? last.quote : null,
-              back:  stIsNum(last.back)  ? last.back  : null,
-              src:   stIsNum(last.src)   ? last.src   : null,
-              inv:   stIsNum(last.inv)   ? last.inv   : null,
+              /* 🆕 2026-09-23·24 — 전부 지난번 값으로 먼저 그리고, 아래 askDash()/askInvoice() 가 뒤에서 갱신 */
+              quote:  stIsNum(last.quote)  ? last.quote  : null,
+              prep:   stIsNum(last.prep)   ? last.prep   : null,
+              wrap:   stIsNum(last.wrap)   ? last.wrap   : null,
+              back:   stIsNum(last.back)   ? last.back   : null,
+              myWrap: stIsNum(last.myWrap) ? last.myWrap : null,
+              mySoon: stIsNum(last.mySoon) ? last.mySoon : null,
+              src:    stIsNum(last.src)    ? last.src    : null,
+              inv:    stIsNum(last.inv)    ? last.inv    : null,
               at:    last.at || 0 });
 
     /* ② 뒤에서 받아와 «숫자만» 바꾼다 */
@@ -2827,15 +2868,29 @@
     }
     askPay();
 
-    /* 🆕 2026-09-23 — 견적 미발송·반납 미완·소싱 부족 셋을 장비앱에 한 번에 묻는다.
+    /* 🆕 2026-09-23 신설 · 2026-09-24 대표 피드백으로 확장 — 장비앱 한 문에 한 번에 묻는다.
        🔴 pjLoad() 와 «같은 문»(FIELD_APP + appTok()) — 새 인증 방식을 안 만든다(§1).
+       🔴 [서버가 이미 역할로 갈라 준다] 관리 이상이면 quote/prep/wrap/back/src 가, 팀원(=프리랜서)이면
+          myWrap/mySoon 이 온다 — 여기서는 «온 것만» 반영한다. 안 온 필드는 stIsNum 이 걸러
+          지난 값을 undefined 로 덮지 않는다.
        🔴 실패해도 pay 처럼 조용히 두 번만 더 시도하고, 값은 안 지운다(지난 값 유지). */
     var dashTry = 0;
     function askDash(){
       askCount(FIELD_APP + '?list=dashcount' + appTok(), function(d){
         if(d && d.ok){
-          stBump('quote', d.quote); stBump('back', d.back); stBump('src', d.src);
-          got.quote = d.quote; got.back = d.back; got.src = d.src; stKeep();
+          if(stIsNum(d.quote)){ stBump('quote', d.quote); got.quote = d.quote; }
+          if(stIsNum(d.prep) || stIsNum(d.wrap) || stIsNum(d.back)){
+            var sum = (stIsNum(d.prep)?d.prep:0) + (stIsNum(d.wrap)?d.wrap:0) + (stIsNum(d.back)?d.back:0);
+            stBump('prep', sum);
+            var nw = stSplit3(d.prep, d.wrap, d.back);
+            var sp = document.getElementById('stsp_prep');
+            if(sp && nw){ if(sp.outerHTML !== nw) sp.outerHTML = nw; }
+            got.prep = d.prep; got.wrap = d.wrap; got.back = d.back;
+          }
+          if(stIsNum(d.src)){ stBump('src', d.src); got.src = d.src; }
+          if(stIsNum(d.myWrap)){ stBump('mywrap', d.myWrap); got.myWrap = d.myWrap; }
+          if(stIsNum(d.mySoon)){ stBump('mysoon', d.mySoon); got.mySoon = d.mySoon; }
+          stKeep();
           return;
         }
         dashTry++;
