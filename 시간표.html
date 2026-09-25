@@ -1116,10 +1116,17 @@ p{margin:7px 0}
     if(SAVE_ERROR){ setSaveStatus('🔴 저장 실패 — '+SAVE_ERROR+' (다시 시도하려면 [지금 바로 저장])'); return; }
     setSaveStatus(pendingSaveCount_()>0 ? '저장 중…' : ('저장됨 · '+nowTime()));
   }
+  var quickFlushTimer=null;
   function markDirty(d){
     if(DAY_PAST[d]) return;   /* 에버노트 원본(읽기전용) 날은 애초에 저장할 게 없다 */
     DIRTY[d]=true;
     refreshSaveStatus_();
+    /* 🔴 2026-09-25 대표 신고 — 모바일에서 입력한 값이 저장 안 됨. 원인 = 예전엔 "2초마다"
+       또는 "화면을 나갈 때"만 저장을 시도했는데, 폰은 입력하자마자 바로 다른 앱으로 넘어가거나
+       화면을 꺼서 그 2초를 다 못 기다리는 경우가 많다. 손을 멈추면 0.8초 뒤 바로 한 번 더
+       시도해 그 틈을 줄인다(연속 입력 중엔 계속 미뤄져 매 글자마다 나가진 않는다). */
+    if(quickFlushTimer) clearTimeout(quickFlushTimer);
+    quickFlushTimer=setTimeout(flushDirty, 800);
   }
   function flushDirty(){
     var now=Date.now();
@@ -1151,11 +1158,28 @@ p{margin:7px 0}
        한 번 더 계산해서 확실히 맞춘다. */
     refreshSaveStatus_();
   }
-  setInterval(flushDirty, 2000);   /* 🔴 이게 「유일한」 안전망이다 — 이 한 줄만 믿으면 된다 */
-  /* 🔴 창이 닫히거나 숨겨지면(탭 전환·닫기·폰 홈버튼) 2초를 기다리지 말고 바로 내보낸다.
-     (beforeunload 대신 visibilitychange/pagehide를 쓴다 — 폰 브라우저에서 더 안정적으로 온다) */
-  window.addEventListener('pagehide', flushDirty);
-  document.addEventListener('visibilitychange', function(){ if(document.hidden) flushDirty(); });
+  setInterval(flushDirty, 2000);   /* 🔴 평소엔 이 한 줄 + 위 0.8초 즉시저장이 안전망이다 */
+  /* 🔴 2026-09-25 — 창이 닫히거나 숨겨지는(탭 전환·닫기·폰 홈버튼) 그 순간엔 flushDirty()의
+     JSONP(<script> 태그) 방식을 쓰지 않는다. 화면이 실제로 사라지는 중이면 응답이 오기도 전에
+     브라우저가 그 요청 자체를 끊어버릴 수 있다 — 데스크톱은 탭을 배경에 오래 두는 경우가 많아
+     이 틈이 잘 안 드러나지만, 폰은 입력 직후 바로 다른 앱으로 넘어가거나 화면을 꺼서 정확히
+     이 틈에 걸린다(대표 신고 2026-09-25 — 모바일 입력 유실). fetch(keepalive:true)는 페이지가
+     이미 사라져도 브라우저가 끝까지 전송을 책임지도록 스펙에 정해진 방식이라 이걸로 바꾼다. */
+  function flushDirtyBeacon_(){
+    if(!KEY) return;
+    Object.keys(DIRTY).forEach(function(dKey){
+      var d=Number(dKey);
+      delete DIRTY[d];
+      if(DAY_PAST[d]) return;
+      var ds=dateStrForDay(d), json=JSON.stringify(cellsForDay(d));
+      if(json===lastSavedJSON[ds]) return;   /* 이미 그 내용 그대로 저장돼 있다 */
+      var qs='action=tsSave&token='+encodeURIComponent(KEY)+'&date='+encodeURIComponent(ds)+'&cells='+encodeURIComponent(json);
+      try{ fetch(TS_WEBAPP+'?'+qs, {method:'GET', keepalive:true, mode:'no-cors'}); }catch(e){}
+      lastSavedJSON[ds]=json;   /* 응답을 못 받으니 낙관적으로 찍는다 — 실패해도 다음에 열면 서버 값 기준으로 다시 맞춰진다 */
+    });
+  }
+  window.addEventListener('pagehide', flushDirtyBeacon_);
+  document.addEventListener('visibilitychange', function(){ if(document.hidden) flushDirtyBeacon_(); });
   /* 🔴 지금 화면 상태를 «이미 저장된 것」으로 찍는다. loadFromServer 직후 «뿐만 아니라»
      그 다음 자동으로 도는 수면 덧칠(applySleep)까지 «끝난 뒤에도 한 번 더» 찍어야 한다 — 안 그러면
      수면 자동 덧칠만으로 다른 날(오늘 아닌 날)까지 «바뀐 것」으로 오인해 매번 서버에 저장하려 든다. */
