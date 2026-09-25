@@ -1204,6 +1204,7 @@ p{margin:7px 0}
       var ds=dateStrForDay(d), pending=null;
       try{ pending=localStorage.getItem(pendingKey_(ds)); }catch(e){}
       if(!pending) continue;
+      (window.__reconcileLog=window.__reconcileLog||[]).push({d:d, ds:ds, pending:pending, current:lastSavedJSON[ds], eq: pending===lastSavedJSON[ds]});
       if(pending===lastSavedJSON[ds]){
         /* 서버에 이미 그 값이 있다 — 지난번 저장이 실은 성공했던 것. 표시만 지운다 */
         try{ localStorage.removeItem(pendingKey_(ds)); }catch(e){}
