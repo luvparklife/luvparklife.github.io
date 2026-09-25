@@ -30,7 +30,8 @@ p{margin:7px 0}
 .note{background:#fffdf6; border:1px solid #efe4c8; border-radius:10px; padding:10px 13px; font-size:13.5px; margin:10px 0}
 .note.red{background:#fff7f6; border-color:#f0cfc9}
 .sec{margin-bottom:6px}
-.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
+.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;
+  box-shadow:inset -22px 0 14px -16px rgba(0,0,0,.18)}   /* 🔴 오른쪽에 더 있다는 걸 눈으로도 보여준다(글로만 안내하면 놓친다) */
 
 /* ── 탭 ── */
 .tabs{display:flex; gap:6px; margin:10px 0 0}
@@ -317,6 +318,8 @@ p{margin:7px 0}
 <div class="note">
   🔴 여기는 <b>보기만</b> 됩니다 — 위 ①에서 칠하는 것과는 별개 자료입니다. 그때 쓰시던 색 체계가 지금 색과 달라서
   바꾸지 않고 <b>원래 쓰신 색 그대로</b> 두었습니다.
+  <br>👉 <b>표가 화면보다 넓습니다</b> — 하루가 24시간(06~다음날05)이라 한 화면에 다 안 들어갑니다.
+  아래 표를 <b>오른쪽으로 밀어서(스크롤)</b> 나머지 시간대를 보세요. 지금 화면엔 앞쪽 일부만 보이는 게 정상입니다.
 </div>
 <div class="sleeprow">
   년 <select id="pastYear"></select>
