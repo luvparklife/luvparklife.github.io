@@ -13,9 +13,14 @@ body{margin:0; background:var(--bg); color:var(--ink);
 .wrap{max-width:1500px; margin:0 auto; padding:0 16px 40px}
 
 .lab{background:#2c2c2c; color:#fff; padding:11px 16px; font-size:13px; line-height:1.6;
-  display:flex; gap:14px; flex-wrap:wrap; align-items:center}
+  display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+  position:sticky; top:0; z-index:50}
 .lab b{color:#ffd479}
 .lab a{color:#8fd0ff}
+.lab button{margin-left:auto; border:1px solid #ffd479; background:#ffd479; color:#2c2c2c;
+  border-radius:8px; padding:6px 12px; font:inherit; font-weight:800; cursor:pointer; white-space:nowrap}
+.lab button:active{background:#e8bd5a}
+.lab button.busy{background:#6b6b6b; border-color:#6b6b6b; color:#fff; cursor:default}
 
 h1{font-size:23px; margin:22px 0 4px; letter-spacing:-.4px}
 h1 + .sp{color:var(--sub); font-size:13.5px; margin:0 0 8px}
@@ -172,6 +177,7 @@ p{margin:7px 0}
 <div class="lab">
   <span>💾 저장 상태: <b id="saveStatus">불러오는 중…</b></span>
   <a href="https://docs.google.com/spreadsheets/d/1zoTcGQrvzbExntA4e10AkbZCYgxLNligk62miy10guY/edit" target="_top">📊 저장되는 시트 보기</a>
+  <button id="bSaveTop" type="button">💾 지금 저장</button>
 </div>
 
 <div class="wrap">
@@ -1293,11 +1299,28 @@ p{margin:7px 0}
     today().forEach(function(c){ c.c=null; c.t=''; if(c.inp) c.inp.value=''; if(c.inp2) c.inp2.value=''; });
     refreshAll(); totals();
   };
-  document.getElementById('bSave').onclick=function(){
+  /* 🔴 2026-09-25 대표 지시 — "저장버튼도 만들자". 예전 버튼(#bSave)은 ①칠하기 섹션 맨 아래,
+     그리드를 한참 내려야 보이는 자리라 있는 줄도 모르셨을 수 있다. 맨 위 상태 줄(#bSaveTop)에
+     스크롤해도 안 사라지는(position:sticky) 버튼을 하나 더 두고, 누르는 동안 버튼 자체에
+     "⏳ 저장 중… → ✅ 저장됨/⚠️ 실패"가 바로 보이게 한다(대표는 항상 결과를 눈으로 봐야 한다). */
+  function saveNowClicked_(btn){
     try{ document.activeElement.blur(); }catch(e){}   /* 지금 타이핑 중이던 칸의 최신 글자까지 반영 */
     for(var d=0; d<DAYS; d++) markDirty(d);   /* 확실히 하시려는 버튼이니 «전부» 다시 훑어 보낸다 */
     flushDirty();
-  };
+    var label=btn.textContent;
+    btn.disabled=true; btn.classList.add('busy'); btn.textContent='⏳ 저장 중…';
+    var tries=0;
+    var poll=setInterval(function(){
+      tries++;
+      if(pendingSaveCount_()>0 && tries<50){ return; }   /* 최대 10초까지 기다린다 */
+      clearInterval(poll);
+      btn.classList.remove('busy'); btn.disabled=false;
+      btn.textContent = SAVE_ERROR ? '⚠️ 저장 실패' : '✅ 저장됨';
+      setTimeout(function(){ btn.textContent=label; }, 1800);
+    }, 200);
+  }
+  document.getElementById('bSave').onclick=function(){ saveNowClicked_(this); };
+  document.getElementById('bSaveTop').onclick=function(){ saveNowClicked_(this); };
   ['optB','optC','optF','optSky'].forEach(function(id){
     var el=document.getElementById(id);
     el.checked = restoreBool('ts_'+id, el.checked);
