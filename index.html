@@ -5073,16 +5073,20 @@
        🔴 [로케이션도 같이 넣었다 — 2026-09-19(2차) 대표 지시] 처음엔 "로케이션은 그대로 가도 돼"
           였는데, 목업을 보시고 *"그냥 다 똑같은 로직으로 하자"* 로 바꾸셨다. 그래서 로케이션도
           «관계=업체 하나만» 걸러내던 것에서 «전체를 보고 소속·분야=로케이션인 것만 위로»로 옮겼다. */
-  var NET_FULL_TAG = { cli:   { f:'cat', v:'거래처' },
+  /* 🔴 2026-09-25 — "관계" 값이 거래처/업체/인적자원 → 국내사람/해외사람/국내업체/해외업체로 바뀌어서
+     cli(거래처)의 정렬 기준 x.cat === '거래처' 가 항상 거짓이 됐다(정렬만 실패 — 목록 자체는 그대로 뜸).
+     새 값 두 개(국내업체·해외업체) 중 하나면 위로 오게 배열로 바꾼다. */
+  var NET_FULL_TAG = { cli:   { f:'cat', v:['국내업체','해외업체'] },
                         pho:   { f:'pos', v:'포토/감독' },
                         brand: { f:'pos', v:'브랜드' },
                         loc:   { f:'sub', v:'로케이션' } };
   function netRankFull_(rows, wantKey){
     var cfg = NET_FULL_TAG[wantKey];
     if(!cfg) return rows || [];
+    var vlist = Array.isArray(cfg.v) ? cfg.v : [cfg.v];
     var hit = [], rest = [];
     (rows || []).forEach(function(x){
-      var m = (cfg.f === 'cat') ? (x.cat === cfg.v) : ((x[cfg.f] || []).indexOf(cfg.v) >= 0);
+      var m = (cfg.f === 'cat') ? (vlist.indexOf(x.cat) >= 0) : ((x[cfg.f] || []).indexOf(cfg.v) >= 0);
       (m ? hit : rest).push(x);
     });
     return hit.concat(rest);
@@ -5432,7 +5436,10 @@
       pjNewPicker('pkCli',   r, null, null, 'cli');
       pjNewPicker('pkPho',   r, '포토/감독', null, 'pho');
       pjNewPicker('pkBrand', r, '브랜드',    null, 'brand');
-      pjNewMgrPicker((r || []).filter(function(x){ return x.cat === '거래처'; }));
+      /* 🔴 2026-09-25 — "관계"가 거래처/업체 구분을 버리고 국내업체/해외업체로 합쳐지면서,
+         여기서 "거래처만" 정확히 못 가린다(그 구분은 이제 돈들어옴 체크칸에 있는데 이 응답엔 안 실려온다).
+         빈 목록이 되는 것보다는 «업체 전체»로 넓혀서 후보가 아예 안 뜨는 것만은 막는다. */
+      pjNewMgrPicker((r || []).filter(function(x){ return x.cat === '국내업체' || x.cat === '해외업체'; }));
       /* 🔴 로케이션은 «회차 안»에서 고른다 — 따로 고르는 칸을 두면 두 군데가 되어 어긋난다(§1) */
       PJ_LOCS = netRankFull_(r, 'loc');
       var dl = document.getElementById('locList');
@@ -5513,9 +5520,17 @@
      🔴 담당자는 «거래처»일 때만 — 견적서에 그대로 나가는 값이라 자주 쓴다.
      🔴 옛 이름도 같이 적어 둔다 — 노션에서 이름이 바뀌어도 안 깨진다
         (2026-08-23: 포지션(인적)→역할 · 하위카테고리(업체)→소속·분야). */
-  var NET_ALWAYS = ['역할', '포지션(인적)', '소속·분야', '하위카테고리(업체)',
+  /* 🔴 2026-09-25 — 노션에서 「역할」+「소속·분야」를 「하는 일」 하나로 합쳤다.
+     옛 두 이름은 그대로 둔다 — 아직 지우지 않은 칸이라 지금도 값이 있다. */
+  var NET_ALWAYS = ['하는 일', '역할', '포지션(인적)', '소속·분야', '하위카테고리(업체)',
                     '연락처', 'Email', '인스타'];
+  /* 🔴 2026-09-25 — "관계" 값이 거래처/업체/인적자원 → 국내사람/해외사람/국내업체/해외업체로
+     바뀌었다. 옛 열쇠만 두면 NET_MAIN[cat] 이 없어서 «업체의 담당자 칸»이 접힌 쪽으로 내려간다. */
   var NET_MAIN = {
+    '국내업체': NET_ALWAYS.concat(['담당자']),
+    '해외업체': NET_ALWAYS.concat(['담당자']),
+    '국내사람': NET_ALWAYS,
+    '해외사람': NET_ALWAYS,
     '거래처'  : NET_ALWAYS.concat(['담당자']),
     '인적자원': NET_ALWAYS,
     '업체'    : NET_ALWAYS
