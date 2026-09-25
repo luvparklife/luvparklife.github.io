@@ -1116,11 +1116,19 @@ p{margin:7px 0}
     if(SAVE_ERROR){ setSaveStatus('🔴 저장 실패 — '+SAVE_ERROR+' (다시 시도하려면 [지금 바로 저장])'); return; }
     setSaveStatus(pendingSaveCount_()>0 ? '저장 중…' : ('저장됨 · '+nowTime()));
   }
+  /* 🔴 2026-09-25 — 대표 신고: 폰으로 입력한 게 오늘 하루 통째로 안 남아있었다. 0.8초 즉시저장 +
+     keepalive만으로는 "쓰는 동안 iOS가 탭을 통째로 죽이는" 경우(생명주기 이벤트가 한 번도 안 뜨고
+     그냥 꺼짐)까진 못 막는다 — 그건 자바스크립트로 원천봉쇄가 안 된다. 대신 «이 기기 안에»(서버가
+     아니라) 방금 친 내용을 즉시(동기적으로, 0ms) 남겨두고, 다음에 열 때 "서버엔 없는데 이 기기엔
+     남아있는 값"을 찾아 자동으로 이어서 저장한다. 탭이 죽어도 이 기기의 localStorage 자체는 남기
+     때문에, 최악의 경우도 "그 자리에서 못 감" 대신 "다음에 열면 이어서 감"으로 바뀐다. */
+  function pendingKey_(ds){ return 'ts_pending_'+ds; }
   var quickFlushTimer=null;
   function markDirty(d){
     if(DAY_PAST[d]) return;   /* 에버노트 원본(읽기전용) 날은 애초에 저장할 게 없다 */
     DIRTY[d]=true;
     refreshSaveStatus_();
+    try{ localStorage.setItem(pendingKey_(dateStrForDay(d)), JSON.stringify(cellsForDay(d))); }catch(e){}
     /* 🔴 2026-09-25 대표 신고 — 모바일에서 입력한 값이 저장 안 됨. 원인 = 예전엔 "2초마다"
        또는 "화면을 나갈 때"만 저장을 시도했는데, 폰은 입력하자마자 바로 다른 앱으로 넘어가거나
        화면을 꺼서 그 2초를 다 못 기다리는 경우가 많다. 손을 멈추면 0.8초 뒤 바로 한 번 더
@@ -1137,12 +1145,13 @@ p{margin:7px 0}
       if(RETRY_AT[d] && now < RETRY_AT[d]) return;          /* 실패 후 대기 시간 — 아직 재시도할 때 아님 */
       delete DIRTY[d];
       var ds=dateStrForDay(d), json=JSON.stringify(cellsForDay(d));
-      if(json===lastSavedJSON[ds]) return;                  /* 이미 그 내용 그대로 저장돼 있다 */
+      if(json===lastSavedJSON[ds]) { try{ localStorage.removeItem(pendingKey_(ds)); }catch(e){} return; }
       INFLIGHT[d]=true;
       refreshSaveStatus_();
       tsCall('tsSave', {date: ds, cells: json}, function(){
         INFLIGHT[d]=false; FAIL_STREAK[d]=0; RETRY_AT[d]=0; SAVE_ERROR=null;
         lastSavedJSON[ds]=json;
+        try{ localStorage.removeItem(pendingKey_(ds)); }catch(e){}   /* 실제로 서버가 받았다고 확인된 순간에만 지운다 */
         refreshSaveStatus_();
       }, function(err){
         INFLIGHT[d]=false;
@@ -1187,6 +1196,36 @@ p{margin:7px 0}
     lastSavedJSON={}; DIRTY={}; INFLIGHT={}; FAIL_STREAK={}; RETRY_AT={}; SAVE_ERROR=null;
     for(var d=0; d<DAYS; d++) lastSavedJSON[dateStrForDay(d)]=JSON.stringify(cellsForDay(d));
   }
+  /* 🔴 2026-09-25 — 열 때마다 «이 기기에 남아있는데 서버엔 없는» 값이 있는지 훑는다.
+     지난번에 실제로 나갔는지 확인 못 하고 페이지가 죽은 경우(위 markDirty 설명) 여기서 살아난다. */
+  function reconcilePending_(){
+    for(var d=0; d<DAYS; d++){
+      if(DAY_PAST[d]) continue;
+      var ds=dateStrForDay(d), pending=null;
+      try{ pending=localStorage.getItem(pendingKey_(ds)); }catch(e){}
+      if(!pending) continue;
+      if(pending===lastSavedJSON[ds]){
+        /* 서버에 이미 그 값이 있다 — 지난번 저장이 실은 성공했던 것. 표시만 지운다 */
+        try{ localStorage.removeItem(pendingKey_(ds)); }catch(e){}
+        continue;
+      }
+      /* 서버 값과 다르다 — 그때 못 나갔던 값이다. 화면에 되살리고 다시 저장을 건다.
+         🔴 data[d]를 통째로 새 배열로 갈아끼우면 이미 그려둔 화면(.el·.inp)과 연결이 끊긴다 —
+         있던 칸 객체의 값만 고쳐써서 화면 갱신(refreshCell)이 계속 먹히게 한다. */
+      try{
+        var arr=JSON.parse(pending);
+        (function(dd, arr2){
+          for(var i=0;i<HOURS.length;i++){
+            var c=arr2[i]||{};
+            data[dd][i].t=c.t||''; data[dd][i].c=c.c||null; data[dd][i].past=false;
+          }
+          for(var j=0;j<HOURS.length;j++) refreshCell(dd, j);
+        })(d, arr);
+        totals();
+        markDirty(d);
+      }catch(e){}
+    }
+  }
   function loadFromServer(cb){
     setSaveStatus('불러오는 중…');
     tsCall('tsLoad', {date: todayDateStr()}, function(res){
@@ -1202,6 +1241,7 @@ p{margin:7px 0}
       setSaveStatus('불러왔습니다 · '+nowTime());
       cb && cb();
       captureSaveBaseline();
+      reconcilePending_();
     }, function(err){
       setSaveStatus('🔴 서버에서 못 불러왔습니다('+((err&&err.error)||'')+') — 빈 화면으로 시작합니다');
       data=[]; DAY_PAST=[]; for(var d=0;d<DAYS;d++){ data.push(blank()); DAY_PAST.push(false); }
