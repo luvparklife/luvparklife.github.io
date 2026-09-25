@@ -1299,6 +1299,18 @@ p{margin:7px 0}
     function syncMode(){ mSel.disabled=!rM.checked; qSel.disabled=rM.checked; }
     rM.addEventListener('change', syncMode); rQ.addEventListener('change', syncMode); syncMode();
 
+    /* 🔴 2026-09-25 대표 신고 — 드롭다운을 바꾼 뒤 [🔎 보기]를 다시 안 누르면 «전에 보던 달»의
+       표가 그대로 남아있어서, 마치 고른 달과 다른 데이터가 나오는 것처럼(실제론 다른 버그 없음 —
+       서버 값은 정상 확인됨) 보였다. 뭘 하나라도 바꾸면 표를 바로 비워서 헷갈리지 않게 한다. */
+    ['change'].forEach(function(evt){
+      [ySel, mSel, qSel, rM, rQ].forEach(function(el){
+        el.addEventListener(evt, function(){
+          document.getElementById('pastTable').hidden=true;
+          document.getElementById('pastStatus').textContent='바뀐 조건으로 다시 보려면 [🔎 보기]를 눌러주세요.';
+        });
+      });
+    });
+
     /* 🔴 2026-09-20 — 목록이 아니라 «날짜×시간 그리드»로 그린다(대표 지시).
        위 ①의 주간 그리드와 같은 HOURS·hlabel을 그대로 써서 두 표가 같은 모양으로 보인다. */
     document.getElementById('bPastLoad').onclick=function(){
