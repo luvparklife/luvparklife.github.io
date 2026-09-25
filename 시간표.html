@@ -1400,8 +1400,18 @@ p{margin:7px 0}
           day.cells.forEach(function(c){
             var td=document.createElement('td'); td.className='c';
             var hex=c.c||''; var info=hex?(res.colors[hex]||{}):null;
-            if(hex){ td.style.background=hex; if(isDark(hex)) td.classList.add('dark'); }
+            var dark=false;
+            if(hex){ td.style.background=hex; dark=isDark(hex); if(dark) td.classList.add('dark'); }
             td.title=(c.t||'')+(info&&info.label?(' · '+info.label):'');
+            /* 🔴 2026-09-25 대표 신고 — "글씨가 안 보인다"는 게 정확한 지적이었다. 여긴 색만
+               칠하고 적은 글자는 title(마우스 올려야 뜨는 툴팁)에만 넣어놔서, 폰에서는(호버가
+               없으니) 글자가 «절대» 안 보였다. 위 ①칠하기 표처럼 칸 안에 직접 글자를 찍는다. */
+            if(c.t){
+              var sp=document.createElement('div');
+              sp.textContent=c.t;
+              sp.style.cssText='font-size:9px; line-height:1.2; padding:3px 3px; text-align:left; overflow:hidden; word-break:break-all;'+(dark?'color:#fff':'color:inherit');
+              td.appendChild(sp);
+            }
             tr.appendChild(td);
           });
           body.appendChild(tr);
