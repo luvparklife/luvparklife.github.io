@@ -8556,34 +8556,138 @@
      서버에 물어보는 데 3~5초가 드는데 그 동안 화면이 그대로라,
      대표는 안 눌린 줄 알고 있다가 «갑자기» 창이 떴다.
      → 누르는 즉시 그 버튼을 「확인하는 중…」으로 바꾸고 다시 못 누르게 막는다. */
+  /* 🔴 2026-09-26 대표 확정 — 로딩 표시는 «가운데 모달»로 (연습장 260926_로딩표시_공통규칙_연습장.html
+     으로 먼저 확인받음). 전에는 이 자리(#pjQk 밑) 작은 글자로만 떴는데, #pjQk 가 없는 화면에서는
+     `if(!qk) return;` 에 걸려 «아무 표시도 없이» 조용히 넘어갔다 — 실제 이름바꾸기 버그가 이거였다.
+     지금은 모달이 늘 뜬다. #pjQk 링크 잠금(있으면)은 그대로 유지한다.
+     🔴 [공통 부품 — 한 곳만 고치면 전체 적용] pjBusy 를 부르는 자리 7곳(공유파일 만들기·정보 불러오기·
+     삭제 확인·이름 바꾸기 등)이 전부 이 모달을 자동으로 쓰게 된다. */
   var PJ_BUSY = false;
+  var __pjBusyT = null, __pjBusyModal = null;
+  function pjBusyModalEnsure_(){
+    if(__pjBusyModal) return __pjBusyModal;
+    var wrap = document.createElement('div');
+    wrap.id = 'pjBusyModalWrap';
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;'
+      + 'align-items:center;justify-content:center;padding:16px';
+    wrap.innerHTML =
+      '<div style="position:absolute;inset:0;background:rgba(20,30,60,.45)"></div>'
+      + '<div class="pjmBox" style="position:relative;background:#fff;border-radius:16px;min-width:260px;'
+      +   'max-width:360px;width:100%;padding:26px 24px 22px;text-align:center;'
+      +   'box-shadow:0 14px 44px rgba(0,0,0,.28);transition:opacity .22s ease,transform .22s ease">'
+      +   '<div class="pjmIcon" style="font-size:32px;margin-bottom:10px;line-height:1">⏳</div>'
+      +   '<div class="pjmMsg" style="font-size:14.5px;color:#1c2330;font-weight:700;'
+      +     'line-height:1.5;word-break:keep-all"></div>'
+      +   '<div class="pjmErr" style="display:none;margin-top:10px;text-align:left;position:relative;'
+      +     'background:#fff1f1;border:1px solid #f0b7b7;border-radius:8px;padding:8px 34px 8px 10px"></div>'
+      +   '<div class="pjmBtns" style="margin-top:16px;display:flex;gap:8px;justify-content:center"></div>'
+      + '</div>';
+    document.body.appendChild(wrap);
+    var style = document.createElement('style');
+    style.textContent =
+      '#pjBusyModalWrap .pjmBox.leaving{opacity:0;transform:scale(.94)}'
+      + '#pjBusyModalWrap .pjmIcon.spin{display:inline-block;animation:pjmspin 1s linear infinite}'
+      + '@keyframes pjmspin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}'
+      + '#pjBusyModalWrap .pjmErr pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;'
+      +   'font-size:11.5px;color:#b23b3b;white-space:pre-wrap;word-break:break-all;user-select:text}'
+      + '#pjBusyModalWrap .pjmErr .cp{position:absolute;top:6px;right:6px;font-size:10.5px;font-weight:700;'
+      +   'border:1px solid #f0b7b7;background:#fff;color:#b23b3b;border-radius:6px;padding:2px 6px;cursor:pointer}';
+    document.head.appendChild(style);
+    __pjBusyModal = {
+      wrap: wrap,
+      box: wrap.querySelector('.pjmBox'),
+      icon: wrap.querySelector('.pjmIcon'),
+      msg: wrap.querySelector('.pjmMsg'),
+      err: wrap.querySelector('.pjmErr'),
+      btns: wrap.querySelector('.pjmBtns')
+    };
+    return __pjBusyModal;
+  }
+  /* 실패 이유를 «복붙 가능한 글자칸 + 복사 버튼»으로 보여준다(대표 지시 2026-09-26 —
+     "실패하게되었을때 바로 복붙해서 해결할 수 있게 오류 코드나 이유같은거 보여주는거지?"). */
+  function pjBusyShowErr_(m, text){
+    /* 🔴 성공 때 m.err 를 초록으로 재활용하므로(pjBusyDone_), 매번 «빨간 스타일을 다시» 입힌다 —
+       안 그러면 성공→실패 순서로 뜰 때 초록 스타일이 남는다. */
+    m.err.style.cssText = 'display:block;margin-top:10px;text-align:left;position:relative;'
+      + 'background:#fff1f1;border:1px solid #f0b7b7;border-radius:8px;padding:8px 34px 8px 10px';
+    m.err.innerHTML = '<pre></pre><button type="button" class="cp">복사</button>';
+    m.err.querySelector('pre').textContent = String(text);
+    m.err.querySelector('.cp').onclick = function(){
+      var b = this, o = b.textContent;
+      var done = function(){ b.textContent = '✅'; setTimeout(function(){ b.textContent = o; }, 1200); };
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done, done); }
+      else { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t);
+             t.select(); try{ document.execCommand('copy'); }catch(e){} t.remove(); done(); }
+    };
+  }
   function pjBusy(on, txt){
     PJ_BUSY = !!on;
     var qk = document.getElementById('pjQk');
-    if(!qk) return;
-    var links = qk.querySelectorAll('a');
-    for(var i=0;i<links.length;i++){
-      if(on){ links[i].style.pointerEvents = 'none'; links[i].style.opacity = '.45'; }
-      else  { links[i].style.pointerEvents = ''; links[i].style.opacity = ''; }
-    }
-    var m = document.getElementById('pjBusyMsg');
-    if(on){
-      if(!m){
-        m = document.createElement('div'); m.id = 'pjBusyMsg';
-        m.style.cssText = 'margin:8px 0 0;font-size:13px;color:var(--faint)';
-        qk.parentNode.insertBefore(m, qk.nextSibling);
+    if(qk){
+      var links = qk.querySelectorAll('a');
+      for(var i=0;i<links.length;i++){
+        if(on){ links[i].style.pointerEvents = 'none'; links[i].style.opacity = '.45'; }
+        else  { links[i].style.pointerEvents = ''; links[i].style.opacity = ''; }
       }
+    }
+    var m = pjBusyModalEnsure_();
+    if(on){
+      if(__pjBusyT) clearInterval(__pjBusyT);
+      m.box.classList.remove('leaving');
+      m.wrap.style.display = 'flex';
+      m.icon.className = 'pjmIcon spin'; m.icon.textContent = '⏳';
+      m.err.style.display = 'none'; m.err.innerHTML = '';
+      m.btns.innerHTML = '';
       var t0 = Date.now();
-      m.textContent = (txt || '확인하는 중…') + ' 0초';
-      if(window.__pjBusyT) clearInterval(window.__pjBusyT);
-      window.__pjBusyT = setInterval(function(){
-        var e = document.getElementById('pjBusyMsg');
-        if(!e){ clearInterval(window.__pjBusyT); return; }
-        e.textContent = (txt || '확인하는 중…') + ' ' + Math.round((Date.now()-t0)/1000) + '초';
+      var label = txt || '확인하는 중';
+      m.msg.textContent = label + ' 0초';
+      __pjBusyT = setInterval(function(){
+        m.msg.textContent = label + ' ' + Math.round((Date.now()-t0)/1000) + '초';
       }, 1000);
     }else{
-      if(window.__pjBusyT) clearInterval(window.__pjBusyT);
-      if(m && m.parentNode) m.parentNode.removeChild(m);
+      if(__pjBusyT){ clearInterval(__pjBusyT); __pjBusyT = null; }
+      m.box.classList.add('leaving');
+      setTimeout(function(){ m.wrap.style.display = 'none'; }, 220);
+    }
+  }
+  /* 🔴 이름 바꾸기처럼 «성공/실패까지» 모달이 말해주는 완결형(연습장 ②③번과 같은 모양).
+     성공 → 문구 보여주고 «클릭 없이» 자동으로 닫힘. 실패 → 이유(복붙 가능) + 닫기(클릭 필요). */
+  function pjBusyDone_(ok, msg, detail){
+    var m = pjBusyModalEnsure_();
+    if(__pjBusyT){ clearInterval(__pjBusyT); __pjBusyT = null; }
+    m.wrap.style.display = 'flex'; m.box.classList.remove('leaving');
+    m.btns.innerHTML = '';
+    if(ok){
+      m.icon.className = 'pjmIcon'; m.icon.textContent = '✅';
+      m.msg.textContent = msg || '완료했습니다';
+      if(detail){
+        /* 성공 때는 «무엇을 바꿨는지»를 초록 상자로(복붙 필요 없음 — 그냥 확인용) */
+        m.err.style.cssText = 'display:block;margin-top:10px;text-align:left;'
+          + 'background:#e9f8ee;border:1px solid #8fd6a6;border-radius:8px;padding:8px 10px';
+        m.err.innerHTML = '<div style="font-size:12px;color:#1e6b3a;white-space:pre-wrap"></div>';
+        m.err.firstChild.textContent = detail;
+      } else {
+        m.err.style.display = 'none'; m.err.innerHTML = '';
+      }
+      setTimeout(function(){
+        m.box.classList.add('leaving');
+        setTimeout(function(){ m.wrap.style.display = 'none'; }, 220);
+      }, detail ? 2200 : 1400);
+    } else {
+      m.icon.className = 'pjmIcon'; m.icon.textContent = '⚠';
+      m.msg.textContent = msg || '실패했습니다';
+      pjBusyShowErr_(m, detail || '알 수 없는 오류');
+      var cb = document.createElement('button'); cb.className = 'btn d'; cb.textContent = '닫기';
+      cb.onclick = function(){
+        m.box.classList.add('leaving');
+        setTimeout(function(){ m.wrap.style.display = 'none'; }, 220);
+      };
+      m.btns.appendChild(cb);
+    }
+    var qk = document.getElementById('pjQk');
+    if(qk){
+      var links = qk.querySelectorAll('a');
+      for(var i=0;i<links.length;i++){ links[i].style.pointerEvents = ''; links[i].style.opacity = ''; }
     }
   }
 
@@ -9569,13 +9673,11 @@
     if(to === null) return;
     to = String(to).trim();
     if(!to || to === name) return;
-    /* 🔴 2026-09-26 대표 지시 — 이름 바꾸기(최대 150초)가 도는 동안 화면에 «아무것도»
-       안 보였다(pjWaitMsg 는 숨겨진 시험용 링크(pjTestMsg)가 있을 때만 만들어지는데,
-       평소 화면엔 그 링크가 없어 늘 안 뜨는 코드였다 — §3-5 ⑧처럼 만들어두고 안 켜진 경우).
-       → «있는» pjBusy 를 그대로 쓴다(§1) — 초 단위로 저절로 올라가는 장치가 이미 있다. */
+    /* 🔴 2026-09-26 대표 확정 — 「가운데 모달」로 바꾸는 중 표시 + 성공은 자동으로 닫힘,
+       실패는 이유를 복붙 가능한 칸으로(연습장 260926_로딩표시_공통규칙_연습장.html 으로 확인받음).
+       기존엔 pjBusy(진행 중만) 뒤에 alert() 로 결과를 따로 띄웠다 — 이제 pjBusyDone_ 하나로 합친다. */
     pjBusy(true, '✏️ 「' + name + '」 → 「' + to + '」로 바꾸는 중…');
     pjAdmin('rename', name, '&to=' + encodeURIComponent(to), function(r){
-      pjBusy(false);
       if(!r.ok){
         /* 🔴 2026-08-26 — 「답이 없다」와 「안 됐다」는 다르다.
            시간이 넘친 경우에는 «정말 안 바뀌었는지» 한 번 더 물어본다.
@@ -9583,10 +9685,9 @@
         if(r.timeout){
           pjBusy(true, '✏️ 실제로 바뀌었는지 다시 확인하는 중…');
           pjAdmin('check', to, '', function(c2){
-            pjBusy(false);
             if(c2 && c2.ok){
-              alert('✅ 사실은 «바뀌었습니다».\n\n' + name + '\n  ↓\n' + to
-                  + '\n\n답이 늦게 왔을 뿐입니다. 노션 제목도 이어서 바꾸겠습니다.');
+              pjBusyDone_(true, '✅ 사실은 바뀌었습니다 — ' + name + ' → ' + to
+                + ' (답이 늦게 왔을 뿐입니다. 노션 제목도 이어서 바꿉니다)');
               pjNotion('rename', name, to, function(){});
               /* 🔴 2026-09-14 — 「정보 폼 안」에서도 이름을 바꿀 수 있게 되면서 필요해진 줄.
                  PJ_EDIT 가 남은 채 목록으로 가면 «목록 대신 아까 그 폼»이 뜬다(2026-09-03에 난 사고). */
@@ -9594,20 +9695,19 @@
               PJ_CACHE = null; pjLsClear(); location.hash = '#p';
               if(typeof pjLoad === 'function') pjLoad(true);
             } else {
-              alert('🔴 못 바꿨습니다.\n\n' + (r.error || ''));
+              pjBusyDone_(false, '못 바꿨습니다', r.error || '');
             }
           });
           return;
         }
-        alert('🔴 못 바꿨습니다.\n\n' + (r.error || '')); return;
+        pjBusyDone_(false, '못 바꿨습니다', r.error || ''); return;
       }
       pjBusy(true, '✏️ 노션 제목도 바꾸는 중…');
       pjNotion('rename', name, to, function(nd){
-        pjBusy(false);
         var extra = nd && nd.ok ? (nd.skipped ? '노션: ' + nd.why : (nd.done || '노션 제목도 바꿈'))
                                 : ('🔴 노션 제목은 그대로입니다 — ' + ((nd && nd.error) || '못 불렀습니다'));
-        alert('✅ 바꿨습니다.\n\n' + name + '\n  ↓\n' + to + '\n\n'
-              + (r.done || []).join(' · ') + '\n · ' + extra);
+        pjBusyDone_(true, '✅ 바꿨습니다 — ' + name + ' → ' + to,
+          (r.done || []).join(' · ') + ' · ' + extra);
         PJ_CACHE = null; pjLsClear(); location.hash = '#p';
         if(typeof pjLoad === 'function') pjLoad(true);
       });
