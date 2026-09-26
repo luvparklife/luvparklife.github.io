@@ -103,6 +103,7 @@ p{margin:7px 0}
 .wk.paint td.c:hover{outline:2px solid rgba(0,0,0,.28); outline-offset:-2px}
 .wk td.c.seld{box-shadow:inset 0 0 0 3px #2c2c2c; z-index:1}
 .wk tr.pastday td.d{color:#9a7a3a}
+.wk tr.futureday td.d{color:#2e6da4; background:#eef5fb}
 .wk tr.empty td.d{color:#ccc}
 /* 🔴 2026-09-21 — 과거 날도 손대면 칠할 수 있어 not-allowed 커서를 뺐다. .past는 이제
    «옅은 배경 힌트»만 준다(진짜 원본 색은 자바스크립트가 style.background로 직접 칠함). */
@@ -242,6 +243,7 @@ p{margin:7px 0}
 <div class="btns">
   <button id="bDemo">🔄 다시 불러오기</button>
   <button id="bClearDay">오늘만 지우기</button>
+  <button id="bAddFuture">📅 다음날 미리 추가</button>
   <button class="pri" id="bSave">💾 지금 바로 저장</button>
 </div>
 </div>
@@ -474,7 +476,8 @@ p{margin:7px 0}
   /* ══════════ 시간·날짜 ══════════ */
   var HOURS=[]; for(var h=6;h<=29;h++){ HOURS.push(h%24); }   /* 6시~다음날5시, 24칸(하루 전체) — 2026-09-20 확장 */
   function hlabel(h){ return (h<10?'0':'')+h+':00'; }
-  var DAYS=14;   /* 0 = 오늘 — 2026-09-20 7일→14일(2주) 기본 보기로 확장 */
+  var ORIGINAL_DAYS=14;   /* 🔴 이 값은 절대 안 바뀐다 — "오늘+과거 13일" 경계선. 미래 줄은 이 뒤(14,15,…)에 이어붙인다 */
+  var DAYS=ORIGINAL_DAYS;   /* 0 = 오늘 — 2026-09-20 7일→14일(2주) 기본 보기로 확장. 2026-09-26 미래 줄 추가로 늘어날 수 있음 */
   /* 🔴 2026-09-20 — 「기록」탭(오늘 쓰는 새 시스템)에 그 날 자료가 없으면 서버가 과거기록(에버노트)
      원본을 대신 채워 준다(tsLoadWeek_). 그런 날은 읽기전용 · 원본 색 그대로 보여준다.
      DAY_PAST[d] = 그 날이 과거기록에서 채워진 날인지. PAST_COLORS = hex→{label,group} */
@@ -784,15 +787,22 @@ p{margin:7px 0}
     var th0=document.createElement('th'); th0.className='dh'; th0.textContent=''; head.appendChild(th0);
     HOURS.forEach(function(h){ var th=document.createElement('th'); th.textContent=hlabel(h).replace(':00',''); head.appendChild(th); });
     wk.appendChild(head);
-    var now=ANCHOR_DATE;   /* 🔴 페이지 연 순간에 고정 — 자정 넘겨도 화면 날짜가 안 바뀐다(위 설명 참고) */
-    for(var d=0; d<DAYS; d++){
+    /* 🔴 2026-09-26 — 미래로 추가한 줄(d>=ORIGINAL_DAYS)은 맨 위에, 그 다음 오늘(d=0)→과거
+       순서로 그린다. "최근이 위" 관례를 유지 — 가장 먼 미래가 맨 위, 내일이 오늘 바로 위. */
+    var renderOrder=[];
+    for(var fd=DAYS-1; fd>=ORIGINAL_DAYS; fd--) renderOrder.push(fd);
+    for(var pd=0; pd<ORIGINAL_DAYS; pd++) renderOrder.push(pd);
+    renderOrder.forEach(function(d){
       (function(d){
-        var dt=new Date(now.getTime()-d*86400000);
+        var dt=dayOffsetDate_(d);
         var past=!!DAY_PAST[d];
+        var future=d>=ORIGINAL_DAYS;
         var tr=document.createElement('tr'); if(d===0) tr.className='today'; if(past) tr.className=(tr.className+' pastday').trim();
+        if(future) tr.className=(tr.className+' futureday').trim();
         var td=document.createElement('td'); td.className='d';
-        td.textContent=(dt.getMonth()+1)+'/'+dt.getDate()+' '+'일월화수목금토'[dt.getDay()]+(d===0?' ←오늘':(past?' 📗':''));
+        td.textContent=(dt.getMonth()+1)+'/'+dt.getDate()+' '+'일월화수목금토'[dt.getDay()]+(d===0?' ←오늘':(past?' 📗':(future?' 📅':'')));
         if(past) td.title='에버노트 원본 기록 — 손대면 이 날은 새 색 체계로 다시 시작합니다';
+        if(future) td.title='미리 추가한 미래 날짜입니다';
         tr.appendChild(td);
         HOURS.forEach(function(h,i){
           var cell=data[d][i];
@@ -851,7 +861,7 @@ p{margin:7px 0}
         });
         wk.appendChild(tr);
       })(d);
-    }
+    });
     refreshAll();
   }
 
@@ -1109,10 +1119,13 @@ p{margin:7px 0}
      매 2초 계속 두드리지 않고 실패 횟수만큼 간격을 늘린다(최대 10초). */
   var lastSavedJSON={}, DIRTY={}, INFLIGHT={}, FAIL_STREAK={}, RETRY_AT={};
   var SAVE_ERROR=null;   /* 마지막 실패 이유 — 다른 날짜가 성공해도 이 메시지가 안 지워진다 */
-  function dateStrForDay(d){
-    var dt=new Date(ANCHOR_DATE.getTime()); dt.setDate(dt.getDate()-d);
-    return fmtDate_(dt);
+  function dayOffsetDate_(d){
+    var dt=new Date(ANCHOR_DATE.getTime());
+    if(d<ORIGINAL_DAYS) dt.setDate(dt.getDate()-d);
+    else dt.setDate(dt.getDate()+(d-ORIGINAL_DAYS+1));   /* d=14→내일, d=15→모레, … */
+    return dt;
   }
+  function dateStrForDay(d){ return fmtDate_(dayOffsetDate_(d)); }
   function cellsForDay(d){ return data[d].map(function(c){ return {c:c.c, t:c.t}; }); }
   function cellsForSave(){ return cellsForDay(0); }
   function pendingSaveCount_(){
@@ -1246,6 +1259,14 @@ p{margin:7px 0}
           return {h:h, t:c.t||'', c:c.c||null, past:!!day.past};
         });
       });
+      /* 🔴 2026-09-26 — 미리 추가해두신 미래 날짜(서버에 이미 뭔가 저장된 것)를 뒤에 이어붙인다.
+         d=ORIGINAL_DAYS(14)부터가 "내일"이다(dayOffsetDate_ 참고). */
+      var futureArr = res.futureDays || [];
+      futureArr.forEach(function(fday){
+        data.push(HOURS.map(function(h,i){ var c=fday.cells[i]||{}; return {h:h, t:c.t||'', c:c.c||null, past:false}; }));
+        DAY_PAST.push(false);
+      });
+      DAYS = ORIGINAL_DAYS + futureArr.length;
       captureSaveBaseline();
       setSaveStatus('불러왔습니다 · '+nowTime());
       cb && cb();
@@ -1253,6 +1274,7 @@ p{margin:7px 0}
       reconcilePending_();
     }, function(err){
       setSaveStatus('🔴 서버에서 못 불러왔습니다('+((err&&err.error)||'')+') — 빈 화면으로 시작합니다');
+      DAYS=ORIGINAL_DAYS;
       data=[]; DAY_PAST=[]; for(var d=0;d<DAYS;d++){ data.push(blank()); DAY_PAST.push(false); }
       captureSaveBaseline();
       cb && cb();
@@ -1301,6 +1323,18 @@ p{margin:7px 0}
     try{ document.activeElement.blur(); }catch(e){}
     today().forEach(function(c){ c.c=null; c.t=''; if(c.inp) c.inp.value=''; if(c.inp2) c.inp2.value=''; });
     refreshAll(); totals();
+  };
+  /* 🔴 2026-09-26 대표 지시 — "내일이나 미래 줄 미리 추가할 수 있게". 맨 뒤(d=DAYS)에 빈 날짜를
+     하나 더 이어붙인다 — dayOffsetDate_가 d>=ORIGINAL_DAYS를 "내일부터 순서대로"로 계산하므로
+     누를 때마다 정확히 하루씩 더 미래로 늘어난다. 아직 아무것도 안 썼으면 저장할 것도 없어
+     안전하다(실제로 입력해야만 markDirty가 걸려 저장된다). */
+  document.getElementById('bAddFuture').onclick=function(){
+    if(DAYS-ORIGINAL_DAYS>=14){ alert('미래 날짜는 최대 14일까지만 미리 추가할 수 있습니다.'); return; }
+    data.push(blank()); DAY_PAST.push(false); DAYS++;
+    buildWeek();
+    var added=dateStrForDay(DAYS-1);
+    setSaveStatus('저장됨 · '+nowTime());
+    alert(added+' 줄을 맨 위에 추가했습니다. 이제 칠하거나 글자를 쓰면 저장됩니다.');
   };
   /* 🔴 2026-09-25 대표 지시 — "저장버튼도 만들자". 예전 버튼(#bSave)은 ①칠하기 섹션 맨 아래,
      그리드를 한참 내려야 보이는 자리라 있는 줄도 모르셨을 수 있다. 맨 위 상태 줄(#bSaveTop)에
