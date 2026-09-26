@@ -10539,16 +10539,18 @@
       else if(k === 'field') { pjOpen(FIELD_APP, n, ''); }
       else {
         /* 🔴 2026-09-26 제보 — 「띠에서 회계장부·장비대장·파손수리 눌러도 아무 일도 안 일어남」
-           [원인] 이 함수가 4가지(proj·pay·quote·field)만 «하드코딩»돼 있었다. 새로 추가한
+           [원인 ①] 이 함수가 4가지(proj·pay·quote·field)만 «하드코딩»돼 있었다. 새로 추가한
            키(ledger·equip·repair)는 여기 분기가 «아예 없어서» 눌러도 아무 데도 안 갔다.
-           paCan·paCard 는 이미 있는 카드를 «찾아 보여주는 것»뿐이고, 실제로 «여는 것»은
-           이 함수가 따로 해야 하는데 그걸 안 만들었다.
-           [고침] 하드코딩 안 된 키는 PA_APPS 에서 찾아 그 카드의 href 를 그대로 새 탭으로 연다
-           — 카드를 두 번 만들 필요 없이, 이미 있는 카드 링크를 그대로 쓴다(§1). */
+           [원인 ② — ①을 고친 뒤에 새로 드러난 것] 「파손·수리」 카드는 data-token="1" 이라
+           «신분증을 실어 보내야» 열리는데(장비앱과 같은 프로젝트), 카드 href 를 직접
+           `window.open` 하면 신분증 없이 열려 앱이 「로그인이 필요합니다」로 막았다.
+           [바로잡은 고침] 어느 처리(data-token 있음/없음)가 맞는지 내가 다시 고르지 않는다 —
+           **그 카드를 실제로 클릭한 것과 «똑같이»** 만든다. 그러면 이미 있는 문서 클릭
+           처리기(data-token 카드 → openWithToken · 그 밖의 카드 → openApp_)가 알아서
+           맞는 길로 보낸다(§1·§4-1 — 고르는 로직을 두 번 만들지 않는다). */
         var x = PA_APPS.filter(function(a){ return a.k === k; })[0];
         var c = x && paCard(x);
-        var href = c && c.getAttribute && c.getAttribute('href');
-        if (href) { try { window.open(href, '_blank', 'noopener'); } catch(e){} }
+        if (c) { try { c.click(); } catch(e){ try { openApp_(c.getAttribute('href')); } catch(e2){} } }
       }
     } finally { PA_SAME_NOW = false; }
   }
