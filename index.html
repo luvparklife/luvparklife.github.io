@@ -1591,6 +1591,25 @@
         </div>
       </a>
 
+      <!-- 🔧 파손·수리 이력 — 전체 프로젝트 (2026-09-25 신설 · 대표 요청)
+           🔴 [프로젝트별로는 이미 있었다] 「프로젝트」 카드 → 📋 프로젝트 보고서가
+              2026-09-21부터 소싱시트·수리시트를 자동으로 비춘다. 없던 것은
+              «여러 프로젝트를 가로질러 한눈에» 보는 화면 하나였다(§3-0).
+           🔴 [원본은 수리시트다] 이 화면은 읽기만 한다 — 고치는 곳은 수리시트·프로젝트 보고서.
+           🔴 data-token="1" — 장비앱과 같은 프로젝트라 통행증을 실어 보낸다.
+           🔴 주소가 «이 파일 안에서» 장비앱·문제제보 카드와 셋이 된다 — 배포 주소가
+              바뀌면 «같이» 고친다(§1). -->
+      <a class="card" data-token="1" href="https://script.google.com/macros/s/AKfycbyQCNwXv6YNoCIoPxZPhVF1iXJOETnyG9bbkIPAboouI7Dfw6TkokUmabxdlhZUjZ4t/exec?page=repairAll" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">🔧</div>
+          <div class="body">
+            <div class="title">파손·수리 이력</div>
+            <div class="desc">전체 프로젝트를 가로질러 — 안 닫힌 수리부터, 지난 이력까지</div>
+            <div class="note">읽기 전용 · 원본은 수리시트 · 대표 · 명진 전용</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
 
       <!-- 2026-07-30 대표 지시로 「내부 공통」 그룹에서 이리로 옮김 -->
       <a class="card" data-token="1" data-lifecycle="1" href="https://script.google.com/macros/s/AKfycbz_DdnNbNo2Am4EtANiStIyAg8-VG_tx1_vgBQk7_g3AmTthWVHWCVoxRMECOygBL1G/exec?page=lifecycle" target="_blank" rel="noopener">
@@ -7798,7 +7817,9 @@
     var RPX = PJ_RP_REPAIR;
     if(RPX && (RPX.lines || []).length){
       var _c = RPX.count || {};
-      var _sum = ['접수','수리중','완료','폐기'].filter(function(k){ return _c[k]; })
+      /* 🔴 2026-09-25 대표 확정 — 이름은 「수리완료」. 옛 「완료」로 적힌 줄도 같이 센다
+         (서버 `repairIsDone_` 가 「수리완료」로 합쳐 보내지만, 옛 배포본 응답도 안 깨지게 둘 다 둔다) */
+      var _sum = ['접수','수리중','수리완료','완료','폐기'].filter(function(k){ return _c[k]; })
                    .map(function(k){ return k + ' ' + _c[k]; }).join(' · ');
       h += '<div class="rpsec"><div class="t">🔧 수리시트 — 지금 상태'
          + '<span class="fn">🔴 <b>원본은 수리시트입니다</b> — 여기서는 못 고칩니다. '
@@ -7808,7 +7829,7 @@
          + '<div class="ln" style="font-weight:800">📊 ' + RPX.lines.length + '건 — ' + pjEsc(_sum) + '</div>'
          + RPX.lines.map(function(x){
              var st = String(x.st || '접수');
-             var col = st === '완료' ? '#1c6b46' : (st === '폐기' ? '#8a93a3' : '#95601a');
+             var col = (st === '수리완료' || st === '완료') ? '#1c6b46' : (st === '폐기' ? '#8a93a3' : '#95601a');
              return '<div class="ln">'
                   + '<span class="ph" style="background:#fff;border-color:' + col + ';color:' + col + '">'
                   + pjEsc(st) + '</span>'
