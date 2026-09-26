@@ -9569,13 +9569,21 @@
     if(to === null) return;
     to = String(to).trim();
     if(!to || to === name) return;
+    /* 🔴 2026-09-26 대표 지시 — 이름 바꾸기(최대 150초)가 도는 동안 화면에 «아무것도»
+       안 보였다(pjWaitMsg 는 숨겨진 시험용 링크(pjTestMsg)가 있을 때만 만들어지는데,
+       평소 화면엔 그 링크가 없어 늘 안 뜨는 코드였다 — §3-5 ⑧처럼 만들어두고 안 켜진 경우).
+       → «있는» pjBusy 를 그대로 쓴다(§1) — 초 단위로 저절로 올라가는 장치가 이미 있다. */
+    pjBusy(true, '✏️ 「' + name + '」 → 「' + to + '」로 바꾸는 중…');
     pjAdmin('rename', name, '&to=' + encodeURIComponent(to), function(r){
+      pjBusy(false);
       if(!r.ok){
         /* 🔴 2026-08-26 — 「답이 없다」와 「안 됐다」는 다르다.
            시간이 넘친 경우에는 «정말 안 바뀌었는지» 한 번 더 물어본다.
            서버가 이미 끝냈는데 「못 바꿨습니다」라고 하면 대표가 또 시도하게 된다. */
         if(r.timeout){
+          pjBusy(true, '✏️ 실제로 바뀌었는지 다시 확인하는 중…');
           pjAdmin('check', to, '', function(c2){
+            pjBusy(false);
             if(c2 && c2.ok){
               alert('✅ 사실은 «바뀌었습니다».\n\n' + name + '\n  ↓\n' + to
                   + '\n\n답이 늦게 왔을 뿐입니다. 노션 제목도 이어서 바꾸겠습니다.');
@@ -9593,7 +9601,9 @@
         }
         alert('🔴 못 바꿨습니다.\n\n' + (r.error || '')); return;
       }
+      pjBusy(true, '✏️ 노션 제목도 바꾸는 중…');
       pjNotion('rename', name, to, function(nd){
+        pjBusy(false);
         var extra = nd && nd.ok ? (nd.skipped ? '노션: ' + nd.why : (nd.done || '노션 제목도 바꿈'))
                                 : ('🔴 노션 제목은 그대로입니다 — ' + ((nd && nd.error) || '못 불렀습니다'));
         alert('✅ 바꿨습니다.\n\n' + name + '\n  ↓\n' + to + '\n\n'
@@ -10527,6 +10537,19 @@
       if(k === 'pay')   { pjSettle(n); }
       else if(k === 'quote') { pjOpen(FIELD_APP, n, 'page=quote'); }
       else if(k === 'field') { pjOpen(FIELD_APP, n, ''); }
+      else {
+        /* 🔴 2026-09-26 제보 — 「띠에서 회계장부·장비대장·파손수리 눌러도 아무 일도 안 일어남」
+           [원인] 이 함수가 4가지(proj·pay·quote·field)만 «하드코딩»돼 있었다. 새로 추가한
+           키(ledger·equip·repair)는 여기 분기가 «아예 없어서» 눌러도 아무 데도 안 갔다.
+           paCan·paCard 는 이미 있는 카드를 «찾아 보여주는 것»뿐이고, 실제로 «여는 것»은
+           이 함수가 따로 해야 하는데 그걸 안 만들었다.
+           [고침] 하드코딩 안 된 키는 PA_APPS 에서 찾아 그 카드의 href 를 그대로 새 탭으로 연다
+           — 카드를 두 번 만들 필요 없이, 이미 있는 카드 링크를 그대로 쓴다(§1). */
+        var x = PA_APPS.filter(function(a){ return a.k === k; })[0];
+        var c = x && paCard(x);
+        var href = c && c.getAttribute && c.getAttribute('href');
+        if (href) { try { window.open(href, '_blank', 'noopener'); } catch(e){} }
+      }
     } finally { PA_SAME_NOW = false; }
   }
   document.addEventListener('click', function(ev){
