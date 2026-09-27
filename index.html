@@ -1110,6 +1110,17 @@
     .paRepGo:disabled{background:#8a97a6; cursor:default}
     .paRepMsg{margin-top:10px; font-size:13px}
     .paRepMsg.ok{color:#1e7a46; font-weight:700}
+    /* 📸 2026-09-27 제보 R-0005 — 사진 첨부(선택) */
+    .paRepPhotoBtn{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line);
+      border-radius:8px; padding:9px 12px; font:inherit; font-size:13px; background:var(--bg);
+      color:var(--sub); cursor:pointer}
+    .paRepPhotoPrev{display:flex; align-items:center; gap:8px; margin-top:8px;
+      background:var(--line2); border-radius:8px; padding:6px 8px}
+    .paRepPhotoPrev img{width:44px; height:44px; object-fit:cover; border-radius:6px; flex:0 0 auto}
+    .paRepPhotoPrev span{flex:1; min-width:0; font-size:12px; color:var(--sub); overflow:hidden;
+      text-overflow:ellipsis; white-space:nowrap}
+    .paRepPhotoPrev button{border:0; background:var(--bg); color:#c62828; border-radius:6px;
+      padding:6px 9px; font:inherit; font-size:12px; cursor:pointer; flex:0 0 auto}
     .paRepMsg.err{color:#c0392b; font-weight:700}
   </style>
 </head>
@@ -1751,7 +1762,11 @@
         <label class="paRepL" for="paRepProb">무슨 일이 났나요</label>
         <textarea class="paRepTa" id="paRepProb" maxlength="1000" placeholder="겪으신 것을 그대로 적어 주세요"></textarea>
         <label class="paRepUrg"><input type="checkbox" id="paRepUrgent"> 지금 일을 못 할 정도로 급합니다</label>
-        <p style="font-size:11.5px;color:var(--faint);margin-top:8px">🔴 비밀번호·계좌·주민번호는 적지 마세요.</p>
+        <label class="paRepL" for="paRepPhotoIn">사진 <span style="font-weight:400">(캡처 화면 등 · 선택 · 5MB까지)</span></label>
+        <label class="paRepPhotoBtn">📷 사진 고르기<input type="file" accept="image/*" style="display:none"
+          id="paRepPhotoIn" onchange="paRepPhotoPick(this)"></label>
+        <div id="paRepPhotoZone"></div>
+        <p style="font-size:11.5px;color:var(--faint);margin-top:8px">🔴 비밀번호·계좌·주민번호는 적지 마세요(사진에도 안 보이게).</p>
         <button type="button" class="paRepGo" id="paRepGo" onclick="paRepSend()">보내기</button>
         <div class="paRepMsg" id="paRepMsg"></div>
       </div>
@@ -2185,6 +2200,90 @@
     var box = document.getElementById('paRepHov');
     if(box) box.hidden = true;
   }
+  /* 📸 2026-09-27 제보 R-0005 — 사진 첨부(선택). 허브는 «다른 서버»라 장비앱으로 못 부른다
+     (google.script.run 은 같은 프로젝트끼리만 된다) — fetch(POST) 로 몸통에 담아 보낸다.
+     🔴 [왜 사진이 없으면 기존 GET 그대로 두나] 지금 GET(JSONP) 길은 이미 잘 돈다.
+        사진 있을 때만 새 길을 타면, 고치다 실수해도 «사진 없는 제보»(훨씬 잦다)는 안 다친다. */
+  var PAREP_PHOTO_B64 = '', PAREP_PHOTO_MIME = '', PAREP_PHOTO_NAME = '';
+  function paRepPhotoPick(el){
+    var f = el && el.files && el.files[0];
+    if(!f) return;
+    var msg = document.getElementById('paRepMsg');
+    if(!/^image\//.test(f.type || '')){
+      msg.className = 'paRepMsg err'; msg.textContent = '사진 파일만 첨부할 수 있습니다.';
+      el.value = ''; return;
+    }
+    if(f.size > 5 * 1024 * 1024){
+      msg.className = 'paRepMsg err'; msg.textContent = '사진이 너무 큽니다 — 5MB까지만 됩니다.';
+      el.value = ''; return;
+    }
+    var r = new FileReader();
+    r.onload = function(){
+      var s = String(r.result || ''), i = s.indexOf(',');
+      PAREP_PHOTO_B64 = i >= 0 ? s.slice(i + 1) : '';
+      PAREP_PHOTO_MIME = f.type; PAREP_PHOTO_NAME = f.name;
+      paRepDrawPhoto();
+    };
+    r.onerror = function(){
+      msg.className = 'paRepMsg err'; msg.textContent = '사진을 읽지 못했습니다.';
+    };
+    r.readAsDataURL(f);
+  }
+  function paRepPhotoClear(){
+    PAREP_PHOTO_B64 = ''; PAREP_PHOTO_MIME = ''; PAREP_PHOTO_NAME = '';
+    var el = document.getElementById('paRepPhotoIn'); if(el) el.value = '';
+    paRepDrawPhoto();
+  }
+  function paRepDrawPhoto(){
+    var z = document.getElementById('paRepPhotoZone');
+    if(!z) return;
+    z.innerHTML = PAREP_PHOTO_B64
+      ? ('<div class="paRepPhotoPrev"><img src="data:' + PAREP_PHOTO_MIME + ';base64,' + PAREP_PHOTO_B64 + '">'
+         + '<span>' + pjEsc(PAREP_PHOTO_NAME) + '</span>'
+         + '<button type="button" onclick="paRepPhotoClear()">빼기</button></div>')
+      : '';
+  }
+  /* 신분증/통행증을 «객체로» — appTok() 은 쿼리 조각(&s=…)을 주는데, POST 몸통엔 값만 필요하다. */
+  function appTokObj(){
+    var h = hubSessGet();
+    if(h) return { s: h.s };
+    var u = loadUser();
+    return (u && u.cred && credLive(u)) ? { t: u.cred } : {};
+  }
+  function paRepSendWithPhoto_(prob, doing, urgent){
+    var msg = document.getElementById('paRepMsg');
+    var go = document.getElementById('paRepGo');
+    var body = {
+      rep: 'submit', app: 'hub',
+      page: location.hash || document.title || '허브',
+      doing: doing, problem: prob, urgent: urgent ? '1' : '',
+      photoData: PAREP_PHOTO_B64, photoMime: PAREP_PHOTO_MIME
+    };
+    var tok = appTokObj(); if(tok.s) body.s = tok.s; if(tok.t) body.t = tok.t;
+    /* 🔴 Content-Type 을 text/plain 으로 — JSON 이라고 적으면 브라우저가 «미리 물어보기»
+       (preflight)를 하는데 Apps Script 가 그건 못 받는다(정해진 규칙 · Code.js doPost 주석). */
+    fetch(FIELD_APP, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(body) })
+      .then(function(res){ return res.json(); })
+      .then(function(d){
+        go.disabled = false; go.textContent = '보내기';
+        if(d && d.ok){
+          msg.className = 'paRepMsg ok'; msg.textContent = '✅ ' + (d.msg || '접수했습니다');
+          document.getElementById('paRepProb').value = '';
+          document.getElementById('paRepDoing').value = '';
+          document.getElementById('paRepUrgent').checked = false;
+          paRepPhotoClear();
+          setTimeout(paRepClose, 1200);
+        } else {
+          msg.className = 'paRepMsg err';
+          msg.textContent = '🔴 못 보냈습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다');
+        }
+      })
+      .catch(function(e){
+        go.disabled = false; go.textContent = '보내기';
+        msg.className = 'paRepMsg err'; msg.textContent = '🔴 못 보냈습니다 — ' + e;
+      });
+  }
   function paRepSend(){
     var prob = String(document.getElementById('paRepProb').value || '').trim();
     var msg = document.getElementById('paRepMsg');
@@ -2199,6 +2298,8 @@
     var go = document.getElementById('paRepGo');
     go.disabled = true; go.textContent = '보내는 중…';
     msg.className = 'paRepMsg'; msg.textContent = '';
+    /* 📸 사진을 고르셨으면 «POST 길»로 — GET(JSONP)은 사진을 못 나른다(주소 길이 상한). */
+    if (PAREP_PHOTO_B64) { paRepSendWithPhoto_(prob, doing, !!urgent); return; }
     askCount(FIELD_APP + '?rep=submit&app=hub'
              + '&page=' + encodeURIComponent(location.hash || document.title || '허브')
              + '&doing=' + encodeURIComponent(doing)
