@@ -3702,6 +3702,13 @@
       return '<option value="' + s + '"' + (s === cur ? ' selected' : '') + '>' + s + '</option>';
     }).join('');
   }
+  /* 🚦 2026-09-27(R-0009) — 목록 줄이 하던 「모르는 값·빈칸은 활성으로」 정규화를 «한 곳으로»
+     뺐다. 프로젝트 정보 화면도 같은 값을 보여줘야 하는데, 두 곳에 따로 적으면 하나만 고쳐질 수
+     있다(§1). 되돌리기 = "상태 정규화 되돌려줘" (이 함수를 지우고 두 자리에 도로 각각 적는다) */
+  function pjStShow_(raw){
+    raw = String(raw || '').trim();
+    return (raw === '완료' || raw === '캔슬/드롭') ? raw : '활성';
+  }
   function pjStChange(sel){
     var name = sel.getAttribute('data-pan') || '';
     var prev = sel.getAttribute('data-prev') || '';
@@ -3776,8 +3783,7 @@
          🔴 [관리 이상만 «바꿀 수」 있다] 완료로 바뀌면 그 프로젝트로 정산 청구를 못 하게 되므로
             (§1 — PA팀 매뉴얼에도 적어 뒀다) 아무나 누르게 두지 않는다.
          🔴 [모르는 값·빈칸은 «활성»으로 보여준다] 서버가 그렇게 다루는 것과 맞춘다(§1). */
-      var _stRaw = String(p.st || '').trim();
-      var _stShow = (_stRaw === '완료' || _stRaw === '캔슬/드롭') ? _stRaw : '활성';
+      var _stShow = pjStShow_(p.st);
       var _stCtl = PJ_ST_CAN
         ? ('<div class="pjstwrap" onclick="event.preventDefault();event.stopPropagation();">' +
              '<select data-pan="' + pjEsc(name) + '" data-prev="' + pjEsc(_stShow) + '" ' +
@@ -4687,6 +4693,23 @@
     return J;
   }
   function pjChkPaint(box, d){
+    /* 🚦 2026-09-27(R-0009) 제보 — 「프로젝트 정보에 현황을 볼 수 있고 상태를 바꿀 수 있게」.
+       🔴 [드롭다운·확인창·서버 호출을 «새로 안 만든다»] 2026-09-23에 목록 화면이 이미 만든
+          pjStOptions_/pjStChange/act=status 를 그대로 쓴다(§1) — 자리만 하나 더 낸다.
+       🔴 [.pjstwrap 을 «자리만 빌린다»] 그 클래스의 select 꾸밈(둥근 알약 모양)은 그대로 쓰되,
+          목록 카드용 절대좌표(top/right)는 여기 줄과 안 맞으므로 인라인으로 죽인다.
+          `.pjstmsg`(⏳/✓/⚠ 알림)는 «가장 가까운 positioned 조상»에 뜨므로, 그 조상을
+          이 줄(`.pjstrow`) 하나로 만들어 준다 — 안 그러면 메시지가 화면 엉뚱한 데 뜬다. */
+    var PJ_ST_CAN2 = (PJ_ROLE === '대표' || PJ_ROLE === '관리');
+    var _stShow2 = pjStShow_(d.st);
+    var _stCtl2 = PJ_ST_CAN2
+      ? ('<select data-pan="' + pjEsc(PJ_NOW) + '" data-prev="' + pjEsc(_stShow2) + '" '
+         + 'onchange="pjStChange(this)">' + pjStOptions_(_stShow2) + '</select>')
+      : ('<span class="pjstbadge">' + pjEsc(_stShow2) + '</span>');
+    var L = '<div class="pjstrow" style="position:relative; margin:0 0 10px">'
+      + '<div class="pjstwrap" style="position:static; display:flex; align-items:center; gap:8px">'
+      + '<b style="font-size:12.5px">🚦 상태</b>' + _stCtl2
+      + '</div></div>';
     /* ── 왼쪽 칸 · 진행 + 지금 할 일 ── */
     var A = pjStages(d), bar = '', lb = '';
     A.forEach(function(x){
@@ -4695,7 +4718,7 @@
       lb  += '<span class="' + c + '">' + x.t + '</span>';
     });
     var unkN = A.filter(function(x){ return x.unk; }).length;
-    var L = '<div class="steps">' + bar + '</div><div class="slb">' + lb + '</div>'
+    L += '<div class="steps">' + bar + '</div><div class="slb">' + lb + '</div>'
           + '<div class="stg">확인된 단계 <b>' + A.filter(function(x){return x.ok;}).length + ' / 5</b>'
           + (unkN ? ' · 빗금 <b>' + unkN + '칸</b>은 <b>아직 못 봅니다</b> — 견적·정산은 다른 시스템이라 물어볼 길이 없습니다' : '')
           + '</div>';
