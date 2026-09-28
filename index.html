@@ -200,11 +200,19 @@
        🔴 [색만으로 뜻을 전하지 않는다] 점 옆에 항상 「주의」·「위급」 «단어»가 같이 온다. */
     #stBody{margin:-4px 0 10px; padding:12px; background:var(--card);
       border:1px solid var(--line); border-radius:12px}
-    .stgrid{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+    /* 📱 2026-09-28 제보 R-0018 (대표 확정 3번안) — 폰에서 칸이 찌그러지던 것.
+       🔴 [진짜 원인은 «1fr» 이었다] 1fr 은 「남는 자리를 나눠 갖되, 내용보다 좁아지지는 않는다」는 뜻이다.
+          그래서 안쪽 작은 박스(🧰준비/랩업/반납)가 든 칸이 «자기 최소폭»을 우기며 한쪽을 밀어냈다.
+          실측(390px): 좌우가 94px / 229px 로 갈려 왼쪽 칸 제목이 «7~8줄»로 눌렸다.
+       🔴 [minmax(0,1fr) 이 그것을 막는다] 「0까지 줄어도 된다」를 열어 주면 좌우가 정확히 반씩 된다. */
+    .stgrid{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:9px}
     .sttile{border:1px solid var(--line); border-left:4px solid var(--line); border-radius:11px;
       padding:11px 12px; background:var(--bg); cursor:pointer}
     .sttile:hover{border-color:var(--accent)}
-    .sttile .k{font-size:11.5px; color:var(--sub); font-weight:700; display:flex; align-items:center; gap:4px}
+    /* 📱 2026-09-28 R-0018 — 좁으면 딱지가 «제목 아래»로 내려가게 줄바꿈을 연다.
+       전에는 한 줄에 억지로 밀어 넣느라 제목이 글자 단위로 쪼개져 7~8줄이 됐다. */
+    .sttile .k{font-size:11.5px; color:var(--sub); font-weight:700; display:flex; align-items:center;
+      gap:4px; flex-wrap:wrap; min-width:0}
     /* 🏷 2026-09-24 대표 지시 — "대표,관리자,팀원 태그된것도... 장비안내에서는 태그해서 담당자를 정하니깐"
        장비안내(카탈로그)가 이미 하는 방식과 같다 — 딱지 하나로 담당자를 보인다. */
     .sttile .k .tag{margin-left:auto; font-size:10px; font-weight:700; color:var(--accent);
@@ -215,10 +223,15 @@
     /* 📅 한 칸 «안»에서 촬영/렌탈로 갈리는 줄 — 2026-09-23 대표 지시로 «박스 숫자」로 키웠다.
        작은 글씨 한 줄(2026-09-22 판)은 안 눈에 띈다고 하셔서, 각각 자기 숫자를 가진
        작은 박스 두 개로 나란히 둔다. 🔴 카드 자체는 안 쪼갠다 — 큰 숫자(합계)는 그대로 위에 있다. */
-    .stsp{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:2px 0 7px}
-    .stsp.s3{grid-template-columns:1fr 1fr 1fr}  /* 🆕 2026-09-24 — 준비·랩업·반납 세 갈래용 */
+    /* 📱 2026-09-28 R-0018 — 여기도 같은 이유로 minmax(0,·). 이 안쪽 박스가 바로 칸을 밀어내던 범인이다. */
+    .stsp{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px; margin:2px 0 7px}
+    .stsp.s3{grid-template-columns:repeat(3, minmax(0, 1fr))}  /* 🆕 2026-09-24 — 준비·랩업·반납 세 갈래용 */
+    /* 📨🧾 2026-09-28 R-0017 — 묶은 칸 안의 상자는 «눌러서 가는 곳»이라 눌리는 티를 낸다 */
+    .stspb.go{cursor:pointer}
+    .stspb.go:hover{border-color:var(--accent)}
     .stspb{display:flex; align-items:baseline; gap:5px; background:var(--card);
-      border:1px solid var(--line); border-radius:8px; padding:5px 8px}
+      border:1px solid var(--line); border-radius:8px; padding:5px 8px;
+      min-width:0; overflow:hidden}   /* 📱 R-0018 — 0까지 줄어도 되게(안 그러면 칸을 밀어낸다) */
     .stspb .i{font-size:13px}
     .stspb .n{font-size:17px; font-weight:800; color:var(--ink); font-variant-numeric:proportional-nums}
     .stspb .t{font-size:11px; color:var(--sub); font-weight:600; margin-left:1px}
@@ -227,7 +240,18 @@
     /* 🔴 숫자가 «조용히» 바뀌면 옛 값으로 판단하시게 된다 → 바뀔 때 반짝인다 */
     @keyframes stfl{0%{box-shadow:0 0 0 7px rgba(255,196,60,.55)}100%{box-shadow:0 0 0 0 rgba(255,196,60,0)}}
     #stBody .stfoot{font-size:11px; color:var(--sub); padding:9px 4px 1px; text-align:center}
-    @media(max-width:360px){ .stgrid{grid-template-columns:1fr} }
+    /* 📱 2026-09-28 R-0018 (대표 확정) — 한 칸으로 바꾸는 기준을 360 → 440 으로.
+       🔴 [왜 360이 쓸모없었나] 요즘 폰 가로폭이 390~430 이라 «이 기준에 걸리는 폰이 거의 없었다».
+          그래서 폰에서도 계속 두 칸으로 그려졌다. 440 이면 아이폰 14·15(390·393)·Pro Max(430)가 전부 걸린다.
+       🔴 [큰 화면은 한 글자도 안 바뀐다] 440 위로는 예전 그대로 두 칸이다. */
+    @media(max-width:440px){
+      .stgrid{grid-template-columns:1fr}
+      /* 한 칸이 되면 가로가 넉넉하니, 안쪽 박스는 예전처럼 나란히 둔다(세로로 쌓으면 길어지기만 한다) */
+      .sttile .k{flex-wrap:nowrap}
+      .sttile .k .tag{flex-shrink:0}
+    }
+    /* 🔴 아주 좁은 폰(320~360)에서는 안쪽 세 갈래를 세로로 쌓는다 — 나란히 두면 글자가 눌린다 */
+    @media(max-width:340px){ .stsp.s3{grid-template-columns:1fr} }
     .arrow{font-size:20px; color:var(--faint); flex-shrink:0}
     a.card.disabled{opacity:.62; pointer-events:none}
 
@@ -2795,15 +2819,20 @@
      🏷 2026-09-24 대표 지시 — "대표,관리자,팀원 태그된것도... 장비안내에서는 태그해서 담당자를
         정하니깐" — 이미 붙여둔 see 값을 그대로 담당자 딱지로도 보여준다(새 자료 안 만듦 · §1). */
   var SEE_BADGE = { owner:'👑 대표', admin:'🛠 관리', team:'🎒 팀원' };
-  function stTile(id, ico, nm, v, unit, st, extra, see){
+  /* 🔴 2026-09-28 제보 R-0017 — 맨 뒤에 `noBig` 를 더했다(안 주면 예전과 «한 글자도» 같다).
+     true 면 «큰 숫자 줄을 아예 안 그린다» — 견적·계산서를 한 칸에 묶을 때 쓴다.
+     대표 확정(3번안): *"큰 합계 숫자는 안 만들고, 견적·계산서를 나란히 두어 각각 누르면
+     제 앱으로 정확히 이동하게."* 합계를 만들면 실제보다 급해 보이고, 누를 곳도 하나로 뭉개진다. */
+  function stTile(id, ico, nm, v, unit, st, extra, see, noBig){
     var na = !stIsNum(v);
     return '<div class="sttile" id="stt_' + id + '" onclick="stGo(\'' + id + '\')"'
       + (see ? ' data-see="' + see + '"' : '')
       + ' style="border-left-color:' + (na ? 'var(--line)' : ST_HUE[st]) + '">'
       + '<div class="k">' + ico + ' ' + nm
       + (see ? '<span class="tag">' + SEE_BADGE[see] + '</span>' : '') + '</div>'
-      + '<div class="v' + (na ? ' na' : '') + '" id="stv_' + id + '">'
-      + (na ? '—' : (v + '<small>' + unit + '</small>')) + '</div>'
+      + (noBig ? ''
+               : '<div class="v' + (na ? ' na' : '') + '" id="stv_' + id + '">'
+                 + (na ? '—' : (v + '<small>' + unit + '</small>')) + '</div>')
       + (extra || '')                       /* 📅 타일의 «촬영/렌탈» 갈래가 여기 들어간다 */
       + '<div class="stw" id="stw_' + id + '">'
       + (na ? '아직 못 받음' : ('<i style="background:' + ST_HUE[st] + '"></i>' + ST_WORD[st])) + '</div></div>';
@@ -2826,6 +2855,20 @@
   }
   /* 🆕 2026-09-24 대표 피드백 — 반납만 따로 있던 것을 준비·랩업·반납 «세 갈래」로.
      stSplit(위)과 같은 모양을 셋으로 늘린 것뿐이다(새 패턴 발명 안 함). */
+  /* 📨🧾 2026-09-28 제보 R-0017 (대표 확정 3번안) — 견적·계산서를 «한 칸 안에» 나란히.
+     🔴 [큰 합계 숫자를 안 만든다] 견적 3 + 계산서 2 = 5 로 뭉치면 실제보다 급해 보인다.
+     🔴 [각각 «제 앱»으로 간다] 견적은 견적앱, 계산서는 정산앱으로 가는 곳이 서로 다르다 —
+        묶는다고 한 곳으로만 보내면 누를 때마다 헛걸음이 된다(그래서 2번안을 안 골랐다).
+     🔴 [stSplit 과 «같은 모양»을 쓴다] 「다가오는 일정」이 촬영/렌탈을 이미 이렇게 보여준다(§4-1). */
+  function stSplitQI(quote, inv){
+    if(!stIsNum(quote) && !stIsNum(inv)) return '';
+    return '<div class="stsp" id="stsp_qinv">'
+      + '<div class="stspb go" onclick="stGoSub(event,\'quote\')"><span class="i">📨</span>'
+        + '<span class="n" id="stv_quote">' + (stIsNum(quote) ? quote : '—') + '</span><span class="t">견적</span></div>'
+      + '<div class="stspb go" onclick="stGoSub(event,\'inv\')"><span class="i">🧾</span>'
+        + '<span class="n" id="stv_inv">' + (stIsNum(inv) ? inv : '—') + '</span><span class="t">계산서</span></div>'
+      + '</div>';
+  }
   function stSplit3(prep, wrap, back){
     if(!stIsNum(prep) && !stIsNum(wrap) && !stIsNum(back)) return '';
     return '<div class="stsp s3" id="stsp_prep">'
@@ -2861,14 +2904,20 @@
       + stTile('soon', '📅', '다가오는 일정',   d.soon, '건', 'good', stSplit(d.shoot, d.rent), 'admin')
       + stTile('pj',   '📁', '진행 중 프로젝트', d.pj,   '건', 'good', '', 'admin')
       + stTile('rev',  '📝', '회고 안 쓴 것',   d.rev,  '건', stSt(d.rev), '', 'admin')
-      + stTile('quote','📨', '견적 미발송',     d.quote, '건', stSt(d.quote), '', 'owner')
+      /* 📨🧾 2026-09-28 R-0017 — 「견적 미발송」+「계산서 미발행」 두 칸을 «한 칸»으로 묶었다.
+         큰 숫자는 «안» 만들고(noBig), 안에서 각각 제 앱으로 간다. 옛 두 줄은 이 한 줄이 대신한다. */
+      + stTile('qinv', '📨', '견적 · 계산서', 0, '건', 'good', stSplitQI(d.quote, d.inv), 'owner', true)
       + prepOrWrap
       + mySoon
       + stTile('src',  '🧰', '소싱 부족',       d.src,   '건', stSt(d.src), '', 'admin')
-      + stTile('inv',  '🧾', '계산서 미발행',   d.inv,   '건', stSt(d.inv), '', 'owner')
+      /* 🔧 2026-09-28 R-0017 (대표 지시) — 「장비 파손·수리 현황도 대표·관리자가 보게」.
+         🔴 권한이 잘못된 게 아니라 «현황판에 칸이 없었다» — 홈 아래 「파손·수리 이력」 카드는
+            원래부터 대표·명진 전용이었다(확인함). 여기 칸 하나를 더해 홈에서 바로 보이게 한다.
+         🔴 [누르면 그 화면으로] 대표님이 말씀하신 「잘못 들어가 있는 것들」을 거기서 고치신다. */
+      + stTile('repair','🔧', '파손·수리',      d.repair, '건', stSt(d.repair), '', 'admin')
       + '</div>'
       + '<div class="stfoot" id="stFoot">' + (d.at ? '지난번에 본 숫자입니다 — 새로 받아오는 중…' : '받아오는 중…') + '</div>'
-      + '<div class="stfoot" style="opacity:.7">📨🧾 견적·계산서·정산·회고는 대표님만 · 🧰 준비랩업반납·소싱은 명진님도 봅니다 · 🎒 팀원은 내 것만 봅니다</div>';
+      + '<div class="stfoot" style="opacity:.7">📨🧾 견적·계산서·정산·회고는 대표님만 · 🧰 준비랩업반납·소싱·🔧 파손수리는 명진님도 봅니다 · 🎒 팀원은 내 것만 봅니다</div>';
     /* 방금 새로 그린 타일에 [data-see] 가 실려 있다 — 지금 바로 걸러야 한다.
        안 하면 applyRole 이 다음 로그인 때까지 다시 안 불려 «명진님 화면에 대표 전용 칸이 잠깐 보인다». */
     try{ applyRole(role); }catch(e){}
@@ -2886,8 +2935,37 @@
     if(tl) tl.style.borderLeftColor = na ? 'var(--line)' : ST_HUE[st];
     if(tl) tl.style.animation = 'stfl 1.2s';             /* 🔴 바뀐 것을 «보이게» */
   }
+  /* 🔢 2026-09-28 R-0017 — 묶은 칸 «안»의 작은 숫자만 갈아끼운다.
+     🔴 stBump 를 쓰면 안 된다 — 그건 큰 숫자 줄(.v)용이라 class 를 'v' 로 덮고
+        stw_/stt_ 짝을 찾는다. 작은 박스에 쓰면 모양이 깨진다(만들면서 걸러냈다). */
+  function stBumpSub(id, v){
+    var el = document.getElementById('stv_' + id); if(!el) return;
+    var now = stIsNum(v) ? String(v) : '—';
+    if(el.textContent === now) return;
+    el.textContent = now;
+    var box = el.parentElement;
+    if(box) box.style.animation = 'stfl 1.2s';     /* 🔴 바뀐 것을 «보이게» (큰 숫자와 같은 방식) */
+  }
   function stGo(id){
     if(id === 'pay'){ var c = document.querySelector('a[data-badge]'); if(c) c.click(); return; }
+    /* 📨🧾 2026-09-28 R-0017 — 묶은 칸은 «안의 작은 상자»가 각자 제 앱으로 간다.
+       칸 바탕을 눌렀을 때 엉뚱한 곳(프로젝트 목록)으로 튀지 않게 여기서 멈춘다. */
+    if(id === 'qinv') return;
+    /* 🔧 2026-09-28 R-0017 — 파손·수리는 홈의 「파손·수리 이력」 카드를 그대로 누른다.
+       🔴 주소를 여기 안 적는다 — 그 카드가 이미 들고 있다(§1). 배포 주소가 바뀌어도 따라온다. */
+    if(id === 'repair'){
+      var r = document.querySelector('a[href*="page=repairAll"]');
+      if(r){ r.click(); return; }
+    }
+    location.hash = '#p';
+  }
+  /* 📨🧾 2026-09-28 R-0017 — 묶은 칸 안에서 «각각» 제 앱으로.
+     🔴 칸 바탕의 onclick 이 같이 터지지 않게 반드시 멈춘다(안 그러면 두 번 움직인다). */
+  function stGoSub(ev, which){
+    try{ ev.stopPropagation(); }catch(e){}
+    if(which === 'inv'){ var c = document.querySelector('a[data-badge]'); if(c) c.click(); return; }
+    var q = document.querySelector('a[href*="page=quote"]');
+    if(q){ q.click(); return; }
     location.hash = '#p';
   }
   function stTog(){
@@ -2919,6 +2997,10 @@
               mySoon: stIsNum(last.mySoon) ? last.mySoon : null,
               src:    stIsNum(last.src)    ? last.src    : null,
               inv:    stIsNum(last.inv)    ? last.inv    : null,
+              /* 🔧 2026-09-28 R-0017 — 파손·수리도 지난 값으로 «먼저» 그린다.
+                 안 넘기면 칸이 아예 «—» 로만 서 있다가, 숫자가 와도 끼울 자리를 못 찾는다
+                 (2026-09-22에 촬영/렌탈 갈래에서 실제로 그랬다 — 같은 함정을 또 밟지 않는다). */
+              repair: stIsNum(last.repair) ? last.repair : null,
               at:    last.at || 0 });
 
     /* ② 뒤에서 받아와 «숫자만» 바꾼다 */
@@ -3024,7 +3106,10 @@
     function askDash(){
       askCount(FIELD_APP + '?list=dashcount' + appTok(), function(d){
         if(d && d.ok){
-          if(stIsNum(d.quote)){ stBump('quote', d.quote); got.quote = d.quote; }
+          /* 📨 2026-09-28 R-0017 — 견적은 이제 묶은 칸 «안»의 작은 숫자다(stBumpSub) */
+          if(stIsNum(d.quote)){ stBumpSub('quote', d.quote); got.quote = d.quote; }
+          /* 🔧 2026-09-28 R-0017 — 파손·수리(안 닫힌 수리 건수) */
+          if(stIsNum(d.repair)){ stBump('repair', d.repair); got.repair = d.repair; }
           if(stIsNum(d.prep) || stIsNum(d.wrap) || stIsNum(d.back)){
             var sum = (stIsNum(d.prep)?d.prep:0) + (stIsNum(d.wrap)?d.wrap:0) + (stIsNum(d.back)?d.back:0);
             stBump('prep', sum);
@@ -3051,7 +3136,7 @@
       if(!base) return;                 /* 정산앱 배지 주소를 못 찾았으면 이 칸은 그냥 지난 값대로 */
       askCount(base + '?action=invoicePending' + tokFor(base), function(d){
         var n = (d && d.ok && stIsNum(d.n)) ? d.n : null;
-        if(n !== null){ stBump('inv', n); got.inv = n; stKeep(); return; }
+        if(n !== null){ stBumpSub('inv', n); got.inv = n; stKeep(); return; }   /* 🧾 R-0017 — 묶은 칸 안 */
         invTry++;
         if(invTry <= 2) setTimeout(askInvoice, 1500 * invTry);
       });
@@ -3059,6 +3144,7 @@
     askInvoice();
   }
   window.stTog = stTog; window.stGo = stGo;
+  window.stGoSub = stGoSub;   /* 📨🧾 2026-09-28 R-0017 — 묶은 칸 안 상자가 onclick 으로 부른다 */
 
   /* 화면에 돌아오면 다시 센다 — 앱에서 처리하고 돌아왔을 때 숫자가 남아 있으면 안 된다 */
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) loadCounts(false); });
