@@ -4999,8 +4999,18 @@
                 위 주석의 판단 그대로, 매번 목록에서 찾는다. */
           var have = {}; rows.forEach(function(x){
             if(x && x.name) have[String(x.name).trim().toLowerCase()] = String(x.id || ''); });
-          /* 참여인원은 쉼표로 여러 명 — 한 명이라도 없으면 알린다 */
-          var names = String(it.text).split(',').map(function(x){ return x.trim(); })
+          /* 🔴 2026-09-28 — PA팀은 쉼표가 아니라 ' · '(가운데점)로 여러 명을 나열한다
+             (Code.js qtLaborText_). 쉼표로만 나누면 "강문원 · 이서백" 전체가 이름 하나로
+             뭉쳐져 «둘 다 노션에 있어도» 등록 필요로 잘못 뜬다(실제 사고 2026-09-28).
+             "외 N명"·"아직 지명 안 함 N명"·🔴 뒤 경고문구는 이름이 아니므로 먼저 걷어낸다. */
+          var _raw = String(it.text);
+          if (k === 'PA팀') {
+            _raw = _raw.split('🔴')[0];
+            _raw = _raw.replace(/\s*\(＋[^)]*\)/g, '');
+            _raw = _raw.replace(/외\s*\d+\s*명/g, '');
+            _raw = _raw.replace(/아직\s*지명\s*안\s*함\s*\d+\s*명/g, '');
+          }
+          var names = _raw.split(/[,·]+/).map(function(x){ return x.trim(); })
                         .filter(function(x){ return !!x; });
           var miss = names.filter(function(x){ return !have[x.toLowerCase()]; });
           var vv = kv.querySelector('.v'); if(!vv) return;
