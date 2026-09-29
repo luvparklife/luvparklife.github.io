@@ -104,11 +104,25 @@ p{margin:7px 0}
 .wk td.c textarea::placeholder{color:rgba(0,0,0,.18)}
 .wk td.c.dark textarea{color:#fff}
 /* 🔴 고치는 동안만 커진다 — 흰 바탕·큰 글씨라 «칠한 색이 어두워도» 글자가 보인다.
-   오른쪽 끝 칸(.edgeR)은 왼쪽으로 펴진다 — 안 그러면 화면 밖으로 나가 안 보인다. */
-.wk td.c textarea:focus{position:absolute; left:-1px; top:-1px; width:264px; height:92px; z-index:30;
-  font-size:13px; line-height:1.45; padding:7px 8px; background:#fff; color:#111!important;
-  border:2px solid var(--ink); border-radius:9px; box-shadow:0 10px 26px rgba(0,0,0,.22); overflow:auto}
-.wk td.c.edgeR textarea:focus{left:auto; right:-1px}
+   🔴 2026-09-29 대표 지시 — "텍스트박스가 너무 커서 밑칸 선택하고 옆칸선택하는데 어려워".
+   처음엔 264×92px 로 «오른쪽·아래»로 펴지게 만들었는데, 그게 하필 «다음 시간 칸»과
+   «밑줄 칸»을 덮어서 다음 칸을 고를 수 없었다. 세 가지를 바꿨다 —
+   ㉮크기를 170×56px 로 줄였다(그래도 칸보다 3배 넓다 · 40자쯤 보인다)
+   ㉯«위·왼쪽»으로 펴지게 했다(bottom·right 기준) → **밑칸과 다음 시간 칸은 아예 안 덮인다.**
+      글자는 왼→오른쪽으로 채워 나가니, 덮이는 쪽은 «이미 적어둔» 지난 시간이다.
+   ㉰그래도 덮인 칸이 생기면 «한 번»에 잡히게 했다(아래 자바스크립트 mousedown). */
+/* 🔴 right/bottom 을 «0» 으로 둔다 — -1px 로 두면 칸 경계선 밖으로 1~2px 삐져나가 밑칸의
+   맨 윗줄을 덮는다(실측으로 잡았다). 0이면 밑칸·다음 칸을 «한 픽셀도» 안 덮는다. */
+.wk td.c textarea:focus{position:absolute; right:0; bottom:0; left:auto; top:auto;
+  width:170px; height:56px; z-index:30;
+  font-size:12px; line-height:1.35; padding:5px 6px; background:#fff; color:#111!important;
+  border:2px solid var(--ink); border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,.20); overflow:auto}
+/* 맨 왼쪽 칸은 왼쪽으로 펴면 표 밖으로 나간다 → 오른쪽으로 */
+.wk td.c.edgeL textarea:focus{right:auto; left:0}
+/* 🔴 «맨 윗줄은 아래로 펴게» 하는 예외를 뒀다가 뺐다 (2026-09-29 실측) — 미래 줄을 안 붙인 날은
+   «오늘»이 곧 맨 윗줄이라, 그 예외 때문에 대표님이 제일 많이 쓰는 오늘 줄에서만 상자가 아래로
+   펴져 «어제 칸»을 덮었다. 위로 펴지면 넘치는 건 14px(56-42)뿐이고 그 위는 「시간 이름표 줄」
+   이라 덮일 칸이 없다 — 그래서 예외 없이 전부 위로 펴는 게 맞다. */
 .wk tr.today td.d{color:var(--warn)}
 .wk tr.today td{border-top:2px solid var(--ink); border-bottom:2px solid var(--ink)}
 .wk.paint td.c textarea{pointer-events:none}
@@ -569,6 +583,37 @@ p{margin:7px 0}
     dragging=false; pend=null; didDrag=false;
   });
 
+  /* 🔴 2026-09-29 대표 지시 — "텍스트박스가 너무 커서 밑칸 선택하고 옆칸선택하는데 어려워".
+     커진 상자가 옆 칸을 덮고 있으면, 전에는 «상자를 닫는 클릭 + 칸을 고르는 클릭» 두 번이 필요했다.
+     여기서 «한 번»으로 만든다 — 상자를 접고, 그 자리에 실제로 있던 칸에게 그 클릭을 넘긴다.
+     🔴 자기 칸 «안»을 누른 것은 건드리지 않는다(그건 글자 사이로 커서를 옮기는 것이다).
+     🔴 잡는 단계(capture)에서 봐야 한다 — 상자가 클릭을 먹기 «전»에 가로채야 하기 때문이다. */
+  document.addEventListener('mousedown', function(e){
+    var ta=document.activeElement;
+    if(!ta || ta.tagName!=='TEXTAREA' || !ta.closest) return;
+    var own=ta.closest('#wk td.c');
+    if(!own) return;                 /* 2주 그리드에서 커져 있는 칸이 아니면 볼 것 없다 */
+    if(e.target!==ta) return;        /* 이미 다른 것에 맞았으면 그쪽이 알아서 한다 */
+    var r=own.getBoundingClientRect();
+    if(e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom) return;
+    e.preventDefault(); e.stopPropagation();
+    ta.blur();                       /* 상자를 접으면 밑에 깔려 있던 칸이 드러난다 */
+    var el=document.elementFromPoint(e.clientX, e.clientY);
+    var td=el && el.closest ? el.closest('#wk td.c') : null;
+    if(!td) return;
+    if(mode==='type'){
+      var t2=td.querySelector('textarea');
+      if(t2 && !t2.readOnly){ t2.focus(); t2.select(); }
+    } else if(pickMode==='cell' && td.__d!==undefined){
+      /* 🔴 칠하기 모드 — 색판을 «직접» 띄운다. 가짜 mousedown 을 흉내 내면 안 된다(2026-09-29 실측):
+         그러면 dragging=true 가 되고, 상자가 접히면서 그 칸에 마우스가 «새로 들어왔다»고 인식돼
+         mouseenter 가 「드래그 시작」으로 보고 색판을 그 자리에서 다시 닫는다. 색판이 15:00 으로
+         열렸다가 0.0초에 사라지는 것을 실제로 봤다. 직접 부르면 dragging 을 안 건드려 안 닫힌다. */
+      selection=[]; clearSelectionVisual();
+      miniOpen(e.clientX, e.clientY, [{d:td.__d, i:td.__i}]);
+    }
+  }, true);
+
   /* ══════════ 여러 칸 선택 (드래그) ══════════ */
   var selection=[];
   function extendSelection(d, i0, i1){
@@ -840,8 +885,10 @@ p{margin:7px 0}
         tr.appendChild(td);
         HOURS.forEach(function(h,i){
           var cell=data[d][i];
-          /* 🔴 2026-09-29 — 오른쪽 끝 4칸은 «고칠 때 커지는 칸»이 왼쪽으로 펴지게 표시해 둔다 */
-          var c=document.createElement('td'); c.className='c'+(past?' past':'')+(i>=HOURS.length-4?' edgeR':'');
+          /* 🔴 2026-09-29 — «고칠 때 커지는 칸»은 「위·왼쪽」으로 펴진다(밑칸·다음 시간 칸을 안 덮게).
+             표 밖으로 나가는 맨 왼쪽 3칸만 반대쪽으로 펴게 표시해 둔다 */
+          var c=document.createElement('td');
+          c.className='c'+(past?' past':'')+(i<3?' edgeL':'');
           /* 🔴 2026-09-29 — <input>(한 줄)에서 <textarea>(줄 접힘)로 바꿨다. 이유는 위 CSS 주석에 */
           var inp=document.createElement('textarea'); inp.rows=1; inp.value=cell.t; inp.readOnly=past;
           var ime=false;
@@ -898,6 +945,7 @@ p{margin:7px 0}
             inp.readOnly=false;
             inp.style.pointerEvents='auto'; inp.focus(); inp.select();
           });
+          c.__d=d; c.__i=i;   /* 🔴 2026-09-29 — 「덮인 칸 한 번에 잡기」가 이 칸이 몇 째 줄·몇 시인지 알아야 한다 */
           cell.el=c; cell.inp=inp;
           tr.appendChild(c);
         });
