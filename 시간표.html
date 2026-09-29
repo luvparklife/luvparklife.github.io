@@ -621,6 +621,7 @@ p{margin:7px 0}
     });
   }
   function applyToTargets(targets, colorId){
+    if(!canEdit_()) return;   /* 🚨 2026-09-29 — 서버에서 못 읽었으면 칠하지 않는다 */
     targets.forEach(function(t){
       if(DAY_PAST[t.d]) claimPastDay_(t.d);
       var cell=data[t.d][t.i];
@@ -632,6 +633,7 @@ p{margin:7px 0}
     totals();
   }
   function clearTargets(targets){
+    if(!canEdit_()) return;   /* 🚨 2026-09-29 */
     targets.forEach(function(t){
       if(DAY_PAST[t.d]) claimPastDay_(t.d);
       data[t.d][t.i].c=null; refreshCell(t.d, t.i);
@@ -871,7 +873,11 @@ p{margin:7px 0}
           var cell=data[d][i];
           var c=document.createElement('td'); c.className='c'+(past?' past':'');
           /* 🔴 2026-09-29 — <input>(한 줄)에서 <textarea>(줄 접힘)로 바꿨다. 이유는 위 CSS 주석에 */
-          var inp=document.createElement('textarea'); inp.rows=1; inp.value=cell.t; inp.readOnly=past;
+          /* 🚨 2026-09-29 — 서버에서 아직 못 읽었으면 읽기전용이다. 빈 화면에 쳐 넣으면 그 빈 값이
+             다음에 열 때 진짜 기록을 덮는다(위 SERVER_LOADED 설명). 읽어오면 buildWeek 가 다시
+             돌면서(loadFromServer 의 cb) 저절로 풀린다. */
+          var inp=document.createElement('textarea'); inp.rows=1; inp.value=cell.t;
+          inp.readOnly = past || !SERVER_LOADED;
           var ime=false;
           inp.addEventListener('compositionstart',function(){ ime=true; });
           inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; markDirty(d); });
@@ -953,7 +959,9 @@ p{margin:7px 0}
       var el=document.createElement('div'); el.className='hr';
       var hh=document.createElement('span'); hh.className='hh'; hh.textContent=hlabel(cell.h);
       var bd=document.createElement('div'); bd.className='hbody';
-      var inp=document.createElement('textarea'); inp.rows=1; inp.value=cell.t; inp.placeholder='한 일을 적으세요';
+      var inp=document.createElement('textarea'); inp.rows=1; inp.value=cell.t;
+      inp.readOnly=!SERVER_LOADED;   /* 🚨 2026-09-29 — 위 2주 그리드와 같은 이유 */
+      inp.placeholder=SERVER_LOADED?'한 일을 적으세요':'불러오는 중…';
       var ime=false;
       inp.addEventListener('compositionstart',function(){ ime=true; });
       inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; fitTA_(inp); markDirty(0); });
@@ -1001,11 +1009,24 @@ p{margin:7px 0}
   }
 
   /* ══════════ 칠하기(붓 방식) ══════════ */
+  /* 🚨 2026-09-29 — 서버에서 못 읽었으면 칠하기도 막는다. 안 막으면 칠해지는 것은 보이는데
+     저장은 안 돼(markDirty 가 막는다) 「됐다고 착각」하게 된다(§3-0-B — 올렸다 ≠ 됐다). */
+  var notLoadedTold=false;
+  function canEdit_(){
+    if(SERVER_LOADED) return true;
+    setSaveStatus('🔴 아직 서버에서 못 불러왔습니다 — 지금은 칠할 수 없습니다');
+    if(!notLoadedTold){
+      notLoadedTold=true;
+      alert('아직 서버에서 기록을 못 불러왔습니다.\n\n기록이 지워지는 것을 막기 위해 지금은 칠하거나 적을 수 없습니다.\n잠시 뒤 새로고침해 주세요.');
+    }
+    return false;
+  }
   function needBrush(){
     if(!brush){ alert('먼저 위에서 색을 하나 고르세요.'); return false; }
     return true;
   }
   function applyPaint(d,i,m){
+    if(!canEdit_()) return;   /* 🚨 2026-09-29 */
     if(DAY_PAST[d]) claimPastDay_(d);   /* 🔴 2026-09-21 — 과거 날도 손대는 순간부터 칠할 수 있다 */
     var cell=data[d][i];
     cell.c = (m==='erase') ? null : brush;
@@ -1220,6 +1241,31 @@ p{margin:7px 0}
      매 2초 계속 두드리지 않고 실패 횟수만큼 간격을 늘린다(최대 10초). */
   var lastSavedJSON={}, DIRTY={}, INFLIGHT={}, FAIL_STREAK={}, RETRY_AT={};
   var SAVE_ERROR=null;   /* 마지막 실패 이유 — 다른 날짜가 성공해도 이 메시지가 안 지워진다 */
+
+  /* 🚨🚨 2026-09-29 대표 신고 — "시간표 고칠때 계속 데이터 사라지는데" · "28일이랑 29일 통째로 없어졌어"
+     ── 무슨 일이었나 (코드를 따라가 잡은 것) ──
+     ①페이지를 열면 그리드가 «빈 채로» 먼저 그려지고(boot 의 buildWeek), 1~3초 뒤에 서버 기록이 온다.
+     ②그 사이에 칸을 건드리면 blur 가 markDirty 를 부르고, markDirty 는 그 날을 «빈 날»로
+       localStorage(ts_pending_날짜)에 적어 둔다. 그 순간 그 값은 «거짓»이다 — 서버엔 기록이 있다.
+     ③다음에 열면 reconcilePending_ 이 그 빈 값을 「못 나갔던 소중한 값」으로 보고
+       화면·data 를 통째로 비우고 markDirty 로 «서버에 빈 날을 저장»한다. → 하루가 통째로 날아간다.
+     ④한 번 그렇게 되면 열 때마다 반복된다. 그래서 「계속 사라진다」였다.
+     🔴 이 안전망은 2026-09-25 에 «모바일 입력 유실»을 막으려고 넣은 것이고, 그때는
+        「빈 값일 수도 있다」를 안 봤다. 아래 둘로 막는다.
+     ⓐ SERVER_LOADED — 서버에서 «성공적으로» 한 번 읽기 전에는 저장도, 이 기기 기록도 안 남긴다.
+        못 읽었으면 칸이 읽기전용이라 애초에 건드릴 수 없다(buildWeek 의 readOnly).
+        🔴 «못 읽었을 때 쓰게 하는 것»이 가장 위험하다 — 서버 상태를 모르는 채로 덮어쓰게 된다.
+     ⓑ reconcilePending_ 이 «완전히 빈 날»을 서버 값 위에 절대 덮지 않는다(아래 dayFilled_).
+     되돌리기 = "시간표 데이터보호 되돌려줘" */
+  var SERVER_LOADED=false;
+  function dayFilled_(arr){
+    var n=0;
+    for(var i=0;i<(arr?arr.length:0);i++){
+      var c=arr[i]||{};
+      if((c.t && String(c.t).trim()) || c.c) n++;
+    }
+    return n;
+  }
   function dayOffsetDate_(d){
     var dt=new Date(ANCHOR_DATE.getTime());
     if(d<ORIGINAL_DAYS) dt.setDate(dt.getDate()-d);
@@ -1236,6 +1282,10 @@ p{margin:7px 0}
     return n;
   }
   function refreshSaveStatus_(){
+    /* 🚨🚨 2026-09-29 — 여기가 «화면이 거짓말한» 자리다. 서버를 못 읽어도 2초 타이머가 이 함수를
+       불러 「저장됨 · 10:07」로 덮어썼다. 대표님은 저장된 줄 아셨다(§3-0-B 「올렸다 ≠ 됐다」를
+       화면에서 저지른 것 · 같은 실수를 2026-09-17 문서 피드백 저장에서도 했다). */
+    if(!SERVER_LOADED){ setSaveStatus('🔴 서버에서 못 불러왔습니다 — «읽기전용»입니다 (새로고침해 주세요)'); return; }
     if(SAVE_ERROR){ setSaveStatus('🔴 저장 실패 — '+SAVE_ERROR+' (다시 시도하려면 [지금 바로 저장])'); return; }
     setSaveStatus(pendingSaveCount_()>0 ? '저장 중…' : ('저장됨 · '+nowTime()));
   }
@@ -1249,6 +1299,9 @@ p{margin:7px 0}
   var quickFlushTimer=null;
   function markDirty(d){
     if(DAY_PAST[d]) return;   /* 에버노트 원본(읽기전용) 날은 애초에 저장할 게 없다 */
+    /* 🚨 2026-09-29 — 서버에서 한 번도 못 읽었으면 «아무것도» 안 남긴다. 그때 그리드는 빈 화면인데,
+       그걸 「이 날은 비었다」로 적어 두면 다음에 열 때 그 거짓이 진짜 기록을 덮는다(위 설명 ②③). */
+    if(!SERVER_LOADED){ setSaveStatus('🔴 아직 서버에서 못 불러왔습니다 — 저장하지 않습니다'); return; }
     DIRTY[d]=true;
     refreshSaveStatus_();
     try{ localStorage.setItem(pendingKey_(dateStrForDay(d)), JSON.stringify(cellsForDay(d))); }catch(e){}
@@ -1337,6 +1390,15 @@ p{margin:7px 0}
          있던 칸 객체의 값만 고쳐써서 화면 갱신(refreshCell)이 계속 먹히게 한다. */
       try{
         var arr=JSON.parse(pending);
+        /* 🚨🚨 2026-09-29 — 여기가 대표님 9/28·9/29 기록을 통째로 날린 자리다.
+           «이 기기에 남은 것이 완전히 빈 날»인데 서버엔 기록이 있으면, 그건 못 나간 값이 아니라
+           「서버 응답이 오기 전에 칸을 건드려 생긴 거짓 기록」이다. 덮지 않고 그 자리에서 버린다.
+           🔴 그 대가 = 「오늘만 지우기」를 누른 «직후» 페이지가 죽으면 그 지우기가 안 남는다.
+              하루가 통째로 날아가는 것보다 훨씬 작은 손해라 이쪽을 고른다. */
+        if(dayFilled_(arr)===0 && dayFilled_(cellsForDay(d))>0){
+          try{ localStorage.removeItem(pendingKey_(ds)); }catch(e2){}
+          continue;
+        }
         (function(dd, arr2){
           for(var i=0;i<HOURS.length;i++){
             var c=arr2[i]||{};
@@ -1368,13 +1430,16 @@ p{margin:7px 0}
         DAY_PAST.push(false);
       });
       DAYS = ORIGINAL_DAYS + futureArr.length;
+      SERVER_LOADED=true;   /* 🚨 2026-09-29 — «여기서부터만» 저장을 내보낸다 */
       captureSaveBaseline();
       setSaveStatus('불러왔습니다 · '+nowTime());
       cb && cb();
       captureSaveBaseline();
       reconcilePending_();
     }, function(err){
-      setSaveStatus('🔴 서버에서 못 불러왔습니다('+((err&&err.error)||'')+') — 빈 화면으로 시작합니다');
+      /* 🚨 2026-09-29 — SERVER_LOADED 를 «켜지 않는다». 못 읽었으면 쓰지도 않는다(읽기전용). */
+      setSaveStatus('🔴 서버에서 못 불러왔습니다('+((err&&err.error)||'')
+        +') — 기록을 지키기 위해 «읽기전용»입니다. 새로고침해 주세요');
       DAYS=ORIGINAL_DAYS;
       data=[]; DAY_PAST=[]; for(var d=0;d<DAYS;d++){ data.push(blank()); DAY_PAST.push(false); }
       captureSaveBaseline();
