@@ -568,12 +568,20 @@ p{margin:7px 0}
   document.addEventListener('mouseup', function(e){
     if(pickMode==='cell' && dragging){
       if(didDrag && selection.length>1){
+        /* 🔴 2026-09-30 — 글자쓰기 모드에서 드래그 시작한 칸의 textarea가 포커스·커서를 물고
+           있으면 색판 아래서 깜빡여 헷갈린다. 색판 열기 전에 정리한다. */
+        try{ document.activeElement.blur(); }catch(e2){}
         miniOpen(e.clientX, e.clientY, selection.slice());
       } else if(!didDrag){
         var m=document.getElementById('mini');
         if(m.style.display==='block'){
           var hovered=m.querySelector('#miniRow button.hover');
           if(hovered) hovered.click();
+        } else if(mode==='type' && pend){
+          /* 🔴 2026-09-30 — 글자쓰기 모드에서 드래그 없이 «그냥 클릭»이면 여기서 그 칸에 직접
+             포커스를 준다(mousedown에서 preventDefault로 네이티브 포커스를 막아둔 대신). */
+          var pc=data[pend.d][pend.i];
+          if(pc && pc.inp) pc.inp.focus();
         }
       }
     }
@@ -936,15 +944,24 @@ p{margin:7px 0}
              여기(mousedown/contextmenu/dblclick)는 «그냥 열기만» 하므로 claim을 빼고,
              dblclick은 입력만 열어준다(읽기전용 해제) — 실제 반영은 blur에서 한다. */
           c.addEventListener('mousedown', function(e){
-            if(mode==='type'||typing) return;
             if(e.button!==0) return;
+            if(pickMode!=='cell'){
+              if(mode!=='type') startPaint(d,i);   /* 붓 방식은 글자쓰기 모드에서는 그대로 안 그림 */
+              return;
+            }
+            /* 🔴 2026-09-30 대표 지시 — "글자쓰기로 드래그는 안돼". 전에는 mode==='type'이면
+               여기서 통째로 return해서 드래그 선택 자체가 시작을 못 했다(칠하기 모드에서만 됐음).
+               🔴 처음엔 "클릭은 그대로 두고(preventDefault 안 함) 드래그만 잡자"로 고쳤는데,
+               그러면 클릭 순간 textarea가 바로 포커스를 받아 openRow_로 그 줄이 104px로 커지고
+               — 드래그 «중»에 아래 줄들이 밀려서 세로 선택 범위가 한 줄씩 어긋났다(실제 시험에서
+               4줄 끌었는데 3줄만 잡힘). → 여기서는 항상 preventDefault로 막아 두고, 진짜 클릭
+               (드래그 없이 뗌)이었을 때만 아래 mouseup에서 그 칸에 직접 포커스를 준다. */
             e.preventDefault();
-            if(pickMode==='cell'){
-              dragging=true; didDrag=false; dragMode='paint';
-              pend={d:d, i:i, x:e.clientX, y:e.clientY};
-              selection=[]; clearSelectionVisual();
-              miniOpen(e.clientX, e.clientY, [{d:d,i:i}]);
-            } else startPaint(d,i);
+            dragging=true; didDrag=false; dragMode='paint';
+            pend={d:d, i:i, x:e.clientX, y:e.clientY};
+            selection=[]; clearSelectionVisual();
+            if(mode==='type') return;
+            miniOpen(e.clientX, e.clientY, [{d:d,i:i}]);
           });
           c.addEventListener('contextmenu', function(e){
             e.preventDefault();
