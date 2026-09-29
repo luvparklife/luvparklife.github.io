@@ -634,6 +634,9 @@ p{margin:7px 0}
   }
   function clearTargets(targets){
     if(!canEdit_()) return;   /* 🚨 2026-09-29 */
+    /* 🚨 2026-09-29 — 「× 이 칸 비우기」도 «일부러» 비우는 것이다. 그 날의 마지막 값이었다면
+       서버 자물쇠에 걸리므로 그 날짜만 통과시켜 둔다. */
+    targets.forEach(function(t){ allowEmptySave_(t.d); });
     targets.forEach(function(t){
       if(DAY_PAST[t.d]) claimPastDay_(t.d);
       data[t.d][t.i].c=null; refreshCell(t.d, t.i);
@@ -1258,6 +1261,14 @@ p{margin:7px 0}
      ⓑ reconcilePending_ 이 «완전히 빈 날»을 서버 값 위에 절대 덮지 않는다(아래 dayFilled_).
      되돌리기 = "시간표 데이터보호 되돌려줘" */
   var SERVER_LOADED=false;
+  /* 🚨 2026-09-29 — 서버가 「기록 있는 줄을 빈 값으로 덮기」를 거절한다(Code.js tsSaveDay_).
+     대표님이 «일부러» 비우신 것(오늘만 지우기 · 칸 비우기)만 그 자물쇠를 통과시킨다.
+     🔴 날짜별로 «한 번만» 쓰고 저장이 성공하면 지운다 — 켜 둔 채로 두면 자물쇠가 무의미해진다. */
+  var FORCE_EMPTY={};
+  function allowEmptySave_(d){ FORCE_EMPTY[dateStrForDay(d)]=true; }
+  /* 🚨 2026-09-29 — 자물쇠에 걸렸다는 안내가 «남아 있어야» 한다. 2초 타이머(refreshSaveStatus_)가
+     「저장됨」으로 덮으면 또 화면이 거짓말한다 — 이번 사고의 핵심이 정확히 그거였다. */
+  var BLOCK_NOTICE=null;
   function dayFilled_(arr){
     var n=0;
     for(var i=0;i<(arr?arr.length:0);i++){
@@ -1286,6 +1297,7 @@ p{margin:7px 0}
        불러 「저장됨 · 10:07」로 덮어썼다. 대표님은 저장된 줄 아셨다(§3-0-B 「올렸다 ≠ 됐다」를
        화면에서 저지른 것 · 같은 실수를 2026-09-17 문서 피드백 저장에서도 했다). */
     if(!SERVER_LOADED){ setSaveStatus('🔴 서버에서 못 불러왔습니다 — «읽기전용»입니다 (새로고침해 주세요)'); return; }
+    if(BLOCK_NOTICE){ setSaveStatus(BLOCK_NOTICE); return; }   /* 🚨 2026-09-29 — 덮이지 않게 */
     if(SAVE_ERROR){ setSaveStatus('🔴 저장 실패 — '+SAVE_ERROR+' (다시 시도하려면 [지금 바로 저장])'); return; }
     setSaveStatus(pendingSaveCount_()>0 ? '저장 중…' : ('저장됨 · '+nowTime()));
   }
@@ -1324,13 +1336,31 @@ p{margin:7px 0}
       if(json===lastSavedJSON[ds]) { try{ localStorage.removeItem(pendingKey_(ds)); }catch(e){} return; }
       INFLIGHT[d]=true;
       refreshSaveStatus_();
-      tsCall('tsSave', {date: ds, cells: json}, function(){
+      /* 🚨 2026-09-29 — 일부러 비우신 날만 서버 자물쇠를 통과시킨다 */
+      var args={date: ds, cells: json};
+      if(FORCE_EMPTY[ds]) args.force='1';
+      tsCall('tsSave', args, function(){
         INFLIGHT[d]=false; FAIL_STREAK[d]=0; RETRY_AT[d]=0; SAVE_ERROR=null;
         lastSavedJSON[ds]=json;
+        delete FORCE_EMPTY[ds];   /* 🔴 한 번 쓰고 반드시 내린다 */
+        BLOCK_NOTICE=null;        /* 저장이 실제로 됐으니 경고를 내린다 */
         try{ localStorage.removeItem(pendingKey_(ds)); }catch(e){}   /* 실제로 서버가 받았다고 확인된 순간에만 지운다 */
         refreshSaveStatus_();
       }, function(err){
         INFLIGHT[d]=false;
+        /* 🚨 2026-09-29 — 서버가 「빈 값으로 덮기」를 막았다. 이건 «영구적인» 거절이라 2초마다
+           계속 두드려봐야 소용없다. 재시도를 멈추고, 이 기기의 거짓 기록도 지우고, 사람 말로 알린다.
+           🔴 이 상황 = 기록이 «지켜진» 것이다. 새로고침하면 서버의 진짜 기록이 다시 보인다. */
+        if(err && String(err.error||'').indexOf('EMPTY_BLOCKED')>=0){
+          delete DIRTY[d]; FAIL_STREAK[d]=0; RETRY_AT[d]=0; SAVE_ERROR=null;
+          delete FORCE_EMPTY[ds];
+          try{ localStorage.removeItem(pendingKey_(ds)); }catch(e2){}
+          BLOCK_NOTICE='🛡 '+ds+' 을(를) «빈 값»으로 덮으려 해서 서버가 막았습니다 — 기록은 안전합니다. 새로고침(⌘⇧R)하면 다시 보입니다';
+          setSaveStatus(BLOCK_NOTICE);
+          alert('⚠️ '+ds+' 을(를) 빈 값으로 덮으려 해서 서버가 막았습니다.\n\n기록은 지워지지 않았습니다.\n새로고침(⌘⇧R)하시면 원래 기록이 다시 보입니다.\n\n정말 그 날을 비우시려면 「오늘만 지우기」를 쓰십시오.');
+          refreshSaveStatus_();
+          return;
+        }
         FAIL_STREAK[d]=(FAIL_STREAK[d]||0)+1;
         RETRY_AT[d]=Date.now() + Math.min(FAIL_STREAK[d], 5)*2000;   /* 최대 10초 간격 */
         SAVE_ERROR=(err&&err.error)||'알 수 없음';
@@ -1352,13 +1382,15 @@ p{margin:7px 0}
      이미 사라져도 브라우저가 끝까지 전송을 책임지도록 스펙에 정해진 방식이라 이걸로 바꾼다. */
   function flushDirtyBeacon_(){
     if(!KEY) return;
+    if(!SERVER_LOADED) return;   /* 🚨 2026-09-29 — 못 읽었으면 나갈 때도 안 보낸다 */
     Object.keys(DIRTY).forEach(function(dKey){
       var d=Number(dKey);
       delete DIRTY[d];
       if(DAY_PAST[d]) return;
       var ds=dateStrForDay(d), json=JSON.stringify(cellsForDay(d));
       if(json===lastSavedJSON[ds]) return;   /* 이미 그 내용 그대로 저장돼 있다 */
-      var qs='action=tsSave&token='+encodeURIComponent(KEY)+'&date='+encodeURIComponent(ds)+'&cells='+encodeURIComponent(json);
+      var qs='action=tsSave&token='+encodeURIComponent(KEY)+'&date='+encodeURIComponent(ds)+'&cells='+encodeURIComponent(json)
+             +(FORCE_EMPTY[ds]?'&force=1':'');   /* 🚨 2026-09-29 — 일부러 비운 날만 자물쇠 통과 */
       try{ fetch(TS_WEBAPP+'?'+qs, {method:'GET', keepalive:true, mode:'no-cors'}); }catch(e){}
       lastSavedJSON[ds]=json;   /* 응답을 못 받으니 낙관적으로 찍는다 — 실패해도 다음에 열면 서버 값 기준으로 다시 맞춰진다 */
     });
@@ -1497,6 +1529,9 @@ p{margin:7px 0}
     try{ document.activeElement.blur(); }catch(e){}
     today().forEach(function(c){ c.c=null; c.t=''; if(c.inp) c.inp.value=''; if(c.inp2){ c.inp2.value=''; fitTA_(c.inp2); } });
     refreshAll(); totals();
+    /* 🚨 2026-09-29 — «일부러» 비우신 것이므로 서버 자물쇠를 통과시키고, 저장도 확실히 건다.
+       (전에는 markDirty 를 안 불러서, 마침 커서가 없던 경우엔 지우기가 저장조차 안 됐다) */
+    allowEmptySave_(0); markDirty(0);
   };
   /* 🔴 2026-09-26 대표 지시 — "내일이나 미래 줄 미리 추가할 수 있게". 맨 뒤(d=DAYS)에 빈 날짜를
      하나 더 이어붙인다 — dayOffsetDate_가 d>=ORIGINAL_DAYS를 "내일부터 순서대로"로 계산하므로
