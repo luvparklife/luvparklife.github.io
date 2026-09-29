@@ -93,13 +93,25 @@ p{margin:7px 0}
 .wk td.d{background:#fbfaf7; font-weight:800; font-size:11px; padding:3px 6px; text-align:left;
   position:sticky; left:0; z-index:2; box-shadow:1px 0 0 var(--line); width:78px}
 .wk td.c{height:42px; position:relative; vertical-align:top}
-.wk td.c input{width:100%; height:100%; border:0; background:transparent; font:inherit; font-size:9.5px;
-  line-height:1.25; padding:3px 3px; color:inherit; outline:none; text-align:left; display:block}
-.wk td.c input::placeholder{color:rgba(0,0,0,.18)}
-.wk td.c.dark input{color:#fff}
+/* 🔴 2026-09-29 대표 지시 — "글자가 많으면 짤려 보인다 · 글자 많은 칸 수정할 때도 어렵다".
+   원인 = 칸이 «한 줄짜리 입력칸»이라 66px을 넘는 글자는 아예 안 보이고, 고치려면 그 좁은
+   칸 안에서 좌우로 밀어야 했다. → 줄을 접는 칸(textarea)으로 바꿔 3줄까지 그냥 보이게 하고,
+   «고치는 동안에만» 칸이 커지게 했다(바로 아래 :focus). 칸 하나 = 한 줄 규칙은 그대로다. */
+.wk td.c textarea{width:100%; height:100%; min-height:42px; box-sizing:border-box;
+  border:0; background:transparent; font:inherit; font-size:9.5px;
+  line-height:1.25; padding:3px 3px; color:inherit; outline:none; text-align:left; display:block;
+  resize:none; overflow:hidden; white-space:pre-wrap; overflow-wrap:anywhere}
+.wk td.c textarea::placeholder{color:rgba(0,0,0,.18)}
+.wk td.c.dark textarea{color:#fff}
+/* 🔴 고치는 동안만 커진다 — 흰 바탕·큰 글씨라 «칠한 색이 어두워도» 글자가 보인다.
+   오른쪽 끝 칸(.edgeR)은 왼쪽으로 펴진다 — 안 그러면 화면 밖으로 나가 안 보인다. */
+.wk td.c textarea:focus{position:absolute; left:-1px; top:-1px; width:264px; height:92px; z-index:30;
+  font-size:13px; line-height:1.45; padding:7px 8px; background:#fff; color:#111!important;
+  border:2px solid var(--ink); border-radius:9px; box-shadow:0 10px 26px rgba(0,0,0,.22); overflow:auto}
+.wk td.c.edgeR textarea:focus{left:auto; right:-1px}
 .wk tr.today td.d{color:var(--warn)}
 .wk tr.today td{border-top:2px solid var(--ink); border-bottom:2px solid var(--ink)}
-.wk.paint td.c input{pointer-events:none}
+.wk.paint td.c textarea{pointer-events:none}
 .wk.paint td.c{cursor:pointer}
 .wk.paint td.c:hover{outline:2px solid rgba(0,0,0,.28); outline-offset:-2px}
 .wk td.c.seld{box-shadow:inset 0 0 0 3px #2c2c2c; z-index:1}
@@ -118,15 +130,19 @@ p{margin:7px 0}
   color:var(--sub); background:#fbfaf7; border-right:1px solid #f0ece3; cursor:pointer; user-select:none; -webkit-user-select:none}
 .hr .hh:hover{background:#efe9dc; color:var(--ink)}
 .hr .hbody{flex:1; display:flex; align-items:center; gap:6px; padding:4px 6px 4px 8px; min-width:0}
-.hr input{flex:1; min-width:0; border:0; background:transparent; font:inherit; font-size:13.5px; padding:4px 2px; color:inherit; outline:none}
-.hr input::placeholder{color:rgba(0,0,0,.28)}
+/* 🔴 2026-09-29 — 위 2주 그리드와 같은 이유로 여기도 줄을 접는 칸으로 바꿨다. 폰에서는 칸이
+   200px밖에 안 돼 열다섯 자쯤에서 잘렸다. 글자가 길어지면 칸이 «아래로» 늘어난다(fitTA_). */
+.hr textarea{flex:1; min-width:0; box-sizing:border-box; border:0; background:transparent; font:inherit;
+  font-size:13.5px; line-height:1.4; padding:4px 2px; color:inherit; outline:none;
+  resize:none; overflow:hidden; white-space:pre-wrap; overflow-wrap:anywhere}
+.hr textarea::placeholder{color:rgba(0,0,0,.28)}
 .hr .tag{font-size:10.5px; font-weight:800; opacity:.75; white-space:nowrap}
 .hr .pk{flex:0 0 38px; border:0; background:rgba(0,0,0,.05); border-radius:8px; height:26px; font-size:14px;
   cursor:pointer; padding:0}
 .hr .xx{border:0; background:rgba(0,0,0,.12); color:inherit; border-radius:6px; width:20px; height:20px;
   font-size:12px; line-height:1; cursor:pointer; flex:0 0 auto}
-.hr.dark input{color:#fff}
-.hr.dark input::placeholder{color:rgba(255,255,255,.55)}
+.hr.dark textarea{color:#fff}
+.hr.dark textarea::placeholder{color:rgba(255,255,255,.55)}
 .hr.dark .pk,.hr.dark .xx{background:rgba(255,255,255,.22)}
 .hr.seld{box-shadow:inset 0 0 0 3px #2c2c2c}
 
@@ -190,6 +206,11 @@ p{margin:7px 0}
   <br>🆕 <b>여러 칸을 한 번에 칠하려면(주간 보기)</b> — 첫 칸을 누른 채 옆으로 쭉 밀면 지나간 칸들이 선택되고,
   손을 떼면 색판이 뜨고 고른 색이 <b>전부에 한 번에</b> 적용됩니다(촬영 6시간을 한 번에).
   <br><span style="color:#6b6b6b">글자만 쳐도 색이 저절로 칠해집니다 — 「운동」→초록, 「티비」→빨강.</span>
+  <!-- 🔴 2026-09-29 대표 지시 3개("주황 추가 · 글자 잘림 · 긴 글자 수정") 안내 -->
+  <br>✍️ <b>글자가 길어도 다 보입니다</b> — 칸 안에서 줄이 접힙니다. <b>고칠 때는 그 칸이 커집니다</b>
+  (「⌨️ 글자 쓰기」로 바꾸고 누르거나, 칠하는 중이면 <b>칸을 두 번 누르면</b> 됩니다). Enter를 누르면 입력이 끝납니다.
+  <br><span style="background:#ff9d3f; border-radius:4px; padding:1px 6px; color:#222; font-weight:800">📌 주황</span>
+  = <b>미리 계획한 일</b>. <b>확인용</b>이라 아래 합계·몰입 시간에는 <b>안 들어갑니다</b> — 「📌 미리 계획한 일 N시간」으로 따로만 보입니다.
 </div>
 
 <!-- ══════════ ① 칠하기 ══════════ -->
@@ -462,13 +483,24 @@ p{margin:7px 0}
     {id:'purL', nm:'연한보라',   hex:'#d9c2f0', cat:'쉼',   sub:'',       val:1,    grp:'쉼'},
     {id:'red',  nm:'빨강',       hex:'#fb6a6a', cat:'낭비', sub:'',       val:1,    grp:'낭비'},
     {id:'yel',  nm:'노랑',       hex:'#ffd44d', cat:'낭비', sub:'',       val:0.5,  grp:'낭비'},
+    /* 🔴 2026-09-29 대표 지시 — "주황색 추가해줘. 이건 미리 계획한 일 용도야."
+       🔴 대표 확정 = «그냥 내가 확인하는 용도로만 시작하자» → 그래서 memo:true 다.
+       memo 색은 아래 compute()에서 업무·촬영·성장·쉼·낭비 어디에도 안 더해지고, 몰입(연속
+       2시간)에도 안 들어간다. 「📌 미리 계획한 일 N시간」으로 «따로만» 보여준다.
+       🔴 그래서 주황으로 칠한 시간은 업무시간·몰입시간에서 빠진다 — 세고 싶어지면 이 줄의
+       memo:true 를 빼고 cat 을 '업무'로 바꾸면 그때부터 업무시간에 같이 들어간다. */
+    {id:'plan', nm:'주황',       hex:'#ff9d3f', cat:'계획', sub:'',       val:0,    grp:'계획', memo:true},
     {id:'slp',  nm:'수면',       hex:'#3b3f4a', cat:'수면', sub:'',       val:0,    grp:'수면', prop:true}
   ];
   var NOTE={ grn:'삶의 성장', sky:'삶 성장 씨앗 · 4개면 +1', pur:'좋은 관계시간',
              grnL:'커리어·업무 성장', skyL:'업무', blu:'촬영',
-             gry:'그 외', gryL:'어중간할 때', purL:'친목·음주', red:'낭비', yel:'반쯤 낭비', slp:'잔 시간' };
+             gry:'그 외', gryL:'어중간할 때', purL:'친목·음주', red:'낭비', yel:'반쯤 낭비',
+             plan:'미리 계획한 일', slp:'잔 시간' };
   var GRPNAME={ '삶':'🌱 삶의 성장', '업무':'💼 업무 · 커리어 성장', '촬영':'🎬 촬영',
-                '쉼':'🌿 그 외 시간 (쉼)', '낭비':'⚠️ 낭비', '수면':'😴 수면' };
+                '쉼':'🌿 그 외 시간 (쉼)', '낭비':'⚠️ 낭비',
+                '계획':'📌 미리 계획한 일 (확인용 — 합계에 안 들어갑니다)', '수면':'😴 수면' };
+  /* 🔴 확인용 색은 숫자(0) 대신 «표시만»이라고 쓴다 — 0이 뜨면 «값이 0인 활동»으로 읽힌다 */
+  function valLabel(c){ return c.memo ? '표시만' : c.val; }
   var CMAP={}; COLORS.forEach(function(c){ CMAP[c.id]=c; });
 
   var CATS=['낭비','쉼','촬영','성장','업무'];
@@ -620,7 +652,7 @@ p{margin:7px 0}
 
     var box=document.getElementById('allPal'); var openState=box.className;
     box.innerHTML='';
-    ['삶','업무','촬영','쉼','낭비'].forEach(function(g){
+    ['삶','업무','촬영','쉼','낭비','계획'].forEach(function(g){   /* 🔴 '계획'(주황)을 빼면 전체 색판에 안 뜬다 */
       var list=COLORS.filter(function(c){ return c.grp===g; });
       if(!list.length) return;
       var wrap=document.createElement('div'); wrap.className='grp';
@@ -638,13 +670,13 @@ p{margin:7px 0}
   function setBrush(id){
     var c=CMAP[id]; if(!c) return;
     brush=id; palette();
-    document.getElementById('brushNow').textContent=c.nm+' — '+(NOTE[c.id]||'')+' ('+c.cat+' '+c.val+')';
+    document.getElementById('brushNow').textContent=c.nm+' — '+(NOTE[c.id]||'')+' ('+c.cat+' '+valLabel(c)+')';
   }
   function bigSwatch(c, num){
     var b=document.createElement('button'); b.type='button'; b.className='fav'+(brush===c.id?' on':'');
     b.style.background=c.hex; b.style.color=isDark(c.hex)?'#fff':'#222';
     b.appendChild(document.createTextNode(NOTE[c.id]||c.nm));
-    var s=document.createElement('small'); s.textContent=c.nm+' · '+c.val; b.appendChild(s);
+    var s=document.createElement('small'); s.textContent=c.nm+' · '+valLabel(c); b.appendChild(s);
     var k=PICK.indexOf(c.id);
     if(k>=0){ var kb=document.createElement('span'); kb.className='kbd'; kb.textContent=k+1; b.appendChild(kb); }
     b.onclick=function(){ setBrush(c.id); };
@@ -808,11 +840,19 @@ p{margin:7px 0}
         tr.appendChild(td);
         HOURS.forEach(function(h,i){
           var cell=data[d][i];
-          var c=document.createElement('td'); c.className='c'+(past?' past':'');
-          var inp=document.createElement('input'); inp.type='text'; inp.value=cell.t; inp.readOnly=past;
+          /* 🔴 2026-09-29 — 오른쪽 끝 4칸은 «고칠 때 커지는 칸»이 왼쪽으로 펴지게 표시해 둔다 */
+          var c=document.createElement('td'); c.className='c'+(past?' past':'')+(i>=HOURS.length-4?' edgeR':'');
+          /* 🔴 2026-09-29 — <input>(한 줄)에서 <textarea>(줄 접힘)로 바꿨다. 이유는 위 CSS 주석에 */
+          var inp=document.createElement('textarea'); inp.rows=1; inp.value=cell.t; inp.readOnly=past;
           var ime=false;
           inp.addEventListener('compositionstart',function(){ ime=true; });
           inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; markDirty(d); });
+          /* 🔴 줄바꿈은 안 받는다 — 「칸 하나 = 한 줄」은 그대로 두고 «보이는 방식»만 바꾼 것이라,
+             Enter는 지금까지처럼 «입력 끝»으로 둔다. 한글 조합 중(isComposing)에는 건드리지 않는다 —
+             그때 Enter는 글자를 확정하는 키라서 막으면 조합이 깨진다. */
+          inp.addEventListener('keydown',function(e){
+            if(e.key==='Enter' && !e.isComposing && !ime){ e.preventDefault(); inp.blur(); }
+          });
           /* 🔴 2026-09-21 교차검증 지적 — blur에서만 markDirty하면, blur 없이(예: 탭을 그냥 닫음)
              빠져나갈 때 방금 친 글자가 저장 표시조차 안 돼 통째로 사라졌다. 치는 «중»에도 표시한다. */
           inp.addEventListener('input',function(){ cell.t=inp.value; markDirty(d); });
@@ -868,17 +908,28 @@ p{margin:7px 0}
   }
 
   /* ══════════ 하루 보기 ══════════ */
+  /* 🔴 2026-09-29 — 글자가 길어지면 칸을 «아래로» 늘린다(하루 보기 전용. 2주 그리드는 칸 크기가
+     고정이라 대신 «고칠 때 커지는» 방식을 쓴다). 값을 다시 넣지 않고 높이만 바꾸므로
+     한글 조합 중에 불러도 글자가 안 끊긴다 — 실제 키로 확인했다(CLAUDE.md §3-5 ⑧). */
+  function fitTA_(ta){
+    if(!ta) return;
+    ta.style.height='auto';
+    ta.style.height=Math.max(26, ta.scrollHeight)+'px';
+  }
   function buildDay(){
     var g=document.getElementById('grid'); g.innerHTML='';
     today().forEach(function(cell,i){
       var el=document.createElement('div'); el.className='hr';
       var hh=document.createElement('span'); hh.className='hh'; hh.textContent=hlabel(cell.h);
       var bd=document.createElement('div'); bd.className='hbody';
-      var inp=document.createElement('input'); inp.type='text'; inp.value=cell.t; inp.placeholder='한 일을 적으세요';
+      var inp=document.createElement('textarea'); inp.rows=1; inp.value=cell.t; inp.placeholder='한 일을 적으세요';
       var ime=false;
       inp.addEventListener('compositionstart',function(){ ime=true; });
-      inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; markDirty(0); });
-      inp.addEventListener('input',function(){ cell.t=inp.value; markDirty(0); });
+      inp.addEventListener('compositionend',function(){ ime=false; cell.t=inp.value; fitTA_(inp); markDirty(0); });
+      inp.addEventListener('input',function(){ cell.t=inp.value; fitTA_(inp); markDirty(0); });
+      inp.addEventListener('keydown',function(e){
+        if(e.key==='Enter' && !e.isComposing && !ime){ e.preventDefault(); inp.blur(); }
+      });
       inp.addEventListener('blur',function(){
         var typed=inp.value;
         if(DAY_PAST[0]) claimPastDay_(0);
@@ -913,6 +964,7 @@ p{margin:7px 0}
         else paintOne(0,i);
       });
       el.appendChild(hh); el.appendChild(bd); g.appendChild(el);
+      fitTA_(inp);   /* 🔴 처음 그릴 때도 글자 길이에 맞춰 높이를 잡는다(붙은 뒤라야 잰다) */
       cell.el2=el; cell.inp2=inp; cell.tag2=tg; cell.pk2=pk; cell.x2=x;
     });
   }
@@ -953,7 +1005,7 @@ p{margin:7px 0}
         if(cell.tag2){ cell.tag2.textContent='지난 기록'; cell.tag2.style.display=hex?'':'none'; }
         if(cell.x2) cell.x2.style.display='none';
         if(cell.pk2) cell.pk2.textContent='🔒';
-        if(cell.inp2) cell.inp2.value=cell.t;
+        if(cell.inp2){ cell.inp2.value=cell.t; fitTA_(cell.inp2); }
       }
       return;
     }
@@ -969,11 +1021,11 @@ p{margin:7px 0}
     if(d===0 && cell.el2){
       cell.el2.style.background = C?C.hex:'';
       if(C && isDark(C.hex)) cell.el2.classList.add('dark'); else cell.el2.classList.remove('dark');
-      cell.tag2.textContent = C?(C.nm+' '+C.val):'';
+      cell.tag2.textContent = C?(C.nm+' '+valLabel(C)):'';
       cell.tag2.style.display = C?'':'none';
       cell.x2.style.display = C?'':'none';
       cell.pk2.textContent = C ? '🖌' : '🎨';
-      if(document.activeElement!==cell.inp2 && cell.inp2.value!==cell.t) cell.inp2.value=cell.t;
+      if(document.activeElement!==cell.inp2 && cell.inp2.value!==cell.t){ cell.inp2.value=cell.t; fitTA_(cell.inp2); }
     }
   }
   function refreshAll(){ for(var d=0;d<DAYS;d++) for(var i=0;i<HOURS.length;i++) refreshCell(d,i); }
@@ -982,13 +1034,16 @@ p{margin:7px 0}
   function compute(day){
     var rows=data[day||0];
     var pt={}, cells={}; CATS.forEach(function(c){ pt[c]=0; cells[c]=0; });
-    var skyN=0, painted=0, sleepN=0, grow={'삶':0,'커리어':0};
+    var skyN=0, painted=0, sleepN=0, memoN=0, grow={'삶':0,'커리어':0};
     rows.forEach(function(r){
       if(!r.c) return;
       var C=CMAP[r.c];
       if(!C) return;   /* 🔴 2026-09-21 교차검증 지적 — 알 수 없는 색값(예: 과거 hex가 잘못 섞임)이면
         여기서 죽지 않고 그냥 건너뛴다(refreshCell은 이미 이렇게 방어돼 있었는데 여긴 안 돼 있었다) */
       if(C.id==='slp'){ if(useSleep()){ sleepN++; painted++; } return; }
+      /* 🔴 2026-09-29 — 확인용 색(주황 📌)은 업무·촬영·성장·쉼·낭비 어디에도 안 더한다.
+         «칠한 칸»에는 넣는다 — 실제로 적은 시간이라 기록률에서 빠지면 안 된다. */
+      if(C.memo){ memoN++; painted++; return; }
       pt[C.cat]+=C.val; cells[C.cat]+=1; painted++;
       if(C.sub) grow[C.sub]+=C.val;
       if(C.bonus) skyN++;
@@ -1008,7 +1063,7 @@ p{margin:7px 0}
     if(cur&&cur.n>=2) runs.push(cur);
     var deep=0; runs.forEach(function(r){ deep+=r.n; });
     return {pt:pt, cells:cells, skyN:skyN, bonus:bonus, convert:convert, painted:painted,
-            sleepN:sleepN, grow:grow, deep:deep, runs:runs, blank:rows.length-painted};
+            sleepN:sleepN, memoN:memoN, grow:grow, deep:deep, runs:runs, blank:rows.length-painted};
   }
   function round(v){ return Math.round(v*100)/100; }
 
@@ -1025,6 +1080,13 @@ p{margin:7px 0}
       i.style.width=(n/Math.max(R.painted,1)*100)+'%';
       i.title=cat+' '+n+'시간'; bar.appendChild(i);
     });
+    /* 🔴 2026-09-29 — 주황(확인용)은 합계 5칸에는 없지만 «막대»에는 넣는다. 안 넣으면 막대에
+       흰 빈틈이 생겨 고장처럼 보인다. 막대는 하루가 어떻게 생겼나를 보는 그림일 뿐이다. */
+    if(R.memoN){
+      var im=document.createElement('i'); im.style.background=CMAP['plan'].hex;
+      im.style.width=(R.memoN/Math.max(R.painted,1)*100)+'%';
+      im.title='📌 미리 계획한 일 '+R.memoN+'시간'; bar.appendChild(im);
+    }
 
     var t=document.getElementById('tot'); t.innerHTML='';
     CATS.forEach(function(cat){
@@ -1051,6 +1113,11 @@ p{margin:7px 0}
 
     var n=[];
     n.push('칠한 칸 <b>'+R.painted+'</b>개 / 전체 '+HOURS.length+'칸');
+    /* 🔴 2026-09-29 대표 확정 — 주황은 «확인용»이라 위 합계·몰입에는 안 들어간다. 여기 한 줄로만 보인다. */
+    if(R.memoN){
+      n.push('<span style="background:#ff9d3f; border-radius:4px; padding:1px 6px; color:#222; font-weight:800">📌 미리 계획한 일</span> '
+        + '<b>'+R.memoN+'시간</b> — 확인용입니다. <b>위 합계·몰입 시간에는 안 들어갑니다.</b>');
+    }
     if(R.skyN){
       n.push('하늘색 <b>'+R.skyN+'개</b> × 0.25 = 쉼 '+round(R.skyN*0.25)
         + ' → 4개마다 <b>🌱삶의 성장 +'+R.bonus+'</b>'
@@ -1092,12 +1159,13 @@ p{margin:7px 0}
   /* ══════════ 규칙표 ══════════ */
   function ruletable(){
     var tb=document.getElementById('rulebody'); tb.innerHTML='';
-    var n4={'업무':'업무시간','촬영':'업무시간','성장':'몰입·성장시간','쉼':'그 외 시간','낭비':'낭비시간','수면':'—'};
+    var n4={'업무':'업무시간','촬영':'업무시간','성장':'몰입·성장시간','쉼':'그 외 시간','낭비':'낭비시간',
+            '계획':'— (확인용)','수면':'—'};   /* 🔴 '계획'(주황)을 빼면 이 표에 undefined 가 찍힌다 */
     COLORS.forEach(function(c){
       if(c.id==='slp' && !useSleep()) return;
       var tr=document.createElement('tr');
       tr.innerHTML='<td><span class="chip" style="background:'+c.hex+'"></span></td>'
-        +'<td>'+c.nm+'</td><td><b>'+c.val+'</b>'+(c.bonus?' <small>+4개면 보너스</small>':'')+'</td>'
+        +'<td>'+c.nm+'</td><td><b>'+valLabel(c)+'</b>'+(c.bonus?' <small>+4개면 보너스</small>':'')+'</td>'
         +'<td>'+c.cat+'</td><td>'+(c.sub?(c.sub==='삶'?'🌱 삶':'💼 커리어'):'<span style="color:#aaa">—</span>')+'</td>'
         +'<td>'+n4[c.cat]+'</td>';
       tb.appendChild(tr);
@@ -1323,7 +1391,7 @@ p{margin:7px 0}
   document.getElementById('bClearDay').onclick=function(){
     if(!confirm('오늘(굵은 줄)만 전부 지울까요?')) return;
     try{ document.activeElement.blur(); }catch(e){}
-    today().forEach(function(c){ c.c=null; c.t=''; if(c.inp) c.inp.value=''; if(c.inp2) c.inp2.value=''; });
+    today().forEach(function(c){ c.c=null; c.t=''; if(c.inp) c.inp.value=''; if(c.inp2){ c.inp2.value=''; fitTA_(c.inp2); } });
     refreshAll(); totals();
   };
   /* 🔴 2026-09-26 대표 지시 — "내일이나 미래 줄 미리 추가할 수 있게". 맨 뒤(d=DAYS)에 빈 날짜를
