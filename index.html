@@ -3828,7 +3828,9 @@
       (PJ_CACHE || []).forEach(function(p){
         if((p.name || p) === name){ p.st = next; p.done = d.off ? 1 : 0; }
       });
-      try{ if(!PJ_ALL) pjLsSave(PJ_CACHE, PJ_ROLE, PJ_MINE); }catch(e){}
+      /* 🔴 2026-10-03 — 「전체 보기」일 땐 서랍에 못 넣어 «옛 값»이 남았다(대표 신고: 상태를 바꿨는데 반영이 안 됨).
+         못 넣으면 «비운다» — 다음에 열 때 서버에서 최신을 다시 읽는다. 되돌리기 = "상태 서랍 비우기 빼줘" */
+      try{ if(!PJ_ALL) pjLsSave(PJ_CACHE, PJ_ROLE, PJ_MINE); else pjLsClear(); }catch(e){}
       if(msg){ msg.className = 'pjstmsg ok'; msg.textContent = '✓ 바뀜'; }
       /* 🔴 목록을 다시 그린다 — 「끝남·캔슬」 딱지와 흐림 표시가 바로 맞아야 한다.
          0.7초 두는 이유 = 「✓ 바뀜」을 보실 시간을 준다(조용히 성공하면 실패다). */
