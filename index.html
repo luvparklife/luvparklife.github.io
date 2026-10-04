@@ -535,6 +535,20 @@
     /* 🔴 폰에서 «눌러서 바로 전화»가 되게 tel: 링크로 — 현장에서 제일 자주 하는 동작이다 */
     .pj2 .bzt{color:var(--daily); text-decoration:none; font-weight:700; white-space:nowrap}
     .pj2 .bzt.none{color:var(--faint); font-weight:400}
+    /* 📅 2026-10-04 R-0020 — 「＋ 회차 추가」 한 번에 여러 회차 + 로케 */
+    .kvpop .pdcnt{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+    .kvpop .pdcnt button{border:1px solid #d3d9e3; background:#fff; border-radius:7px; width:30px; height:30px; font-size:16px; font-weight:800; cursor:pointer; color:#4a5261}
+    .kvpop .pdcnt input{width:56px; text-align:center; border:1px solid #d3d9e3; border-radius:7px; height:30px; font:inherit; font-size:14px; font-weight:800}
+    .kvpop .pdplan{margin:6px 0 2px; border-top:1px solid #eceff4}
+    .kvpop .pdplan .pr{display:flex; gap:6px; align-items:center; padding:5px 0; border-bottom:1px solid #eceff4; flex-wrap:wrap}
+    .kvpop .pdplan .pn{flex:0 0 52px; font-size:12px; font-weight:800; color:#1c2330}
+    .kvpop .pdplan .pr input[type=date]{flex:0 0 auto; border:1px solid #d3d9e3; border-radius:7px; padding:4px 6px; font:inherit; font-size:12.5px}
+    .kvpop .pdplan .pr input[type=text]{flex:1 1 100%; min-width:110px; border:1px solid #d3d9e3; border-radius:7px; padding:4px 8px; font:inherit; font-size:12.5px}
+    .kvpop .pdplan .ptm{display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#8a93a3}
+    .kvpop .pdplan .ptm input[type=time]{border:1px solid #d3d9e3; border-radius:7px; padding:4px 5px; font:inherit; font-size:12.5px; width:94px}
+    .kvpop .pdlocs{display:flex; gap:5px; flex-wrap:wrap; margin:5px 0 0}
+    .kvpop .pdlocs button{border:1px solid #d3d9e3; background:#f7f9fc; color:#4a5261; border-radius:999px; padding:2px 10px; font:inherit; font-size:11.5px; cursor:pointer}
+    .kvpop .pdlocs button:hover{border-color:#a9c2f5; color:#1a56c4}
     /* 🏢 2026-10-04 — 상시 업체: 묶음 제목 · 비고 줄 · 검색칸 */
     .pj2 .bzm{flex:1 1 100%; font-size:11px; color:var(--faint); margin:-2px 0 0 0; white-space:pre-wrap}
     .pj2 .bzg{font-size:11px; font-weight:800; color:#6b7688; margin:10px 0 2px}
@@ -4312,6 +4326,102 @@
     return ' (' + '일월화수목금토'.charAt(t.getDay()) + ')';
   }
 
+  /* 📅 2026-10-04 대표 승인 R-0020 ㉮ — 「＋ 회차 추가」 팝업에서 «한 번에 여러 회차 + 로케».
+     🔴 [연속 날짜로 만들고 «아래에서 고친다»] 촬영일이 띄엄띄엄이면 날짜 칸만 고치면 된다.
+     🔴 [로케는 «글자»로 받는다] 노션 로케 목록을 여기서 또 부르지 않는다(느리다) — 나중에 회차 줄에서 노션 것으로 고를 수 있다.
+        칩 = 이 프로젝트에 이미 쓴 로케 이름 — 누르면 «비어 있는 칸»에 채워 같은 장소를 매번 다시 안 친다.
+     🔴 [입력칸은 «다시 안 그린다»] 회차 수를 바꿀 때도 이미 적은 날짜·로케는 «번호 순서대로» 남긴다(한글 조합이 끊기지 않게 · §3-5 ⑧). */
+  function pjYmdAdd_(ymd, n){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
+    if(!m) return '';
+    var d = new Date(+m[1], +m[2] - 1, +m[3] + n);
+    function z(x){ return (x < 10 ? '0' : '') + x; }
+    return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate());
+  }
+  function pjDayAddWire_(pop, rows){
+    var start = pop.querySelector('#pdDate'), cnt = pop.querySelector('#pdCnt');
+    var box = pop.querySelector('#pdPlan'), chips = pop.querySelector('#pdLocs');
+    if(!start || !cnt || !box) return;
+    var kept = [];                                   /* [{date, loc, touched}] — 사람이 고친 것을 번호 순서대로 기억 */
+    var seen = {}, names = [];
+    (rows || []).forEach(function(r){
+      ((r && r.locs && r.locs.length) ? r.locs : (r && r.loc ? [{ n: r.loc }] : [])).forEach(function(x){
+        var k = String((x && x.n) || '').trim(); if(k && !seen[k]){ seen[k] = 1; names.push(k); }
+      });
+    });
+    function n(){ var v = parseInt(cnt.value, 10); if(isNaN(v) || v < 1) v = 1; if(v > 14) v = 14; return v; }
+    var cEl0 = pop.querySelector('#pdCall'), wEl0 = pop.querySelector('#pdWrap');
+    function read(){                                 /* 화면에 있는 값을 kept 에 옮긴다 */
+      var ds = box.querySelectorAll('input[type=date]'), ls = box.querySelectorAll('input[type=text]');
+      var cs = box.querySelectorAll('input.rc'), ws = box.querySelectorAll('input.rw');
+      for(var i = 0; i < ds.length; i++){
+        kept[i] = kept[i] || {};
+        kept[i].date = ds[i].value; kept[i].loc = ls[i] ? ls[i].value : '';
+        if(ds[i].getAttribute('data-hand') === '1') kept[i].hand = true;
+        kept[i].call = cs[i] ? cs[i].value : ''; kept[i].wrap = ws[i] ? ws[i].value : '';
+        if(cs[i] && cs[i].getAttribute('data-hand') === '1') kept[i].handC = true;
+        if(ws[i] && ws[i].getAttribute('data-hand') === '1') kept[i].handW = true;
+      }
+    }
+    function draw(){
+      read();
+      var N = n(), base = start.value || '', h = '';
+      for(var i = 0; i < N; i++){
+        var k = kept[i] || {};
+        var auto = base ? pjYmdAdd_(base, i) : '';
+        var dv = (k.hand && k.date) ? k.date : auto;      /* 손으로 고친 날짜는 시작 날짜가 바뀌어도 지키고, 아니면 연속 날짜 */
+        /* ⏱ 콜·랩 — 위 «기본값»을 따라가되, 줄에서 손으로 고친 것은 기본값이 바뀌어도 지킨다(날짜와 같은 방식) */
+        var cv = (k.handC && k.call !== undefined) ? k.call : (cEl0 ? cEl0.value : '');
+        var wv = (k.handW && k.wrap !== undefined) ? k.wrap : (wEl0 ? wEl0.value : '');
+        h += '<div class="pr"><span class="pn">' + ((rows || []).length + i + 1) + '회차</span>'
+           + '<input type="date" value="' + pjEsc(dv) + '" data-hand="' + (k.hand ? '1' : '') + '">'
+           + '<span class="ptm">🎬<input type="time" class="rc" value="' + pjEsc(pjHm(cv) || '') + '" data-hand="' + (k.handC ? '1' : '') + '">'
+           + '🏁<input type="time" class="rw" value="' + pjEsc(pjHm(wv) || '') + '" data-hand="' + (k.handW ? '1' : '') + '"></span>'
+           + '<input type="text" maxlength="60" placeholder="로케이션 (비워도 됩니다)" value="' + pjEsc(k.loc || '') + '"></div>';
+      }
+      box.innerHTML = h;
+      if(chips) chips.innerHTML = names.length
+        ? names.slice(0, 8).map(function(nm){ return '<button type="button" data-loc="' + pjEsc(nm) + '">' + pjEsc(nm) + '</button>'; }).join('')
+        : '';
+    }
+    function step(d){ cnt.value = Math.max(1, Math.min(14, n() + d)); draw(); }
+    pop.querySelector('#pdCm').addEventListener('click', function(e){ e.preventDefault(); step(-1); });
+    pop.querySelector('#pdCp').addEventListener('click', function(e){ e.preventDefault(); step(1); });
+    cnt.addEventListener('change', draw);
+    start.addEventListener('change', draw);
+    box.addEventListener('input', function(e){        /* 손으로 고쳤다 표시 — 시작 날짜·기본 콜랩을 다시 바꿔도 이 칸은 지킨다 */
+      var t = e.target; if(!t) return;
+      if(t.type === 'date' || (t.classList && (t.classList.contains('rc') || t.classList.contains('rw')))) t.setAttribute('data-hand', '1');
+    });
+    /* 위 «기본값»(콜·랩 칩·직접 입력)이 바뀌면 손대지 않은 줄에 따라가게 다시 그린다 */
+    pop.addEventListener('click', function(e){
+      var b = e.target;
+      if(b && b.classList && (b.classList.contains('tmchip') || b.classList.contains('tmclr'))) draw();
+    });
+    if(cEl0) cEl0.addEventListener('input', draw);
+    if(wEl0) wEl0.addEventListener('input', draw);
+    if(chips) chips.addEventListener('click', function(e){
+      var b = e.target; if(!b || !b.getAttribute) return;
+      var nm = b.getAttribute('data-loc'); if(!nm) return;
+      e.preventDefault();
+      var ls = box.querySelectorAll('input[type=text]'), done = false;
+      for(var i = 0; i < ls.length; i++) if(!String(ls[i].value || '').trim()){ ls[i].value = nm; done = true; }
+      if(!done && ls.length) ls[0].value = nm;
+    });
+    pop.__plan = function(){
+      read();
+      if(!String(start.value || '').trim()) return [];
+      var out = [], N = n();
+      for(var i = 0; i < N; i++){
+        var k = kept[i] || {};
+        out.push({ date: String(k.date || '').trim(), loc: String(k.loc || '').trim(),
+                   call: String(k.call || '').trim(), wrap: String(k.wrap || '').trim() });
+      }
+      return out;
+    };
+    draw();
+  }
+
   function pjDayPopClose(){
     if(PJDAY_POP && PJDAY_POP.parentNode) PJDAY_POP.parentNode.removeChild(PJDAY_POP);
     PJDAY_POP = null;
@@ -4324,7 +4434,7 @@
     var title = (kind === 'add') ? '＋ 회차 추가'
               : (r.no + '회차 ' + (kind === 'date' ? '날짜' : '시간'));
     var tip   = (kind === 'add')
-        ? '날짜를 넣으면 <b>' + (rows.length + 1) + '회차</b>가 생깁니다 · 시간은 나중에 고치셔도 됩니다'
+        ? '시작 날짜와 «몇 회차»를 넣으면 <b>' + (rows.length + 1) + '회차부터 한 번에</b> 만들어집니다 · 항상 «맨 뒤에» 붙습니다'
         : (kind === 'date'
             ? ('이 회차의 촬영 날짜입니다'
                + (r.date ? ' · 지금 <b>' + pjEsc(r.date + pjWd(r.date)) + '</b>' : ''))
@@ -4342,11 +4452,19 @@
     var body =
       (kind === 'time')
         ? timeUI
-        : '<div class="tmset"><p class="tmlab">📅 촬영 날짜 <i>'
+        : '<div class="tmset"><p class="tmlab">📅 ' + (kind === 'add' ? '시작 날짜' : '촬영 날짜') + ' <i>'
           + (kind === 'add' ? '꼭 넣어주세요' : '비우면 이 회차가 사라집니다') + '</i></p>'
           + '<div class="tmrow"><input type="date" id="pdDate" value="'
           + pjEsc((kind === 'add') ? '' : (r.date || '')) + '"></div></div>'
-          + (kind === 'add' ? timeUI : '');
+          + (kind === 'add'
+              ? '<div class="tmset"><p class="tmlab">🔢 몇 회차 <i>연속된 날짜로 만들어지고, 아래에서 날짜·로케를 고칠 수 있습니다</i></p>'
+                + '<div class="pdcnt"><button type="button" id="pdCm">－</button>'
+                + '<input type="number" id="pdCnt" min="1" max="14" value="1"><button type="button" id="pdCp">＋</button>'
+                + '<span class="fn">최대 14</span></div></div>'
+                + timeUI
+                + '<div class="tmset"><p class="tmlab">🗂 회차별 날짜 · 시간 · 로케이션 <i>위 콜·랩은 «기본값»입니다 — 줄마다 따로 고쳐도 됩니다</i></p>'
+                + '<div class="pdplan" id="pdPlan"></div><div class="pdlocs" id="pdLocs"></div></div>'
+              : '');
     pop.innerHTML =
       '<div class="t"><b>' + pjEsc(title) + '</b> — ' + tip + '</div>'
       + body
@@ -4359,6 +4477,7 @@
     var msg = pop.querySelector('.msg'), btnOk = pop.querySelector('.ok');
     pop.querySelector('.no').addEventListener('click', pjDayPopClose);
     pjTmWire(pop);
+    if(kind === 'add') pjDayAddWire_(pop, rows);      /* 📅 2026-10-04 R-0020 — 한 번에 여러 회차 */
     /* 🔴 시간 창에서는 커서를 «안» 준다 — 눌러서 고르는 화면인데 칸에 커서가 가면
        「여기에 쳐야 하나」로 읽힌다. 날짜 창·추가 창은 날짜부터 넣는 것이 맞다. */
     if(kind !== 'time') setTimeout(function(){
@@ -4381,13 +4500,21 @@
     btnOk.addEventListener('click', function(){
       var dEl = pop.querySelector('#pdDate'), cEl = pop.querySelector('#pdCall'), wEl = pop.querySelector('#pdWrap');
       if(kind === 'add'){
-        var dv = String((dEl && dEl.value) || '').trim();
+        /* 🔴 [항상 «맨 뒤에» 붙인다] 견적서 인건비가 회차를 «순번»으로 기억해서, 중간에 끼우면 모든 사람의
+           참여 회차가 한 칸씩 밀려 청구 금액이 틀어진다(제보 R-0020 제안 글). rows 는 그대로 두고 뒤에만 더한다. */
+        var plan = pop.__plan ? pop.__plan() : [];
+        if(!plan.length){ msg.textContent = '🔴 시작 날짜를 넣어주세요'; return; }
         /* 🔴 날짜 없이 만들면 «빈 회차»가 생겨 서버가 지워버린다(projDaysSet_ 가 빈 줄을 안 넣는다) */
-        if(!dv){ msg.textContent = '🔴 날짜를 넣어주세요'; return; }
+        for(var q = 0; q < plan.length; q++){
+          if(!plan[q].date){ msg.textContent = '🔴 ' + (rows.length + q + 1) + '회차 날짜를 넣어주세요'; return; }
+        }
         var add = rows.slice();
-        add.push({ no: rows.length + 1, date: dv,
-                   call: String((cEl && cEl.value) || ''), wrap: String((wEl && wEl.value) || ''), locs: [] });
-        send(add, (rows.length + 1) + '회차를 만들었습니다');
+        plan.forEach(function(x, q2){
+          add.push({ no: rows.length + q2 + 1, date: x.date, call: x.call, wrap: x.wrap,
+                     locs: x.loc ? [{ n: x.loc, id: '' }] : [] });
+        });
+        send(add, plan.length === 1 ? ((rows.length + 1) + '회차를 만들었습니다')
+                                    : ((rows.length + 1) + '~' + (rows.length + plan.length) + '회차 ' + plan.length + '개를 만들었습니다'));
         return;
       }
       var next = rows.map(function(x, i){
