@@ -510,6 +510,15 @@
     .pj2 .tkedit input{flex:1; min-width:0; border:1px solid #a9c2f5; border-radius:7px; padding:5px 8px; font:inherit; font-size:12.5px}
     .pj2 .tkedit button{border:1px solid var(--line); background:#fff; border-radius:7px; padding:4px 10px; font:inherit; font-size:12px; font-weight:700; color:var(--sub); cursor:pointer}
     .pj2 .tkedit button.ok{background:#2563eb; border-color:#2563eb; color:#fff}
+    /* 📎 2026-10-04 — 확인할 것 줄마다 파일 첨부 */
+    .pj2 .tkatt{flex:0 0 auto; cursor:pointer; font-size:12px; padding:0 3px; color:var(--sub)}
+    .pj2 .tkatt:hover{color:#1a56c4}
+    .pj2 .tkatt b{font-size:10.5px; font-weight:700}
+    .pj2 .tkfiles{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:4px 8px; margin:0 0 3px 22px}
+    .pj2 .tkf{font-size:11.5px; color:#1a56c4; text-decoration:none; background:#f4f7ff; border-radius:6px; padding:2px 7px; max-width:100%; overflow-wrap:anywhere}
+    .pj2 .tkf i{font-style:normal; color:var(--faint); margin-left:3px}
+    .pj2 .tkfdel{cursor:pointer; color:var(--faint); font-size:11px; padding:0 2px}
+    .pj2 .tkfdel:hover{color:#c0392b}
     .pj2 .tkdel{flex:0 0 auto; color:var(--faint); cursor:pointer; font-size:12px; padding:0 3px}
     .pj2 .tkdel:hover{color:#c0392b}
     .pj2 .tkfold{font-size:11.5px; color:var(--sub); cursor:pointer; padding:6px 0 0}
@@ -8489,7 +8498,11 @@
       h += '<div class="tkadd"><input type="text" id="pjTkTx" placeholder="확인받을 것을 한 줄로">'
          + '<button type="button" id="pjTkAdd">＋ 추가</button></div>';
     }else if(canPush){
-      h += '<p class="fn" style="margin:4px 0">👤 글은 읽기만 · <b>확인 상태만</b> 누를 수 있습니다</p>';
+      h += '<p class="fn" style="margin:4px 0">👤 글은 읽기만 · <b>확인 상태만</b> 누를 수 있습니다 · 📎 파일은 눌러서 열어 보기만 됩니다</p>';
+    }
+    if(canEdit){
+      h += '<p class="fn" style="margin:4px 0 0">📎 줄 옆 클립으로 파일을 붙입니다(팀공유 폴더에 저장 · 한 개 5MB · PDF·이미지·문서). '
+         + '🔒 <b>링크를 아는 사람은 누구나 볼 수 있는 폴더</b>입니다 — 견적 금액·계좌·신분증은 올리지 마세요.</p>';
     }
     h += pjBizHtml();
     box.innerHTML = h + '</div>';
@@ -8607,6 +8620,121 @@
     });
     pjTaskSaveAll(next);
   }
+  /* 📎 2026-10-04 대표 확정 — 확인할 것 «줄마다» 파일 첨부(제보 R-0035).
+     대표 원문: *"파일첨부는 확인할 것 각각에 등록할 수 있게"* · 저장 = 그 프로젝트 `0_공유/팀공유` 폴더(링크 아는 사람은 누구나 봄).
+     🔴 [올리기·지우기 = 「관리」 이상] 팀은 «열어 보기만» 한다. 서버(projTkFileJsonp_·projTkFileDel_)가 같은 기준으로 «다시» 막는다.
+     🔴 [파일은 POST 로] base64 라 주소창(GET)에 못 담는다 — 제보 사진과 같은 길(`FIELD_APP` · text/plain · appTokObj).
+     🔴 [줄 «하나»만 바뀐다] 서버가 그 줄 `f` 만 고치고 돌려준 목록으로 화면을 맞춘다 — 상태·담당·글은 그대로.
+     🔴 [금지 이름·5MB·확장자는 화면에서도 «먼저» 막는다] 서버도 막지만 큰 파일을 올린 뒤에야 거절당하면 시간만 쓴다.
+     되돌리기 = **"확인할 것 첨부 빼줘"** */
+  var PJ_TKFILE_BUSY = false, PJ_TKFILE_IDX = -1, PJ_TKFILE_PROJ = '', PJ_TKFILE_K = '', PJ_TKFILE_LT = '';
+  var PJ_TKFILE_EXT = /\.(pdf|jpe?g|png|gif|webp|heic|heif|docx?|xlsx?|pptx?|hwpx?|txt|csv|key|pages|numbers)$/i;
+  var PJ_TKFILE_BAD = /(통장|계좌|신분증|주민|견적서|견적금액|비밀번호|password)/i;
+  function pjTkAttBtn_(i, t, canEdit){
+    if(!canEdit) return '';
+    var n = (t && t.f && t.f.length) ? t.f.length : 0;
+    return '<span class="tkatt" data-pjtkatt="' + i + '" title="파일을 붙입니다 (한 개 5MB까지)">📎'
+         + (n ? '<b>' + n + '</b>' : '') + '</span>';
+  }
+  function pjTkFilesHtml_(i, t, canEdit){
+    var F = (t && t.f && t.f.length) ? t.f : [];
+    if(!F.length) return '';
+    return '<span class="tkfiles">' + F.map(function(f, k){
+      var u = String(f.u || '');
+      if(u.indexOf('https://') !== 0) u = '#';                         /* 🔴 http(s) 가 아닌 주소는 열지 않는다 */
+      return '<span><a class="tkf" href="' + pjEsc(u) + '" target="_blank" rel="noopener">📄 ' + pjEsc(f.n || '파일')
+           + (f.s ? '<i>' + pjEsc(f.s) + 'KB</i>' : '') + '</a>'
+           + (canEdit ? '<span class="tkfdel" data-pjtkfdel="' + i + ':' + k + '" title="지웁니다(드라이브 휴지통으로)">✕</span>' : '')
+           + '</span>';
+    }).join('') + '</span>';
+  }
+  /* 파일 고르는 창은 «하나만», 화면 밖에 둔다 — 카드를 다시 그려도 사라지지 않게 */
+  function pjTkFileInput_(){
+    var el = document.getElementById('pjTkFileIn');
+    if(el) return el;
+    el = document.createElement('input');
+    el.type = 'file'; el.id = 'pjTkFileIn';
+    el.accept = '.pdf,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.txt,.csv,.key,.pages,.numbers,image/*';
+    el.style.display = 'none';
+    document.body.appendChild(el);
+    return el;
+  }
+  function pjTkFileAsk(i){
+    if(PJ_TKFILE_BUSY){ pjNoteMsg('⏳ 지금 올리는 중입니다 — 끝난 뒤에 다시 눌러 주세요'); return; }
+    /* 🔴 [누른 «그 순간»의 프로젝트·줄을 잡아 둔다] 파일 선택창이 떠 있는 사이 프로젝트를 바꾸거나 줄이 바뀌어도
+       엉뚱한 곳에 안 올라가게 — 서버도 번호표(k)로 «다시» 줄을 찾는다. */
+    var t = PJ_TASKS[i];
+    if(!t){ pjNoteMsg('🔴 그 줄을 못 찾았습니다 — 화면을 새로고침해 주세요', 'no'); return; }
+    PJ_TKFILE_IDX = i; PJ_TKFILE_PROJ = PJ_NOTE_PROJ; PJ_TKFILE_K = String(t.k || ''); PJ_TKFILE_LT = String(t.t || '');
+    var el = pjTkFileInput_(); el.value = '';
+    el.click();
+  }
+  function pjTkFileSend(file){
+    var i = PJ_TKFILE_IDX, proj = PJ_TKFILE_PROJ;
+    if(!file || i < 0 || !proj) return;
+    var _show = function(m, c){ if(proj === PJ_NOTE_PROJ) pjNoteMsg(m, c); };   /* 다른 프로젝트로 넘어갔으면 그 화면에 안 띄운다 */
+    var nm = String(file.name || '');
+    if(!PJ_TKFILE_EXT.test(nm)){ pjNoteMsg('🔴 올릴 수 없는 종류입니다 — PDF·이미지·문서(워드·엑셀·PPT·한글)·텍스트만 됩니다', 'no'); return; }
+    if(PJ_TKFILE_BAD.test(nm)){ pjNoteMsg('🔴 이름에 민감한 말(통장·계좌·신분증·주민·견적서 등)이 있어 멈췄습니다 — 이 폴더는 링크를 아는 사람이 누구나 봅니다', 'no'); return; }
+    if(file.size > 5 * 1024 * 1024){ pjNoteMsg('🔴 5MB를 넘어 올릴 수 없습니다', 'no'); return; }
+    if(!file.size){ pjNoteMsg('🔴 빈 파일입니다', 'no'); return; }
+    if(!canApp()){ pjNoteMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 'no'); return; }
+    /* 🔒 올릴 «때마다» 확인한다 — 이 폴더는 링크를 아는 사람이 누구나 본다(교차검증 2026-10-04: 화면 경고만으로는 부족) */
+    if(!confirm('📎 이 파일을 올릴까요?\n\n「' + nm + '」\n\n⚠️ 팀공유 폴더는 «링크를 아는 사람은 누구나» 볼 수 있습니다.\n'
+              + '견적 금액·통장·신분증·주민번호가 들어 있지 않은지 확인하셨습니까?')){
+      pjNoteMsg('올리지 않았습니다'); return;
+    }
+    PJ_TKFILE_BUSY = true;
+    pjNoteMsg('⏳ 올리는 중… ' + nm);
+    var rd = new FileReader();
+    rd.onerror = function(){ PJ_TKFILE_BUSY = false; _show('🔴 파일을 읽지 못했습니다', 'no'); };
+    rd.onload = function(){
+      var b64 = String(rd.result || '').split(',')[1] || '';
+      var body = { rep: 'tkfile', name: proj, idx: i, lk: PJ_TKFILE_K, lt: PJ_TKFILE_LT, fname: nm, data: b64 };   /* MIME 은 서버가 확장자로 정한다 */
+      var tok = appTokObj(); if(tok.s) body.s = tok.s; if(tok.t) body.t = tok.t;
+      /* 🔴 Content-Type 을 text/plain 으로 — JSON 이라고 적으면 브라우저가 «미리 물어보기»를 하는데 Apps Script 는 못 받는다 */
+      fetch(FIELD_APP, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+        .then(function(res){ return res.json(); })
+        .then(function(d){
+          PJ_TKFILE_BUSY = false;
+          if(d && d.ok){
+            if(proj === PJ_NOTE_PROJ){                       /* 그 사이 다른 프로젝트로 넘어갔으면 화면은 안 건드린다 */
+              PJ_TASKS = pjTasksParse(d.tasks);
+              pjNotePaint(proj, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+              pjNoteMsg('✅ 올렸습니다 — ' + nm, 'ok');
+            }
+            pj1Drop(proj);
+          }else{
+            _show('🔴 못 올렸습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다'), 'no');
+          }
+        })
+        .catch(function(e){ PJ_TKFILE_BUSY = false; _show('🔴 못 올렸습니다 — ' + e, 'no'); });
+    };
+    rd.readAsDataURL(file);
+  }
+  function pjTkFileDel(i, k){
+    var t = PJ_TASKS[i], f = t && t.f && t.f[k];
+    if(!f) return;
+    if(!confirm('지울까요?\n\n「' + String(f.n || '') + '」\n\n드라이브 팀공유 폴더에서도 휴지통으로 갑니다.')) return;
+    var proj = PJ_NOTE_PROJ;
+    pjNoteMsg('저장 중…');
+    /* 🔴 [«파일 id»로 지운다 — 위치(k번째)가 아니다] 그 사이 다른 분이 먼저 지워 목록이 밀렸을 때 엉뚱한 파일이 지워지지 않게 */
+    pjAdmin('tkfiledel', proj, '&fid=' + encodeURIComponent(String(f.id || '')) + '&lk=' + encodeURIComponent(String(t.k || ''))
+                             + '&idx=' + i + '&lt=' + encodeURIComponent(String(t.t || '')), function(d){
+      var live = (proj === PJ_NOTE_PROJ);
+      if(d && d.ok){
+        if(live){
+          PJ_TASKS = pjTasksParse(d.tasks);
+          pjNotePaint(proj, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+          /* 🔴 드라이브 파일을 못 지웠으면 «성공»이라 하지 않는다 */
+          if(d.warn) pjNoteMsg('⚠ ' + d.warn, 'no'); else pjNoteMsg('✅ 지웠습니다', 'ok');
+        }
+        pj1Drop(proj);
+      }else if(live){
+        pjNoteMsg('🔴 못 지웠습니다 — ' + ((d && d.error) || '이유를 모르겠습니다'), 'no');
+      }
+    });
+  }
   /* ✏️ 2026-10-04 R-0035 — 확인할 것 «글» 고치기. 전엔 지우고 다시 등록해야 했다(그러면 상태·담당이 날아간다).
      🔴 [「관리」 이상만] 추가·삭제·담당 정하기와 «같은 급»이다. 서버(projUpdate_)도 같은 기준으로 막는다.
      🔴 [그 줄 글자만 바꾼다] 상태·담당은 그대로 — 배열을 새로 만들어 넘긴다(저장 실패 시 되돌리려고). */
@@ -8662,7 +8790,9 @@
       + '<span class="tktx' + (canEdit ? ' canedit' : '') + '"' + (canEdit ? ' data-pjtkedit="' + i + '" title="눌러서 글을 고칩니다"' : '') + '>' + pjEsc(String(t.t || '')) + '</span>'
       + whoTag
       + st
+      + pjTkAttBtn_(i, t, canEdit)
       + (canEdit ? '<span class="tkdel" data-pjtkdel="' + i + '" title="지웁니다">✕</span>' : '')
+      + pjTkFilesHtml_(i, t, canEdit)
       + '</div>'
       + (PJ_WHO_OPEN === i ? pjWhoBox_(i, w) : '');
   }
@@ -8769,11 +8899,14 @@
     var v = String(inp.value || '').trim();
     if(!v) return;
     inp.value = '';
-    pjTaskSaveAll(PJ_TASKS.concat([{ t: v, w: '', s: 'non' }]));
+    /* 📎 2026-10-04 — 줄 «번호표»(k) — 파일 첨부가 줄 번호(위치)가 아니라 이 번호표로 줄을 찾는다(줄이 늘고 줄어도 안 어긋난다) */
+    pjTaskSaveAll(PJ_TASKS.concat([{ t: v, w: '', s: 'non', k: Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-5) }]));
   }
   function pjTaskDel(i){
     var t = PJ_TASKS[i]; if(!t) return;
-    if(!confirm('지울까요?\n\n「' + String(t.t || '') + '」')) return;
+    var _nf = (t.f && t.f.length) ? t.f.length : 0;                  /* 📎 줄을 지워도 올린 파일은 «폴더에 남는다» — 미리 알린다 */
+    if(!confirm('지울까요?\n\n「' + String(t.t || '') + '」'
+        + (_nf ? '\n\n📎 붙인 파일 ' + _nf + '개는 팀공유 폴더에 그대로 남습니다(이 줄에서만 사라집니다).' : ''))) return;
     pjTaskSaveAll(PJ_TASKS.filter(function(_, k){ return k !== i; }));
   }
   /* ✔ 상태 누르기 — «한 줄만» 바꾼다. 팀도 할 수 있다. */
@@ -8821,6 +8954,11 @@
              + (z.hidden ? ' <span class="fn">— 눌러서 펴기</span>' : ''); }
       return;
     }
+    /* 📎 2026-10-04 — 확인할 것 줄의 파일 */
+    var a1 = el.getAttribute('data-pjtkatt');
+    if(a1 !== null){ e.preventDefault(); pjTkFileAsk(+a1); return; }
+    var a2 = el.getAttribute('data-pjtkfdel');
+    if(a2 !== null){ e.preventDefault(); var pr = String(a2).split(':'); pjTkFileDel(+pr[0], +pr[1]); return; }
     /* ✏️ R-0035 — 확인할 것 글 고치기 */
     var e1 = el.getAttribute('data-pjtkedit');
     if(e1 !== null){
@@ -8866,6 +9004,12 @@
       pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
       return;
     }
+  });
+  /* 📎 파일을 골랐다 — 보낸다 */
+  document.addEventListener('change', function(e){
+    if(!e.target || e.target.id !== 'pjTkFileIn') return;
+    var f = e.target.files && e.target.files[0];
+    if(f) pjTkFileSend(f);
   });
   /* 🔍 업체 찾기 — 글자를 칠 때마다 «목록 상자만» 다시 그린다 */
   document.addEventListener('input', function(e){
