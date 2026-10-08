@@ -475,7 +475,9 @@
       padding:6px 0; border-top:1px solid var(--line2); font-size:12.5px}
     .pj2 .tk.done .tktx{text-decoration:line-through; color:var(--faint)}
     .pj2 .tkic{flex:0 0 15px; font-size:11px}
-    .pj2 .tktx{flex:1; min-width:110px}
+    /* 🔴 2026-10-08 대표 지시 *"할일 입력할때 시프트+엔터 누르면 밑줄로"* — 줄바꿈이 저장될 수 있으니
+       읽기 화면도 그 줄바꿈을 그대로 보여준다(white-space 기본값은 줄바꿈을 지운다) */
+    .pj2 .tktx{flex:1; min-width:110px; white-space:pre-wrap}
     .pj2 .tkwho{flex:0 0 auto; font-size:11px; color:var(--sub); background:#f4f5f7;
       border-radius:999px; padding:1px 8px}
     .pj2 .tkwho.none{color:var(--faint); background:transparent}
@@ -508,6 +510,9 @@
     .pj2 .tktx.canedit:hover{background:#f4f7ff; border-radius:5px}
     .pj2 .tkedit{flex:1 1 100%; display:flex; gap:6px; align-items:center}
     .pj2 .tkedit input{flex:1; min-width:0; border:1px solid #a9c2f5; border-radius:7px; padding:5px 8px; font:inherit; font-size:12.5px}
+    /* 🔴 2026-10-08 — 시프트+엔터로 줄바꿈 들어가는 칸(textarea). 겉모습은 input과 같게, 높이는 자동으로 큰다 */
+    .pj2 .tkedit textarea{flex:1; min-width:0; border:1px solid #a9c2f5; border-radius:7px; padding:5px 8px;
+      font:inherit; font-size:12.5px; line-height:1.4; resize:none; overflow-y:auto; max-height:240px}
     .pj2 .tkedit button{border:1px solid var(--line); background:#fff; border-radius:7px; padding:4px 10px; font:inherit; font-size:12px; font-weight:700; color:var(--sub); cursor:pointer}
     .pj2 .tkedit button.ok{background:#2563eb; border-color:#2563eb; color:#fff}
     /* 📎 2026-10-04 — 확인할 것 줄마다 파일 첨부 */
@@ -525,6 +530,10 @@
     .pj2 .tkadd{display:flex; gap:6px; margin-top:8px}
     .pj2 .tkadd input{flex:1; min-width:0; border:1px solid var(--line2); border-radius:7px;
       padding:5px 8px; font:inherit; font-size:12.5px}
+    /* 🔴 2026-10-08 — 시프트+엔터로 줄바꿈. 기본은 한 줄 높이, 치면 자동으로 큰다(pjNoteGrow 재사용) */
+    .pj2 .tkadd textarea{flex:1; min-width:0; border:1px solid var(--line2); border-radius:7px;
+      padding:5px 8px; font:inherit; font-size:12.5px; line-height:1.4; resize:none; overflow-y:auto;
+      max-height:240px; height:28px}
     .pj2 .tkadd button{border:1px solid var(--line); background:#fff; border-radius:7px;
       padding:4px 12px; font:inherit; font-size:12px; font-weight:700; color:var(--sub); cursor:pointer}
     /* 🏢 업체 연락처 (2026-09-10) — 이름·주소·전화 셋만 */
@@ -9081,7 +9090,8 @@
                         + '<div id="pjTkDone" hidden>' + done.map(pjTaskRow).join('') + '</div>' : '')
        + '</div>';
     if(canEdit){
-      h += '<div class="tkadd"><input type="text" id="pjTkTx" placeholder="확인받을 것을 한 줄로">'
+      h += '<div class="tkadd"><textarea id="pjTkTx" rows="1" placeholder="확인받을 것을 적어주세요 (Shift+Enter 줄바꿈)"'
+         + ' oninput="pjNoteGrow(this)"></textarea>'
          + '<button type="button" id="pjTkAdd">＋ 추가</button></div>';
     }else if(canPush){
       h += '<p class="fn" style="margin:4px 0">👤 글은 읽기만 · <b>확인 상태만</b> 누를 수 있습니다 · 📎 파일은 눌러서 열어 보기만 됩니다</p>';
@@ -9370,7 +9380,8 @@
       : '<span class="tkwho' + (w ? '' : ' none') + '">' + pjEsc(w || '—') + '</span>';
     if(canEdit && PJ_TK_EDIT === i){
       return '<div class="tk"><span class="tkic">' + ic + '</span>'
-        + '<span class="tkedit"><input type="text" id="pjTkEditTx" maxlength="300" value="' + pjEsc(String(t.t || '')) + '">'
+        + '<span class="tkedit"><textarea id="pjTkEditTx" maxlength="300" rows="1" oninput="pjNoteGrow(this)">'
+        + pjEsc(String(t.t || '')) + '</textarea>'
         + '<button type="button" class="ok" data-pjtkeditsave="' + i + '">저장</button>'
         + '<button type="button" data-pjtkeditcancel="1">취소</button></span></div>';
     }
@@ -9402,7 +9413,8 @@
       + '</span>';
     if(PJ_TKA_EDIT === i){
       return '<div class="tk"><span class="tkic">' + ic + '</span>'
-        + '<span class="tkedit"><input type="text" id="pjTkaEditTx" maxlength="300" value="' + pjEsc(String(t.t || '')) + '">'
+        + '<span class="tkedit"><textarea id="pjTkaEditTx" maxlength="300" rows="1" oninput="pjNoteGrow(this)">'
+        + pjEsc(String(t.t || '')) + '</textarea>'
         + '<button type="button" class="ok" data-pjtkaeditsave="' + i + '">저장</button>'
         + '<button type="button" data-pjtkaeditcancel="1">취소</button></span></div>';
     }
@@ -9433,7 +9445,8 @@
                        + ' <span class="fn">— 눌러서 펴기</span></div>'
                        + '<div id="pjTkaDone" hidden>' + done.map(pjTaskAdminRow).join('') + '</div>' : '')
       + '</div>'
-      + '<div class="tkadd"><input type="text" id="pjTkaTx" placeholder="대표님만 볼 내용을 한 줄로">'
+      + '<div class="tkadd"><textarea id="pjTkaTx" rows="1" placeholder="대표님만 볼 내용을 적어주세요 (Shift+Enter 줄바꿈)"'
+      + ' oninput="pjNoteGrow(this)"></textarea>'
       + '<button type="button" id="pjTkaAdd">＋ 추가</button></div>';
   }
   function pjTaskAdminSaveAll(next){
@@ -9671,7 +9684,8 @@
       e.preventDefault();
       PJ_TK_EDIT = +e1; PJ_WHO_OPEN = -1;
       pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
-      var ef = document.getElementById('pjTkEditTx'); if(ef){ ef.focus(); try{ ef.setSelectionRange(ef.value.length, ef.value.length); }catch(x){} }
+      var ef = document.getElementById('pjTkEditTx');
+      if(ef){ ef.focus(); pjNoteGrow(ef); try{ ef.setSelectionRange(ef.value.length, ef.value.length); }catch(x){} }
       return;
     }
     var e2 = el.getAttribute('data-pjtkeditsave');
@@ -9726,7 +9740,7 @@
       PJ_TKA_EDIT = +ea1;
       pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
       var efa = document.getElementById('pjTkaEditTx');
-      if(efa){ efa.focus(); try{ efa.setSelectionRange(efa.value.length, efa.value.length); }catch(xa){} }
+      if(efa){ efa.focus(); pjNoteGrow(efa); try{ efa.setSelectionRange(efa.value.length, efa.value.length); }catch(xa){} }
       return;
     }
     var ea2 = el.getAttribute('data-pjtkaeditsave');
@@ -9775,6 +9789,12 @@
       return;
     }
     if(e.key !== 'Enter' || e.isComposing) return;
+    /* 🔴 2026-10-08 대표 지시 *"할일 입력할때 시프트+엔터 누르면 밑줄로"* — 이 4칸은 이제 textarea라
+       Shift+Enter 를 가로채지 않으면(preventDefault 안 하면) 브라우저가 «줄바꿈을 그대로 넣는다».
+       그래서 할일 칸(pjTkTx·pjTkEditTx·pjTkaTx·pjTkaEditTx)에서만, Shift가 눌려 있으면
+       아무것도 안 하고 그냥 돌려보낸다(§1 — 새로 만들지 않고 기본 동작을 쓴다). */
+    var TK_SHIFT_IDS = { pjTkTx:1, pjTkEditTx:1, pjTkaTx:1, pjTkaEditTx:1 };
+    if(e.shiftKey && e.target && TK_SHIFT_IDS[e.target.id]) return;
     if(e.target && e.target.id === 'pjTkEditTx' && PJ_TK_EDIT >= 0){ e.preventDefault(); pjTaskEditSave(PJ_TK_EDIT); return; }
     if(e.target && e.target.id === 'pjTkTx'){ e.preventDefault(); pjTaskAdd(); }
     if(e.target && e.target.id === 'pjTkaEditTx' && PJ_TKA_EDIT >= 0){ e.preventDefault(); pjTaskAdminEditSave(PJ_TKA_EDIT); return; }
