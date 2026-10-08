@@ -9413,16 +9413,18 @@
       + '</div>';
   }
   function pjTaskAdminHtml_(){
-    /* 🔴 [관리 이상이 아니면 «칸만»] 0개면 그 칸조차 안 그린다 — 빈 상자가 「고장」으로 읽힌다(§3-5 ⑤) */
+    /* 🔴 2026-10-08 — 연습장을 눌러보시고 *"관리자권한을 대표로 올리자"* 라고 하셔서
+       「관리」 이상 → «대표만»으로 올렸다. canTkA 가 이미 서버에서 isOwn 기준으로 온다(§1 — 자물쇠는 한 곳).
+       🔴 [대표가 아니면 «칸만»] 0개면 그 칸조차 안 그린다 — 빈 상자가 「고장」으로 읽힌다(§3-5 ⑤) */
     if(!PJ_CAN_TKA){
       if(!PJ_TKA_N) return '';
-      return '<div class="tkh">🔒 관리자 전용 할일</div>'
-        + '<p class="fn" style="margin:4px 0">🔒 관리자 전용 할일 ' + PJ_TKA_N
-        + '개 — 관리자 이상만 볼 수 있습니다.</p>';
+      return '<div class="tkh">🔒 대표 전용 할일</div>'
+        + '<p class="fn" style="margin:4px 0">🔒 대표 전용 할일 ' + PJ_TKA_N
+        + '개 — 대표만 볼 수 있습니다.</p>';
     }
     var live = [], done = [];
     PJ_TASKS_ADMIN.forEach(function(t, i){ (String(t && t.s) === 'ok' ? done : live).push(i); });
-    return '<div class="tkh">🔒 관리자 전용 할일 <span class="fn">— 관리자 이상만 보입니다</span></div>'
+    return '<div class="tkh">🔒 대표 전용 할일 <span class="fn">— 대표만 보입니다</span></div>'
       + '<div id="pjTkaZone">'
       + (live.length ? live.map(pjTaskAdminRow).join('')
                      : '<p class="fn" style="margin:4px 0">'
@@ -9431,7 +9433,7 @@
                        + ' <span class="fn">— 눌러서 펴기</span></div>'
                        + '<div id="pjTkaDone" hidden>' + done.map(pjTaskAdminRow).join('') + '</div>' : '')
       + '</div>'
-      + '<div class="tkadd"><input type="text" id="pjTkaTx" placeholder="관리자만 볼 내용을 한 줄로">'
+      + '<div class="tkadd"><input type="text" id="pjTkaTx" placeholder="대표님만 볼 내용을 한 줄로">'
       + '<button type="button" id="pjTkaAdd">＋ 추가</button></div>';
   }
   function pjTaskAdminSaveAll(next){
