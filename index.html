@@ -1102,6 +1102,10 @@
     .rpis .hd .dl{flex:none; border:none; background:none; cursor:pointer; color:#b9c2d0;
       font-size:13px; padding:0 2px}
     .rpis .hd .dl:hover{color:#c0392b}
+    /* ✎🆕 2026-10-08 — 이슈 고치기 단추. 🔴 [.dl 과 «같은 자리감»] 새 스타일을 발명하지 않는다(§4-1) */
+    .rpis .hd .ed{flex:none; border:none; background:none; cursor:pointer; color:#b9c2d0;
+      font-size:13px; padding:0 2px}
+    .rpis .hd .ed:hover{color:#2563eb}
     /* 🎬 장비앱에서 «저절로» 올라온 것 — 사람이 적은 것과 한눈에 갈린다(지울 수도 없다) */
     .rpis.auto{border-color:#f0d9a8; background:#fffdf6}
     /* 처리 경로 */
@@ -7342,6 +7346,9 @@
      🔴 [사진·도면은 여기 안 적는다] 글이 아니라 파일이다 → 📁 팀공유폴더로 간다. */
   var PJ_ST = { non: '안함', mid: '검토필요', ok: '완료' };
   var PJ_NOTE_PROJ = '', PJ_TASKS = [], PJ_NOTE_TXT = '';
+  /* 🔒 2026-10-08 대표 지시 — 「관리자이상 볼수있는 할일칸 따로」. 서버가 주는 값이고,
+     부분 다시그리기(d 에 tasksAdmin 이 없을 때)는 «이미 있는 값을 유지»한다(PJ_WHO_ITEMS 와 같은 방식). */
+  var PJ_TASKS_ADMIN = [], PJ_TKA_N = 0, PJ_CAN_TKA = false;
 
   function pjTasksParse(s){
     try { var a = JSON.parse(String(s || '[]')); return (a && a.length !== undefined) ? a : []; }
@@ -8076,7 +8083,8 @@
   var PJ_RP_ORDER = ['client','ours','team','repair'];
 
   /* 🔴 서버 Project.js PROJ_REPORT_CHK_KEYS_ 와 «같은 값»이어야 한다(§1) — 7칸 진행률의 분모다 */
-  var PJ_RP_CHK_KEYS = ['prep','sum','rev','clean','issue','ask','imp'];
+  /* 🔴 2026-10-07 — 'ask'(확인요청) 뺐다 6개로(대표 지시). 서버 PROJ_REPORT_CHK_KEYS_ 와 같이 맞춘다(§1). */
+  var PJ_RP_CHK_KEYS = ['prep','sum','rev','clean','issue','imp'];
   function pjRpParse(raw){
     var o = null;
     try { o = JSON.parse(String(raw || '')); } catch(e){ o = null; }
@@ -8093,7 +8101,9 @@
              act: (o.act && typeof o.act === 'object' && !(o.act instanceof Array)) ? o.act : {},
              imp: arr(o.imp), impOk: arr(o.impOk), done: String(o.done || ''),
              /* 🆕 2026-10-06 대표 확정 — 체크리스트 100% → 보고서 완료 → 대표 확인 → 프로젝트 완료 */
-             chk: chk, prjDone: String(o.prjDone || '') };
+             chk: chk, prjDone: String(o.prjDone || ''),
+             /* 🆕 2026-10-07 — 📎 보고서 첨부(조명 다이아그램 등) */
+             files: arr(o.files) };
   }
   /* 🆕 ⑦ 진행률 % — 서버가 계산한 것과 «같은 로직»(화면은 즉시 보이려고 한 번 더 계산한다 ·
      저장 응답이 돌아오면 서버 숫자로 다시 맞춘다 §3-0-B). */
@@ -8152,6 +8162,99 @@
     }
     return h;
   }
+  /* 🆕 📎 2026-10-07 대표 지시 — 「보고서에 조명 다이아그램 첨부할 수 있게」· 「관리자 이상만 봤으면」
+     *"조명 다이아그램은 우리가 어떤 조명 셋업을 썼는지 아카이빙하는거야. 나중에 가공하거나 연습하거나 할거야"*
+     🔴 [확장자·크기·금지이름 규칙은 「확인할 것」 첨부를 그대로 본떴다(§4-1)] index.html:9090대
+        PJ_TKFILE_EXT/BAD 와 같은 값. 다른 점은 «줄 하나»가 아니라 «보고서 하나»에 붙는 것뿐이라
+        줄 번호(lk/lt/idx)가 필요 없다.
+     🔴 [폴더는 팀공유가 «아니다»] 팀공유는 `anyone:reader`(링크 아는 사람 누구나)라 「관리 이상만」과
+        어긋난다(실측 확인) — «결과물 폴더»(관리 이상에게만 공유됨)에 올린다. 내용도 「촬영 중 쓸 준비자료」가
+        아니라 「다 쓴 조명 셋업의 아카이브」라 결과물 쪽이 뜻에도 맞는다(대표 확정).
+     🔴 [올리기 = POST(rep:'rpfile')] base64 라 주소창(GET)에 못 담는다. 지우기는 기존 pjRpSend(act=report)
+        그대로 — rp='filedel'+fid 만 보내면 된다(바이트가 없어 GET 으로 충분하다).
+     되돌리기 = **"보고서 첨부 빼줘"** */
+  var PJ_RP_FILE_BUSY = false;
+  /* 🔴 2026-10-07 대표 지시 — 「보고서에는 조명 다이아그램만 첨부 가능하게」.
+     범용 파일첨부가 아니라 «그 한 가지 용도»로 좁힌다 — 확장자도 PDF·이미지만 받는다. */
+  var PJ_RPFILE_EXT = /\.(pdf|jpe?g|png|gif|webp|heic|heif)$/i;
+  function pjRpFilesHtml_(R){
+    var F = (R && R.files && R.files.length) ? R.files : [];
+    var h = '<div class="rpsec" id="pjrpsec-files"><div class="t">📎 조명 다이아그램(결과물 폴더 · 관리자 이상만)'
+          + '<span class="fn">이번에 쓴 조명 셋업을 남겨둡니다 — 나중에 가공·연습할 때 씁니다 · PDF·이미지만 · 한 개 5MB까지</span></div>';
+    if(F.length){
+      h += '<span class="tkfiles">' + F.map(function(f){
+        var u = String((f && f.u) || '');
+        if(u.indexOf('https://') !== 0) u = '#';
+        return '<span><a class="tkf" href="' + pjEsc(u) + '" target="_blank" rel="noopener">📄 ' + pjEsc((f && f.n) || '파일')
+             + (f && f.s ? '<i>' + pjEsc(f.s) + 'KB</i>' : '') + '</a>'
+             + '<span class="tkfdel" data-pjrpfiledel="' + pjEsc((f && f.id) || '') + '" title="지웁니다(드라이브 휴지통으로)">✕</span>'
+             + '</span>';
+      }).join('') + '</span>';
+    }
+    h += '<div class="rprow"><button type="button" data-pjrpfileask="1">📎 조명 다이아그램 추가</button></div></div>';
+    return h;
+  }
+  function pjRpFileInput_(){
+    var el = document.getElementById('pjRpFileIn');
+    if(el) return el;
+    el = document.createElement('input');
+    el.type = 'file'; el.id = 'pjRpFileIn';
+    el.accept = '.pdf,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif,image/*';
+    el.style.display = 'none';
+    document.body.appendChild(el);
+    return el;
+  }
+  function pjRpFileAsk(){
+    if(PJ_RP_FILE_BUSY){ pjRpMsg('⏳ 지금 올리는 중입니다 — 끝난 뒤에 다시 눌러 주세요', 1); return; }
+    if(!PJ_RP_PROJ){ pjRpMsg('프로젝트를 못 찾았습니다', 1); return; }
+    var el = pjRpFileInput_(); el.value = '';
+    el.click();
+  }
+  function pjRpFileSend(file){
+    var proj = PJ_RP_PROJ;
+    if(!file || !proj) return;
+    var nm = String(file.name || '');
+    if(!PJ_RPFILE_EXT.test(nm)){ pjRpMsg('🔴 올릴 수 없는 종류입니다 — PDF·이미지만 됩니다(조명 다이아그램 전용)', 1); return; }
+    if(PJ_TKFILE_BAD.test(nm)){ pjRpMsg('🔴 이름에 민감한 말(통장·계좌·신분증·주민·견적서 등)이 있어 멈췄습니다', 1); return; }
+    if(file.size > 5 * 1024 * 1024){ pjRpMsg('🔴 5MB를 넘어 올릴 수 없습니다', 1); return; }
+    if(!file.size){ pjRpMsg('🔴 빈 파일입니다', 1); return; }
+    if(!canApp()){ pjRpMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
+    /* 🔴 2026-10-07 대표 지시로 «결과물 폴더»(관리 이상만 공유됨)에 올린다 — 팀공유(링크 아는 사람 누구나)가 아니다.
+       그래서 "누구나 볼 수 있다" 경고는 안 붙인다(사실과 다르면 §3-5⑤ 위반). */
+    if(!confirm('📎 이 파일을 올릴까요?\n\n「' + nm + '」\n\n결과물 폴더(관리자 이상만)에 저장됩니다.')){
+      pjRpMsg('올리지 않았습니다'); return;
+    }
+    PJ_RP_FILE_BUSY = true;
+    pjRpMsg('⏳ 올리는 중… ' + nm);
+    var rd = new FileReader();
+    rd.onerror = function(){ PJ_RP_FILE_BUSY = false; pjRpMsg('🔴 파일을 읽지 못했습니다', 1); };
+    rd.onload = function(){
+      var b64 = String(rd.result || '').split(',')[1] || '';
+      var body = { rep: 'rpfile', name: proj, fname: nm, data: b64 };
+      var tok = appTokObj(); if(tok.s) body.s = tok.s; if(tok.t) body.t = tok.t;
+      fetch(FIELD_APP, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+        .then(function(res){ return res.json(); })
+        .then(function(d){
+          PJ_RP_FILE_BUSY = false;
+          if(d && d.ok){
+            if(proj === PJ_RP_PROJ){
+              PJ_RP = pjRpParse(d.report);
+              pjRpDraw();
+              pjRpMsg('✅ 올렸습니다 — ' + nm, 0);
+            }
+          }else{
+            pjRpMsg('🔴 못 올렸습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다'), 1);
+          }
+        })
+        .catch(function(e){ PJ_RP_FILE_BUSY = false; pjRpMsg('🔴 못 올렸습니다 — ' + e, 1); });
+    };
+    rd.readAsDataURL(file);
+  }
+  function pjRpFileDel(fid){
+    if(!fid) return;
+    if(!confirm('지울까요?\n\n드라이브 결과물 폴더에서도 휴지통으로 갑니다.')) return;
+    pjRpSend({ rp:'filedel', fid:fid }, '✅ 지웠습니다');
+  }
   /* 서버 응답이 올 때마다 여기서 받아 둔다(회고 탭과 같은 자리에서 부른다) */
   var PJ_RP_ST = '';   /* 🆕 2026-10-06 — 지금 프로젝트 「상태」(활성/완료/캔슬·드롭) · 완료 안내에 쓴다 */
   function pjRpTake(d){
@@ -8172,6 +8275,7 @@
      🔴 [기본은 접혀 있다] 줄이 많으면(수십~200) 펼쳐 보이면 화면이 길어진다 — 필요할 때만 편다. */
   var PJ_RP_FULL = null;      /* 서버가 준 전체 목록 */
   var PJ_RP_FULLOPEN = false; /* 펼쳤나 */
+  var PJ_RP_IS_EDIT = -1;     /* ✎🆕 2026-10-08 — 고치는 중인 이슈 줄 번호 */
   /* ⏱🆕 2026-10-06 대표 지시 — 「준비·랩업·반납 기록이 보고서에 올라오게 해줘야지」
      🔴 [«읽기만» 한다] 원본은 현장 장비앱이다. 여기서 고치면 두 곳이 되어 어긋난다(§1).
      🔴 [null = 아직 안 받음 · [] = 받았는데 칸이 없음] 둘을 섞으면 「없다」고 거짓말하게 된다. */
@@ -8205,6 +8309,7 @@
     PJ_RP_PROJ = proj || PJ_NOW;
     PJ_RP_OPEN = true;
     PJ_RP_FULLOPEN = false;      /* 🔴 프로젝트가 바뀌면 «접힌 채로» 새로 연다 */
+    PJ_RP_IS_EDIT = -1;          /* ✎🆕 2026-10-08 — 고치던 줄도 닫는다 */
     pjRpDraw();
     pjRpLoadEquip_(PJ_RP_PROJ);
     var b = document.getElementById('pjRpBox');
@@ -8219,6 +8324,13 @@
   function pjRpMirror_(){
     var L = (PJ_REV && PJ_REV.lines) || [];
     return L.filter(function(x){ return String((x && x.k) || '') === 'bad'; });
+  }
+  /* 💡 2026-10-07 대표 지시 — 「기술노트도 회고에서 등록하고 거기서 끌어오는 걸로」
+     🔴 [새 칸이 필요 없었다] 회고엔 이미 `k:'learn'`(💡 배운 것) 종류가 있다(§4-1) —
+        ②문제 미러와 «같은 패턴», k 값만 다르다. */
+  function pjRpMirrorLearn_(){
+    var L = (PJ_REV && PJ_REV.lines) || [];
+    return L.filter(function(x){ return String((x && x.k) || '') === 'learn'; });
   }
   /* ⏳ 아직 안 끝난 일 — 「고르면 할 일이 생기고, 안 끝나면 계속 보인다」 */
   function pjRpTodo_(){
@@ -8346,6 +8458,32 @@
        + '<button type="button" data-pjrp="sum">저장</button></div>'
        + pjRpChkBar_(R, 'sum') + '</div>';
 
+    /* ── 📎 조명 다이아그램 (2026-10-07 대표 지시) ── */
+    h += pjRpFilesHtml_(R);
+
+    /* ── 💡 이번 촬영에서 배운 것 (회고 k:'learn' 에서 비춰옴, 2026-10-07 대표 지시)
+       🔴 [조명 다이아그램 바로 옆] "아카이빙 → 나중에 가공·연습" 이라는 같은 목적이라 붙여 둔다. */
+    var LN = pjRpMirrorLearn_();
+    h += '<div class="rpsec" id="pjrpsec-learn"><div class="t">💡 이번 촬영에서 배운 것'
+       + '<span class="fn">회고 탭(💡 배운 것)에서 <b>읽어옵니다 · 여기서는 못 고칩니다</b> — '
+       + '적으려면 회고 탭에서</span></div>'
+       + '<div class="rpmir">';
+    if(!LN.length){
+      h += '<div class="none">회고에 <b>💡 배운 것</b>으로 표시된 줄이 아직 없습니다 — '
+         + '회고 탭에서 한 줄 적으면 여기에도 바로 나타납니다.</div>';
+    }else{
+      h += LN.map(function(x){
+        var p = String((x && x.p) || '');
+        var pn = p === 'pre' ? '준비' : (p === 'end' ? '끝난 뒤' : '촬영 중');
+        return '<div class="ln"><span class="ph">' + pjEsc(pn) + '</span>'
+             + pjEsc(String((x && x.t) || ''))
+             + '<span class="who">' + pjEsc(String((x && x.w) || '')) + ' · '
+             + pjEsc(String((x && x.d) || '')) + '</span></div>';
+      }).join('');
+      h += '<span class="fn">회고를 한 줄 더 적으면 <b>여기에도 바로</b> 나타납니다</span>';
+    }
+    h += '</div></div>';
+
     /* ── ⏱ 준비 · 랩업 · 반납 기록 (2026-10-06 — 현장 장비앱에서 비춰옴) ──
        🔴 [번호를 안 매긴다] ②~⑥ 번호는 대표가 기억하시는 자리다 — 다시 매기면 조용히 바뀐다(§3-2-C). */
     h += pjRpPrepHtml_(R);
@@ -8376,23 +8514,23 @@
     h += '</div>' + pjRpChkBar_(R, 'rev') + '</div>';
 
     /* ── ③ 오염·청결 ── */
+    /* 🆕 2026-10-07 대표 지시 — 「보고서에는 한줄로 쓰는게 아니라 랩업·반납에서 가져오는거다」
+       🔴 [직접 입력 → 읽기 전용 미러로 바꿨다] 전엔 여기서 따로 입력했는데, 그 내용이
+          이미 랩업·반납특이사항(⏱ 섹션)에 있다 — 두 번 적게 하는 중복이었다(§4-1·§1).
+       🔴 [처리함은 그대로 둔다] 그 특이사항을 «처리했는지»는 보고서만 아는 정보라 여기 남긴다 —
+          이번엔 「고른 항목」이 아니라 «그 단계(랩업/반납) 전체»에 하나씩 건다. */
     h += '<div class="rpsec" id="pjrpsec-clean"><div class="t">③ 🧼 오염·청결 상태'
-       + '<span class="fn">해당하는 것을 고르세요(여러 개 가능) — 「반납특이사항」과 같은 방식입니다</span></div>'
-       + '<div class="rpcl">' + PJ_RP_CLEAN.map(function(c){
-           var on = (R.clean.picks || []).indexOf(c) >= 0;
-           return '<button type="button" data-pjrpcl="' + pjEsc(c) + '"'
-                + (on ? ' class="on"' : '') + '>' + pjEsc(c) + '</button>';
-         }).join('') + '</div>'
-       + '<div class="rprow"><input type="text" id="pjRpClMemo" maxlength="200" '
-       + 'placeholder="무슨 일이었는지 한 줄로 (없으면 비워두세요)" value="' + pjEsc(R.clean.memo) + '">'
-       + '<button type="button" data-pjrp="clean">저장</button></div>';
-    /* 🆕 ③ 처리함 — 4갈래 경로가 아니라 함/안함 2단계로 단순화(대표 지시 2026-10-06) */
-    if((R.clean.picks || []).length){
-      h += (R.clean.picks || []).map(function(c){
-        var d = (R.clean.doneBy || {})[c] || { done:false };
-        return '<div class="ckRow">' + pjEsc(c)
+       + '<span class="fn">⏱ 랩업·반납 특이사항에서 <b>읽어옵니다 · 여기서는 못 고칩니다</b> — '
+       + '고치려면 현장 장비앱의 랩업·반납 탭에서</span></div>';
+    var cleanPhases = (PJ_RP_PREP || []).filter(function(x){ return x && (x.k === 'wrap' || x.k === 'retn') && x.memo; });
+    if(!cleanPhases.length){
+      h += '<div class="none">랩업·반납 특이사항이 아직 없습니다 — 현장 장비앱에 적히면 여기도 바로 나타납니다.</div>';
+    }else{
+      h += cleanPhases.map(function(x){
+        var d = (R.clean.doneBy || {})[x.k] || { done:false };
+        return '<div class="ckRow"><b>' + pjEsc(x.nm) + '</b> — ' + pjEsc(x.memo)
              + '<button type="button" class="doneBtn' + (d.done ? ' on' : '') + '" '
-             + 'data-pjrpcleandone="' + pjEsc(c) + '">'
+             + 'data-pjrpcleandone="' + pjEsc(x.k) + '">'
              + (d.done ? '✅ 처리함 · ' + pjEsc(String(d.d || '')) : '처리함') + '</button></div>';
       }).join('');
     }
@@ -8480,9 +8618,25 @@
     h += (R.issues || []).map(function(it, i){
       var key = 'i' + i;
       var a = (R.act || {})[key] || { route:'', steps:[], who:'', cash:false };
+      /* ✎🆕 2026-10-08 대표 지시 — 「추가 기입한 것들 수정할 수도 있게」. 회고 고치기와 «같은 모양»(§4-1) —
+         🔴 [«글자만» 고친다] 적은 사람(w)·날짜(d)는 그대로 둔다. */
+      if(PJ_RP_IS_EDIT === i){
+        /* 🔴 [«회고 고치기»와 같은 CSS(.rvedit/.eb)를 그대로 쓴다] 새로 만들지 않는다(§4-1) */
+        return '<div class="rpis"><div class="rvedit">'
+          + '<input type="text" id="pjRpIsEd" maxlength="500" value="' + pjEsc(String((it && it.t) || '')) + '"'
+          + ' style="width:100%; box-sizing:border-box; font:inherit; font-size:13px; padding:7px 9px;'
+          + ' border:1px solid #c8cfda; border-radius:7px">'
+          + '<div class="eb">'
+          + '<button type="button" class="pri" data-pjrpised="' + i + '">저장</button>'
+          + '<button type="button" data-pjrpisedx="1">취소</button>'
+          + '<span class="fn">' + pjEsc(String((it && it.w) || '—')) + ' · '
+          + pjEsc(String((it && it.d) || '')) + ' 는 그대로 남습니다</span>'
+          + '</div></div></div>';
+      }
       var s = '<div class="rpis"><div class="hd"><span class="tx">' + pjEsc(String((it && it.t) || ''))
             + '<span class="wd">' + pjEsc(String((it && it.w) || '—')) + ' · '
             + pjEsc(String((it && it.d) || '')) + '</span></span>'
+            + '<button type="button" class="ed" data-pjrpisedit="' + i + '" title="고칩니다">✎</button>'
             + '<button type="button" class="dl" data-pjrpisdel="' + i + '" title="지웁니다">✕</button></div>';
       s += '<div class="rprt">' + PJ_RP_ORDER.map(function(k){
              var o = PJ_RP_ROUTES[k];
@@ -8581,42 +8735,12 @@
       h += '</div>';
     }
 
-    /* ── ⑤ 실무자 확인 요청 ── */
-    h += '<div class="rpsec" id="pjrpsec-ask"><div class="t">⑤ 🙋 실무자 확인 요청'
-       + '<span class="fn">답을 받아야 하는 것 — 상태는 <b>「답 기다림 → 답함」 2단계</b>뿐입니다'
-       + '(시킨 일 3단계와 헷갈리지 않게 일부러 다르게 뒀습니다)</span></div>'
-       + '<div class="rprow"><input type="text" id="pjRpAsk" maxlength="200" '
-       + 'placeholder="예: 스탠드 3번 어디 뒀는지 확인 부탁">'
-       + '<input type="text" id="pjRpAskWho" maxlength="20" placeholder="누구에게" style="max-width:110px">'
-       + '<button type="button" data-pjrp="ask">＋ 요청</button></div>';
-    h += (R.asks || []).map(function(q, i){
-      var wait = String((q && q.st) || '') !== 'done';
-      var s = '<div class="rpask ' + (wait ? 'wait' : 'done') + '">'
-            + '<div class="hd" style="display:flex;gap:6px"><span class="q" style="flex:1">'
-            + pjEsc(String((q && q.q) || '')) + '</span>'
-            + '<button type="button" class="dl" data-pjrpaskdel="' + i + '" '
-            + 'style="border:none;background:none;cursor:pointer;color:#b9c2d0;font-size:13px">✕</button></div>'
-            + '<div class="m">' + (String((q && q.who) || '').trim()
-                ? '👤 ' + pjEsc(q.who) : '<b style="color:#c0392b">담당이 비었습니다</b>')
-            + ' · ' + pjEsc(String((q && q.w) || '')) + ' 가 ' + pjEsc(String((q && q.d) || '')) + ' 에 요청'
-            + '</div>';
-      if(wait){
-        s += '<div class="ans"><input type="text" id="pjRpAns' + i + '" maxlength="200" '
-           + 'placeholder="답을 받으면 여기 적어주세요">'
-           + '<button type="button" data-pjrpans="' + i + '">답함</button></div>';
-      }else{
-        s += '<div class="a">✅ ' + pjEsc(String((q && q.a) || ''))
-           + ' <span style="color:#8a93a3;font-size:11px">— ' + pjEsc(String((q && q.aw) || ''))
-           + ' · ' + pjEsc(String((q && q.ad) || '')) + '</span>'
-           + ' <button type="button" data-pjrpans="' + i + '" data-undo="1" '
-           + 'style="border:none;background:none;color:#8a93a3;font-size:11px;cursor:pointer">되돌리기</button></div>';
-      }
-      return s + '</div>';
-    }).join('');
-    h += pjRpChkBar_(R, 'ask') + '</div>';
+    /* 🔴 2026-10-07 대표 지시 — 「확인요청은 빼고」. 9/17엔 일부러 이슈(3단계)와 다르게
+       설계했지만, 실제로 써보니 보고서(끝난 뒤 한 장)엔 안 맞았다(진행 중 조율 도구였다).
+       되돌리려면 — 이 자리에 있던 코드는 git 이력에 있다("확인요청 되돌려줘"). */
 
-    /* ── ⑥ 다음부터 개선 ── */
-    h += '<div class="rpsec" id="pjrpsec-imp"><div class="t">⑥ 🔧 다음부터 개선 (1~3개)'
+    /* ── ⑤ 다음부터 개선 ── */
+    h += '<div class="rpsec" id="pjrpsec-imp"><div class="t">⑤ 🔧 다음부터 개선 (1~3개)'
        + '<span class="fn">다음 촬영 때 <b>바꿀 것</b>만 — 적고 «실제로 확인했으면» 체크 한 번</span></div>';
     for(var ii = 0; ii < 3; ii++){
       h += '<div class="rprow"><input type="text" id="pjRpImp' + ii + '" maxlength="200" '
@@ -8773,11 +8897,11 @@
       if(el.getAttribute){
         hit = el.getAttribute('data-pjrp');
         if(hit !== null){ kind = hit; break; }
-        hit = el.getAttribute('data-pjrpcl');    if(hit !== null){ kind = 'cl';    break; }
         hit = el.getAttribute('data-pjrpisdel'); if(hit !== null){ kind = 'isdel'; break; }
-        hit = el.getAttribute('data-pjrpaskdel');if(hit !== null){ kind = 'askdel';break; }
-        hit = el.getAttribute('data-pjrpans');   if(hit !== null){ kind = 'ans';
-          extra = el.getAttribute('data-undo') || ''; break; }
+        /* ✎🆕 2026-10-08 — 직접 적은 이슈 고치기 */
+        hit = el.getAttribute('data-pjrpisedit'); if(hit !== null){ kind = 'isedit'; break; }
+        hit = el.getAttribute('data-pjrpised');   if(hit !== null){ kind = 'ised';   break; }
+        hit = el.getAttribute('data-pjrpisedx');  if(hit !== null){ kind = 'isedx';  break; }
         hit = el.getAttribute('data-pjrpimp');   if(hit !== null){ kind = 'imp';   break; }
         hit = el.getAttribute('data-pjrprt');
         if(hit !== null){ kind = 'rt'; extra = el.getAttribute('data-rt') || ''; break; }
@@ -8789,6 +8913,9 @@
         hit = el.getAttribute('data-pjrpimpok');     if(hit !== null){ kind = 'impok';    break; }
         hit = el.getAttribute('data-pjrpjump');      if(hit !== null){ kind = 'jump';     break; }
         hit = el.getAttribute('data-pjrpphoto');     if(hit !== null){ kind = 'photo';    break; }
+        /* 📎 2026-10-07 — 보고서 첨부(조명 다이아그램 등) */
+        hit = el.getAttribute('data-pjrpfileask');   if(hit !== null){ kind = 'fileask';  break; }
+        hit = el.getAttribute('data-pjrpfiledel');   if(hit !== null){ kind = 'filedel';  break; }
       }
       el = el.parentElement;
     }
@@ -8802,23 +8929,6 @@
       v = document.getElementById('pjRpSum');
       return pjRpSend({ rp:'sum', text: v ? v.value : '' }, '요약을 저장했습니다');
     }
-    if(kind === 'cl'){
-      var cur = ((PJ_RP && PJ_RP.clean && PJ_RP.clean.picks) || []).slice();
-      var at = cur.indexOf(hit);
-      if(at >= 0) cur.splice(at, 1); else cur.push(hit);
-      /* 🔴 [전부 끄면 «비웠다»고 서버에 알려야 한다] 빈 글자만 보내면 서버가 「안 바꿈」으로 읽는다 */
-      var mm = document.getElementById('pjRpClMemo');
-      return pjRpSend(cur.length
-        ? { rp:'clean', text: cur.join(','), memo: mm ? mm.value : '' }
-        : { rp:'clean', pick:'clear', memo: mm ? mm.value : '' }, '');
-    }
-    if(kind === 'clean'){
-      var m2 = document.getElementById('pjRpClMemo');
-      var pk = ((PJ_RP && PJ_RP.clean && PJ_RP.clean.picks) || []);
-      return pjRpSend(pk.length
-        ? { rp:'clean', text: pk.join(','), memo: m2 ? m2.value : '' }
-        : { rp:'clean', pick:'clear', memo: m2 ? m2.value : '' }, '저장했습니다');
-    }
     if(kind === 'issue'){
       v = document.getElementById('pjRpIs');
       var t1 = v ? String(v.value || '').trim() : '';
@@ -8830,24 +8940,21 @@
       if(!confirm('이 이슈를 지웁니다. 처리 경로도 같이 사라집니다.')) return;
       return pjRpSend({ rp:'issuedel', idx: hit }, '지웠습니다');
     }
-    if(kind === 'ask'){
-      var q1 = document.getElementById('pjRpAsk');
-      var w1 = document.getElementById('pjRpAskWho');
-      var qq = q1 ? String(q1.value || '').trim() : '';
-      if(!qq){ pjRpMsg('무엇을 확인할지 적어주세요', 1); if(q1) q1.focus(); return; }
-      if(q1) q1.value = ''; if(w1) w1.value = '';
-      return pjRpSend({ rp:'ask', text: qq, who: w1 ? w1.value : '' }, '요청을 남겼습니다');
+    /* ✎🆕 2026-10-08 대표 지시 — 「추가 기입한 것들 수정할 수도 있게」. 화면에서만 여닫는다(서버에 안 간다) */
+    if(kind === 'isedit'){
+      PJ_RP_IS_EDIT = +hit;
+      pjRpDraw();
+      var _ied = document.getElementById('pjRpIsEd');
+      if(_ied){ _ied.focus(); try{ _ied.setSelectionRange(_ied.value.length, _ied.value.length); }catch(e4){} }
+      return;
     }
-    if(kind === 'askdel'){
-      if(!confirm('이 확인 요청을 지웁니다.')) return;
-      return pjRpSend({ rp:'askdel', idx: hit }, '지웠습니다');
-    }
-    if(kind === 'ans'){
-      if(extra) return pjRpSend({ rp:'askst', idx: hit, ans: '' }, '되돌렸습니다');
-      var a1 = document.getElementById('pjRpAns' + hit);
-      var aa = a1 ? String(a1.value || '').trim() : '';
-      if(!aa){ pjRpMsg('무슨 답을 받았는지 적어주세요', 1); if(a1) a1.focus(); return; }
-      return pjRpSend({ rp:'askst', idx: hit, ans: aa }, '답을 적었습니다');
+    if(kind === 'isedx'){ PJ_RP_IS_EDIT = -1; pjRpDraw(); return; }
+    if(kind === 'ised'){
+      var _ita = document.getElementById('pjRpIsEd');
+      var _inv = _ita ? String(_ita.value || '').trim() : '';
+      if(!_inv){ pjRpMsg('내용이 비었습니다 — 지우시려면 ✕ 를 눌러주세요', 1); return; }
+      PJ_RP_IS_EDIT = -1;
+      return pjRpSend({ rp:'issueedit', idx: hit, text: _inv }, '고쳤습니다');
     }
     if(kind === 'imp'){
       v = document.getElementById('pjRpImp' + hit);
@@ -8870,6 +8977,8 @@
     if(kind === 'impok') return pjRpSend({ rp:'impok', idx: hit }, '');
     if(kind === 'jump'){ pjRpJump_(hit); return; }
     if(kind === 'photo'){ pjRpTogglePhotos(hit); return; }
+    if(kind === 'fileask'){ pjRpFileAsk(); return; }
+    if(kind === 'filedel'){ pjRpFileDel(hit); return; }
   });
   /* 🆕 2026-10-06 — ① 담당 칸(글자)·현금결제(체크)는 «손을 뗄 때» 저장한다(change) —
      클릭 위임과 다른 이벤트라 따로 둔다. 회고·보고서가 이미 쓰는 pjRpSend 를 그대로 쓴다(§4-1). */
@@ -8917,10 +9026,18 @@
     if(PJ_NOTE_PROJ && PJ_NOTE_PROJ !== proj){
       try{ pjNoteFlush(); }catch(e){}
     }
-    if(PJ_NOTE_PROJ !== proj) PJ_TK_EDIT = -1;      /* 다른 프로젝트로 넘어가면 고치던 칸을 닫는다 */
+    if(PJ_NOTE_PROJ !== proj){ PJ_TK_EDIT = -1; PJ_TKA_EDIT = -1; }  /* 다른 프로젝트로 넘어가면 고치던 칸을 닫는다 */
     PJ_NOTE_PROJ = proj;
     PJ_NOTE_TXT  = String((d && d.note) || '');
     PJ_TASKS     = pjTasksParse(d && d.tasks);
+    /* 🔒 2026-10-08 — 관리자 전용 할일. 🔴 [«부분 다시그리기»엔 안 온다] 상태 토글처럼 PJ_TASKS 만
+       보내는 자리가 여럿이다(§1 — 그 자리를 다 고치지 않는다) — tasksAdmin 이 «온 것»만 반영하고,
+       안 왔으면 PJ_WHO_ITEMS 와 같은 방식으로 «이미 있던 값»을 그대로 둔다. */
+    if(d && d.tasksAdmin !== undefined){
+      PJ_TASKS_ADMIN = pjTasksParse(d.tasksAdmin);
+      PJ_TKA_N = (d.tasksAdminN != null) ? +d.tasksAdminN : PJ_TASKS_ADMIN.length;
+      PJ_CAN_TKA = !!d.canTkA;
+    }
     /* 🔴 [후보는 «PJ_TASKS 를 채운 뒤»에 만든다] 처음엔 맨 위에서 만들었는데,
        그때는 PJ_TASKS 가 아직 «앞 프로젝트 것»이라 «이미 쓴 담당자»가 후보에서 빠졌다
        (실측: 「허감독」이 안 떴다). 순서 하나가 기능 절반을 죽인 자리다.
@@ -8933,8 +9050,11 @@
     var canPush = !!PJ_ROLE && PJ_ROLE !== '보기';
 
     var h = '';
-    /* ── 📌 안내 글 ── */
     h += '<div class="ntbox">';
+    /* 🏢 2026-10-08 대표 지시 — 「업체 연락처는 제일 상단에 누구나 한번에」 — 탭 맨 위로 옮긴다
+       (접힌 채로 두는 것은 그대로 — 대표 선택). */
+    h += pjBizHtml();
+    /* ── 📌 안내 글 ── */
     if(canEdit){
       /* 🔴 oninput 을 «칸에 직접» 건다 — 위임으로 하면 다시 그릴 때 타이머 상태가 꼬인다.
          🔴 여기서 화면을 다시 그리지 않는다 — 한 글자마다 그리면 한글 조합이 끊긴다(§3-5 ⑧). */
@@ -8970,7 +9090,8 @@
       h += '<p class="fn" style="margin:4px 0 0">📎 줄 옆 클립으로 파일을 붙입니다(팀공유 폴더에 저장 · 한 개 5MB · PDF·이미지·문서). '
          + '🔒 <b>링크를 아는 사람은 누구나 볼 수 있는 폴더</b>입니다 — 견적 금액·계좌·신분증은 올리지 마세요.</p>';
     }
-    h += pjBizHtml();
+    /* 🔒 2026-10-08 대표 지시 — 「할일에는 관리자이상 볼수있는 할일칸 따로」 */
+    h += pjTaskAdminHtml_();
     box.innerHTML = h + '</div>';
     pjNoteGrow(document.getElementById('pjNoteTx'));
     /* 🔢 탭 숫자를 «여기서도» 다시 센다 — ✔ 상태를 누르거나 줄을 더하면 이 함수가 다시 돈다.
@@ -9205,6 +9326,7 @@
      🔴 [「관리」 이상만] 추가·삭제·담당 정하기와 «같은 급»이다. 서버(projUpdate_)도 같은 기준으로 막는다.
      🔴 [그 줄 글자만 바꾼다] 상태·담당은 그대로 — 배열을 새로 만들어 넘긴다(저장 실패 시 되돌리려고). */
   var PJ_TK_EDIT = -1;
+  var PJ_TKA_EDIT = -1;   /* 🔒 관리자 전용 할일 — 고치는 중인 줄 */
   function pjTaskEditSave(i){
     var inp = document.getElementById('pjTkEditTx');
     var t = PJ_TASKS[i];
@@ -9261,6 +9383,122 @@
       + pjTkFilesHtml_(i, t, canEdit)
       + '</div>'
       + (PJ_WHO_OPEN === i ? pjWhoBox_(i, w) : '');
+  }
+
+  /* 🔒 관리자 전용 할일 (2026-10-08 대표 지시 — *"할일에는 관리자이상 볼수있는 할일칸 따로"*)
+     ═══════════════════════════════════════════════════════════════════
+     🔴 [«확인할 것»과 «따로»다] 같은 모양(글·상태·추가·삭제·고치기)을 다시 쓰지만,
+        배열도·저장 칸도·보이는 등급도 다르다 — 섞으면 팀원이 보는 한 칸에 둘이 끼어든다.
+     🔴 [팀원에게는 «칸은 보이되 내용은 잠금»] 대표 확정. 그래서 내용(PJ_TASKS_ADMIN)이 아니라
+        개수(PJ_TKA_N)로 그린다 — 서버가 애초에 내용을 안 보낸다(projSeeFilter_).
+     🔴 [담당자·파일첨부는 안 넣었다] 요청에 없었고, 넣으면 «확인할 것»과 구별이 더 안 된다. */
+  function pjTaskAdminRow(i){
+    var t = PJ_TASKS_ADMIN[i] || {}, s = String(t.s || 'non');
+    var ic = s === 'ok' ? '✅' : (s === 'mid' ? '🟠' : '⬜');
+    var st = '<span class="tkst">'
+      + ['non','mid','ok'].map(function(k){
+          return '<b class="' + (s === k ? 'on ' + k : '') + '" data-pjtkast="' + i + '" data-pjstk="' + k + '">'
+               + PJ_ST[k] + '</b>'; }).join('')
+      + '</span>';
+    if(PJ_TKA_EDIT === i){
+      return '<div class="tk"><span class="tkic">' + ic + '</span>'
+        + '<span class="tkedit"><input type="text" id="pjTkaEditTx" maxlength="300" value="' + pjEsc(String(t.t || '')) + '">'
+        + '<button type="button" class="ok" data-pjtkaeditsave="' + i + '">저장</button>'
+        + '<button type="button" data-pjtkaeditcancel="1">취소</button></span></div>';
+    }
+    return '<div class="tk' + (s === 'ok' ? ' done' : '') + '"><span class="tkic">' + ic + '</span>'
+      + '<span class="tktx canedit" data-pjtkaedit="' + i + '" title="눌러서 글을 고칩니다">' + pjEsc(String(t.t || '')) + '</span>'
+      + st
+      + '<span class="tkdel" data-pjtkadel="' + i + '" title="지웁니다">✕</span>'
+      + '</div>';
+  }
+  function pjTaskAdminHtml_(){
+    /* 🔴 [관리 이상이 아니면 «칸만»] 0개면 그 칸조차 안 그린다 — 빈 상자가 「고장」으로 읽힌다(§3-5 ⑤) */
+    if(!PJ_CAN_TKA){
+      if(!PJ_TKA_N) return '';
+      return '<div class="tkh">🔒 관리자 전용 할일</div>'
+        + '<p class="fn" style="margin:4px 0">🔒 관리자 전용 할일 ' + PJ_TKA_N
+        + '개 — 관리자 이상만 볼 수 있습니다.</p>';
+    }
+    var live = [], done = [];
+    PJ_TASKS_ADMIN.forEach(function(t, i){ (String(t && t.s) === 'ok' ? done : live).push(i); });
+    return '<div class="tkh">🔒 관리자 전용 할일 <span class="fn">— 관리자 이상만 보입니다</span></div>'
+      + '<div id="pjTkaZone">'
+      + (live.length ? live.map(pjTaskAdminRow).join('')
+                     : '<p class="fn" style="margin:4px 0">'
+                       + (done.length ? '✅ 다 됐습니다' : '아직 없습니다') + '</p>')
+      + (done.length ? '<div class="tkfold" id="pjTkaFold">▸ 완료 ' + done.length + '개'
+                       + ' <span class="fn">— 눌러서 펴기</span></div>'
+                       + '<div id="pjTkaDone" hidden>' + done.map(pjTaskAdminRow).join('') + '</div>' : '')
+      + '</div>'
+      + '<div class="tkadd"><input type="text" id="pjTkaTx" placeholder="관리자만 볼 내용을 한 줄로">'
+      + '<button type="button" id="pjTkaAdd">＋ 추가</button></div>';
+  }
+  function pjTaskAdminSaveAll(next){
+    var before = PJ_TASKS_ADMIN;
+    var proj = PJ_NOTE_PROJ;
+    PJ_TKA_EDIT = -1;
+    PJ_TASKS_ADMIN = next;                            /* 먼저 화면 */
+    PJ_TKA_N = next.length;
+    pjNotePaint(proj, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+    pjNoteMsg('저장 중…');
+    pjAdmin('update', proj,
+      '&info=' + encodeURIComponent(JSON.stringify({ tasksAdmin: JSON.stringify(next) })),
+      function(d){
+        if(d && d.ok){
+          pj1Drop(proj);
+          pjNoteMsg('✅ 저장됨', 'ok');
+        }else{
+          PJ_TASKS_ADMIN = before;                    /* 🔴 되돌린다 */
+          PJ_TKA_N = before.length;
+          pjNotePaint(proj, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+          pjNoteMsg('🔴 저장 못 했습니다 — ' + ((d && d.error) || '이유를 모르겠습니다'), 'no');
+        }
+      });
+  }
+  function pjTaskAdminAdd(){
+    var inp = document.getElementById('pjTkaTx');
+    if(!inp) return;
+    var v = String(inp.value || '').trim();
+    if(!v) return;
+    inp.value = '';
+    pjTaskAdminSaveAll(PJ_TASKS_ADMIN.concat([{ t: v, s: 'non',
+      k: Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-5) }]));
+  }
+  function pjTaskAdminDel(i){
+    var t = PJ_TASKS_ADMIN[i]; if(!t) return;
+    if(!confirm('지울까요?\n\n「' + String(t.t || '') + '」')) return;
+    pjTaskAdminSaveAll(PJ_TASKS_ADMIN.filter(function(_, k){ return k !== i; }));
+  }
+  function pjTaskAdminSt(i, st){
+    if(!PJ_NOTE_PROJ) return;
+    var t = PJ_TASKS_ADMIN[i]; if(!t || String(t.s || 'non') === st) return;
+    var next = PJ_TASKS_ADMIN.map(function(x, k){
+      if(k !== i) return x;
+      var c = {}; for(var p in x) if(Object.prototype.hasOwnProperty.call(x, p)) c[p] = x[p];
+      c.s = st;
+      return c;
+    });
+    pjTaskAdminSaveAll(next);
+  }
+  function pjTaskAdminEditSave(i){
+    var inp = document.getElementById('pjTkaEditTx');
+    var t = PJ_TASKS_ADMIN[i];
+    if(!inp || !t){ PJ_TKA_EDIT = -1; return; }
+    var v = String(inp.value || '').trim();
+    if(!v){ inp.focus(); return; }                      /* 빈 글로는 못 바꾼다 — 지우려면 ✕ */
+    PJ_TKA_EDIT = -1;
+    if(v === String(t.t || '')){
+      pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+      return;
+    }
+    var next = PJ_TASKS_ADMIN.map(function(x, k){
+      if(k !== i) return x;
+      var c = {}; for(var p in x) if(Object.prototype.hasOwnProperty.call(x, p)) c[p] = x[p];
+      c.t = v;
+      return c;
+    });
+    pjTaskAdminSaveAll(next);
   }
 
   /* 📌 안내 글 저장 — 「관리」 이상만. 🔴 서버도 다시 막는다(화면만 감추면 콘솔로 부른다)
@@ -9470,12 +9708,48 @@
       pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
       return;
     }
+    /* 🔒 2026-10-08 — 관리자 전용 할일. 「확인할 것」과 «같은 모양, 다른 자물쇠»(위 함수 주석 참고) */
+    if(el.id === 'pjTkaAdd'){ e.preventDefault(); pjTaskAdminAdd(); return; }
+    if(el.id === 'pjTkaFold'){
+      e.preventDefault();
+      var za = document.getElementById('pjTkaDone');
+      if(za){ za.hidden = !za.hidden; el.innerHTML = (za.hidden ? '▸' : '▾') + ' 완료 '
+             + (PJ_TASKS_ADMIN.filter(function(t){ return String(t.s) === 'ok'; }).length) + '개'
+             + (za.hidden ? ' <span class="fn">— 눌러서 펴기</span>' : ''); }
+      return;
+    }
+    var ea1 = el.getAttribute('data-pjtkaedit');
+    if(ea1 !== null){
+      e.preventDefault();
+      PJ_TKA_EDIT = +ea1;
+      pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+      var efa = document.getElementById('pjTkaEditTx');
+      if(efa){ efa.focus(); try{ efa.setSelectionRange(efa.value.length, efa.value.length); }catch(xa){} }
+      return;
+    }
+    var ea2 = el.getAttribute('data-pjtkaeditsave');
+    if(ea2 !== null){ e.preventDefault(); pjTaskAdminEditSave(+ea2); return; }
+    if(el.getAttribute('data-pjtkaeditcancel') !== null){
+      e.preventDefault(); PJ_TKA_EDIT = -1;
+      pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+      return;
+    }
+    var da1 = el.getAttribute('data-pjtkadel');
+    if(da1 !== null){ e.preventDefault(); pjTaskAdminDel(+da1); return; }
+    var da2 = el.getAttribute('data-pjtkast');
+    if(da2 !== null){ e.preventDefault(); pjTaskAdminSt(+da2, el.getAttribute('data-pjstk')); return; }
   });
   /* 📎 파일을 골랐다 — 보낸다 */
   document.addEventListener('change', function(e){
     if(!e.target || e.target.id !== 'pjTkFileIn') return;
     var f = e.target.files && e.target.files[0];
     if(f) pjTkFileSend(f);
+  });
+  /* 📎 2026-10-07 — 보고서 첨부(조명 다이아그램 등)를 골랐다 — 보낸다 */
+  document.addEventListener('change', function(e){
+    if(!e.target || e.target.id !== 'pjRpFileIn') return;
+    var f = e.target.files && e.target.files[0];
+    if(f) pjRpFileSend(f);
   });
   /* 🔍 업체 찾기 — 글자를 칠 때마다 «목록 상자만» 다시 그린다 */
   document.addEventListener('input', function(e){
@@ -9492,9 +9766,17 @@
       pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
       return;
     }
+    /* 🔒 2026-10-08 — 관리자 전용 할일 고치던 칸에서도 Esc = 취소 */
+    if(e.key === 'Escape' && e.target && e.target.id === 'pjTkaEditTx'){
+      e.preventDefault(); PJ_TKA_EDIT = -1;
+      pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+      return;
+    }
     if(e.key !== 'Enter' || e.isComposing) return;
     if(e.target && e.target.id === 'pjTkEditTx' && PJ_TK_EDIT >= 0){ e.preventDefault(); pjTaskEditSave(PJ_TK_EDIT); return; }
     if(e.target && e.target.id === 'pjTkTx'){ e.preventDefault(); pjTaskAdd(); }
+    if(e.target && e.target.id === 'pjTkaEditTx' && PJ_TKA_EDIT >= 0){ e.preventDefault(); pjTaskAdminEditSave(PJ_TKA_EDIT); return; }
+    if(e.target && e.target.id === 'pjTkaTx'){ e.preventDefault(); pjTaskAdminAdd(); }
     if(e.target && e.target.id === 'pjWhoTx' && PJ_WHO_OPEN >= 0){
       e.preventDefault(); pjWhoSet(PJ_WHO_OPEN, e.target.value);
     }
