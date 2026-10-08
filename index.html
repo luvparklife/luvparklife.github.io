@@ -926,6 +926,8 @@
     /* 🔒 「여기부터 두 칸 공용」 — 대표님께만 보인다 */
     .rvshr{margin:2px 0 9px; padding-top:9px; border-top:1px dashed #d8dde6; color:#8a93a3}
     .rvadd{display:flex; gap:6px; margin-bottom:9px}
+    .rvcnt{flex:none; align-self:center; font-size:10.5px; color:#8a93a3}
+    .rvedit .rvcnt{align-self:flex-end; margin-top:-2px}
     .rvadd input{flex:1; min-width:0; font:inherit; font-size:13px; padding:7px 9px;
       border:1px solid #c8cfda; border-radius:8px}
     .rvadd button{border:none; background:#2563eb; color:#fff; font:inherit; font-weight:700;
@@ -7426,6 +7428,13 @@
   /* 🔴 [줄을 «칸+번호»로 가리킨다] 두 칸이 한 화면에 있으므로 번호만으로는 모자란다 —
      관리자 칸 3번을 고치는데 대표 칸 3번이 같이 열리면 안 된다. */
   function pjRevKey_(own, i){ return (own ? 'own:' : 'mgr:') + i; }
+  /* 🔢🆕 2026-10-09 — 회고 글자수 표시. maxlength 와 다른 숫자를 적으면 거짓말이 된다(§3-5 ⑤)
+     → 서버(Project.js add/edit)와 같은 300을 그대로 쓴다. 꾸미지 않고 input 이벤트로만 갱신. */
+  function pjRevCntUpd_(el, id){
+    var n = document.getElementById(id);
+    if(!n) return;
+    n.textContent = String((el && el.value) || '').length + '/300';
+  }
   /* 자주 쓰여서 «저절로» 올라온 태그 (기본 10개는 뺀다 — 늘 맨 앞에 있으므로) */
   function pjRevHot_(){
     var out = [];
@@ -7571,9 +7580,11 @@
     /* ── 적는 칸 (맨 위 — 겪는 순간에 바로) ── */
     h += '<div class="rvadd">'
        + '<input type="text" id="pjRevTx' + sfx + '" maxlength="300" '
+       + 'oninput="pjRevCntUpd_(this,\'pjRevCnt' + sfx + '\')" '
        + 'placeholder="' + (own
            ? '금액·견적·마진도 여기에는 적으셔도 됩니다'
            : '지금 겪은 것을 한 줄로 — 준비 중에도 · 촬영 중에도') + '">'
+       + '<span class="rvcnt" id="pjRevCnt' + sfx + '">0/300</span>'
        + '<button type="button" id="pjRevAdd' + sfx + '" data-own="' + (own ? '1' : '') + '">'
        + '＋ 남기기</button></div>';
     /* ── 쌓인 줄 (최신이 위 — 서버가 unshift 한다) ── */
@@ -7627,7 +7638,9 @@
           return '<div class="rvline' + (kd ? ' k-' + kd : '') + '">'
                + '<span class="ph ' + (p || 'mid') + '">' + pjEsc(pn) + '</span>'
                + '<div class="rvedit">'
-               + '<textarea id="pjRevEd" maxlength="1000">' + pjEsc(String((x && x.t) || '')) + '</textarea>'
+               + '<textarea id="pjRevEd" maxlength="300" '
+               + 'oninput="pjRevCntUpd_(this,\'pjRevEdCnt\')">' + pjEsc(String((x && x.t) || '')) + '</textarea>'
+               + '<span class="rvcnt" id="pjRevEdCnt">' + String((x && x.t) || '').length + '/300</span>'
                + '<div class="eb">'
                + '<button type="button" class="pri" data-pjreved="' + i + '"' + od + '>저장</button>'
                + '<button type="button" data-pjrevedx="1">취소</button>'
@@ -7693,8 +7706,12 @@
              + ' · ' + pjEsc(String((x && x.d) || ''))
              + '<span class="kds">' + kb + '</span></span>'
              + tg + '</span>'
+             /* 📎🆕 2026-10-09 — 대표 전용 칸(own)은 안 그린다(§1 — projReviewFileJsonp_ 와 같은 기준) */
+             + (!own ? pjRevFilesHtml_(i, x) : '')
              + '<button type="button" class="ed" data-pjrevedit="' + i + '"' + od
              + ' title="고칩니다">✎</button>'
+             + (!own ? '<span class="tkatt" data-pjrevatt="' + i + '" title="사진·파일을 붙입니다 (한 개 5MB까지 · 여러 개)">📎'
+                        + (((x && x.f && x.f.length) ? x.f.length : 0) ? '<b>' + x.f.length + '</b>' : '') + '</span>' : '')
              + '<button type="button" class="dl" data-pjrevdel="' + i + '"' + od
              + ' title="지웁니다">✕</button>'
              + '</div>';
@@ -7860,6 +7877,110 @@
       if(!toOwn){ try { pjRevNotionLater_(); } catch(e){} }
     }, 20000);
   }
+  /* ═══════════════════════════════════════════════════════════════════════
+     📎🆕 2026-10-09 — 회고 줄 사진·파일 첨부 (대표 지시 — "글을 못쓰니 이미지로라도 저장해야지")
+     ═══════════════════════════════════════════════════════════════════════
+     🔴 [「확인할 것」 첨부와 «같은 틀»] 검사 정규식(PJ_TKFILE_EXT/BAD)·올리는 창(pjTkFileInput_ 과
+        같은 모양)·확인창 문구까지 그대로 재사용한다(§1). 다른 것은 «어디로 보내는지»뿐이다.
+     🔴 [대표 전용 칸엔 단추가 없다] 렌더 쪽에서 own 일 때 이 단추·목록을 안 그린다 —
+        서버도 같은 이유로 own=1 이면 거절한다(projReviewFileJsonp_). */
+  var PJ_REVFILE_BUSY = false, PJ_REVFILE_IDX = -1, PJ_REVFILE_PROJ = '', PJ_REVFILE_LT = '';
+  function pjRevFilesHtml_(i, x){
+    var F = (x && x.f && x.f.length) ? x.f : [];
+    if(!F.length) return '';
+    return '<span class="tkfiles">' + F.map(function(f, k){
+      var u = String(f.u || '');
+      if(u.indexOf('https://') !== 0) u = '#';            /* 🔴 http(s) 가 아닌 주소는 열지 않는다 */
+      return '<span><a class="tkf" href="' + pjEsc(u) + '" target="_blank" rel="noopener">📄 ' + pjEsc(f.n || '파일')
+           + (f.s ? '<i>' + pjEsc(f.s) + 'KB</i>' : '') + '</a>'
+           + '<span class="tkfdel" data-pjrevfdel="' + i + ':' + k + '" title="지웁니다(드라이브 휴지통으로)">✕</span>'
+           + '</span>';
+    }).join('') + '</span>';
+  }
+  /* 파일 고르는 창은 «하나만», 화면 밖에 둔다 — 카드를 다시 그려도 사라지지 않게 */
+  function pjRevFileInput_(){
+    var el = document.getElementById('pjRevFileIn');
+    if(el) return el;
+    el = document.createElement('input');
+    el.type = 'file'; el.id = 'pjRevFileIn';
+    el.accept = '.pdf,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.txt,.csv,.key,.pages,.numbers,image/*';
+    el.style.display = 'none';
+    document.body.appendChild(el);
+    return el;
+  }
+  function pjRevFileAsk(i){
+    if(PJ_REVFILE_BUSY){ pjRevMsg('⏳ 지금 올리는 중입니다 — 끝난 뒤에 다시 눌러 주세요', 1); return; }
+    var x = (PJ_REV.lines || [])[i];
+    if(!x){ pjRevMsg('🔴 그 줄을 못 찾았습니다 — 화면을 새로고침해 주세요', 1); return; }
+    /* 🔴 [누른 «그 순간»의 프로젝트·줄을 잡아 둔다] 파일 선택창이 떠 있는 사이 다른 프로젝트로
+       넘어가거나 줄이 바뀌어도 엉뚱한 곳에 안 올라가게 — 서버도 글자(lt)로 «다시» 줄을 찾는다. */
+    PJ_REVFILE_IDX = i; PJ_REVFILE_PROJ = PJ_REV_PROJ; PJ_REVFILE_LT = String(x.t || '');
+    var el = pjRevFileInput_(); el.value = '';
+    el.click();
+  }
+  function pjRevFileSend(file){
+    var i = PJ_REVFILE_IDX, proj = PJ_REVFILE_PROJ;
+    if(!file || i < 0 || !proj) return;
+    var _show = function(m, c){ if(proj === PJ_REV_PROJ) pjRevMsg(m, c); };   /* 다른 프로젝트로 넘어갔으면 그 화면에 안 띄운다 */
+    var nm = String(file.name || '');
+    if(!PJ_TKFILE_EXT.test(nm)){ pjRevMsg('🔴 올릴 수 없는 종류입니다 — PDF·이미지·문서(워드·엑셀·PPT·한글)·텍스트만 됩니다', 1); return; }
+    if(PJ_TKFILE_BAD.test(nm)){ pjRevMsg('🔴 이름에 민감한 말(통장·계좌·신분증·주민·견적서 등)이 있어 멈췄습니다 — 이 폴더는 링크를 아는 사람이 누구나 봅니다', 1); return; }
+    if(file.size > 5 * 1024 * 1024){ pjRevMsg('🔴 5MB를 넘어 올릴 수 없습니다', 1); return; }
+    if(!file.size){ pjRevMsg('🔴 빈 파일입니다', 1); return; }
+    if(!canApp()){ pjRevMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
+    /* 🔒 올릴 «때마다» 확인한다 — 이 폴더는 링크를 아는 사람이 누구나 본다(「확인할 것」과 같은 기준) */
+    if(!confirm('📎 이 파일을 올릴까요?\n\n「' + nm + '」\n\n⚠️ 팀공유 폴더는 «링크를 아는 사람은 누구나» 볼 수 있습니다.\n'
+              + '견적 금액·통장·신분증·주민번호가 들어 있지 않은지 확인하셨습니까?')){
+      pjRevMsg('올리지 않았습니다'); return;
+    }
+    PJ_REVFILE_BUSY = true;
+    pjRevMsg('⏳ 올리는 중… ' + nm);
+    var rd = new FileReader();
+    rd.onerror = function(){ PJ_REVFILE_BUSY = false; _show('🔴 파일을 읽지 못했습니다', 1); };
+    rd.onload = function(){
+      var b64 = String(rd.result || '').split(',')[1] || '';
+      var body = { rep: 'revfile', name: proj, idx: i, lt: PJ_REVFILE_LT, fname: nm, data: b64 };   /* MIME 은 서버가 확장자로 정한다 */
+      var tok = appTokObj(); if(tok.s) body.s = tok.s; if(tok.t) body.t = tok.t;
+      /* 🔴 Content-Type 을 text/plain 으로 — JSON 이라고 적으면 브라우저가 «미리 물어보기»를 하는데 Apps Script 는 못 받는다 */
+      fetch(FIELD_APP, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+        .then(function(res){ return res.json(); })
+        .then(function(d){
+          PJ_REVFILE_BUSY = false;
+          if(d && d.ok){
+            if(proj === PJ_REV_PROJ){                      /* 그 사이 다른 프로젝트로 넘어갔으면 화면은 안 건드린다 */
+              PJ_REV = pjRevParse(d.review);
+              pjRevDraw();
+              pjRevMsg('✅ 올렸습니다 — ' + nm);
+              try { var c = PJ_CHK_CACHE[proj]; if(c) c.review = d.review; } catch(e5){}
+            }
+          }else{
+            _show('🔴 못 올렸습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다'), 1);
+          }
+        })
+        .catch(function(e){ PJ_REVFILE_BUSY = false; _show('🔴 못 올렸습니다 — ' + e, 1); });
+    };
+    rd.readAsDataURL(file);
+  }
+  function pjRevFileDel(i, k){
+    var x = (PJ_REV.lines || [])[i], f = x && x.f && x.f[k];
+    if(!f) return;
+    if(!confirm('지울까요?\n\n「' + String(f.n || '') + '」\n\n드라이브 팀공유 폴더에서도 휴지통으로 갑니다.')) return;
+    var proj = PJ_REV_PROJ;
+    pjRevMsg('저장 중…');
+    /* 🔴 [«파일 id»로 지운다 — 위치(k번째)가 아니다] 그 사이 다른 분이 먼저 지워 목록이 밀렸을 때 엉뚱한 파일이 지워지지 않게 */
+    pjAdmin('revfiledel', proj, '&fid=' + encodeURIComponent(String(f.id || '')) + '&idx=' + i, function(d){
+      if(proj !== PJ_REV_PROJ) return;                      /* 다른 프로젝트로 넘어갔으면 화면은 안 건드린다 */
+      if(d && d.ok){
+        PJ_REV = pjRevParse(d.review);
+        pjRevDraw();
+        try { var c = PJ_CHK_CACHE[proj]; if(c) c.review = d.review; } catch(e5){}
+        /* 🔴 드라이브 파일을 못 지웠으면 «성공»이라 하지 않는다 */
+        if(d.warn) pjRevMsg('⚠ ' + d.warn, 1); else pjRevMsg('✅ 지웠습니다');
+      }else{
+        pjRevMsg('🔴 못 지웠습니다 — ' + ((d && (d.error || d.why)) || ''), 1);
+      }
+    });
+  }
   /* ═══ 🗒 회고를 노션으로 — «뒤에서 조용히» (2026-09-11 대표 확정 🅟) ═══════
      대표가 고르신 그림 그대로다:
        한 줄 적음 → 시트에 바로 저장 → **화면은 이미 넘어감** → 뒤에서 노션에 보냄 → 실패하면 다음에 다시.
@@ -7936,6 +8057,9 @@
         hit = el.getAttribute('data-pjrevetcok'); if(hit !== null){ kind = 'etcok'; break; }
         hit = el.getAttribute('data-pjrevltag');
         if(hit !== null){ kind = 'ltag'; PJ_REV_KTMP = el.getAttribute('data-t') || ''; break; }
+        /* 📎🆕 2026-10-09 — 줄에 사진·파일 첨부(「확인할 것」과 같은 틀 · own 칸은 안 그려서 여긴 늘 own=false) */
+        hit = el.getAttribute('data-pjrevatt');  if(hit !== null){ kind = 'att';  break; }
+        hit = el.getAttribute('data-pjrevfdel'); if(hit !== null){ kind = 'fdel'; break; }
         /* 🔴💡 2026-09-13 — 줄의 종류. `hit` 은 «줄 번호», 무엇으로 정할지는 `data-k` */
         hit = el.getAttribute('data-pjrevkind');
         if(hit !== null){ kind = 'kind'; PJ_REV_KTMP = el.getAttribute('data-k') || ''; break; }
@@ -7950,6 +8074,13 @@
     if(kind === 'del'){
       if(!confirm((own ? '🔒 대표 칸의 ' : '') + '이 줄을 지웁니다. 되돌릴 수 없습니다.')) return;
       return pjRevSend({ rev: 'del', idx: hit }, '지웠습니다', own);
+    }
+    /* 📎🆕 2026-10-09 — 줄 첨부. idx(hit)는 «번호표가 없는» 회고 줄이라 글자(`lt`)로 한 번 더 맞춘다(서버와 같은 방식) */
+    if(kind === 'att'){ pjRevFileAsk(parseInt(hit, 10)); return; }
+    if(kind === 'fdel'){
+      var _fp = String(hit).split(':');
+      pjRevFileDel(parseInt(_fp[0], 10), parseInt(_fp[1], 10));
+      return;
     }
     if(kind === 'rate') return pjRevSend({ rev: 'rate', val: hit });
     /* ✅ 토글 — 이미 체크돼 있으면 빈 값을 보내 «푼다».
@@ -9778,6 +9909,12 @@
     if(!e.target || e.target.id !== 'pjRpFileIn') return;
     var f = e.target.files && e.target.files[0];
     if(f) pjRpFileSend(f);
+  });
+  /* 📎 2026-10-09 — 회고 줄 첨부를 골랐다 — 보낸다 */
+  document.addEventListener('change', function(e){
+    if(!e.target || e.target.id !== 'pjRevFileIn') return;
+    var f = e.target.files && e.target.files[0];
+    if(f) pjRevFileSend(f);
   });
   /* 🔍 업체 찾기 — 글자를 칠 때마다 «목록 상자만» 다시 그린다 */
   document.addEventListener('input', function(e){
