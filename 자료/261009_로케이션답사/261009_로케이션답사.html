@@ -19,6 +19,7 @@
   #map.editing{cursor:crosshair;}
   /* 무료 OSM 타일을 다크테마로 — 키 필요한 CARTO 다크타일이 막혀서 반전필터로 대체(261009) */
   #map .leaflet-tile-pane{ filter:invert(1) hue-rotate(200deg) brightness(.92) contrast(.85) saturate(.7); }
+  #map.satellite .leaflet-tile-pane{ filter:none; }
   .leaflet-control-attribution{background:rgba(15,17,21,.7)!important;color:#8892a0!important;font-size:10px;}
   .leaflet-control-attribution a{color:#aab4c4!important;}
   .leaflet-control-zoom a{background:var(--panel)!important;color:var(--text)!important;border-color:var(--border)!important;}
@@ -102,6 +103,10 @@
   .photoCard .pcCat{position:absolute;top:6px;left:6px;width:9px;height:9px;border-radius:50%;}
   .photoCard .selCheck{position:absolute;top:5px;left:5px;}
 
+  #btnMapMode{position:absolute;top:14px;left:calc(50% + 4px);z-index:600;padding:8px 12px;border-radius:9px;
+    background:var(--panel);border:1px solid var(--border);color:var(--text);font-size:12px;
+    font-weight:700;cursor:pointer;box-shadow:var(--shadow);}
+  #btnMapMode:hover{border-color:var(--accent2);}
   #toggleSidebarBtn{position:absolute;top:14px;left:14px;z-index:600;width:40px;height:40px;
     border-radius:10px;background:var(--panel);border:1px solid var(--border);color:var(--text);
     font-size:17px;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:var(--shadow);}
@@ -176,6 +181,13 @@
   .mediaThumb{position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;
     border:1px solid var(--border);background:#000;}
   .mediaThumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .mediaThumb.dragging{opacity:.35;}
+  .mediaThumb[draggable=true]{cursor:grab;}
+  /* 사진을 끌고 있을 때 «어디에 놓을 수 있는지» 보이게 */
+  body.media-dragging .locCard{outline:1px dashed var(--accent2);}
+  .locCard.dropTarget{border-color:var(--accent2)!important;box-shadow:0 0 0 2px var(--accent2);}
+  body.media-dragging .loc-marker{outline:2px dashed var(--accent2);outline-offset:2px;}
+  .loc-marker.dropTarget{outline:3px solid var(--accent2);outline-offset:2px;}
   .mediaThumb .mTypeBadge{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.65);
     border-radius:6px;padding:1px 6px;font-size:10px;}
   .mediaThumb .mRemove{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;
@@ -201,6 +213,12 @@
     justify-content:space-between;align-items:center;color:var(--muted);font-size:13px;z-index:10;}
   .lb-top .lb-title{color:var(--text);font-weight:700;font-size:14px;}
   .lb-close{background:none;border:none;color:var(--text);font-size:26px;cursor:pointer;line-height:1;}
+  .lbPairBtn{background:rgba(245,182,63,.18);border:1px solid rgba(245,182,63,.55);color:var(--accent);
+    border-radius:999px;font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;}
+  .lbPairBtn:hover{background:rgba(245,182,63,.32);}
+  .mPair{width:100%;background:var(--panel2);border:1px solid rgba(245,182,63,.35);border-radius:6px;
+    color:var(--accent);font-size:10.5px;padding:3px 4px;}
+  .mPairTag{font-size:10.5px;color:var(--accent);}
   .lb-stage{flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative;padding:60px 70px;}
   .lb-stage img,.lb-stage video{max-width:100%;max-height:78vh;border-radius:8px;box-shadow:var(--shadow);}
   .lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;
@@ -209,6 +227,46 @@
   .lb-nav:hover{background:rgba(255,255,255,.18);}
   .lb-prev{left:14px;} .lb-next{right:14px;}
   .lb-bottom{padding:10px 18px 22px;text-align:center;}
+  /* ✏️ 사진 위 표시 (2026-10-09 대표 지시) — 표시는 사진 파일을 안 고치고 «위에 얹는» 선으로 저장한다 */
+  .lbImgWrap{position:relative;display:inline-block;line-height:0;}
+  .lbImgWrap svg.annoLayer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .lbImgWrap.annotating svg.annoLayer{pointer-events:auto;cursor:crosshair;}
+  .lbImgWrap.annotating svg.annoLayer text{cursor:move;}
+  .annoTa{position:absolute;z-index:3;line-height:1.2;font-weight:800;min-width:4em;min-height:1.3em;
+    field-sizing:content;resize:none;overflow:hidden;background:rgba(0,0,0,.25);border:1.5px dashed rgba(255,255,255,.8);
+    border-radius:4px;padding:0 2px;margin:0;font-family:-apple-system,'Apple SD Gothic Neo',sans-serif;
+    text-shadow:0 0 2px #000,0 0 2px #000;outline:none;white-space:pre;}
+  .lbAnnoBtn{background:rgba(79,179,255,.15);border:1px solid rgba(79,179,255,.5);color:var(--accent2);
+    border-radius:999px;font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;}
+  #lbAnnoBar{display:none;position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:12;
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:6px 8px;gap:6px;
+    align-items:center;box-shadow:var(--shadow);flex-wrap:wrap;justify-content:center;max-width:94vw;}
+  #lbAnnoBar.open{display:flex;}
+  #lbAnnoBar button{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;
+    padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;}
+  #lbAnnoBar button.on{border-color:var(--accent2);color:var(--accent2);}
+  #lbAnnoBar button.done{background:var(--accent2);color:#06131a;border-color:var(--accent2);}
+  #lbAnnoBar select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 6px;font-size:12px;font-weight:700;}
+  #lbAnnoBar input[type=color]{width:34px;height:30px;border:none;background:none;padding:0;cursor:pointer;}
+  .mAnnoTag{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.65);border-radius:6px;font-size:10px;padding:1px 5px;}
+  /* 📍 핀 옆 스팟 이름 · 🅣 지도 글자 */
+  .loc-marker{position:relative;}
+  .pinLabel{position:absolute;left:30px;top:50%;transform:translateY(-50%);white-space:nowrap;
+    background:rgba(15,17,21,.82);color:#fff;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:6px;
+    border-left:3px solid currentColor;pointer-events:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;}
+  .mapText{white-space:pre;text-align:center;font-weight:800;line-height:1.15;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;
+    transform:translate(-50%,-50%);display:inline-block;cursor:pointer;user-select:none;}
+  #btnMapText{position:absolute;top:14px;right:calc(50% + 4px);z-index:600;padding:8px 12px;border-radius:9px;
+    background:var(--panel);border:1px solid var(--border);color:var(--text);font-size:12px;
+    font-weight:700;cursor:pointer;box-shadow:var(--shadow);}
+  #btnMapText.on{border-color:var(--accent2);color:var(--accent2);}
+  #map.texting{cursor:text;}
+  #mapTextModal input[type=text],#mapTextModal textarea,#mapTextModal select{background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);border-radius:8px;padding:9px 10px;font-size:14px;}
+  #mapTextModal button#mtDone,#mapTextModal button#mtDelete{padding:10px;border-radius:9px;font-weight:700;cursor:pointer;
+    border:1px solid var(--border);background:var(--panel2);color:var(--text);}
+  #mapTextModal button#mtDone{background:var(--accent2);color:#06131a;border-color:var(--accent2);}
+  #mapTextModal button#mtDelete{color:var(--danger);}
   .lb-caption{font-size:13.5px;color:var(--text);margin-bottom:8px;}
   .lb-sunBadge{display:inline-flex;align-items:center;gap:6px;background:rgba(245,182,63,.15);
     color:var(--accent);border:1px solid rgba(245,182,63,.4);border-radius:999px;padding:3px 10px;font-size:11.5px;margin-bottom:8px;}
@@ -269,7 +327,7 @@
   #svSunReadout{color:var(--accent);font-weight:700;margin-left:auto;}
   #svPanoWrap{position:relative;width:100%;height:60vh;background:#000;}
   #svPano{position:absolute;inset:0;}
-  #svOverlay{position:absolute;inset:0;pointer-events:none;}
+  #svOverlay{position:absolute;inset:0;pointer-events:none;z-index:400;}
   #svNoKeyMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     color:var(--muted);font-size:13px;padding:30px;text-align:center;}
 
@@ -297,7 +355,7 @@
 
   .reviewBox{max-width:1000px;width:100%;}
   .reviewCols{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;}
-  .reviewCol{flex:0 0 220px;background:var(--panel2);border:1px solid var(--border);
+  .reviewCol{flex:0 0 270px;background:var(--panel2);border:1px solid var(--border);
     border-radius:var(--radius);padding:10px;min-height:160px;transition:.15s;}
   .reviewCol.dragover{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(79,179,255,.3);}
   .reviewCol.unsorted{border-style:dashed;}
@@ -307,12 +365,24 @@
   .reviewColHead .rcName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .reviewColHead .rcCount{font-size:10.5px;color:var(--muted);font-weight:600;}
   .reviewGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-height:40px;}
+  .reviewZone{border:1px dashed var(--border);border-radius:8px;padding:6px;margin-bottom:8px;transition:.15s;}
+  .reviewZone.sun{border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.05);}
+  .reviewZone.dragover{border-style:solid;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(79,179,255,.3);}
+  .reviewZone .rzHead{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;}
+  .reviewZone .reviewGrid{min-height:0;}
+  .reviewZone .rzEmpty{font-size:11px;color:var(--muted);text-align:center;padding:10px 4px;}
+  .sunDropEmpty{font-size:12px;color:var(--muted);text-align:center;padding:14px 6px;
+    border:1px dashed rgba(251,191,36,.45);border-radius:8px;}
+  .dp-section.dropTarget{outline:2px solid var(--accent2);outline-offset:3px;border-radius:8px;}
   .reviewChip{position:relative;border-radius:7px;overflow:hidden;aspect-ratio:4/3;cursor:grab;
     border:1px solid var(--border);background:#000;}
   .reviewChip img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
   .reviewChip.dragging{opacity:.35;}
-  .reviewChip .rcType{position:absolute;top:3px;left:3px;font-size:9px;background:rgba(0,0,0,.65);
-    border-radius:4px;padding:0 4px;pointer-events:none;}
+  .reviewChip .rcType{position:absolute;top:3px;left:3px;font-size:10px;background:rgba(0,0,0,.65);
+    border-radius:4px;padding:0 5px;pointer-events:none;}
+  .reviewChip .rcZoom{position:absolute;bottom:3px;right:3px;font-size:11px;background:rgba(0,0,0,.7);
+    border-radius:5px;padding:1px 5px;cursor:zoom-in;}
+  .reviewChip .rcZoom:hover{background:var(--accent2);color:#07131c;}
 
   @media (max-width:760px){
     #sidebar{width:88%;max-width:360px;transform:translateX(-100%);}
@@ -332,6 +402,27 @@
   <div id="saveToast"></div>
 
   <button id="toggleSidebarBtn">☰</button>
+  <button id="btnMapMode"></button>
+  <button id="btnMapText"></button>
+  <!-- 🅣 지도 글자 편집 -->
+  <div class="modalOverlay" id="mapTextModal">
+    <div class="modalBox" style="max-width:380px;">
+      <div class="modalHead"><h2 id="mtTitle"></h2><button id="mtClose">✕</button></div>
+      <div class="modalBody" style="display:flex;flex-direction:column;gap:10px;">
+        <textarea id="mtText" rows="3" style="width:100%;resize:vertical;"></textarea>
+        <p class="gmapsNote" id="mtHint" style="margin:0;"></p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label style="display:flex;gap:6px;align-items:center;font-size:12px;"><span id="mtColorLbl"></span> <input type="color" id="mtColor" value="#ffffff"></label>
+          <label style="display:flex;gap:6px;align-items:center;font-size:12px;"><span id="mtSizeLbl"></span>
+            <select id="mtSize"><option value="13">S</option><option value="17" selected>M</option><option value="24">L</option><option value="34">XL</option></select></label>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button id="mtDelete" style="flex:1;"></button>
+          <button id="mtDone" style="flex:2;"></button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <aside id="sidebar">
     <div class="sb-head">
@@ -394,17 +485,20 @@
         <h3 id="lblNotes"></h3>
         <textarea id="dpNotesInput" rows="4"></textarea>
       </div>
-      <div class="dp-section sunseeker">
+      <!-- ☀️ 2026-10-09 대표 지시 — 「Sunseeker 노트」 칸은 뺐다(대표: 없어도 된다). 그 자리에 «Sunseeker 사진» 칸을 올렸다.
+           노트 칸이 사진 칸과 똑같이 생겨서, 사진을 옮겨도 「안 보인다」로 보였다(실제로는 아래쪽 사진 칸에 들어가 있었다).
+           노트 입력칸은 숨겨만 둔다 — 이미 적힌 메모 데이터는 지우지 않는다. -->
+      <div class="dp-section sunseeker" style="display:none;">
         <h3 id="lblSunseeker"></h3>
         <textarea id="dpSunseekerInput" rows="3"></textarea>
-      </div>
-      <div class="dp-section">
-        <h3 id="lblDistances"></h3>
-        <div class="distList" id="dpDistList"></div>
       </div>
       <div class="dp-section sunseeker" id="dpSunGroupWrap" style="display:none;">
         <h3 id="lblSunMedia"></h3>
         <div class="mediaGrid" id="dpMediaGridSun"></div>
+      </div>
+      <div class="dp-section">
+        <h3 id="lblDistances"></h3>
+        <div class="distList" id="dpDistList"></div>
       </div>
       <div class="dp-section">
         <div class="mediaHead">
@@ -421,6 +515,8 @@
     <div class="lb-top">
       <span class="lb-title" id="lbTitle">-</span>
       <span id="lbCounter">1 / 1</span>
+      <button id="lbPairBtn" class="lbPairBtn" type="button" style="display:none;"></button>
+      <button id="lbAnnoBtn" class="lbAnnoBtn" type="button" style="display:none;"></button>
       <a id="lbDownload" class="svOpenLink" href="#" download></a>
       <button class="lb-close" id="lbClose">✕</button>
     </div>
@@ -428,6 +524,17 @@
       <button class="lb-nav lb-prev" id="lbPrev">‹</button>
       <div id="lbStageInner"></div>
       <button class="lb-nav lb-next" id="lbNext">›</button>
+    </div>
+    <div id="lbAnnoBar">
+      <button data-tool="pen"></button>
+      <button data-tool="circle"></button>
+      <button data-tool="arrow"></button>
+      <button data-tool="text"></button>
+      <input type="color" id="annoColor" value="#ff3b30">
+      <select id="annoSize" title="글자 크기"><option value="0.03">S</option><option value="0.045" selected>M</option><option value="0.065">L</option><option value="0.09">XL</option><option value="0.13">XXL</option></select>
+      <button id="annoUndo"></button>
+      <button id="annoClear"></button>
+      <button id="annoDone" class="done"></button>
     </div>
     <div class="lb-bottom">
       <div id="lbSunBadge" class="lb-sunBadge" style="display:none;">☀️ Sunseeker</div>
@@ -546,7 +653,7 @@
   </div>
 </div>
 
-<script>window.SCOUT_PUBLISHED = {"title": "🎬 로케이션 답사", "subtitle": "장소 4곳 · 보기 전용", "locations": [{"id": 1, "title": "고하송진우선생동상", "category": "outdoor", "color": "#34d399", "lat": 37.5506837, "lng": 127.0782735, "address": "고하송진우선생동상, 능동로24길, 능동, 광진구, 서울특별시, 04990, 대한민국", "notes": "", "sunseeker": "", "media": [{"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/3CD8982C-A16A-4E56-A157-1C92C5208032.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/5E87A9FC-B7AE-4592-B1B2-B9323719715D.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/B6921FF4-CAF0-42A9-B4DD-0332B53D6E1C.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/B885A79B-87C3-4E21-A505-505DBF77B51F.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/E1075E15-C3E5-43CC-9444-02F5ED6930C8.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/0BFAF17F-B807-4494-85FC-69F3DA219653.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/0CF5EE54-C741-4729-ADA4-65C4B889CF63.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/130566B2-3C8C-4470-8E8B-166AB2A53BAC.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/3DCDAF37-528F-499D-93E4-DF299C494E48.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/7F67AFEC-5A96-4A57-956C-EA0A46B83EB0.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/867B105C-46EE-49F5-9D38-155D79545792.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/B918A828-3EFE-4CBB-9846-6FAED5DAA613.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/D81E65C2-94AF-429E-9CFD-EEAA76302F77.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/EB995884-F578-4DE9-8AE1-F40CB6B1CA3F.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/EECB5490-1F71-44A5-BA3C-7B424C4D9007.JPG", "caption": ""}]}, {"id": 2, "title": "능동로", "category": "outdoor", "color": "#60a5fa", "lat": 37.5500317, "lng": 127.0781992, "address": "능동로, 능동, 광진구, 서울특별시, 05006, 대한민국", "notes": "", "sunseeker": "", "media": [{"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/4EA30581-92BD-4BD9-8E1A-D06368891FD8.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/90B50A1D-1DE4-44E7-8B02-ECBB3496703B.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/91347FD2-609A-4490-B959-F15AC2C802A3.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/BC1655A2-169D-4BC4-A146-3E8FA7709645.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/EDA677DC-6570-4D8C-8F26-B13DB5C3C706.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/F9B73331-842F-42EA-AA0B-42B7D424A15B.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/FC3290ED-C8C6-443D-94C2-532C6213BDCE.JPG", "caption": ""}]}, {"id": 3, "title": "단풍잎놀이터", "category": "outdoor", "color": "#fbbf24", "lat": 37.5508533, "lng": 127.0796362, "address": "단풍잎놀이터, 천호대로116길, 능동, 광진구, 서울특별시, 04989, 대한민국", "notes": "", "sunseeker": "", "media": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/875BB54E-2EB5-435A-AD79-88B0A7697208.JPG", "caption": ""}]}, {"id": 4, "title": "풋살경기장", "category": "outdoor", "color": "#f87171", "lat": 37.5513, "lng": 127.080025, "address": "풋살경기장, 능동로24길, 능동, 광진구, 서울특별시, 04989, 대한민국", "notes": "", "sunseeker": "", "media": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/A0A89234-44B1-40CA-B2A7-878BE81A6111.JPG", "caption": ""}]}], "categories": [], "gmapsKey": "AIzaSyDViRSe_eSSdoZM9QR2Z7mTSaAhFX3WHt0"};</script>
+<script>window.SCOUT_PUBLISHED = {"title": "🎬 로케이션 답사", "subtitle": "장소 6곳 · 보기 전용", "locations": [{"id": 8, "title": "MOTION SPOT(ALT)", "category": "outdoor", "color": "#34d399", "lat": 37.55133344039345, "lng": 127.07989543676598, "address": "고하송진우선생동상, 능동로24길, 능동, 광진구, 서울특별시, 04990, 대한민국", "notes": "*Street view doesn't work on this spot", "sunseeker": "", "media": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/73918932-F987-42AB-85C5-C8AE3BE6DF37.JPG", "caption": ""}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/533A24C3-FF76-4CFD-9E48-815B8178CFEA.MP4", "caption": "Sunseeker 화면 녹화 — 잔디밭"}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/E467E488-5EA8-43A4-9B4A-6E5FF4761096.MP4", "caption": "잔디밭 둘러보기"}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/DBD15653-3325-4B10-B5EE-8F5AD714CDFF.MP4", "caption": "Sunseeker 360° — 잔디밭"}]}, {"id": 9, "title": "FLOWER SET /TREES AND SKY", "category": "outdoor", "color": "#00bd78", "lat": 37.550861361289, "lng": 127.07978010180753, "address": "단풍잎놀이터, 천호대로116길, 능동, 광진구, 서울특별시, 04989, 대한민국", "notes": "", "sunseeker": "", "media": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/C696907E-54E8-41A4-939C-0DFDA527D746.JPG", "caption": ""}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/1AA1C701-F896-4551-9EFF-933F0FAB7EAE.MP4", "caption": "Sunseeker 화면 녹화 — 잔디밭"}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/55201F08-00FA-49A2-93F4-2E90917040DA.MP4", "caption": "잔디밭 둘러보기"}]}, {"id": 12, "title": "GARDEN#2", "category": "outdoor", "color": "#34d399", "lat": 37.55076992219788, "lng": 127.07839608192003, "address": "고하송진우선생동상, 능동로24길, 능동, 광진구, 서울특별시, 04990, 대한민국", "notes": "*Street view doesn't work on this spot", "sunseeker": "", "media": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/24578795-1937-45BB-A914-A12812553C9A.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/6102FC30-2390-49E1-8345-99CE1E99CCBA.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/DF244BFB-140E-4E38-8A26-3508FEBBEBD7.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/DDD61AE2-C845-484D-8A81-F4810F3F9E21.JPG", "caption": ""}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/2CBF04B0-6C64-4829-9F3E-302A3A61511F.MP4", "caption": "정원 둘러보기"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/1736E8A9-01DD-4D65-A755-1F75BDBB8232.JPG", "caption": "", "marks": [{"t": "text", "x": 0.22665515159657326, "y": 0.48391051677104663, "s": "Garden#1 under tress", "c": "#ff3b30", "z": 0.03}, {"t": "arrow", "x1": 0.3681335882545325, "y1": 0.41370500055465137, "x2": 0.3681335882545325, "y2": 0.32350821711498995, "c": "#ff3b30"}]}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/A3854111-2A59-4E8A-9729-9CA88B621A04.JPG", "caption": "Sunseeker 09:20"}]}, {"id": 14, "title": "SUGGESTION", "category": "outdoor", "color": "#34d399", "lat": 37.55075503675381, "lng": 127.07879304886926, "address": "고하송진우선생동상, 능동로24길, 능동, 광진구, 서울특별시, 04990, 대한민국", "notes": "*Street view doesn't work on this spot\n\nSince we're building the artificial grass and flower set, if we set up here, we can prepare it to come straight over from the garden. I think this would be more efficient than setting up at Location 9 ", "sunseeker": "", "media": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/28AADFCC-E964-4B91-9C90-5837F5FE53BB.JPG", "caption": ""}]}, {"id": 16, "title": "GARDEN#1", "category": "outdoor", "color": "#34d399", "lat": 37.55078480763896, "lng": 127.07818418740528, "address": "고하송진우선생동상, 능동로24길, 능동, 광진구, 서울특별시, 04990, 대한민국", "notes": "*Street view doesn't work on this spot\n\nBehind the camera (opposite the photo angle) is the entrance door, so there isn't much room to work with. ", "sunseeker": "", "media": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/1FC04EF1-2FAD-49C9-944A-9D1778563E0F.JPG", "caption": "", "pair": "06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG"}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/5069B284-EA79-4BBA-8675-8DCD8FB2FAB4.JPG", "caption": "", "pair": "06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG"}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/FAD60746-4DEA-4F43-B82C-664AFDCC88E6.JPG", "caption": "", "pair": "06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG"}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/6D6628B7-9CD2-496C-B50D-0259EE465B06.JPG", "caption": "", "pair": "06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG", "marks": [{"t": "text", "x": 0.6322530852159262, "y": 0.18434846524897883, "s": "right side of lavender. has narrow 길.", "c": "#ff3b30"}]}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/A2AD4071-0583-4083-A0CE-59B660415E22.JPG", "caption": "", "marks": [{"t": "text", "x": 0.5688690138317312, "y": 0.8216208742587502, "s": "right side of lavender \nhas narrow road", "c": "#ff3b30", "z": 0.03}]}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/098706E3-E0AF-414D-AB13-84325C31D053.JPG", "caption": "", "marks": [{"t": "text", "x": 0.6988457018325839, "y": 0.8992270348249479, "s": "GARDEN#1 SPOT", "c": "#ff3b30", "z": 0.03}]}]}, {"id": 18, "title": "GENNIE TRUCK", "category": "parking", "color": "#d33656", "lat": 37.55028508049148, "lng": 127.07959502935495, "address": "단풍잎놀이터, 천호대로116길, 능동, 광진구, 서울특별시, 04989, 대한민국", "notes": "*Street view doesn't work on this spot\n\nWe'll need to check permission to find out whether the genny truck can get to the GARDEN SPOT. For now, this spot is the closest one.\n\n", "sunseeker": "", "media": []}], "categories": [{"key": "indoor", "color": "#60a5fa", "icon": "🏠"}, {"key": "outdoor", "color": "#34d399", "icon": "🌳"}, {"key": "waiting", "color": "#fbbf24", "icon": "🛋"}, {"key": "parking", "color": "#f87171", "icon": "🚐", "label": "GENNIE TRUCK"}], "mapTexts": [], "gmapsKey": "AIzaSyDViRSe_eSSdoZM9QR2Z7mTSaAhFX3WHt0"};</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
@@ -558,38 +665,38 @@ const MEDIA_FOLDER = '261009_로케이션답사_미디어/';
 function mediaThumbPath(file){ return MEDIA_FOLDER + '썸네일/' + file.replace(/\.[^.]+$/,'') + '.jpg'; }
 function mediaFullPath(file){ return MEDIA_FOLDER + '원본/' + file; }
 
+/* 🔴 2026-10-09 V2(10:9_답사_V2) 로 교체 — 대표 지시. V1 파일은 폴더에 남아 있다(지우지 않음). */
 const MEDIA_FILES = [
-  {file:"0BFAF17F-B807-4494-85FC-69F3DA219653.JPG",type:"image",lat:37.550545,lng:127.0785221666667},
-  {file:"0CF5EE54-C741-4729-ADA4-65C4B889CF63.JPG",type:"image",lat:37.55073833333334,lng:127.0781778333333},
-  {file:"130566B2-3C8C-4470-8E8B-166AB2A53BAC.JPG",type:"image",lat:37.55083,lng:127.0782471666667},
-  {file:"2504C192-E66D-4FEA-997F-FB5908AB725F.MP4",type:"video",lat:null,lng:null},
-  {file:"33D0756B-FA62-4D13-B8A0-50DDC76D6972.MP4",type:"video",lat:null,lng:null},
-  {file:"3CD8982C-A16A-4E56-A157-1C92C5208032.JPG",type:"image",lat:37.55068333333333,lng:127.0781708333333},
-  {file:"3DCDAF37-528F-499D-93E4-DF299C494E48.JPG",type:"image",lat:37.55078,lng:127.0783778333333},
-  {file:"4EA30581-92BD-4BD9-8E1A-D06368891FD8.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
-  {file:"5E87A9FC-B7AE-4592-B1B2-B9323719715D.JPG",type:"image",lat:37.55052,lng:127.0781898333333},
-  {file:"7F67AFEC-5A96-4A57-956C-EA0A46B83EB0.JPG",type:"image",lat:37.550655,lng:127.0782388333333},
-  {file:"867B105C-46EE-49F5-9D38-155D79545792.JPG",type:"image",lat:37.55074666666667,lng:127.0782166666667},
-  {file:"875BB54E-2EB5-435A-AD79-88B0A7697208.JPG",type:"image",lat:37.55085333333334,lng:127.0796361666667},
-  {file:"8F1D924A-6CF9-4DF5-B334-595AA3896A60.MP4",type:"video",lat:null,lng:null},
-  {file:"90B50A1D-1DE4-44E7-8B02-ECBB3496703B.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
-  {file:"91347FD2-609A-4490-B959-F15AC2C802A3.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
-  {file:"98D3081A-C558-4B6E-925A-6708FDB76706.MP4",type:"video",lat:null,lng:null},
-  {file:"994CCD69-0F19-4C73-8A07-7404189D76EE.MP4",type:"video",lat:null,lng:null},
-  {file:"A0A89234-44B1-40CA-B2A7-878BE81A6111.JPG",type:"image",lat:37.5513,lng:127.080025},
-  {file:"AC44C66F-BB73-4283-9A22-0C0DDF611963.MP4",type:"video",lat:null,lng:null},
-  {file:"B6921FF4-CAF0-42A9-B4DD-0332B53D6E1C.JPG",type:"image",lat:37.55068333333333,lng:127.0781708333333},
-  {file:"B885A79B-87C3-4E21-A505-505DBF77B51F.JPG",type:"image",lat:37.55068333333333,lng:127.0781708333333},
-  {file:"B918A828-3EFE-4CBB-9846-6FAED5DAA613.JPG",type:"image",lat:37.55073,lng:127.0784},
-  {file:"BC1655A2-169D-4BC4-A146-3E8FA7709645.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
-  {file:"D81E65C2-94AF-429E-9CFD-EEAA76302F77.JPG",type:"image",lat:37.55072166666667,lng:127.0784305},
-  {file:"D91F8C91-DB2C-4D70-9697-43666C7409E4.PNG",type:"image",lat:null,lng:null},
-  {file:"E1075E15-C3E5-43CC-9444-02F5ED6930C8.JPG",type:"image",lat:37.55052,lng:127.0781898333333},
-  {file:"EB995884-F578-4DE9-8AE1-F40CB6B1CA3F.JPG",type:"image",lat:37.55072166666667,lng:127.0781778333333},
-  {file:"EDA677DC-6570-4D8C-8F26-B13DB5C3C706.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
-  {file:"EECB5490-1F71-44A5-BA3C-7B424C4D9007.JPG",type:"image",lat:37.55069666666667,lng:127.0784221666667},
-  {file:"F9B73331-842F-42EA-AA0B-42B7D424A15B.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
-  {file:"FC3290ED-C8C6-443D-94C2-532C6213BDCE.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667}
+  {file:"06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG",type:"image",lat:37.55068333333333,lng:127.0781708333333},
+  {file:"098706E3-E0AF-414D-AB13-84325C31D053.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"145E6859-28BE-444C-820A-68414AA677EA.JPG",type:"image",lat:37.55052,lng:127.0781898333333},
+  {file:"1736E8A9-01DD-4D65-A755-1F75BDBB8232.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"1AA1C701-F896-4551-9EFF-933F0FAB7EAE.MP4",type:"video",lat:null,lng:null},
+  {file:"1FC04EF1-2FAD-49C9-944A-9D1778563E0F.JPG",type:"image",lat:37.55074666666667,lng:127.0781945},
+  {file:"24578795-1937-45BB-A914-A12812553C9A.JPG",type:"image",lat:37.55072166666667,lng:127.0784305},
+  {file:"28AADFCC-E964-4B91-9C90-5837F5FE53BB.JPG",type:"image",lat:37.550045,lng:127.0780945},
+  {file:"2CBF04B0-6C64-4829-9F3E-302A3A61511F.MP4",type:"video",lat:null,lng:null},
+  {file:"41B49BE9-DE58-428B-A64D-11513A5EEAB6.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"5069B284-EA79-4BBA-8675-8DCD8FB2FAB4.JPG",type:"image",lat:37.55073833333334,lng:127.0781778333333},
+  {file:"533A24C3-FF76-4CFD-9E48-815B8178CFEA.MP4",type:"video",lat:null,lng:null},
+  {file:"55201F08-00FA-49A2-93F4-2E90917040DA.MP4",type:"video",lat:null,lng:null},
+  {file:"6102FC30-2390-49E1-8345-99CE1E99CCBA.JPG",type:"image",lat:37.550655,lng:127.0782388333333},
+  {file:"6D6628B7-9CD2-496C-B50D-0259EE465B06.JPG",type:"image",lat:37.55073666666667,lng:127.0782166666667},
+  {file:"73918932-F987-42AB-85C5-C8AE3BE6DF37.JPG",type:"image",lat:37.5513,lng:127.080025},
+  {file:"9E76CA40-30FA-4733-A62A-30C414F7656F.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"A2AD4071-0583-4083-A0CE-59B660415E22.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"A366254E-BCA4-416F-9586-6E72645B02F1.JPG",type:"image",lat:37.55073,lng:127.0784},
+  {file:"A3854111-2A59-4E8A-9729-9CA88B621A04.JPG",type:"image",lat:37.55052,lng:127.0781898333333},
+  {file:"C0BAF1A6-621C-4336-BFD6-4BA8FA66D767.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"C696907E-54E8-41A4-939C-0DFDA527D746.JPG",type:"image",lat:37.55085333333334,lng:127.0796361666667},
+  {file:"D225C0B4-61A3-4EFB-9B65-DCD73404A52F.JPG",type:"image",lat:37.55052,lng:127.0781898333333},
+  {file:"D9E5D6D1-BB94-4E96-BC9F-F0EFBF920B00.PNG",type:"image",lat:null,lng:null},
+  {file:"DDD61AE2-C845-484D-8A81-F4810F3F9E21.JPG",type:"image",lat:37.55071333333333,lng:127.0784611666667},
+  {file:"DF244BFB-140E-4E38-8A26-3508FEBBEBD7.JPG",type:"image",lat:37.55078,lng:127.0783778333333},
+  {file:"E467E488-5EA8-43A4-9B4A-6E5FF4761096.MP4",type:"video",lat:null,lng:null},
+  {file:"E932A86A-58DA-4BD5-BF65-8A3DC6EDA8B2.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"DBD15653-3325-4B10-B5EE-8F5AD714CDFF.MP4",type:"video",lat:null,lng:null},
+  {file:"FAD60746-4DEA-4F43-B82C-664AFDCC88E6.JPG",type:"image",lat:37.55072166666667,lng:127.0781778333333}
 ];
 
 /* =========================================================
@@ -649,7 +756,7 @@ const I18N = {
     lblAddress: '주소', addressPlaceholder: '주소를 입력하세요',
     lblNotes: '현장 노트', notesPlaceholder: '전력·채광·소음·특이사항 등',
     lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: '촬영 예정시각 / 고도 / 방위각 메모',
-    lblMedia: '미디어', lblSunMedia: '☀️ Sunseeker 사진', captionPlaceholder: '메모 추가 (예: 역광 심함, 16시 기준)',
+    lblMedia: '미디어', lblSunMedia: '☀️ Sunseeker 사진', sunDropHint: '☀️ 사진을 여기로 끌어다 놓으면 Sunseeker 가 됩니다', photoDropHint: '여기로 놓으면 일반 사진', captionPlaceholder: '메모 추가 (예: 역광 심함, 16시 기준)',
     addMediaBtn: '➕ 보관함에서 추가', deleteBtn: '🗑 이 장소 삭제',
     deleteConfirm: title=>`「${title}」를 삭제할까요? 되돌릴 수 없습니다.`,
     pickerTitle: '🖼 미디어 보관함 — 사진/영상을 골라 추가', pickerConfirm: n=>`선택한 것 추가 (${n})`, pickerCancel: '취소',
@@ -675,6 +782,7 @@ const I18N = {
     gmapsLoadFail: '지도를 못 불러왔습니다 — API 키가 올바른지, 「Maps JavaScript API」가 켜져 있는지 확인하세요',
     btnBulkUpload: '📤 사진 일괄 업로드 (자동분류)',
     btnUnsorted: n=>`🗂 미분류 ${n}개 — 확인하기`,
+    btnMoveMedia: '🗂 사진 옮기기 (장소끼리 끌어다 놓기)',
     noFsApi: '이 브라우저는 파일 저장 기능을 지원하지 않습니다. 크롬 최신버전에서 열어주세요.',
     folderPickNote: '사진·영상을 저장할 폴더를 선택하는 창이 뜹니다. 반드시 "261009_로케이션답사_미디어" 폴더를 선택해주세요(이미 만들어져 있습니다).',
     folderPickCancelled: '폴더 선택이 취소돼 업로드를 진행할 수 없습니다.',
@@ -682,11 +790,19 @@ const I18N = {
     uploadProgressTitle: '📤 업로드 중…',
     upProgressText: (i,n,name)=>`${i} / ${n} · ${name}`,
     reviewModalTitle: '📥 자동분류 결과 — 드래그해서 옮기세요',
-    reviewHint: '사진이 GPS로 자동 분류됐습니다. 잘못 들어간 게 있으면 썸네일을 다른 칸으로 드래그하세요. 바로 반영됩니다.',
+    reviewHint: '썸네일을 다른 칸으로 끌어다 놓으면 그 장소로 옮겨집니다(바로 반영). 🔍 를 누르거나 썸네일을 두 번 누르면 크게 보고 영상도 재생됩니다.',
+    reviewChipHint: '끌어서 옮기기 · 두 번 누르면 크게 보기',
     reviewDone: '확인했습니다', unsortedColTitle: '🗂 미분류 (GPS 없음)',
     newClusterTitle: n=>`새 스팟 ${n}`,
     uploadDoneToast: n=>`✅ ${n}개 업로드 완료`,
     lbDownload: '⬇ 이 사진 받기',
+    lbPairToSun: '☀️ 짝 Sunseeker 보기', lbPairToPhoto: '📷 짝 사진 보기', lbSpotSun: '☀️ 이 장소 Sunseeker', pairNone: '☀️ 짝 Sunseeker 없음',
+    mapModeToSat: '🛰 위성사진', mapModeToMap: '🗺 일반지도',
+    btnMapText: '🅣 글자', btnMapTextOn: '🅣 글자 넣는 중 (끄기)', mapTextHint: '지도를 누르면 그 자리에 글자가 들어갑니다',
+    mtNew: '지도에 글자 넣기', mtEdit: '글자 고치기', mtColorLbl: '색', mtSizeLbl: '크기', mtDelete: '🗑 지우기', mtDone: '확인',
+    lbAnnoBtn: '✏️ 표시하기', toolPen: '✏️ 펜', toolCircle: '⭕ 동그라미', toolArrow: '➡️ 화살표', toolText: '🅣 글자',
+    annoUndo: '↩ 되돌리기', annoClear: '🗑 전부 지우기', annoDone: '완료', annoTextPrompt: '글자 입력 · Enter = 다음 줄', mtHint: 'Enter = 다음 줄 · ⌘+Enter = 확인 · 지도에서 글자를 끌면 옮겨지고, 누르면 다시 고칩니다',
+    annoClearConfirm: '이 사진의 표시를 전부 지울까요?',
     svMovePinBtn: '📍 핀을 여기로 옮기기',
     svMovePinDone: '✓ 핀이 이 위치로 이동됐습니다',
     svMovePinFail: '⚠ 아직 위치를 못 읽었습니다 — 잠시 후 다시 눌러주세요',
@@ -717,7 +833,7 @@ const I18N = {
     lblAddress: 'Address', addressPlaceholder: 'Enter address',
     lblNotes: 'Field Notes', notesPlaceholder: 'Power, light, noise, anything else to flag',
     lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: 'Shoot time / elevation / azimuth notes',
-    lblMedia: 'Media', lblSunMedia: '☀️ Sunseeker Photos', captionPlaceholder: 'Add a note (e.g. harsh backlight at 4pm)',
+    lblMedia: 'Media', lblSunMedia: '☀️ Sunseeker Photos', sunDropHint: '☀️ Drop a photo here to mark it as Sunseeker', photoDropHint: 'Drop here for a regular photo', captionPlaceholder: 'Add a note (e.g. harsh backlight at 4pm)',
     addMediaBtn: '➕ Add from library', deleteBtn: '🗑 Delete this location',
     deleteConfirm: title=>`Delete "${title}"? This can't be undone.`,
     pickerTitle: '🖼 Media Library — pick photos/videos to add', pickerConfirm: n=>`Add selected (${n})`, pickerCancel: 'Cancel',
@@ -743,6 +859,7 @@ const I18N = {
     gmapsLoadFail: "Couldn't load the map — check your API key and that \"Maps JavaScript API\" is enabled",
     btnBulkUpload: '📤 Bulk Upload Photos (auto-sort)',
     btnUnsorted: n=>`🗂 ${n} unsorted — review`,
+    btnMoveMedia: '🗂 Move photos between spots',
     noFsApi: "This browser doesn't support saving files. Please open this in a recent version of Chrome.",
     folderPickNote: 'A folder picker will open. Please select the "261009_로케이션답사_미디어" folder (it already exists).',
     folderPickCancelled: "Folder selection was cancelled, so the upload can't continue.",
@@ -750,11 +867,19 @@ const I18N = {
     uploadProgressTitle: '📤 Uploading…',
     upProgressText: (i,n,name)=>`${i} / ${n} · ${name}`,
     reviewModalTitle: '📥 Auto-sort results — drag to move',
-    reviewHint: 'Photos were auto-sorted by GPS. If something landed in the wrong spot, drag its thumbnail to another column — it applies immediately.',
+    reviewHint: 'Drag a thumbnail into another column to move it (applies instantly). Click 🔍 or double-click to view it large / play the video.',
+    reviewChipHint: 'Drag to move · double-click to view',
     reviewDone: 'Done', unsortedColTitle: '🗂 Unsorted (no GPS)',
     newClusterTitle: n=>`New Spot ${n}`,
     uploadDoneToast: n=>`✅ ${n} uploaded`,
     lbDownload: '⬇ Download photo',
+    lbPairToSun: '☀️ Paired Sunseeker', lbPairToPhoto: '📷 Paired photo', lbSpotSun: '☀️ Sunseeker for this spot', pairNone: '☀️ No paired Sunseeker',
+    mapModeToSat: '🛰 Satellite', mapModeToMap: '🗺 Map',
+    btnMapText: '🅣 Text', btnMapTextOn: '🅣 Adding text (off)', mapTextHint: 'Click the map to place text',
+    mtNew: 'Add text to map', mtEdit: 'Edit text', mtColorLbl: 'Color', mtSizeLbl: 'Size', mtDelete: '🗑 Delete', mtDone: 'OK',
+    lbAnnoBtn: '✏️ Mark up', toolPen: '✏️ Pen', toolCircle: '⭕ Circle', toolArrow: '➡️ Arrow', toolText: '🅣 Text',
+    annoUndo: '↩ Undo', annoClear: '🗑 Clear all', annoDone: 'Done', annoTextPrompt: 'Type · Enter = new line', mtHint: 'Enter = new line · ⌘+Enter = OK · Drag text on the map to move, click to edit',
+    annoClearConfirm: 'Remove all marks on this photo?',
     svMovePinBtn: '📍 Move pin here',
     svMovePinDone: '✓ Pin moved to this spot',
     svMovePinFail: "⚠ Position not ready yet — try again in a moment",
@@ -788,6 +913,14 @@ if(PUBLISHED){
   try{
     const saved = localStorage.getItem(STORAGE_KEY);
     if(saved) LOCATIONS = JSON.parse(saved);
+    /* 🔴 비어 있는데 직전 세대가 남아 있으면 그걸 되살린다 (업데이트 사고 대비) */
+    if((!LOCATIONS || !LOCATIONS.length)){
+      const prev = localStorage.getItem(STORAGE_KEY + '_prev');
+      if(prev){
+        const p = JSON.parse(prev);
+        if(Array.isArray(p) && p.length){ LOCATIONS = p; console.log('[복구] 직전 저장본에서 ' + p.length + '곳을 되살렸습니다'); }
+      }
+    }
   }catch(e){ LOCATIONS = []; }
 }
 let nextId = LOCATIONS.reduce((m,l)=>Math.max(m,l.id||0),0) + 1;
@@ -800,10 +933,10 @@ const activeCats = new Set(CATEGORIES.map(c=>c.key));
 const selectedIds = new Set();
 
 let saveToastTimer;
-function flashSaved(){
+function flashSaved(msg){
   const el = document.getElementById('saveToast');
-  el.textContent = t('saved'); el.className = 'toast show ok';
-  clearTimeout(saveToastTimer); saveToastTimer = setTimeout(()=> el.classList.remove('show'), 1100);
+  el.textContent = msg || t('saved'); el.className = 'toast show ok';
+  clearTimeout(saveToastTimer); saveToastTimer = setTimeout(()=> el.classList.remove('show'), msg ? 2600 : 1100);
 }
 function flashError(msg){
   const el = document.getElementById('saveToast');
@@ -812,7 +945,15 @@ function flashError(msg){
 }
 function saveState(){
   if(PUBLISHED) return;   /* 발행본은 보는 것만 — 아무것도 저장하지 않는다 */
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(LOCATIONS)); flashSaved(); }
+  try{
+    /* 🔴 「업데이트돼도 작업한 게 그대로 남게」 (2026-10-09 대표 지시)
+       ㉮ 저장소 열쇠(STORAGE_KEY)는 절대 안 바꾼다 — 바꾸면 그 순간 옛 작업이 안 보인다
+       ㉯ 덮어쓰기 «전»의 값을 한 세대 남긴다 — 코드 실수로 비워져도 되살릴 수 있다 */
+    const before = localStorage.getItem(STORAGE_KEY);
+    if(before && before !== '[]') localStorage.setItem(STORAGE_KEY + '_prev', before);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(LOCATIONS));
+    flashSaved();
+  }
   catch(e){ flashError(t('saveFail')); }
   scheduleBackup();       /* 🔴 드라이브 폴더에도 파일로 한 벌 더 — 크롬 데이터가 날아가도 살아남게 */
 }
@@ -833,23 +974,44 @@ L.control.zoom({ position:'bottomright' }).addTo(map);
 
 /* 지도 라벨 언어 — ko:OSM 기본(현지 표기) · en:위키미디어 다국어 타일(lang=en, 로마자 표기) */
 let tileLayer = null;
-function setMapLanguage(lang){
-  if(tileLayer) map.removeLayer(tileLayer);
-  tileLayer = (lang === 'en')
-    ? L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png?lang=en', {
-        attribution: '&copy; OpenStreetMap contributors · Tiles: Wikimedia', maxZoom: 19
-      })
-    : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors', subdomains: 'abc', maxZoom: 19
-      });
-  tileLayer.addTo(map);
+/* 🔴 2026-10-09 대표 지시 — 「길 사이사이까지 봤으면 한다」.
+   일반 지도는 공원 안 산책로가 빈약하다 → «위성사진»을 같이 쓴다(키 불필요).
+   지도 모드는 브라우저에 기억시킨다. */
+let MAP_MODE = localStorage.getItem('scout_mapmode_261009') || 'map';   /* map | satellite */
+function buildTileLayer(){
+  if(MAP_MODE === 'satellite'){
+    return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics', maxZoom: 19, maxNativeZoom: 19
+    });
+  }
+  if(LANG === 'en'){
+    return L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png?lang=en', {
+      attribution: '&copy; OpenStreetMap contributors · Tiles: Wikimedia', maxZoom: 19
+    });
+  }
+  return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors', subdomains: 'abc', maxZoom: 19
+  });
 }
-setMapLanguage(LANG);
+function applyMapLayer(){
+  if(tileLayer) map.removeLayer(tileLayer);
+  tileLayer = buildTileLayer();
+  tileLayer.addTo(map);
+  /* 🔴 위성사진은 원래 어둡다 — 일반 지도에만 걸던 «반전 다크» 필터를 빼야 색이 제대로 나온다 */
+  document.getElementById('map').classList.toggle('satellite', MAP_MODE === 'satellite');
+  const b = document.getElementById('btnMapMode');
+  if(b) b.textContent = MAP_MODE === 'satellite' ? t('mapModeToMap') : t('mapModeToSat');
+}
+function setMapLanguage(lang){ applyMapLayer(); }
+applyMapLayer();
 
 function makeIcon(loc){
   const color = loc.color || catColor(loc.category);
   const sel = selectMode && selectedIds.has(loc.id) ? ' selForDel' : '';
-  return L.divIcon({ className:'', html:`<div class="loc-marker${sel}" id="pin-${loc.id}" style="background:${color}">${loc.id}</div>`,
+  /* 📍 핀 옆에 스팟 이름을 띄운다 (2026-10-09 대표 지시) */
+  /* 「스팟 번호도 같이」(대표 지시) — 번호 · 이름 */
+  const lbl = `<span class="pinLabel" style="border-left-color:${color}">${loc.id}${loc.title ? ' · ' + escapeHtml(loc.title) : ''}</span>`;
+  return L.divIcon({ className:'', html:`<div class="loc-marker${sel}" id="pin-${loc.id}" style="background:${color}">${loc.id}${lbl}</div>`,
     iconSize:[26,26], iconAnchor:[13,13] });
 }
 function addMarker(loc){
@@ -865,6 +1027,7 @@ function addMarker(loc){
     const target = LOCATIONS.find(l=>l.id===loc.id);
     if(!target) return;
     if(!confirm(t('pinRightClickDelete')(target.title || t('noTitle')))) return;
+    sendToUnsorted(target.media);
     const mk = markers[target.id]; if(mk) map.removeLayer(mk);
     delete markers[target.id];
     LOCATIONS = LOCATIONS.filter(l=>l.id!==target.id);
@@ -885,6 +1048,7 @@ function addMarker(loc){
     saveState();
   });
   markers[loc.id] = m;
+  setTimeout(()=> bindMediaDrop(m.getElement(), loc.id), 0);
 }
 function rebuildAllMarkers(){
   Object.values(markers).forEach(m=> map.removeLayer(m));
@@ -936,7 +1100,10 @@ document.addEventListener('mouseup', function(ev){
   refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
 });
 function refreshMarkerIcons(){
-  LOCATIONS.forEach(loc=>{ const m = markers[loc.id]; if(m) m.setIcon(makeIcon(loc)); });
+  LOCATIONS.forEach(loc=>{ const m = markers[loc.id]; if(m){ m.setIcon(makeIcon(loc)); bindMediaDrop(m.getElement(), loc.id); } });
+}
+function bindAllMarkerDrops(){
+  LOCATIONS.forEach(loc=>{ const m = markers[loc.id]; if(m) bindMediaDrop(m.getElement(), loc.id); });
 }
 LOCATIONS.forEach(addMarker);
 
@@ -958,6 +1125,7 @@ function createLocationAt(lat, lng, opts){
 }
 map.on('click', function(e){
   if(!editMode || selectMode) return;
+  if(textMode){ addMapTextAt(e.latlng.lat, e.latlng.lng); return; }
   const loc = createLocationAt(e.latlng.lat, e.latlng.lng);
   applyFilter();
   saveState();
@@ -965,6 +1133,85 @@ map.on('click', function(e){
   const el = document.getElementById('pin-'+loc.id);
   if(el) el.classList.add('new');
 });
+
+/* =========================================================
+   2-B. 🅣 지도 위 글자 (2026-10-09 대표 지시 「지도에도 텍스트 입력하고싶어. 색상 변경 가능하게」)
+   「🅣 글자」 켜고 지도를 누르면 그 자리에 글자. 글자를 누르면 고치기·색·크기·지우기. 끌어서 옮김.
+   🔴 핀과 따로 저장한다(핀 데이터를 안 건드린다) — 발행본에도 실린다.
+   ========================================================= */
+const MAP_TEXTS_KEY = 'scout_maptexts_261009';
+let MAP_TEXTS = (function(){
+  if(typeof SCOUT_PUBLISHED !== 'undefined') return Array.isArray(SCOUT_PUBLISHED.mapTexts) ? SCOUT_PUBLISHED.mapTexts : [];
+  try{ const v = JSON.parse(localStorage.getItem(MAP_TEXTS_KEY) || '[]'); return Array.isArray(v) ? v : []; }catch(e){ return []; }
+})();
+let textMode = false, mapTextMarkers = {}, mtEditingId = null, mtLastColor = '#ffffff', mtLastSize = 17;
+function saveMapTexts(){
+  if(typeof SCOUT_PUBLISHED !== 'undefined') return;
+  try{ localStorage.setItem(MAP_TEXTS_KEY, JSON.stringify(MAP_TEXTS)); flashSaved(); }catch(e){ flashError(t('saveFail')); }
+  if(typeof scheduleBackup === 'function') scheduleBackup();
+}
+function mapTextIcon(o){
+  return L.divIcon({ className:'', iconSize:null,
+    html:`<span class="mapText" style="color:${o.color||'#fff'};font-size:${o.size||17}px">${escapeHtml(o.text)}</span>` });
+}
+function drawMapText(o){
+  if(mapTextMarkers[o.id]) map.removeLayer(mapTextMarkers[o.id]);
+  const mk = L.marker([o.lat, o.lng], { icon: mapTextIcon(o), draggable: !!editMode, zIndexOffset: -100 }).addTo(map);
+  mk.on('click', (ev)=>{ L.DomEvent.stopPropagation(ev); if(editMode) openMapTextEditor(o.id); });
+  mk.on('dragend', ev=>{ const ll = ev.target.getLatLng(); o.lat = ll.lat; o.lng = ll.lng; saveMapTexts(); });
+  mapTextMarkers[o.id] = mk;
+}
+function redrawMapTexts(){
+  Object.values(mapTextMarkers).forEach(m=> map.removeLayer(m)); mapTextMarkers = {};
+  MAP_TEXTS.forEach(drawMapText);
+}
+function addMapTextAt(lat, lng){
+  const id = 't' + Date.now();
+  const o = { id, lat, lng, text: '', color: mtLastColor, size: mtLastSize };
+  MAP_TEXTS.push(o);
+  openMapTextEditor(id, true);
+}
+function openMapTextEditor(id, isNew){
+  const o = MAP_TEXTS.find(x=>x.id===id); if(!o) return;
+  mtEditingId = id;
+  document.getElementById('mtTitle').textContent = isNew ? t('mtNew') : t('mtEdit');
+  document.getElementById('mtText').value = o.text || '';
+  document.getElementById('mtColor').value = o.color || '#ffffff';
+  document.getElementById('mtSize').value = String(o.size || 17);
+  document.getElementById('mapTextModal').classList.add('open');
+  setTimeout(()=> document.getElementById('mtText').focus(), 30);
+}
+function closeMapTextEditor(){
+  const o = MAP_TEXTS.find(x=>x.id===mtEditingId);
+  if(o){
+    o.text = document.getElementById('mtText').value.trim();
+    o.color = document.getElementById('mtColor').value;
+    o.size = Number(document.getElementById('mtSize').value) || 17;
+    mtLastColor = o.color; mtLastSize = o.size;
+    if(!o.text){ MAP_TEXTS = MAP_TEXTS.filter(x=>x.id!==o.id); if(mapTextMarkers[o.id]){ map.removeLayer(mapTextMarkers[o.id]); delete mapTextMarkers[o.id]; } }
+    else drawMapText(o);
+    saveMapTexts();
+  }
+  mtEditingId = null;
+  document.getElementById('mapTextModal').classList.remove('open');
+}
+document.getElementById('mtDone').onclick = closeMapTextEditor;
+document.getElementById('mtClose').onclick = closeMapTextEditor;
+/* Enter = 다음 줄, ⌘/Ctrl+Enter = 확인 (2026-10-09 대표 지시) */
+document.getElementById('mtText').addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.metaKey||e.ctrlKey) && !e.isComposing){ e.preventDefault(); closeMapTextEditor(); } });
+document.getElementById('mtDelete').onclick = ()=>{
+  document.getElementById('mtText').value = '';
+  closeMapTextEditor();
+};
+document.getElementById('btnMapText').onclick = ()=>{
+  if(!editMode) return;
+  textMode = !textMode;
+  document.getElementById('btnMapText').classList.toggle('on', textMode);
+  document.getElementById('map').classList.toggle('texting', textMode);
+  document.getElementById('btnMapText').textContent = textMode ? t('btnMapTextOn') : t('btnMapText');
+  if(textMode) flashSaved(t('mapTextHint'));
+};
+redrawMapTexts();
 
 /* =========================================================
    3. 편집모드 / 선택삭제모드 / 언어
@@ -976,6 +1223,15 @@ document.getElementById('btnEditToggle').onclick = ()=>{
   document.getElementById('editBanner').style.display = editMode ? 'block' : 'none';
   document.getElementById('map').classList.toggle('editing', editMode);
   refreshDraggable();
+  /* 🅣 편집을 끄면 글자 모드도 끄고, 글자 끌기도 막는다 */
+  if(!editMode && textMode){
+    textMode = false;
+    document.getElementById('btnMapText').classList.remove('on');
+    document.getElementById('map').classList.remove('texting');
+    document.getElementById('btnMapText').textContent = t('btnMapText');
+  }
+  document.getElementById('btnMapText').style.display = editMode ? '' : 'none';
+  redrawMapTexts();
   if(currentLocId!=null) openDetail(currentLocId, false);
 };
 
@@ -1006,6 +1262,7 @@ document.getElementById('bulkCancelBtn').onclick = ()=>{
 document.getElementById('bulkDeleteBtn').onclick = ()=>{
   if(selectedIds.size===0) return;
   if(!confirm(t('bulkDeleteConfirm')(selectedIds.size))) return;
+  LOCATIONS.filter(l=>selectedIds.has(l.id)).forEach(l=> sendToUnsorted(l.media));
   selectedIds.forEach(id=>{ const m = markers[id]; if(m) map.removeLayer(m); delete markers[id]; });
   LOCATIONS = LOCATIONS.filter(l=>!selectedIds.has(l.id));
   if(currentLocId!=null && !LOCATIONS.find(l=>l.id===currentLocId)){
@@ -1041,6 +1298,7 @@ function applyLang(){
   document.getElementById('bulkSelectAllBtn').textContent = t('bulkSelectAll');
   document.getElementById('bulkCancelBtn').textContent = t('bulkCancel');
   document.getElementById('btnViewList').textContent = t('viewList');
+  { const b=document.getElementById('btnMapMode'); if(b) b.textContent = (MAP_MODE==='satellite')?t('mapModeToMap'):t('mapModeToSat'); }
   document.getElementById('btnViewPhoto').textContent = t('viewPhoto');
   document.getElementById('toggleSidebarBtn').title = t('sidebarToggleTitle');
   document.getElementById('dpTitleInput').placeholder = t('titlePlaceholder');
@@ -1068,6 +1326,11 @@ function applyLang(){
   document.getElementById('dpSunseekerInput').placeholder = t('sunseekerPlaceholder');
   document.getElementById('lblMedia').textContent = t('lblMedia');
   document.getElementById('lblSunMedia').textContent = t('lblSunMedia');
+  { const mtb = document.getElementById('btnMapText'); if(mtb) mtb.textContent = textMode ? t('btnMapTextOn') : t('btnMapText'); }
+  ['mtColorLbl','mtSizeLbl','mtDelete','mtDone','mtHint'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent = t(id); });
+  { const tl = {pen:'toolPen',circle:'toolCircle',arrow:'toolArrow',text:'toolText'};
+    document.querySelectorAll('#lbAnnoBar [data-tool]').forEach(b=> b.textContent = t(tl[b.dataset.tool])); }
+  ['annoUndo','annoClear','annoDone'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent = t(id); });
   document.getElementById('btnEditCats').textContent = t('btnEditCats');
   document.getElementById('catModalTitle').textContent = t('catModalTitle');
   document.getElementById('catHint').textContent = t('catHint');
@@ -1206,6 +1469,7 @@ function renderList(){
       <div class="mediaCount">${t('mediaCount')(loc.media.length)}</div>
     `;
     card.onclick = ()=> selectMode ? toggleSelect(loc.id) : openDetail(loc.id, true);
+    bindMediaDrop(card, loc.id);
     wrap.appendChild(card);
   });
 }
@@ -1244,6 +1508,11 @@ function switchView(mode){
   document.getElementById('photoGrid').style.display = mode==='photo' ? 'grid' : 'none';
 }
 document.getElementById('toggleSidebarBtn').onclick = ()=> document.getElementById('sidebar').classList.toggle('open');
+document.getElementById('btnMapMode').onclick = ()=>{
+  MAP_MODE = (MAP_MODE === 'satellite') ? 'map' : 'satellite';
+  try{ localStorage.setItem('scout_mapmode_261009', MAP_MODE); }catch(e){}
+  applyMapLayer();
+};
 
 /* =========================================================
    5. 상세 패널
@@ -1316,6 +1585,7 @@ document.getElementById('dpClose').onclick = ()=>{
 document.getElementById('dpTitleInput').addEventListener('input', debounce(function(){
   const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
   loc.title = this.value; renderList(); renderPhotoGrid(); saveState();
+  const mk = markers[loc.id]; if(mk) mk.setIcon(makeIcon(loc));   /* divIcon 은 같은 요소를 재사용 — 끌어놓기 연결이 유지된다 */
 }, 350));
 document.getElementById('dpCategorySelect').addEventListener('change', function(){
   const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
@@ -1385,8 +1655,18 @@ function toLocalDatetimeInputValue(d){
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/* 🔴 2026-10-09 대표 지시 「태양궤적 일단 빼고 작업하자」 — 로드뷰는 그대로 두고 «겹쳐 그리는 것»만 끈다.
+   왜 뺐나 = 실제 구글 로드뷰 위에서 제대로 안 떴다. 클로드는 «가짜 로드뷰»로만 검증했고
+   진짜 화면에서 확인하지 못한 채 「고쳤다」고 세 번 말했다(§3-0-B 위반).
+   되살리기 = 이 줄을 true 로 바꾸면 코드는 전부 그대로 살아난다. */
+const SUN_OVERLAY_ON = false;
 let svPanorama = null, svLoc = null, svResizeBound = false;
 function drawSunOverlay(){
+  if(!SUN_OVERLAY_ON){
+    const c = document.getElementById('svOverlay');
+    if(c && c.getContext) c.getContext('2d').clearRect(0,0,c.width,c.height);
+    return;
+  }
   if(!svPanorama || !svLoc) return;
   const wrap = document.getElementById('svPanoWrap');
   const canvas = document.getElementById('svOverlay');
@@ -1430,9 +1710,30 @@ function drawSunOverlay(){
   const cur = sunPosDeg(svLoc.lat, svLoc.lng, dateVal);
   const p = project(cur.az, cur.alt);
   if(cur.alt > -4){
-    ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, Math.PI*2);
-    ctx.fillStyle = '#ffd56b'; ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+    if(p.inView){
+      ctx.beginPath(); ctx.arc(p.x, p.y, 11, 0, Math.PI*2);
+      ctx.fillStyle = '#ffd56b'; ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+      ctx.font = 'bold 12px -apple-system,sans-serif'; ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${cur.alt.toFixed(0)}°`, p.x, p.y - 18);
+    } else {
+      /* 🔴 태양이 화면 밖이면 «빈 화면»이 된다 — 어느 쪽으로 돌려야 하는지 가장자리에 알려준다
+         (2026-10-09 대표 신고 「아무 궤적이 안 뜬다」의 큰 원인) */
+      const dAz = ((cur.az - heading + 540) % 360) - 180;
+      const right = dAz > 0;
+      const x = right ? canvas.width - 38 : 38;
+      const y = canvas.height / 2;
+      ctx.beginPath();
+      ctx.moveTo(right ? x + 16 : x - 16, y);
+      ctx.lineTo(right ? x - 10 : x + 10, y - 14);
+      ctx.lineTo(right ? x - 10 : x + 10, y + 14);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(245,182,63,.92)'; ctx.fill();
+      ctx.font = 'bold 12px -apple-system,sans-serif';
+      ctx.fillStyle = '#ffd56b'; ctx.textAlign = 'center';
+      ctx.fillText('☀ ' + Math.abs(Math.round(dAz)) + '°', x, y + 34);
+    }
   }
   const belowTxt = cur.alt < 0 ? ` (${t('belowHorizon')})` : '';
   document.getElementById('svSunReadout').textContent =
@@ -1446,6 +1747,10 @@ async function openStreetViewModal(loc){
   document.getElementById('svOpenNewTab').href = `https://www.google.com/maps?layer=c&cbll=${loc.lat},${loc.lng}`;
   document.getElementById('svShowPathLabel').textContent = t('svShowPathLabel');
   document.getElementById('svDateTime').value = toLocalDatetimeInputValue(new Date());
+  if(!SUN_OVERLAY_ON){
+    ['svDateTime','svSunReadout'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
+    const lab = document.querySelector('.svPathToggle'); if(lab) lab.style.display='none';
+  }
   document.getElementById('svNoKeyMsg').style.display = 'none';
   document.getElementById('svModal').classList.add('open');
 
@@ -1463,7 +1768,8 @@ async function openStreetViewModal(loc){
   }
   if(!svPanorama){
     svPanorama = new google.maps.StreetViewPanorama(document.getElementById('svPano'), {
-      position: { lat: loc.lat, lng: loc.lng }, pov: { heading: 0, pitch: 0 }, zoom: 1,
+      position: { lat: loc.lat, lng: loc.lng },
+      pov: { heading: SUN_OVERLAY_ON ? sunPosDeg(loc.lat, loc.lng, getSelectedDateTime()).az : 0, pitch: 0 }, zoom: 1,
       addressControl: false, fullscreenControl: false, motionTracking: false, motionTrackingControl: false
     });
     svPanorama.addListener('pov_changed', drawSunOverlay);
@@ -1479,6 +1785,10 @@ async function openStreetViewModal(loc){
     });
   } else {
     svPanorama.setPosition({ lat: loc.lat, lng: loc.lng });
+    if(SUN_OVERLAY_ON){
+      const s0 = sunPosDeg(loc.lat, loc.lng, getSelectedDateTime());
+      svPanorama.setPov({ heading: s0.az, pitch: 10 });
+    }
   }
   if(!svResizeBound){
     window.addEventListener('resize', ()=>{ if(document.getElementById('svModal').classList.contains('open')) drawSunOverlay(); });
@@ -1522,6 +1832,7 @@ document.getElementById('dpSunseekerInput').addEventListener('input', debounce(f
 document.getElementById('dpDeleteBtn').onclick = function(){
   const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
   if(!confirm(t('deleteConfirm')(loc.title))) return;
+  sendToUnsorted(loc.media);
   const m = markers[loc.id]; if(m) map.removeLayer(m);
   delete markers[loc.id];
   LOCATIONS = LOCATIONS.filter(l=>l.id!==loc.id);
@@ -1531,13 +1842,88 @@ document.getElementById('dpDeleteBtn').onclick = function(){
 };
 /* 🔴 Sunseeker 사진은 «따로 위에» 모은다 (2026-10-09 대표 지시) — 일반 사진에 섞이면
    「해가 어디로 가나」를 보려고 할 때마다 찾아야 한다. 사진마다 메모도 여기서 적는다. */
+let mediaDrag = null;   /* {fromLocId, idx} */
+function moveMediaTo(targetLocId){
+  if(!mediaDrag) return;
+  const from = LOCATIONS.find(l=>l.id===mediaDrag.fromLocId);
+  const to   = LOCATIONS.find(l=>l.id===targetLocId);
+  if(!from || !to || from.id === to.id){ mediaDrag = null; return; }
+  const item = from.media[mediaDrag.idx];
+  if(!item){ mediaDrag = null; return; }
+  from.media.splice(mediaDrag.idx, 1);
+  to.media.push(item);
+  mediaDrag = null;
+  document.body.classList.remove('media-dragging');
+  if(currentLocId != null){
+    const cur = LOCATIONS.find(l=>l.id===currentLocId);
+    if(cur) renderDpMedia(cur);
+  }
+  renderList(); renderPhotoGrid(); saveState();
+  flashSaved();
+}
+function bindMediaDrop(el, locId){
+  if(!el) return;
+  el.addEventListener('dragover', (ev)=>{
+    if(!mediaDrag) return;
+    ev.preventDefault(); ev.dataTransfer.dropEffect = 'move';
+    el.classList.add('dropTarget');
+  });
+  el.addEventListener('dragleave', ()=> el.classList.remove('dropTarget'));
+  el.addEventListener('drop', (ev)=>{
+    if(!mediaDrag) return;
+    ev.preventDefault(); ev.stopPropagation();
+    el.classList.remove('dropTarget');
+    moveMediaTo(locId);
+  });
+}
+/* 🔴 핀에서 빠지는 사진은 «버리지 않는다» — 미분류 칸으로 보낸다 (2026-10-09 대표 신고로 발견:
+   #13 핀을 지우자 거기 있던 Sunseeker 7장·사진 1장이 같이 사라졌다) */
+function sendToUnsorted(mediaArr){
+  if(!mediaArr || !mediaArr.length) return 0;
+  const uns = loadUnsorted();
+  const have = new Set(uns.map(e=>e.file));
+  let n = 0;
+  mediaArr.forEach(m=>{
+    const fn = (m.url||'').split('/').pop(); if(!fn || have.has(fn)) return;
+    /* 🔴 Sunseeker 표시를 지우지 않는다 (2026-10-09 — 전엔 image 로 바꿔서, 미분류에서 다시 끌어오면 일반 사진이 됐다) */
+    uns.push({ file: fn, type: (m.type === 'video' || m.type === 'sunseeker') ? m.type : 'image', lat: null, lng: null });
+    have.add(fn); n++;
+  });
+  saveUnsorted(uns);
+  return n;
+}
 function renderDpMedia(loc){
   const sunIdx = [], otherIdx = [];
   loc.media.forEach((m, i)=> (m.type === 'sunseeker' ? sunIdx : otherIdx).push(i));
   renderMediaGroup_(document.getElementById('dpMediaGridSun'), loc, sunIdx);
   renderMediaGroup_(document.getElementById('dpMediaGrid'), loc, otherIdx);
-  document.getElementById('dpSunGroupWrap').style.display = sunIdx.length ? 'block' : 'none';
+  /* ☀️ 편집 중엔 비어 있어도 칸을 보여준다 — 사진을 여기로 끌어다 놓으면 Sunseeker 가 된다 (2026-10-09 대표 지시) */
+  const sunGrid = document.getElementById('dpMediaGridSun');
+  if(editMode && !sunIdx.length){
+    sunGrid.innerHTML = `<div class="sunDropEmpty" style="grid-column:1/-1">${t('sunDropHint')}</div>`;
+  }
+  document.getElementById('dpSunGroupWrap').style.display = (sunIdx.length || editMode) ? 'block' : 'none';
 }
+/* 상세패널의 「☀️ Sunseeker」·「미디어」 구역에 놓으면 종류가 바뀐다. 다른 핀에서 끌어오면 옮겨지면서 바뀐다. */
+function dropMediaAsKind(kind){
+  if(!mediaDrag || currentLocId == null) return;
+  const from = LOCATIONS.find(l=>l.id===mediaDrag.fromLocId);
+  const to   = LOCATIONS.find(l=>l.id===currentLocId);
+  const item = from && from.media[mediaDrag.idx];
+  mediaDrag = null; document.body.classList.remove('media-dragging');
+  if(!item || !to) return;
+  if(from.id !== to.id){ from.media.splice(from.media.indexOf(item), 1); to.media.push(item); }
+  if(item.type !== 'video') item.type = (kind === 'sun') ? 'sunseeker' : 'image';
+  renderDpMedia(to); renderList(); renderPhotoGrid(); saveState(); flashSaved();
+}
+function bindKindDrop_(el, kind){
+  if(!el) return;
+  el.addEventListener('dragover', ev=>{ if(!mediaDrag) return; ev.preventDefault(); ev.dataTransfer.dropEffect='move'; el.classList.add('dropTarget'); });
+  el.addEventListener('dragleave', ev=>{ if(!el.contains(ev.relatedTarget)) el.classList.remove('dropTarget'); });
+  el.addEventListener('drop', ev=>{ if(!mediaDrag) return; ev.preventDefault(); ev.stopPropagation(); el.classList.remove('dropTarget'); dropMediaAsKind(kind); });
+}
+bindKindDrop_(document.getElementById('dpSunGroupWrap'), 'sun');
+bindKindDrop_(document.getElementById('dpMediaGrid').closest('.dp-section'), 'photo');
 function renderMediaGroup_(grid, loc, indices){
   grid.innerHTML = '';
   indices.forEach(idx=>{
@@ -1547,9 +1933,27 @@ function renderMediaGroup_(grid, loc, indices){
     cell.className = 'mediaCell';
     const card = document.createElement('div');
     card.className = 'mediaThumb';
+    if(editMode){
+      /* 🔴 상세패널 사진을 «목록의 다른 장소»나 «지도 핀» 위로 끌어다 놓으면 그리로 옮겨진다
+         (2026-10-09 대표 지시 — 리뷰 모달까지 안 가고 바로 옮기게) */
+      card.draggable = true;
+      card.addEventListener('dragstart', (ev)=>{
+        mediaDrag = { fromLocId: loc.id, idx: idx };
+        card.classList.add('dragging');
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.dataTransfer.setData('text/plain','media');
+        document.body.classList.add('media-dragging');
+      });
+      card.addEventListener('dragend', ()=>{
+        card.classList.remove('dragging');
+        document.body.classList.remove('media-dragging');
+        mediaDrag = null;
+      });
+    }
     card.innerHTML = `
       <img src="${thumbFor(m)}" alt="">
       ${m.type==='video' ? '<span class="mPlay">▶</span>' : ''}
+      ${(m.marks && m.marks.length) ? '<span class="mAnnoTag">✏️</span>' : ''}
       <span class="mTypeBadge">${badge}</span>
       ${editMode ? `<button class="mRemove" title="✕">✕</button>` : ''}
     `;
@@ -1557,7 +1961,7 @@ function renderMediaGroup_(grid, loc, indices){
     if(editMode){
       card.querySelector('.mRemove').onclick = (ev)=>{
         ev.stopPropagation();
-        loc.media.splice(idx,1);
+        sendToUnsorted(loc.media.splice(idx,1));
         renderDpMedia(loc); renderList(); renderPhotoGrid(); saveState();
       };
       if(m.type !== 'video'){
@@ -1581,6 +1985,26 @@ function renderMediaGroup_(grid, loc, indices){
       m.caption = this.value; saveState();
     }, 350));
     cell.appendChild(cap);
+
+    const suns = loc.media.filter(x => x.type === 'sunseeker');
+    if(m.type === 'image' && suns.length){
+      const fn = u => (u||'').split('/').pop();
+      if(editMode){
+        const sel = document.createElement('select');
+        sel.className = 'mPair';
+        sel.innerHTML = `<option value="">${t('pairNone')}</option>` + suns.map((x,i)=>{
+          const f = fn(x.url);
+          return `<option value="${escapeHtml(f)}" ${m.pair===f?'selected':''}>☀️ ${escapeHtml(x.caption || ('Sunseeker ' + (i+1)))}</option>`;
+        }).join('');
+        sel.onchange = ()=>{ if(sel.value) m.pair = sel.value; else delete m.pair; saveState(); };
+        cell.appendChild(sel);
+      } else if(m.pair){
+        const tag = document.createElement('div'); tag.className = 'mPairTag';
+        const hit = suns.find(x => fn(x.url) === m.pair);
+        tag.textContent = '☀️ ' + (hit && hit.caption ? hit.caption : 'Sunseeker');
+        cell.appendChild(tag);
+      }
+    }
 
     grid.appendChild(cell);
   });
@@ -1657,45 +2081,282 @@ document.getElementById('pickerConfirm').onclick = ()=>{
 /* =========================================================
    7. 라이트박스
    ========================================================= */
-let lbLocId = null, lbIndex = 0;
-function openLightbox(locId, index){
-  lbLocId = locId; lbIndex = index;
+/* 🔴 라이트박스를 «장소에 매이지 않게» 일반화했다 (2026-10-09) —
+   사진 옮기기 화면의 「미분류」는 LOCATIONS 에 없어서, 전처럼 장소 id 로만 열면 못 본다. */
+let lbItems = [], lbTitle = '', lbIndex = 0;
+function openLightboxItems(items, index, title){
+  if(!items || !items.length) return;
+  lbItems = items; lbIndex = index || 0; lbTitle = title || '';
   document.getElementById('lightbox').classList.add('open');
   renderLightbox();
 }
-function closeLightbox(){ document.getElementById('lightbox').classList.remove('open'); document.getElementById('lbStageInner').innerHTML=''; }
+function openLightbox(locId, index){
+  const loc = LOCATIONS.find(l=>l.id===locId); if(!loc) return;
+  openLightboxItems(loc.media, index, loc.title);
+}
+function closeLightbox(){ stopAnnotating_(); document.getElementById('lightbox').classList.remove('open'); document.getElementById('lbStageInner').innerHTML=''; }
+
+/* ✏️ 사진 위 표시 (2026-10-09 대표 지시 「사진에 마킹이나 텍스트 입력해서 편집」)
+   🔴 사진 파일은 안 고친다 — 선·글자를 사진 «위에» 얹어 media.marks 에 저장한다(좌표는 0~1 비율).
+      그래서 원본은 그대로 남고, 지우면 깨끗이 돌아간다. 「받기」를 누르면 표시를 합친 그림이 내려받아진다. */
+let annoOn = false, annoTool = 'pen', annoDraft = null;
+let annoEdit = null;   /* 글자 입력칸 {media, idx(-1=새 글자), x, y, c, ta} */
+let annoMove = null;   /* 글자 끌기 {i, px, py, ox, oy, moved} */
+/* 🅣 글자는 사진 위에서 «바로» 친다 (2026-10-09 대표 지시 「글자 쓰면 이동하고 수정하고 다음칸으로 넘어가고 다 되야지」)
+   · Enter = 다음 줄 · 바깥 클릭/완료/⌘Enter/Esc = 끝 · 글자를 끌면 옮겨지고, 한 번 누르면 다시 고친다
+   🔴 치는 동안엔 화면을 다시 그리지 않는다 — 한글 조합이 끊기지 않게(CLAUDE.md §3-5 ⑧) */
+function openTextEditor_(media, x, y, c, idx){
+  commitTextEditor_();
+  const wrap = document.querySelector('#lbStageInner .lbImgWrap'); if(!wrap) return;
+  const r = wrap.querySelector('img').getBoundingClientRect();
+  const z = idx >= 0 ? (media.marks[idx].z || 0.045) : Number(document.getElementById('annoSize').value) || 0.045;
+  const fs = r.width * z;
+  const ta = document.createElement('textarea');
+  ta.className = 'annoTa';
+  ta.value = idx >= 0 ? (media.marks[idx].s || '') : '';
+  ta.placeholder = t('annoTextPrompt');
+  ta.style.left = (x * r.width) + 'px';
+  ta.style.top = (y * r.height - fs * 0.95) + 'px';
+  ta.style.fontSize = fs + 'px';
+  ta.style.color = c;
+  ta.addEventListener('keydown', ev=>{
+    ev.stopPropagation();   /* ←→·Esc 가 사진 넘김/닫기로 새지 않게 */
+    if(ev.isComposing) return;
+    if(ev.key === 'Escape' || ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter')){ ev.preventDefault(); commitTextEditor_(); }
+  });
+  ta.addEventListener('pointerdown', ev=> ev.stopPropagation());
+  ta.addEventListener('blur', ev=>{
+    /* 색 고르기 등 도구줄을 누른 건 «끝»이 아니다 — 입력칸을 남겨 둔다 */
+    if(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest('#lbAnnoBar') && ev.relatedTarget.id !== 'annoDone') return;
+    setTimeout(()=>{ if(annoEdit && annoEdit.ta === ta) commitTextEditor_(); }, 0);
+  });
+  wrap.appendChild(ta);
+  annoEdit = { media, idx, x, y, c, z, ta };
+  document.getElementById('annoSize').value = String(z);
+  drawAnno_(media);
+  setTimeout(()=>{ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 0);
+}
+function commitTextEditor_(){
+  if(!annoEdit) return;
+  const e = annoEdit; annoEdit = null;
+  const s = e.ta.value.replace(/\s+$/, '');
+  e.ta.remove();
+  const marks = (e.media.marks = e.media.marks || []);
+  if(e.idx >= 0){
+    if(s.trim()){ marks[e.idx].s = s; marks[e.idx].c = e.c; marks[e.idx].z = e.z; } else marks.splice(e.idx, 1);   /* 비우면 지워진다 */
+  } else if(s.trim()){
+    marks.push({ t:'text', x:e.x, y:e.y, s, c:e.c, z:e.z });
+  }
+  saveState(); drawAnno_(e.media);
+}
+function annoMedia_(){ return lbItems[lbIndex]; }
+function annoSvg_(){ return document.querySelector('#lbStageInner svg.annoLayer'); }
+function shapeSvg_(m, W, H, idx){
+  const c = m.c || '#ff3b30', sw = Math.max(2, W * 0.006);
+  if(m.t === 'pen'){
+    const d = m.pts.map((p,i)=> (i?'L':'M') + (p[0]*W).toFixed(1) + ' ' + (p[1]*H).toFixed(1)).join(' ');
+    return `<path d="${d}" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  if(m.t === 'circle'){
+    const cx=(m.x1+m.x2)/2*W, cy=(m.y1+m.y2)/2*H, rx=Math.abs(m.x2-m.x1)/2*W, ry=Math.abs(m.y2-m.y1)/2*H;
+    return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="${c}" stroke-width="${sw}"/>`;
+  }
+  if(m.t === 'arrow'){
+    const x1=m.x1*W, y1=m.y1*H, x2=m.x2*W, y2=m.y2*H, a=Math.atan2(y2-y1,x2-x1), h=sw*4.5;
+    const p1=[x2-h*Math.cos(a-0.45), y2-h*Math.sin(a-0.45)], p2=[x2-h*Math.cos(a+0.45), y2-h*Math.sin(a+0.45)];
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round"/>`
+         + `<polygon points="${x2},${y2} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}" fill="${c}"/>`;
+  }
+  if(m.t === 'text'){
+    /* 여러 줄 — 줄마다 tspan (Enter 로 다음 줄) */
+    const fs = W * (m.z || 0.045), x = m.x*W;   /* m.z = 글자 크기(사진 폭 대비) */
+    const lines = String(m.s||'').split('\n').map((ln,k)=> `<tspan x="${x}" dy="${k ? fs*1.2 : 0}">${escapeHtml(ln) || ' '}</tspan>`).join('');
+    return `<text data-i="${idx==null?'':idx}" x="${x}" y="${m.y*H}" fill="${c}" font-size="${fs}" font-weight="800" stroke="#000" stroke-width="${fs*0.08}" paint-order="stroke" font-family="-apple-system,'Apple SD Gothic Neo',sans-serif">${lines}</text>`;
+  }
+  return '';
+}
+function drawAnno_(media){
+  const svg = annoSvg_(); if(!svg) return;
+  const img = svg.parentNode.querySelector('img');
+  const W = img.naturalWidth || 1000, H = img.naturalHeight || 1000;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  const marks = media.marks || [];
+  const editing = (annoEdit && annoEdit.media === media) ? annoEdit.idx : -1;   /* 고치는 중인 글자는 입력칸이 대신 보인다 */
+  svg.innerHTML = marks.map((m,i)=> i === editing ? '' : shapeSvg_(m, W, H, i)).join('')
+                + (annoDraft ? shapeSvg_(annoDraft, W, H) : '');
+}
+function annoPoint_(ev){
+  const r = annoSvg_().getBoundingClientRect();
+  return [Math.min(1,Math.max(0,(ev.clientX - r.left)/r.width)), Math.min(1,Math.max(0,(ev.clientY - r.top)/r.height))];
+}
+function startAnnotating_(){
+  const media = annoMedia_(); if(!media) return;
+  annoOn = true;
+  document.querySelector('#lbStageInner .lbImgWrap').classList.add('annotating');
+  document.getElementById('lbAnnoBar').classList.add('open');
+  document.querySelectorAll('#lbAnnoBar [data-tool]').forEach(b=> b.classList.toggle('on', b.dataset.tool===annoTool));
+  const svg = annoSvg_();
+  svg.onpointerdown = (ev)=>{
+    ev.preventDefault(); ev.stopPropagation();
+    if(annoEdit){ commitTextEditor_(); return; }          /* 쓰는 중 바깥을 누르면 = 끝내기만 */
+    const [x,y] = annoPoint_(ev), c = document.getElementById('annoColor').value;
+    /* 글자 «덩어리» 전체를 누를 수 있게 — 글자 사이·줄 사이 빈틈을 눌러도 잡힌다 */
+    const hit = Array.from(svg.querySelectorAll('text[data-i]')).reverse().find(el=>{
+      const r = el.getBoundingClientRect(), pad = 6;
+      return ev.clientX >= r.left-pad && ev.clientX <= r.right+pad && ev.clientY >= r.top-pad && ev.clientY <= r.bottom+pad;
+    });
+    if(hit && hit.dataset.i !== ''){                      /* 이미 쓴 글자 — 끌면 이동, 누르면 고치기 */
+      const i = Number(hit.dataset.i), m = media.marks[i];
+      svg.setPointerCapture(ev.pointerId);
+      annoMove = { i, px:x, py:y, ox:m.x, oy:m.y, moved:false };
+      return;
+    }
+    if(annoTool === 'text'){ openTextEditor_(media, x, y, c, -1); return; }
+    svg.setPointerCapture(ev.pointerId);
+    annoDraft = annoTool === 'pen' ? { t:'pen', pts:[[x,y]], c } : { t:annoTool, x1:x, y1:y, x2:x, y2:y, c };
+    drawAnno_(media);
+  };
+  svg.onpointermove = (ev)=>{
+    if(annoMove){
+      const [x,y] = annoPoint_(ev), m = media.marks[annoMove.i];
+      if(Math.abs(x-annoMove.px) + Math.abs(y-annoMove.py) > 0.006) annoMove.moved = true;
+      if(annoMove.moved){ m.x = annoMove.ox + (x-annoMove.px); m.y = annoMove.oy + (y-annoMove.py); drawAnno_(media); }
+      return;
+    }
+    if(!annoDraft) return;
+    const [x,y] = annoPoint_(ev);
+    if(annoDraft.t === 'pen') annoDraft.pts.push([+x.toFixed(4), +y.toFixed(4)]); else { annoDraft.x2 = x; annoDraft.y2 = y; }
+    drawAnno_(media);
+  };
+  svg.onpointerup = ()=>{
+    if(annoMove){
+      const mv = annoMove; annoMove = null;
+      const m = media.marks[mv.i];
+      if(mv.moved) saveState(); else openTextEditor_(media, m.x, m.y, m.c, mv.i);
+      return;
+    }
+    if(!annoDraft) return;
+    const d = annoDraft; annoDraft = null;
+    const tiny = d.t === 'pen' ? d.pts.length < 2 : (Math.abs(d.x2-d.x1) + Math.abs(d.y2-d.y1) < 0.01);
+    if(!tiny){ (media.marks = media.marks || []).push(d); saveState(); }
+    drawAnno_(media);
+  };
+}
+function stopAnnotating_(){
+  if(!annoOn) return;
+  commitTextEditor_();
+  annoOn = false; annoDraft = null; annoMove = null;
+  const w = document.querySelector('#lbStageInner .lbImgWrap'); if(w) w.classList.remove('annotating');
+  document.getElementById('lbAnnoBar').classList.remove('open');
+  if(currentLocId != null){ const cur = LOCATIONS.find(l=>l.id===currentLocId); if(cur) renderDpMedia(cur); }
+}
+document.getElementById('lbAnnoBtn').onclick = ()=>{ if(annoOn) stopAnnotating_(); else startAnnotating_(); };
+document.querySelectorAll('#lbAnnoBar [data-tool]').forEach(b=> b.onclick = ()=>{
+  annoTool = b.dataset.tool;
+  document.querySelectorAll('#lbAnnoBar [data-tool]').forEach(x=> x.classList.toggle('on', x===b));
+});
+/* 쓰는 중에 색을 바꾸면 그 글자에 바로 */
+document.getElementById('annoColor').addEventListener('input', function(){ if(annoEdit){ annoEdit.c = this.value; annoEdit.ta.style.color = this.value; } });
+document.getElementById('annoColor').addEventListener('change', ()=>{ if(annoEdit) annoEdit.ta.focus(); });
+/* 글자 크기 — 쓰는 중이면 그 글자에 바로 */
+document.getElementById('annoSize').addEventListener('change', function(){
+  if(!annoEdit) return;
+  const r = annoEdit.ta.parentNode.querySelector('img').getBoundingClientRect();
+  const z = Number(this.value) || 0.045, oldFs = parseFloat(annoEdit.ta.style.fontSize) || 0;
+  annoEdit.z = z; annoEdit.ta.style.fontSize = (r.width * z) + 'px';
+  annoEdit.ta.style.top = (parseFloat(annoEdit.ta.style.top) + oldFs*0.95 - r.width*z*0.95) + 'px';
+  annoEdit.ta.focus();
+});
+document.getElementById('annoUndo').onclick = ()=>{ commitTextEditor_(); const m = annoMedia_(); if(m && m.marks && m.marks.length){ m.marks.pop(); saveState(); drawAnno_(m); } };
+document.getElementById('annoClear').onclick = ()=>{
+  commitTextEditor_();
+  const m = annoMedia_(); if(!m || !m.marks || !m.marks.length) return;
+  if(!confirm(t('annoClearConfirm'))) return;
+  m.marks = []; saveState(); drawAnno_(m);
+};
+document.getElementById('annoDone').onclick = ()=>{ stopAnnotating_(); renderLightbox(); };
+function downloadAnnotated_(media){
+  const img = new Image();
+  img.onload = ()=>{
+    try{
+      const W = img.naturalWidth, H = img.naturalHeight;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${(media.marks||[]).map(m=>shapeSvg_(m,W,H)).join('')}</svg>`;
+      const ov = new Image();
+      ov.onload = ()=>{
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); ctx.drawImage(ov, 0, 0);
+        cv.toBlob(b=>{
+          const u = URL.createObjectURL(b), a = document.createElement('a');
+          a.href = u; a.download = (media.url.split('/').pop()).replace(/\.\w+$/, '') + '_표시.jpg';
+          document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=> URL.revokeObjectURL(u), 3000);
+        }, 'image/jpeg', 0.9);
+      };
+      ov.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }catch(e){ flashError(t('downloadFail')); }
+  };
+  img.onerror = ()=> flashError(t('downloadFail'));
+  img.src = media.url;
+}
 document.getElementById('lbClose').onclick = closeLightbox;
 document.getElementById('lbPrev').onclick = ()=> stepLightbox(-1);
 document.getElementById('lbNext').onclick = ()=> stepLightbox(1);
 function stepLightbox(dir){
-  const loc = LOCATIONS.find(l=>l.id===lbLocId); if(!loc) return;
-  lbIndex = (lbIndex + dir + loc.media.length) % loc.media.length;
+  if(!lbItems.length) return;
+  lbIndex = (lbIndex + dir + lbItems.length) % lbItems.length;
   renderLightbox();
 }
 document.addEventListener('keydown', e=>{
   if(!document.getElementById('lightbox').classList.contains('open')) return;
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return;   /* 글자 치는 중엔 넘김·닫기 안 함 */
   if(e.key === 'Escape') closeLightbox();
   if(e.key === 'ArrowLeft') stepLightbox(-1);
   if(e.key === 'ArrowRight') stepLightbox(1);
 });
 function renderLightbox(){
-  const loc = LOCATIONS.find(l=>l.id===lbLocId); if(!loc || !loc.media.length) return;
-  const media = loc.media[lbIndex];
-  document.getElementById('lbTitle').textContent = loc.title;
-  document.getElementById('lbCounter').textContent = `${lbIndex+1} / ${loc.media.length}`;
+  if(!lbItems.length) return;
+  const media = lbItems[lbIndex];
+  document.getElementById('lbTitle').textContent = lbTitle;
+  document.getElementById('lbCounter').textContent = `${lbIndex+1} / ${lbItems.length}`;
   document.getElementById('lbCaption').textContent = media.caption || '';
   document.getElementById('lbSunBadge').style.display = media.type==='sunseeker' ? 'inline-flex' : 'none';
+  /* ☀️ 짝 — 「이 사진의 Sunseeker 는 이것」(2026-10-09 대표 지시). 짝이 없으면 같은 장소의 Sunseeker 로 */
+  const fname = u => (u||'').split('/').pop();
+  const pb = document.getElementById('lbPairBtn');
+  let jumpTo = -1, label = '';
+  if(media.type === 'sunseeker'){
+    jumpTo = lbItems.findIndex(x => x.pair && x.pair === fname(media.url));
+    if(jumpTo >= 0) label = t('lbPairToPhoto');
+  } else if(media.type !== 'video'){
+    if(media.pair){ jumpTo = lbItems.findIndex(x => fname(x.url) === media.pair); if(jumpTo >= 0) label = t('lbPairToSun'); }
+    if(jumpTo < 0){ jumpTo = lbItems.findIndex(x => x.type === 'sunseeker'); if(jumpTo >= 0) label = t('lbSpotSun'); }
+  }
+  if(jumpTo >= 0){ pb.style.display = ''; pb.textContent = label; pb.onclick = ()=>{ lbIndex = jumpTo; renderLightbox(); }; }
+  else { pb.style.display = 'none'; pb.onclick = null; }
   const dl = document.getElementById('lbDownload');
   dl.href = media.url;
   dl.setAttribute('download', media.url.split('/').pop());
   dl.textContent = t('lbDownload');
   const stage = document.getElementById('lbStageInner');
+  stopAnnotating_();
   stage.innerHTML = media.type === 'video'
     ? `<video src="${media.url}" controls autoplay></video>`
-    : `<img src="${media.url}" alt="${escapeHtml(media.caption||'')}">`;
+    : `<span class="lbImgWrap"><img src="${media.url}" alt="${escapeHtml(media.caption||'')}"><svg class="annoLayer"></svg></span>`;
+  if(media.type !== 'video'){
+    const img = stage.querySelector('img');
+    const go = ()=> drawAnno_(media);
+    if(img.complete && img.naturalWidth) go(); else img.addEventListener('load', go, { once:true });
+  }
+  /* ✏️ 표시 버튼 — 편집 중이고, 핀에 붙은 사진일 때만(미분류 사진은 옮긴 뒤에) */
+  const ab = document.getElementById('lbAnnoBtn');
+  const onPin = LOCATIONS.some(l => (l.media||[]).includes(media));
+  ab.style.display = (editMode && !PUBLISHED && media.type !== 'video' && onPin) ? '' : 'none';
+  ab.textContent = t('lbAnnoBtn');
+  /* 표시가 있으면 「받기」는 표시를 합친 그림으로 */
+  dl.onclick = (media.marks && media.marks.length) ? (ev)=>{ ev.preventDefault(); downloadAnnotated_(media); } : null;
   const dots = document.getElementById('lbDots');
   dots.innerHTML = '';
-  loc.media.forEach((m, i)=>{
+  lbItems.forEach((m, i)=>{
     const d = document.createElement('span');
     d.className = i===lbIndex ? 'on' : '';
     d.onclick = ()=>{ lbIndex = i; renderLightbox(); };
@@ -1713,6 +2374,7 @@ document.getElementById('btnExport').onclick = ()=>{
     savedAt: new Date().toISOString(),
     locations: LOCATIONS,
     categories: CATEGORIES,
+    mapTexts: MAP_TEXTS,
     gmapsKey: (localStorage.getItem(GMAPS_KEY_STORAGE) || '')
   };
   const shown = JSON.parse(JSON.stringify(bundle));
@@ -1745,6 +2407,19 @@ document.getElementById('importFileInput').addEventListener('change', function(e
       let text = String(ev.target.result).replace(/^\s*const\s+LOCATIONS\s*=\s*/,'').replace(/;\s*$/,'');
       const data = JSON.parse(text);
       /* 옛 형식(배열)과 새 형식({locations,categories,gmapsKey}) 둘 다 받는다 */
+      if(data && data.mode === 'assign' && data.assign){
+        /* 🔴 「핀은 내가 지정한 곳 픽스」(2026-10-09 대표) — 핀은 건드리지 않고 «사진 배치만» 갈아끼운다 */
+        LOCATIONS.forEach(l=>{ l.media = Array.isArray(data.assign[l.id]) ? data.assign[l.id] : []; });
+        if(Array.isArray(data.mediaExtra)) saveMediaExtra(data.mediaExtra);
+        if(Array.isArray(data.unsorted)) saveUnsorted(data.unsorted);
+        const missing = Object.keys(data.assign).filter(id => !LOCATIONS.some(l => String(l.id) === String(id)));
+        if(missing.length) alert('⚠ 이 핀 번호가 지금 지도에 없어 그 사진은 못 넣었습니다: #' + missing.join(', #'));
+        rebuildAllMarkers(); saveState(); flashSaved();
+        if(currentLocId != null) openDetail(currentLocId, false);
+        document.getElementById('exportModal').classList.remove('open');
+        e.target.value = '';
+        return;
+      }
       if(Array.isArray(data)){
         LOCATIONS = data;
       } else if(data && Array.isArray(data.locations)){
@@ -1755,6 +2430,9 @@ document.getElementById('importFileInput').addEventListener('change', function(e
         if(data.gmapsKey && !String(data.gmapsKey).includes('…')){
           localStorage.setItem(GMAPS_KEY_STORAGE, data.gmapsKey);
         }
+        if(Array.isArray(data.mediaExtra)) saveMediaExtra(data.mediaExtra);
+        if(Array.isArray(data.unsorted)) saveUnsorted(data.unsorted);
+        if(Array.isArray(data.mapTexts)){ MAP_TEXTS = data.mapTexts; saveMapTexts(); redrawMapTexts(); }
       } else throw new Error('bad format');
       nextId = LOCATIONS.reduce((m,l)=>Math.max(m,l.id||0),0)+1;
       rebuildAllMarkers(); saveState(); flashSaved();
@@ -1791,8 +2469,10 @@ function loadUnsorted(){
 function saveUnsorted(arr){
   try{ localStorage.setItem(UNSORTED_KEY, JSON.stringify(arr)); }catch(e){}
   const btn = document.getElementById('btnUnsorted');
-  btn.style.display = arr.length ? 'block' : 'none';
-  btn.textContent = t('btnUnsorted')(arr.length);
+  /* 🔴 미분류가 0개여도 숨기지 않는다 — 이 버튼이 「사진을 장소끼리 옮기는」 유일한 문이다
+     (2026-10-09 대표 지적: "사진을 여기서 저기로 어떻게 옮겨") */
+  btn.style.display = PUBLISHED ? 'none' : 'block';
+  btn.textContent = arr.length ? t('btnUnsorted')(arr.length) : t('btnMoveMedia');
 }
 
 function sanitizeFilename(name){
@@ -1841,6 +2521,14 @@ let mediaDirReady = false;     /* 동기적으로 판단해야 해서 따로 들
   try{
     const h = await idbGet('mediaDir');
     if(h){
+      /* 🔴 «저장돼 있던» 폴더도 이름을 다시 본다 — 전에 엉뚱한 폴더를 연결해 둔 채로 두면
+         사진이 계속 그리로 저장되고 화면에는 안 보인다 (2026-10-09 실제로 그랬다). */
+      if(h.name !== MEDIA_FOLDER.replace(/\/$/,'')){
+        mediaDirHandle = null; mediaDirReady = false;
+        await idbSet('mediaDir', null);
+        setBackupStatus('off');
+        return;
+      }
       mediaDirHandle = h;
       mediaDirReady = (await h.queryPermission({mode:'readwrite'})) === 'granted';
     }
@@ -1958,6 +2646,11 @@ async function handleBulkUpload(fileList){
   saveMediaExtra(extra);
 
   document.getElementById('uploadProgressModal').classList.remove('open');
+  if(!newEntries.length){
+    alert('⚠ 올라간 파일이 없습니다.\n폴더 연결이 「261009_로케이션답사_미디어」 인지 확인해주세요.');
+    setBackupStatus('off');
+    return;
+  }
   const affectedIds = clusterAndAssign(newEntries);
   flashSaved();
   openReviewModal(affectedIds);
@@ -2037,8 +2730,10 @@ function renderReviewModal(affectedIds){
     <div class="reviewGrid" data-grid="unsorted"></div>`;
   wrap.appendChild(unsortedCol);
   const uGrid = unsortedCol.querySelector('.reviewGrid');
+  const unsortedAsMedia = unsorted.map(e=>({ type:e.type, url:mediaFullPath(e.file), caption:'' }));
   unsorted.forEach((e,idx)=>{
-    uGrid.appendChild(makeReviewChip(e.type, mediaThumbPath(e.file), 'unsorted', null, idx));
+    uGrid.appendChild(makeReviewChip(e.type, mediaThumbPath(e.file), 'unsorted', null, idx,
+      ()=> openLightboxItems(unsortedAsMedia, idx, t('unsortedColTitle'))));
   });
   bindDropzone(unsortedCol);
 
@@ -2049,20 +2744,38 @@ function renderReviewModal(affectedIds){
     const color = loc.color || catColor(loc.category);
     col.innerHTML = `<div class="reviewColHead"><span class="rcDot" style="background:${color}"></span>
       <span class="rcName">${escapeHtml(loc.title||t('noTitle'))}</span><span class="rcCount">${loc.media.length}</span></div>
-      <div class="reviewGrid" data-grid="${loc.id}"></div>`;
+      <div class="reviewZone sun" data-kind="sun"><div class="rzHead">${t('lblSunMedia')}</div><div class="reviewGrid"></div><div class="rzEmpty">${t('sunDropHint')}</div></div>
+      <div class="reviewZone" data-kind="photo"><div class="rzHead">📷 ${t('lblMedia')}</div><div class="reviewGrid"></div><div class="rzEmpty">${t('photoDropHint')}</div></div>`;
     wrap.appendChild(col);
-    const grid = col.querySelector('.reviewGrid');
+    /* ☀️ 2026-10-09 대표 지시 「썬시커로 사진 옮길수 있게」 — 핀 칸을 Sunseeker / 사진 두 구역으로 나눴다.
+       놓은 구역에 따라 종류가 바뀐다(영상은 그대로). 칸 머리에 놓으면 종류는 안 바뀐다. */
+    const sunGrid = col.querySelector('.reviewZone.sun .reviewGrid');
+    const phoGrid = col.querySelector('.reviewZone[data-kind="photo"] .reviewGrid');
     loc.media.forEach((m,idx)=>{
-      grid.appendChild(makeReviewChip(m.type, thumbFor(m), 'loc', loc.id, idx));
+      (m.type === 'sunseeker' ? sunGrid : phoGrid).appendChild(makeReviewChip(m.type, thumbFor(m), 'loc', loc.id, idx,
+        ()=> openLightboxItems(loc.media, idx, loc.title || t('noTitle'))));
+    });
+    col.querySelectorAll('.reviewZone').forEach(z=>{
+      if(z.querySelector('.reviewGrid').children.length) z.querySelector('.rzEmpty').style.display = 'none';
+      bindDropzone(z, loc.id);
     });
     bindDropzone(col);
   });
 }
-function makeReviewChip(type, thumbSrc, from, locId, idx){
+function makeReviewChip(type, thumbSrc, from, locId, idx, onOpen){
   const chip = document.createElement('div');
   chip.className = 'reviewChip';
   chip.draggable = true;
-  chip.innerHTML = `<img src="${thumbSrc}" alt=""><span class="rcType">${type==='video'?'🎬':(type==='sunseeker'?'☀️':'📷')}</span>`;
+  chip.title = t('reviewChipHint');
+  chip.innerHTML = `<img src="${thumbSrc}" alt=""><span class="rcType">${type==='video'?'🎬':(type==='sunseeker'?'☀️':'📷')}</span>`
+    + `<span class="rcZoom">🔍</span>`;
+  /* 🔴 더블클릭 = 크게 보기(영상은 재생). 끌어서 옮기기와 안 부딪힌다 */
+  if(onOpen){
+    chip.addEventListener('dblclick', (ev)=>{ ev.preventDefault(); ev.stopPropagation(); onOpen(); });
+    const z = chip.querySelector('.rcZoom');
+    z.addEventListener('click', (ev)=>{ ev.preventDefault(); ev.stopPropagation(); onOpen(); });
+    z.draggable = false;
+  }
   chip.addEventListener('dragstart', (ev)=>{
     dragPayload = { from, locId, idx };
     chip.classList.add('dragging');
@@ -2072,12 +2785,20 @@ function makeReviewChip(type, thumbSrc, from, locId, idx){
   chip.addEventListener('dragend', ()=> chip.classList.remove('dragging'));
   return chip;
 }
-function bindDropzone(col){
-  col.addEventListener('dragover', (ev)=>{ ev.preventDefault(); col.classList.add('dragover'); });
+function bindDropzone(col, zoneLocId){
+  col.addEventListener('dragover', (ev)=>{ ev.preventDefault(); if(zoneLocId!=null) ev.stopPropagation(); col.classList.add('dragover'); });
   col.addEventListener('dragleave', ()=> col.classList.remove('dragover'));
   col.addEventListener('drop', (ev)=>{
     ev.preventDefault();
     col.classList.remove('dragover');
+    if(zoneLocId != null){   /* 구역(Sunseeker/사진)에 놓음 — 칸 전체 drop 은 안 돌게 */
+      ev.stopPropagation();
+      const colEl = col.closest('.reviewCol'); if(colEl) colEl.classList.remove('dragover');
+      if(!dragPayload) return;
+      moveReviewItem(dragPayload, {target:'loc', locId:zoneLocId, kind:col.dataset.kind});
+      dragPayload = null;
+      return;
+    }
     if(!dragPayload) return;
     moveReviewItem(dragPayload, col.dataset.target==='unsorted' ? {target:'unsorted'} : {target:'loc', locId:Number(col.dataset.locId)});
     dragPayload = null;
@@ -2103,7 +2824,7 @@ function moveReviewItem(src, dst){
     const uns = loadUnsorted();
     if(itemKind === 'media'){
       const fname = item.url.split('/').pop();
-      uns.push({ file:fname, type:item.type==='sunseeker'?'image':item.type, lat:null, lng:null });
+      uns.push({ file:fname, type:item.type, lat:null, lng:null });
     } else {
       uns.push(item);
     }
@@ -2111,11 +2832,18 @@ function moveReviewItem(src, dst){
   } else {
     const loc = LOCATIONS.find(l=>l.id===dst.locId);
     if(!loc) return;
+    let added;
     if(itemKind === 'raw'){
-      loc.media.push({ type: item.type, url: mediaFullPath(item.file), caption:'' });
+      added = { type: item.type, url: mediaFullPath(item.file), caption:'' };
     } else {
-      loc.media.push(item);
+      added = item;
     }
+    /* ☀️ 「Sunseeker」 칸에 놓으면 Sunseeker, 「사진」 칸에 놓으면 일반 사진 (영상은 그대로) */
+    if(added.type !== 'video'){
+      if(dst.kind === 'sun') added.type = 'sunseeker';
+      else if(dst.kind === 'photo') added.type = 'image';
+    }
+    loc.media.push(added);
   }
   renderReviewModal(null);
   renderList(); renderPhotoGrid(); refreshDistancesIfOpen();
@@ -2166,6 +2894,7 @@ async function doBackup(){
       savedAt: new Date().toISOString(),
       locations: LOCATIONS,
       categories: CATEGORIES,
+      mapTexts: MAP_TEXTS,
       gmapsKey: (localStorage.getItem(GMAPS_KEY_STORAGE) || '')
     };
     const fh = await dir.getFileHandle(BACKUP_FILENAME, { create:true });
@@ -2234,6 +2963,79 @@ document.getElementById('btnUnsorted').onclick = ()=> openReviewModal(null);
 document.getElementById('reviewClose').onclick = ()=> document.getElementById('reviewModal').classList.remove('open');
 document.getElementById('reviewDone').onclick = ()=> document.getElementById('reviewModal').classList.remove('open');
 
+
+/* =========================================================
+   🔄 V2 사진 자동 적용 (2026-10-09 대표: 「사진 데이터가 그대로인 것 같은데」)
+   불러오기 단계를 없앴다 — 새로고침하면 «한 번» 저절로 바뀐다.
+   🔴 핀 위치·이름·노트는 안 건드린다(「핀은 내가 지정한 곳 픽스」). 사진 배치만 바꾼다.
+   🔴 이미 V2 사진이 하나라도 핀에 있으면 «안 한다» — 대표님이 V2로 정리한 걸 덮지 않게.
+   ========================================================= */
+const V2_ASSIGN = {"9": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/C696907E-54E8-41A4-939C-0DFDA527D746.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/73918932-F987-42AB-85C5-C8AE3BE6DF37.JPG", "caption": ""}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/1AA1C701-F896-4551-9EFF-933F0FAB7EAE.MP4", "caption": "Sunseeker 화면 녹화 — 잔디밭"}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/533A24C3-FF76-4CFD-9E48-815B8178CFEA.MP4", "caption": "Sunseeker 화면 녹화 — 잔디밭"}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/55201F08-00FA-49A2-93F4-2E90917040DA.MP4", "caption": "잔디밭 둘러보기"}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/E467E488-5EA8-43A4-9B4A-6E5FF4761096.MP4", "caption": "잔디밭 둘러보기"}], "12": [{"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG", "caption": "Sunseeker 09:17"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/145E6859-28BE-444C-820A-68414AA677EA.JPG", "caption": "Sunseeker 09:19"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/A3854111-2A59-4E8A-9729-9CA88B621A04.JPG", "caption": "Sunseeker 09:20"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/D225C0B4-61A3-4EFB-9B65-DCD73404A52F.JPG", "caption": "Sunseeker 09:20"}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/FAD60746-4DEA-4F43-B82C-664AFDCC88E6.JPG", "caption": "", "pair": "06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG"}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/5069B284-EA79-4BBA-8675-8DCD8FB2FAB4.JPG", "caption": "", "pair": "06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG"}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/1FC04EF1-2FAD-49C9-944A-9D1778563E0F.JPG", "caption": "", "pair": "06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG"}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/6D6628B7-9CD2-496C-B50D-0259EE465B06.JPG", "caption": "", "pair": "06F5264D-81F4-41A7-98B2-3DF3375D9C93.JPG"}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/24578795-1937-45BB-A914-A12812553C9A.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/6102FC30-2390-49E1-8345-99CE1E99CCBA.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/A366254E-BCA4-416F-9586-6E72645B02F1.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/DF244BFB-140E-4E38-8A26-3508FEBBEBD7.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/DDD61AE2-C845-484D-8A81-F4810F3F9E21.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/D9E5D6D1-BB94-4E96-BC9F-F0EFBF920B00.PNG", "caption": "화면 캡처"}, {"type": "video", "url": "261009_로케이션답사_미디어/원본/2CBF04B0-6C64-4829-9F3E-302A3A61511F.MP4", "caption": "정원 둘러보기"}], "13": [{"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/098706E3-E0AF-414D-AB13-84325C31D053.JPG", "caption": "Sunseeker 09:24~25"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/1736E8A9-01DD-4D65-A755-1F75BDBB8232.JPG", "caption": "Sunseeker 09:24~25"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/41B49BE9-DE58-428B-A64D-11513A5EEAB6.JPG", "caption": "Sunseeker 09:24~25"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/9E76CA40-30FA-4733-A62A-30C414F7656F.JPG", "caption": "Sunseeker 09:24~25"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/A2AD4071-0583-4083-A0CE-59B660415E22.JPG", "caption": "Sunseeker 09:24~25"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/C0BAF1A6-621C-4336-BFD6-4BA8FA66D767.JPG", "caption": "Sunseeker 09:24~25"}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/E932A86A-58DA-4BD5-BF65-8A3DC6EDA8B2.JPG", "caption": "Sunseeker 09:24~25"}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/28AADFCC-E964-4B91-9C90-5837F5FE53BB.JPG", "caption": ""}]};
+(function applyV2Once(){
+  if(PUBLISHED) return;
+  const v2files = new Set(MEDIA_FILES.map(f=>f.file));
+  const hasV2 = LOCATIONS.some(l => (l.media||[]).some(m => v2files.has((m.url||'').split('/').pop())));
+  if(hasV2) return;
+  const ids = Object.keys(V2_ASSIGN);
+  if(!ids.some(id => LOCATIONS.some(l => String(l.id) === id))) return;   /* 핀이 다르면 손대지 않는다 */
+  LOCATIONS.forEach(l=>{ l.media = Array.isArray(V2_ASSIGN[l.id]) ? JSON.parse(JSON.stringify(V2_ASSIGN[l.id])) : []; });
+  saveMediaExtra([]); saveUnsorted([]);
+  saveState();
+  setTimeout(()=>{ rebuildAllMarkers(); alert('✅ 사진을 V2(29개)로 바꿨습니다.\n핀 위치·이름·노트는 그대로입니다.'); }, 300);
+})();
+
+/* ➕ 나중에 들어온 파일은 «한 번만» 정해진 핀에 넣는다 (2026-10-09 썬시커 폴더)
+   🔴 이미 어느 핀에든 있으면 안 넣는다 · 한 번 넣은 뒤 대표님이 지우면 다시 안 살린다 */
+const ADD_ONCE = [
+  { pin: 9, media: { type:'video', url: MEDIA_FOLDER + '원본/DBD15653-3325-4B10-B5EE-8F5AD714CDFF.MP4', caption:'Sunseeker 360° — 잔디밭' } }
+];
+(function addOnce(){
+  if(PUBLISHED) return;
+  let added = 0;
+  ADD_ONCE.forEach(a=>{
+    const fn = a.media.url.split('/').pop();
+    const key = 'scout_added_' + fn;
+    try{ if(localStorage.getItem(key)) return; }catch(e){ return; }
+    const exists = LOCATIONS.some(l => (l.media||[]).some(m => (m.url||'').split('/').pop() === fn));
+    const pin = LOCATIONS.find(l => l.id === a.pin);
+    if(!exists && pin){ pin.media.push(JSON.parse(JSON.stringify(a.media))); added++; }
+    if(exists || pin){ try{ localStorage.setItem(key, '1'); }catch(e){} }
+  });
+  if(added){ saveState(); setTimeout(()=>{ rebuildAllMarkers(); if(currentLocId!=null) openDetail(currentLocId,false); }, 350); }
+})();
+
+/* ♻️ 한 번만 — 핀을 지울 때 같이 사라졌던 사진들을 미분류 칸으로 되살린다 (2026-10-09)
+   🔴 핀·지도는 안 건드린다. 미분류 칸은 공개본에 안 나간다. */
+(function recoverOrphansOnce(){
+  if(PUBLISHED) return;
+  const KEY = 'scout_recover_261009_1';
+  try{ if(localStorage.getItem(KEY)) return; }catch(e){ return; }
+  const placed = new Set();
+  LOCATIONS.forEach(l => (l.media||[]).forEach(m => placed.add((m.url||'').split('/').pop())));
+  const orphans = MEDIA_FILES.filter(f => !placed.has(f.file))
+                             .map(f => ({ type: f.type, url: mediaFullPath(f.file) }));
+  const n = sendToUnsorted(orphans);
+  try{ localStorage.setItem(KEY, '1'); }catch(e){}
+  if(n) setTimeout(()=> flashError('🗂 핀에 없던 사진 ' + n + '개를 미분류 칸에 모았습니다 — 「🗂 미분류」 버튼에서 끌어다 놓으세요'), 900);
+})();
+/* ♻️ 한 번만 — 위 복구 때 Sunseeker 9장이 «일반 사진»으로 바뀌어 들어간 것을 되돌린다 (2026-10-09)
+   (sendToUnsorted 가 sunseeker → image 로 바꾸던 버그. 카메라 정보 없음 = Sunseeker 앱 캡처로 재확인함) */
+(function fixRecoveredSunOnce(){
+  if(PUBLISHED) return;
+  const KEY = 'scout_recover_261009_2';
+  try{ if(localStorage.getItem(KEY)) return; }catch(e){ return; }
+  const SUN = ['098706E3','145E6859','1736E8A9','41B49BE9','9E76CA40','A2AD4071','C0BAF1A6','D225C0B4','E932A86A'];
+  const isSun = fn => SUN.some(p => (fn||'').startsWith(p));
+  let n = 0;
+  const uns = loadUnsorted();
+  uns.forEach(e=>{ if(isSun(e.file) && e.type !== 'sunseeker'){ e.type = 'sunseeker'; n++; } });
+  saveUnsorted(uns);
+  LOCATIONS.forEach(l => (l.media||[]).forEach(m=>{
+    if(isSun((m.url||'').split('/').pop()) && m.type === 'image'){ m.type = 'sunseeker'; n++; }
+  }));
+  if(n) saveState();
+  try{ localStorage.setItem(KEY, '1'); }catch(e){}
+})();
 /* =========================================================
    10. 초기 렌더
    ========================================================= */
@@ -2245,7 +3047,7 @@ applyLang();
       대표님 계정에 요금이 붙을 수 있다. 공개본에는 절대 키를 싣지 않는다. */
 if(PUBLISHED){
   ['btnEditToggle','btnSelectMode','btnExport','btnBulkUpload','btnUnsorted',
-   'btnEditCats','editBanner','bulkBar','uploadFolderHint','dpGmapsKeyBtn','svMovePinBtn']
+   'btnEditCats','editBanner','bulkBar','uploadFolderHint','dpGmapsKeyBtn','svMovePinBtn','btnMapText','lbAnnoBtn']
     .forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display = 'none'; });
   document.getElementById('map').classList.remove('editing');
   /* 🔴 키가 같이 발행됐으면 로드뷰·태양궤적을 그대로 쓴다(대표 확정 B안).
