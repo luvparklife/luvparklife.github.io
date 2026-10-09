@@ -281,6 +281,7 @@
   #libPanel.open{display:flex;}
   #libPanel .libHead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px 4px;font-size:13px;}
   #libPanel .libHead button{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;}
+  #libUpload{width:100%;background:var(--accent2);color:#06131a;border:none;border-radius:9px;padding:9px;font-weight:800;cursor:pointer;font-size:13px;}
   #libPanel .libHint{font-size:11px;color:var(--muted);padding:0 12px 8px;}
   #libPanel .libGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 12px 12px;overflow-y:auto;}
   .libChip{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#000;cursor:grab;border:1px solid var(--border);}
@@ -581,6 +582,8 @@
   <div id="libPanel">
     <div class="libHead"><b id="libTitle"></b><button id="libClose" type="button">✕</button></div>
     <div class="libHint" id="libHint"></div>
+    <div style="padding:0 12px 8px;"><button id="libUpload" type="button"></button>
+      <input type="file" id="libUploadInput" accept="image/*,video/*" multiple style="display:none;"></div>
     <div class="libGrid" id="libGrid"></div>
   </div>
   <div id="lightbox">
@@ -849,7 +852,7 @@ const I18N = {
     uploadDoneToast: n=>`✅ ${n}개 업로드 완료`,
     lbDownload: '⬇ 이 사진 받기',
     lbPairToSun: '☀️ 짝 Sunseeker 보기', lbPairToPhoto: '📷 짝 사진 보기', lbSpotSun: '☀️ 이 장소 Sunseeker', pairNone: '☀️ 짝 Sunseeker 없음',
-    mapModeToSat: '🛰 위성사진', mapModeToMap: '🗺 일반지도', v2ArchiveFail: '보관함으로 옮기기 실패', btnLibrary: n=>`📚 라이브러리 ${n}장 (핀에 안 넣은 사진)`, libHint: '사진을 끌어서 지도의 핀이나 왼쪽 목록에 놓으면 그 핀에 들어갑니다', libEmpty: '핀에 안 넣은 사진이 없습니다. 핀에서 사진을 ✕ 로 빼면 여기로 옵니다', libDelTitle: '필요 없음 → 보관함', libDelConfirm: '이 사진을 지도에서 완전히 뺄까요?\n(드라이브 프로젝트 폴더의 「보관함」에 남습니다)', libArchived: '보관함으로 옮겼습니다', v2AdminUpload: '📷 사진·영상 올리기', v2Uploading: '올리는 중', v2Uploaded: n=>`${n}개 올렸습니다`, v2UploadFail: n=>`${n}개를 못 올렸습니다`, v2VideoTooBig: '영상이 30MB보다 큽니다(대표님께 전달해 주세요)', v2AdminIn: '🔑 관리자', v2AdminOut: '🚪 관리자 나가기', v2AdminOn: '🔑 관리자 편집 중 — 고치면 바로 저장되고 보는 분들께 반영됩니다', v2AdminPrompt: '편집 비밀번호를 넣어주세요',
+    mapModeToSat: '🛰 위성사진', mapModeToMap: '🗺 일반지도', v2ArchiveFail: '보관함으로 옮기기 실패', libAddBtn: '📚 라이브러리에서 넣기', btnLibrary: n=>`📚 라이브러리 ${n}장 (핀에 안 넣은 사진)`, libHint: '사진을 끌어서 지도의 핀이나 왼쪽 목록에 놓으면 그 핀에 들어갑니다', libEmpty: '비어 있습니다. 위 「📷 사진·영상 올리기」로 올리거나, 핀에서 사진을 ✕ 로 빼면 여기로 옵니다', libDelTitle: '필요 없음 → 보관함', libDelConfirm: '이 사진을 지도에서 완전히 뺄까요?\n(드라이브 프로젝트 폴더의 「보관함」에 남습니다)', libArchived: '보관함으로 옮겼습니다', v2AdminUpload: '📷 사진·영상 올리기', v2Uploading: '올리는 중', v2Uploaded: n=>`${n}개 올렸습니다`, v2UploadFail: n=>`${n}개를 못 올렸습니다`, v2VideoTooBig: '영상이 30MB보다 큽니다(대표님께 전달해 주세요)', v2AdminIn: '🔑 관리자', v2AdminOut: '🚪 관리자 나가기', v2AdminOn: '🔑 관리자 편집 중 — 고치면 바로 저장되고 보는 분들께 반영됩니다', v2AdminPrompt: '편집 비밀번호를 넣어주세요',
     v2Saving: '저장 중…', v2Saved: '저장됨 · 보는 분들께 반영', v2SaveFail: '저장 실패 — 다시 시도합니다(고친 내용은 화면에 남아 있음)', v2Conflict: '다른 관리자가 먼저 고쳤습니다. 방금 고친 것은 저장하지 않았습니다.',
     v2ReloadQ: '최신으로 새로고침할까요?', v2WaitSave: '저장이 끝난 뒤 나가주세요', v2WrongPw: '⚠ 비밀번호가 맞지 않습니다',
     v2Title: '💬 사진·댓글 — 함께 보는 분들', v2AddPhoto: '📷 이 스팟에 사진 올리기', v2Name: '이름 (예: 홍길동 · 브랜드팀)', v2Text: '이 스팟에 대한 의견을 남겨주세요', v2Send: '댓글 등록',
@@ -932,7 +935,7 @@ const I18N = {
     uploadDoneToast: n=>`✅ ${n} uploaded`,
     lbDownload: '⬇ Download photo',
     lbPairToSun: '☀️ Paired Sunseeker', lbPairToPhoto: '📷 Paired photo', lbSpotSun: '☀️ Sunseeker for this spot', pairNone: '☀️ No paired Sunseeker',
-    mapModeToSat: '🛰 Satellite', mapModeToMap: '🗺 Map', v2ArchiveFail: 'Archiving failed', btnLibrary: n=>`📚 Library ${n} (not on any pin)`, libHint: 'Drag a photo onto a pin on the map or the list to place it', libEmpty: 'No unplaced photos. Photos removed from pins with ✕ come here', libDelTitle: 'Not needed → archive', libDelConfirm: 'Remove this photo from the map for good?\n(It stays in the project folder\'s archive on Drive)', libArchived: 'Moved to archive', v2AdminUpload: '📷 Upload photos/videos', v2Uploading: 'Uploading', v2Uploaded: n=>`${n} uploaded`, v2UploadFail: n=>`${n} failed`, v2VideoTooBig: 'video over 30MB (send it to the owner)', v2AdminIn: '🔑 Admin', v2AdminOut: '🚪 Leave admin', v2AdminOn: '🔑 Editing as admin — changes save instantly for all viewers', v2AdminPrompt: 'Enter the edit password',
+    mapModeToSat: '🛰 Satellite', mapModeToMap: '🗺 Map', v2ArchiveFail: 'Archiving failed', libAddBtn: '📚 Add from library', btnLibrary: n=>`📚 Library ${n} (not on any pin)`, libHint: 'Drag a photo onto a pin on the map or the list to place it', libEmpty: 'Empty. Upload above, or remove photos from pins with ✕ to bring them here', libDelTitle: 'Not needed → archive', libDelConfirm: 'Remove this photo from the map for good?\n(It stays in the project folder\'s archive on Drive)', libArchived: 'Moved to archive', v2AdminUpload: '📷 Upload photos/videos', v2Uploading: 'Uploading', v2Uploaded: n=>`${n} uploaded`, v2UploadFail: n=>`${n} failed`, v2VideoTooBig: 'video over 30MB (send it to the owner)', v2AdminIn: '🔑 Admin', v2AdminOut: '🚪 Leave admin', v2AdminOn: '🔑 Editing as admin — changes save instantly for all viewers', v2AdminPrompt: 'Enter the edit password',
     v2Saving: 'Saving…', v2Saved: 'Saved · live for viewers', v2SaveFail: 'Save failed — will retry (your changes are still on screen)', v2Conflict: 'Another admin saved first. Your last change was NOT saved.',
     v2ReloadQ: 'Reload to the latest version?', v2WaitSave: 'Please wait until saving finishes', v2WrongPw: '⚠ Wrong password',
     v2Title: '💬 Photos & comments', v2AddPhoto: '📷 Add photos to this spot', v2Name: 'Your name (e.g. Jane · Brand team)', v2Text: 'Leave a note about this spot', v2Send: 'Post comment',
@@ -1432,7 +1435,7 @@ function applyLang(){
   document.getElementById('catHint').textContent = t('catHint');
   document.getElementById('catAddRow').textContent = t('catAddRow');
   document.getElementById('catDone').textContent = t('closeBtn');
-  document.getElementById('dpAddMediaBtn').textContent = t('addMediaBtn');
+  document.getElementById('dpAddMediaBtn').textContent = V2EDIT ? t('libAddBtn') : t('addMediaBtn');
   document.getElementById('dpDeleteBtn').textContent = t('deleteBtn');
   document.getElementById('pickerModalTitle').textContent = t('pickerTitle');
   document.getElementById('pickerCancel').textContent = t('pickerCancel');
@@ -2063,6 +2066,7 @@ function renderLib(){
   const lib = PUBLISHED.unsorted = PUBLISHED.unsorted || [];
   document.getElementById('libTitle').textContent = t('btnLibrary')(lib.length);
   document.getElementById('libHint').textContent = t('libHint');
+  document.getElementById('libUpload').textContent = t('v2AdminUpload');
   const g = document.getElementById('libGrid'); g.innerHTML = '';
   if(!lib.length){ g.innerHTML = `<div class="libEmpty">${t('libEmpty')}</div>`; return; }
   lib.forEach((m, idx)=>{
@@ -2085,6 +2089,16 @@ function renderLib(){
   });
 }
 document.getElementById('libClose').onclick = ()=> toggleLib(false);
+/* 🔁 방금 올린 드라이브 사진은 미리보기가 준비되기까지 몇 초 걸린다 — 그 사이 못 받은 그림은 2초 간격으로 5번 다시 받는다
+   (2026-10-09 시험: 올리자마자 라이브러리 썸네일이 가끔 깨진 채로 남았다) */
+document.addEventListener('error', ev=>{
+  const img = ev.target;
+  if(!img || img.tagName !== 'IMG' || !/googleusercontent\.com\/d\//.test(img.src)) return;
+  const n = Number(img.dataset.retry || 0); if(n >= 5) return;
+  img.dataset.retry = n + 1;
+  const base = img.src.replace(/[?&]r=\d+$/, '');
+  setTimeout(()=>{ img.src = base + (base.includes('?') ? '&' : '?') + 'r=' + (n + 1); }, 2000);
+}, true);
 function sendToUnsorted(mediaArr){
   if(!mediaArr || !mediaArr.length) return 0;
   if(V2EDIT){
@@ -2282,6 +2296,7 @@ function reverseGeocode(loc){
 let pickerTargetId = null;
 const pickerSelected = new Set();
 document.getElementById('dpAddMediaBtn').onclick = ()=>{
+  if(V2EDIT){ toggleLib(true); return; }   /* 관리자 웹 편집: 「라이브러리에서 넣기」 = 📚 라이브러리 창을 연다(거기서 끌어 넣기) */
   pickerTargetId = currentLocId;
   pickerSelected.clear();
   document.getElementById('pickerModalTitle').textContent = t('pickerTitle');
@@ -3431,10 +3446,20 @@ async function v2Thumb(fileOrBlob, isVideo){
 }
 function v2B64(file){ return new Promise((res, rej)=>{ const fr = new FileReader(); fr.onload = ()=> res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(file); }); }
 document.getElementById('v2AdminUpload').onclick = ()=>{ if(V2EDIT && currentLocId != null) document.getElementById('v2AdminUploadInput').click(); };
-document.getElementById('v2AdminUploadInput').addEventListener('change', async function(){
+document.getElementById('v2AdminUploadInput').addEventListener('change', function(){
   const files = Array.from(this.files || []); this.value = '';
   const loc = LOCATIONS.find(l => l.id === currentLocId);
   if(!files.length || !loc) return;
+  v2UploadFiles(files, m => { loc.media.push(m); renderDpMedia(loc); renderList(); renderPhotoGrid(); saveState(); });
+});
+/* 📚 라이브러리에 올리기 — 먼저 몽땅 올려두고 나중에 핀으로 끌어 나눈다 (2026-10-09 대표: 「라이브러리에 추가는 어떻게 해」) */
+document.getElementById('libUpload').onclick = ()=> document.getElementById('libUploadInput').click();
+document.getElementById('libUploadInput').addEventListener('change', function(){
+  const files = Array.from(this.files || []); this.value = '';
+  if(!files.length) return;
+  v2UploadFiles(files, m => { const lib = PUBLISHED.unsorted = PUBLISHED.unsorted || []; lib.push(m); saveUnsorted(lib); });
+});
+async function v2UploadFiles(files, put){
   let ok = 0, fail = [];
   for(let i = 0; i < files.length; i++){
     const f = files[i], isVideo = /^video\//.test(f.type);
@@ -3445,18 +3470,17 @@ document.getElementById('v2AdminUploadInput').addEventListener('change', async f
       const tid = (await v2Call(v2Auth({ action:'editUpload', data: thumb, mime:'image/jpeg', fname:'썸네일_' + f.name.replace(/\.[^.]+$/, '') + '.jpg' }))).file;
       if(isVideo){
         const vid = (await v2Call(v2Auth({ action:'editUpload', data: await v2B64(f), mime: f.type || 'video/mp4', fname: f.name }))).file;
-        loc.media.push({ type:'video', drive: vid, url: v2Img(tid, 1600), thumb: v2Img(tid, 480), caption:'' });
+        put({ type:'video', drive: vid, url: v2Img(tid, 1600), thumb: v2Img(tid, 480), caption:'', file: f.name });
       } else {
         const fid = (await v2Call(v2Auth({ action:'editUpload', data: await v2Shrink(f), mime:'image/jpeg', fname: f.name.replace(/\.[^.]+$/, '') + '.jpg' }))).file;
-        loc.media.push({ type:'image', url: v2Img(fid, 1600), thumb: v2Img(tid, 480), caption:'' });
+        put({ type:'image', url: v2Img(fid, 1600), thumb: v2Img(tid, 480), caption:'', file: f.name });
       }
       ok++;
-      renderDpMedia(loc); renderList(); renderPhotoGrid(); saveState();
     }catch(e){ fail.push(f.name + ' — ' + (e.message || 'fail')); }
   }
   if(fail.length){ v2Toast('⚠ ' + t('v2UploadFail')(fail.length), 'err'); alert(t('v2UploadFail')(fail.length) + '\n\n' + fail.join('\n')); }
   else v2Toast('✓ ' + t('v2Uploaded')(ok), 'ok');
-});
+}
 try{ document.getElementById('v2Name').value = localStorage.getItem('scout2_name') || ''; }catch(e){}
 /* 상세를 열 때·목록을 그릴 때 같이 */
 { const _od = openDetail; openDetail = function(){ const r = _od.apply(this, arguments); v2RenderSpot(); return r; }; }
@@ -3495,7 +3519,7 @@ applyLang();
       대표님 계정에 요금이 붙을 수 있다. 공개본에는 절대 키를 싣지 않는다. */
 if(PUBLISHED){
   /* 관리자 웹 편집이면 «맥 전용»(폴더·내보내기·키 설정·보관함)만 숨기고 편집 단추는 둔다 */
-  (V2EDIT ? ['btnExport','btnBulkUpload','uploadFolderHint','dpGmapsKeyBtn','dpAddMediaBtn','backupStatus']
+  (V2EDIT ? ['btnExport','btnBulkUpload','uploadFolderHint','dpGmapsKeyBtn','backupStatus']
           : ['btnEditToggle','btnSelectMode','btnExport','btnBulkUpload','btnUnsorted',
              'btnEditCats','editBanner','bulkBar','uploadFolderHint','dpGmapsKeyBtn','svMovePinBtn','btnMapText','lbAnnoBtn','dpAddMediaBtn','backupStatus'])
     .forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display = 'none'; });
