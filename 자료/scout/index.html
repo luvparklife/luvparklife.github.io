@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>로케이션 답사</title>
+<!--
+  📍 로케이션 답사 V2 — 입장 페이지 (luvparklife.github.io/자료/scout/?p=<프로젝트>)
+  2026-10-09 대표 확정 「입장코드 좋다」
+  · 이 페이지에는 «아무 데이터도» 없다. 코드를 넣으면 서버(앱스스크립트)가 확인하고 지도 데이터를 준다.
+  · 받은 데이터를 같은 폴더의 app.html(= 5_로케이션답사/로케이션답사_V2.html 사본)에 끼워 그대로 띄운다 — 화면은 하나(§1).
+  · 코드는 이 브라우저에만 기억한다(다음에 다시 안 묻게). 틀리면 지운다.
+-->
+<style>
+  :root{ --bg:#0f1115; --panel:#171a21; --border:#2a2f3a; --text:#e8eaf0; --muted:#8b93a7; --accent2:#4fb3ff; --danger:#ff6b6b; }
+  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){ --bg:#0f1115; } }
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',sans-serif;}
+  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;}
+  .box{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:26px 22px;text-align:center;}
+  h1{font-size:19px;margin:6px 0 4px;} p{color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.5;}
+  input{width:100%;box-sizing:border-box;background:#0b0d11;border:1px solid var(--border);color:var(--text);border-radius:10px;
+    padding:13px 12px;font-size:18px;text-align:center;letter-spacing:.15em;}
+  button{width:100%;margin-top:12px;background:var(--accent2);color:#06131a;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:800;cursor:pointer;}
+  button:disabled{opacity:.6;cursor:default;}
+  .msg{min-height:1.2em;font-size:13px;margin-top:10px;color:var(--muted);} .msg.err{color:var(--danger);}
+  .lang{margin-top:16px;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="box">
+  <div style="font-size:40px">📍</div>
+  <h1 id="tt">로케이션 답사</h1>
+  <p id="pp">받으신 입장 코드를 넣어주세요</p>
+  <input id="code" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+  <button id="go">들어가기</button>
+  <div class="msg" id="msg"></div>
+  <div class="lang" id="lang">English</div>
+</div></div>
+<script>
+/* 🔴 통째로 함수 안에 가둔다 — 밖에 남은 이름(L·P 등)이 지도 화면을 덮어쓰면 지도 라이브러리(L)가 고장 난다(2026-10-09 시험에서 잡음) */
+(function(){
+const API = 'https://script.google.com/macros/s/AKfycbzgj1gQlGiTNAUhF5FqLKJ11oAbq3lmjBvZKei3IkFUnFLEdQogRIFk_SuVUK8RFs4F2g/exec';
+const P = (new URLSearchParams(location.search).get('p') || '').trim();
+let L = (function(){ try{ return localStorage.getItem('scout2_lang') || ((navigator.language||'').startsWith('ko') ? 'ko' : 'en'); }catch(e){ return 'ko'; } })();
+const TX = {
+  ko:{ tt:'로케이션 답사', pp:'받으신 입장 코드를 넣어주세요', go:'들어가기', wait:'⏳ 확인하는 중…', bad:'⚠ 코드가 맞지 않습니다', lock:'⚠ 너무 여러 번 틀렸습니다 — 10분 뒤 다시 해주세요', nop:'⚠ 주소가 잘못됐습니다 — 받으신 링크를 그대로 열어주세요', fail:'⚠ 연결에 실패했습니다 — 잠시 뒤 다시 해주세요', lang:'English' },
+  en:{ tt:'Location Scout', pp:'Enter the access code you received', go:'Enter', wait:'⏳ Checking…', bad:'⚠ Wrong code', lock:'⚠ Too many attempts — try again in 10 minutes', nop:'⚠ Invalid link — please open the link you received as is', fail:'⚠ Connection failed — please try again shortly', lang:'한국어' }
+};
+function T(k){ return TX[L][k]; }
+function paint(){ ['tt','pp','go','lang'].forEach(id=> document.getElementById(id).textContent = T(id)); document.title = T('tt'); }
+function msg(s, err){ const m = document.getElementById('msg'); m.textContent = s || ''; m.className = 'msg' + (err ? ' err' : ''); }
+document.getElementById('lang').onclick = ()=>{ L = L === 'ko' ? 'en' : 'ko'; try{ localStorage.setItem('scout2_lang', L); }catch(e){} paint(); };
+paint();
+async function enter(code){
+  if(!P){ msg(T('nop'), true); return; }
+  const btn = document.getElementById('go'); btn.disabled = true; msg(T('wait'));
+  try{
+    /* 🔑 관리자: 화면의 「관리자」 단추가 이 탭에 비밀번호를 맡겨두고 새로고침한다 → 편집 화면으로 연다 */
+    let pw = ''; try{ pw = sessionStorage.getItem('scout2_pw_' + P) || ''; }catch(e){}
+    let r = await fetch(API, { method:'POST', body: JSON.stringify(pw ? { action:'editCheck', p:P, code, pw } : { action:'open', p:P, code }) });
+    let j = await r.json();
+    if(pw && !j.ok && (j.err === 'wrong-pw' || j.err === 'locked' || j.err === 'no-editor')){
+      try{ sessionStorage.removeItem('scout2_pw_' + P); }catch(e){}
+      alert(L === 'ko' ? (j.err === 'locked' ? '⚠ 비밀번호를 여러 번 틀려 10분간 막혔습니다' : '⚠ 편집 비밀번호가 맞지 않습니다 — 보기 화면으로 엽니다')
+                       : (j.err === 'locked' ? '⚠ Too many attempts — locked for 10 minutes' : '⚠ Wrong edit password — opening view mode'));
+      pw = '';
+      r = await fetch(API, { method:'POST', body: JSON.stringify({ action:'open', p:P, code }) }); j = await r.json();
+    }
+    if(!j.ok){
+      try{ localStorage.removeItem('scout2_code_' + P); }catch(e){}
+      msg(j.err === 'locked' ? T('lock') : (j.err === 'no-project' || j.err === 'bad-project') ? T('nop') : j.err === 'wrong-code' ? T('bad') : T('fail'), true);
+      btn.disabled = false; return;
+    }
+    try{ localStorage.setItem('scout2_code_' + P, code); }catch(e){}
+    const pr = j.project || {};
+    const pub = { title: pr.title || ('📍 ' + P), subtitle: pr.subtitle || '', locations: pr.locations || [], categories: pr.categories || [],
+                  mapTexts: pr.mapTexts || [], unsorted: pr.unsorted || [], gmapsKey: j.gkey || '',
+                  v2: { api: API, p: P, code, feed: j.feed || [], pw: pw || '', rev: Number(j.rev || pr.rev || 0) } };
+    const html = await (await fetch('app.html', { cache:'no-store' })).text();
+    const marker = '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>';
+    const inject = '<script>window.SCOUT_PUBLISHED = ' + JSON.stringify(pub).replace(/</g, '\\u003c') + ';<\/script>\n';
+    document.open(); document.write(html.replace(marker, inject + marker)); document.close();
+  }catch(e){ msg(T('fail'), true); btn.disabled = false; }
+}
+document.getElementById('go').onclick = ()=>{ const c = document.getElementById('code').value.trim(); if(c) enter(c); };
+document.getElementById('code').addEventListener('keydown', e=>{ if(e.key === 'Enter' && !e.isComposing) document.getElementById('go').click(); });
+try{ const saved = localStorage.getItem('scout2_code_' + P); if(saved && P){ document.getElementById('code').value = saved; enter(saved); } }catch(e){}
+if(!P) msg(T('nop'), true);
+})();
+</script>
+</body>
+</html>

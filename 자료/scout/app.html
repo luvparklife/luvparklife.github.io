@@ -1,0 +1,3365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>로케이션 답사 지도 — 편집</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e2229; --border:#2a2f3a;
+    --text:#e7e9ee; --muted:#9aa3b2; --accent:#f5b63f; --accent2:#4fb3ff; --danger:#f87171;
+    --radius:12px; --shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif;}
+  #app{position:relative;width:100%;height:100vh;overflow:hidden;}
+  #map{position:absolute;inset:0;background:#0b0d11;}
+  #map.editing{cursor:crosshair;}
+  /* 무료 OSM 타일을 다크테마로 — 키 필요한 CARTO 다크타일이 막혀서 반전필터로 대체(261009) */
+  #map .leaflet-tile-pane{ filter:invert(1) hue-rotate(200deg) brightness(.92) contrast(.85) saturate(.7); }
+  #map.satellite .leaflet-tile-pane{ filter:none; }
+  .leaflet-control-attribution{background:rgba(15,17,21,.7)!important;color:#8892a0!important;font-size:10px;}
+  .leaflet-control-attribution a{color:#aab4c4!important;}
+  .leaflet-control-zoom a{background:var(--panel)!important;color:var(--text)!important;border-color:var(--border)!important;}
+
+  input,select,textarea,button{font-family:inherit;}
+
+  /* ---------- Sidebar ---------- */
+  #sidebar{
+    position:absolute;top:0;left:0;height:100%;width:340px;
+    background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;z-index:500;
+    transition:transform .25s ease;
+  }
+  #sidebar.collapsed{transform:translateX(-100%);}
+  .sb-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);}
+  .sb-head h1{margin:0 0 2px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .sb-head h1 .cnt{font-size:11px;color:var(--muted);font-weight:600;background:var(--panel2);
+    border:1px solid var(--border);border-radius:999px;padding:2px 9px;}
+  .sb-head p{margin:0;font-size:11.5px;color:var(--muted);}
+  .sbActions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .sbActions button{flex:1 1 calc(50% - 6px);padding:8px 6px;border-radius:9px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:11.5px;font-weight:700;cursor:pointer;}
+  #btnEditToggle.on{background:var(--accent);color:#1a1405;border-color:var(--accent);}
+  #btnSelectMode.on{background:var(--accent2);color:#07131c;border-color:var(--accent2);}
+
+  #editBanner,#bulkBar{margin:10px 16px 0;padding:8px 10px;border-radius:9px;font-size:11.5px;line-height:1.5;}
+  #editBanner{background:rgba(245,182,63,.12);border:1px solid rgba(245,182,63,.35);color:var(--accent);}
+  #bulkBar{background:rgba(79,179,255,.1);border:1px solid rgba(79,179,255,.35);color:var(--accent2);}
+  .bulkActions{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;}
+  .bulkActions button{padding:5px 9px;border-radius:7px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;}
+  .bulkActions button#bulkDeleteBtn{color:var(--danger);border-color:#5c2a2a;background:rgba(248,113,113,.1);}
+  .bulkActions button#bulkDeleteBtn:disabled{opacity:.4;cursor:default;}
+  #bulkCount{font-weight:700;color:var(--text);}
+
+  .viewToggle{display:flex;gap:6px;margin:12px 16px 4px;}
+  .viewToggle button{flex:1;padding:7px 8px;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--muted);font-size:12.5px;cursor:pointer;font-weight:600;}
+  .viewToggle button.active{background:var(--accent2);color:#07131c;border-color:var(--accent2);}
+
+  .filters{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px 4px;}
+  .chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;
+    border:1px solid var(--border);background:var(--panel2);color:var(--muted);
+    font-size:12px;cursor:pointer;user-select:none;}
+  .chip .dot{width:8px;height:8px;border-radius:50%;}
+  .chip.on{color:var(--text);border-color:currentColor;}
+
+  #listWrap{flex:1;overflow-y:auto;padding:10px 12px 20px;}
+  .emptyState{padding:30px 14px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.7;}
+
+  .selCheck{width:18px;height:18px;border-radius:50%;border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:11px;flex:0 0 auto;
+    background:var(--panel);color:transparent;}
+  .selCheck.on{background:var(--danger);border-color:var(--danger);color:#fff;}
+
+  .locCard{background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:.15s;}
+  .locCard:hover{border-color:var(--accent2);}
+  .locCard.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+  .locCard.selForDel{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger);}
+  .locCard .row1{display:flex;align-items:center;gap:8px;}
+  .locCard .badge{width:20px;height:20px;border-radius:50%;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#06131a;}
+  .locCard .title{font-size:13.5px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .locCard .cat{font-size:10.5px;color:var(--muted);flex:0 0 auto;}
+  .locCard .addr{font-size:11.5px;color:var(--muted);margin-top:4px;padding-left:28px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .locCard .mediaCount{font-size:11px;color:var(--accent2);margin-top:4px;padding-left:28px;}
+
+  .photoGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px 20px;overflow-y:auto;flex:1;}
+  .photoCard{position:relative;border-radius:var(--radius);overflow:hidden;cursor:pointer;
+    border:1px solid var(--border);aspect-ratio:4/3;background:#000;}
+  .photoCard.selForDel{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger);}
+  .photoCard img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.85);}
+  .photoCard:hover img{filter:brightness(1);}
+  .photoCard .pcLabel{position:absolute;left:0;right:0;bottom:0;padding:6px 8px;
+    background:linear-gradient(transparent,rgba(0,0,0,.85));font-size:11.5px;font-weight:700;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .photoCard .pcCount{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);
+    border-radius:999px;padding:2px 7px;font-size:10.5px;}
+  .photoCard .pcCat{position:absolute;top:6px;left:6px;width:9px;height:9px;border-radius:50%;}
+  .photoCard .selCheck{position:absolute;top:5px;left:5px;}
+
+  #btnMapMode{position:absolute;top:14px;left:calc(50% + 4px);z-index:600;padding:8px 12px;border-radius:9px;
+    background:var(--panel);border:1px solid var(--border);color:var(--text);font-size:12px;
+    font-weight:700;cursor:pointer;box-shadow:var(--shadow);}
+  #btnMapMode:hover{border-color:var(--accent2);}
+  #toggleSidebarBtn{position:absolute;top:14px;left:14px;z-index:600;width:40px;height:40px;
+    border-radius:10px;background:var(--panel);border:1px solid var(--border);color:var(--text);
+    font-size:17px;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+
+  /* ---------- Detail Panel ---------- */
+  #detailPanel{position:absolute;top:0;right:0;height:100%;width:380px;background:var(--panel);
+    border-left:1px solid var(--border);z-index:550;transform:translateX(100%);
+    transition:transform .25s ease;display:flex;flex-direction:column;}
+  #detailPanel.open{transform:translateX(0);}
+  .dp-head{padding:16px;border-bottom:1px solid var(--border);}
+  .dp-head .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .dp-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:2px;}
+  .dp-close:hover{color:var(--text);}
+  #dpTitleInput{width:100%;background:transparent;border:none;color:var(--text);font-size:16px;
+    font-weight:700;padding:3px 0;outline:none;}
+  #dpTitleInput:not([readonly]){border-bottom:1px dashed var(--border);}
+  #dpTitleInput:not([readonly]):focus{border-color:var(--accent2);}
+  .catRow{display:flex;align-items:center;gap:6px;margin-top:8px;}
+  #dpCategorySelect{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:6px;font-size:11.5px;padding:4px 6px;flex:1;}
+  #dpColorInput{width:34px;height:28px;padding:2px;border-radius:6px;border:1px solid var(--border);
+    background:var(--panel2);cursor:pointer;flex:0 0 auto;}
+  #dpStreetViewBtn{background:var(--panel2);border:1px solid var(--border);color:var(--accent2);
+    border-radius:6px;font-size:11.5px;font-weight:700;padding:4px 8px;cursor:pointer;flex:0 0 auto;white-space:nowrap;}
+  #dpGmapsKeyBtn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    border-radius:6px;font-size:13px;padding:4px 7px;cursor:pointer;flex:0 0 auto;}
+  .distList{display:flex;flex-direction:column;gap:4px;}
+  .distRow{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;
+    background:var(--panel2);border:1px solid var(--border);cursor:pointer;font-size:12.5px;}
+  .distRow:hover{border-color:var(--accent2);}
+  .distRow .dName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .distRow .dVal{color:var(--accent2);font-weight:700;font-size:11.5px;flex:0 0 auto;}
+  #dpCoordHint{font-size:10.5px;color:var(--muted);margin-top:6px;}
+  .dp-body{flex:1;overflow-y:auto;padding:16px;}
+  .dp-section{margin-bottom:18px;}
+  .dp-section h3{margin:0 0 6px;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .dp-section textarea, .dp-section input[type=text]{
+    width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-size:13.5px;line-height:1.55;padding:8px 10px;resize:vertical;outline:none;}
+  .dp-section textarea:focus, .dp-section input[type=text]:focus{border-color:var(--accent2);}
+  .dp-section textarea[readonly], .dp-section input[readonly]{background:transparent;border-color:transparent;padding:0;}
+  .dp-section.sunseeker{background:rgba(245,182,63,.08);border:1px solid rgba(245,182,63,.3);
+    border-radius:10px;padding:10px 12px;}
+  .dp-section.sunseeker h3{color:var(--accent);}
+  .dp-section.sunseeker textarea{background:transparent;border-color:rgba(245,182,63,.25);}
+  .mediaHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .mediaHead button{background:var(--panel2);border:1px solid var(--border);color:var(--accent2);
+    font-size:11.5px;font-weight:700;border-radius:7px;padding:5px 9px;cursor:pointer;}
+  .mediaGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .boxSel{position:absolute;border:1.5px dashed var(--accent2);background:rgba(79,179,255,.14);
+    pointer-events:none;z-index:450;border-radius:3px;}
+  .catEditBtn{background:var(--panel2);border:1px solid var(--border);color:var(--accent2);
+    border-radius:7px;font-size:11px;font-weight:700;padding:4px 9px;cursor:pointer;}
+  .catEditBtn:hover{border-color:var(--accent2);}
+  /* 🔴 이름이 «catEditRow» 인 이유 — 상세 패널에 이미 .catRow 가 있다. 같은 이름을 쓰면
+     스타일이 섞이고 querySelectorAll 이 남의 줄까지 집는다 (2026-10-09 검사에서 실제로 걸림) */
+  .catEditRow{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+  .catEditRow input[type=text].cIcon{width:46px;text-align:center;flex:0 0 auto;}
+  .catEditRow input[type=text]{flex:1;background:var(--panel2);border:1px solid var(--border);
+    border-radius:7px;color:var(--text);font-size:12.5px;padding:6px 8px;outline:none;}
+  .catEditRow input[type=text]:focus{border-color:var(--accent2);}
+  .catEditRow input[type=color]{width:34px;height:30px;padding:2px;border-radius:6px;
+    border:1px solid var(--border);background:var(--panel2);cursor:pointer;flex:0 0 auto;}
+  .catEditRow .cDel{background:rgba(248,113,113,.1);border:1px solid #5c2a2a;color:var(--danger);
+    border-radius:6px;font-size:12px;padding:5px 8px;cursor:pointer;flex:0 0 auto;}
+  .catEditRow .cUsed{font-size:10px;color:var(--muted);flex:0 0 auto;min-width:34px;text-align:right;}
+  .mediaCell{display:flex;flex-direction:column;gap:4px;}
+  .mCaption{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);font-size:11px;padding:4px 6px;outline:none;}
+  .mCaption:focus{border-color:var(--accent2);}
+  .mCaption[readonly]{background:transparent;border-color:transparent;padding:0 2px;color:var(--muted);}
+  .mediaThumb{position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;
+    border:1px solid var(--border);background:#000;}
+  .mediaThumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .mediaThumb.dragging{opacity:.35;}
+  .mediaThumb[draggable=true]{cursor:grab;}
+  /* 사진을 끌고 있을 때 «어디에 놓을 수 있는지» 보이게 */
+  body.media-dragging .locCard{outline:1px dashed var(--accent2);}
+  .locCard.dropTarget{border-color:var(--accent2)!important;box-shadow:0 0 0 2px var(--accent2);}
+  body.media-dragging .loc-marker{outline:2px dashed var(--accent2);outline-offset:2px;}
+  .loc-marker.dropTarget{outline:3px solid var(--accent2);outline-offset:2px;}
+  .mediaThumb .mTypeBadge{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.65);
+    border-radius:6px;padding:1px 6px;font-size:10px;}
+  .mediaThumb .mRemove{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;
+    background:rgba(0,0,0,.7);border:none;color:#fff;font-size:12px;cursor:pointer;line-height:1;}
+  .mediaThumb .mPlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:20px;background:rgba(0,0,0,.2);pointer-events:none;}
+  #dpDeleteBtn{width:100%;margin-top:4px;padding:9px;border-radius:9px;border:1px solid #5c2a2a;
+    background:rgba(248,113,113,.12);color:var(--danger);font-size:12.5px;font-weight:700;cursor:pointer;}
+
+  /* ---------- Toast ---------- */
+  #saveToast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-10px);
+    background:#111;border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:999px;
+    font-size:12px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:3000;box-shadow:var(--shadow);}
+  #saveToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #saveToast.ok{color:#7ee787;border-color:#1f4a2e;}
+  #saveToast.err{color:var(--danger);border-color:#5c2a2a;}
+
+  /* ---------- Lightbox ---------- */
+  #lightbox{position:fixed;inset:0;background:rgba(5,6,9,.94);z-index:2000;
+    display:none;align-items:center;justify-content:center;flex-direction:column;}
+  #lightbox.open{display:flex;}
+  .lb-top{position:absolute;top:0;left:0;right:0;padding:14px 18px;display:flex;
+    justify-content:space-between;align-items:center;color:var(--muted);font-size:13px;z-index:10;}
+  .lb-top .lb-title{color:var(--text);font-weight:700;font-size:14px;}
+  .lb-close{background:none;border:none;color:var(--text);font-size:26px;cursor:pointer;line-height:1;}
+  .lbPairBtn{background:rgba(245,182,63,.18);border:1px solid rgba(245,182,63,.55);color:var(--accent);
+    border-radius:999px;font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;}
+  .lbPairBtn:hover{background:rgba(245,182,63,.32);}
+  .mPair{width:100%;background:var(--panel2);border:1px solid rgba(245,182,63,.35);border-radius:6px;
+    color:var(--accent);font-size:10.5px;padding:3px 4px;}
+  .mPairTag{font-size:10.5px;color:var(--accent);}
+  .lb-stage{flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative;padding:60px 70px;}
+  .lb-stage img,.lb-stage video{max-width:100%;max-height:78vh;border-radius:8px;box-shadow:var(--shadow);}
+  .lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:var(--text);
+    font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .lb-nav:hover{background:rgba(255,255,255,.18);}
+  .lb-prev{left:14px;} .lb-next{right:14px;}
+  .lb-bottom{padding:10px 18px 22px;text-align:center;}
+  /* ✏️ 사진 위 표시 (2026-10-09 대표 지시) — 표시는 사진 파일을 안 고치고 «위에 얹는» 선으로 저장한다 */
+  .lbImgWrap{position:relative;display:inline-block;line-height:0;}
+  .lbImgWrap svg.annoLayer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .lbImgWrap.annotating svg.annoLayer{pointer-events:auto;cursor:crosshair;}
+  .lbImgWrap.annotating svg.annoLayer text{cursor:move;}
+  .annoTa{position:absolute;z-index:3;line-height:1.2;font-weight:800;min-width:4em;min-height:1.3em;
+    field-sizing:content;resize:none;overflow:hidden;background:rgba(0,0,0,.25);border:1.5px dashed rgba(255,255,255,.8);
+    border-radius:4px;padding:0 2px;margin:0;font-family:-apple-system,'Apple SD Gothic Neo',sans-serif;
+    text-shadow:0 0 2px #000,0 0 2px #000;outline:none;white-space:pre;}
+  .lbAnnoBtn{background:rgba(79,179,255,.15);border:1px solid rgba(79,179,255,.5);color:var(--accent2);
+    border-radius:999px;font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer;}
+  #lbAnnoBar{display:none;position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:12;
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:6px 8px;gap:6px;
+    align-items:center;box-shadow:var(--shadow);flex-wrap:wrap;justify-content:center;max-width:94vw;}
+  #lbAnnoBar.open{display:flex;}
+  #lbAnnoBar button{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;
+    padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;}
+  #lbAnnoBar button.on{border-color:var(--accent2);color:var(--accent2);}
+  #lbAnnoBar button.done{background:var(--accent2);color:#06131a;border-color:var(--accent2);}
+  #lbAnnoBar select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 6px;font-size:12px;font-weight:700;}
+  #lbAnnoBar input[type=color]{width:34px;height:30px;border:none;background:none;padding:0;cursor:pointer;}
+  .mAnnoTag{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.65);border-radius:6px;font-size:10px;padding:1px 5px;}
+  /* 📍 핀 옆 스팟 이름 · 🅣 지도 글자 */
+  .loc-marker{position:relative;}
+  .pinLabel{position:absolute;left:30px;top:50%;transform:translateY(-50%);white-space:nowrap;
+    background:rgba(15,17,21,.82);color:#fff;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:6px;
+    border-left:3px solid currentColor;pointer-events:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;}
+  .mapText{white-space:pre;text-align:center;font-weight:800;line-height:1.15;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000;
+    transform:translate(-50%,-50%);display:inline-block;cursor:pointer;user-select:none;}
+  #btnMapText{position:absolute;top:14px;right:calc(50% + 4px);z-index:600;padding:8px 12px;border-radius:9px;
+    background:var(--panel);border:1px solid var(--border);color:var(--text);font-size:12px;
+    font-weight:700;cursor:pointer;box-shadow:var(--shadow);}
+  #btnMapText.on{border-color:var(--accent2);color:var(--accent2);}
+  /* 지도 위 버튼 묶음 — 가운데 위 */
+  #mapTopBtns{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:600;display:flex;gap:8px;}
+  #mapTopBtns > button{position:static;transform:none;}
+  #btnPoi{padding:8px 12px;border-radius:9px;background:var(--panel);border:1px solid var(--border);color:var(--text);
+    font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap;}
+  #btnPoi.on{border-color:var(--accent2);color:var(--accent2);}
+  #map.texting{cursor:text;}
+  /* 💬 V2 사진·댓글 */
+  .v2Feed{border:1px solid rgba(79,179,255,.35);border-radius:12px;padding:12px;background:rgba(79,179,255,.05);}
+  .v2Photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;}
+  .v2Photo{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#000;cursor:pointer;}
+  .v2Photo img{width:100%;height:100%;object-fit:cover;display:block;}
+  .v2Photo .who{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:10px;padding:8px 5px 3px;color:#fff;}
+  .v2Del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-size:12px;}
+  #v2AddPhoto,#v2Send{background:var(--accent2);color:#06131a;border:none;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;font-size:13px;}
+  #v2AddPhoto{width:100%;}
+  .v2Status{font-size:12px;margin:6px 0;color:var(--muted);min-height:1em;}
+  .v2Status.err{color:var(--danger);} .v2Status.ok{color:#7ee787;}
+  .v2Comments{display:flex;flex-direction:column;gap:8px;margin:10px 0;}
+  .v2C{background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:8px 10px;position:relative;}
+  .v2C .h{font-size:11px;color:var(--muted);margin-bottom:3px;} .v2C .h b{color:var(--text);}
+  .v2C .b{font-size:13px;white-space:pre-wrap;word-break:break-word;}
+  .v2C .v2Del{top:6px;right:6px;}
+  .v2Write{display:flex;flex-direction:column;gap:6px;}
+  .v2Write input,.v2Write textarea{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;}
+  .v2Empty{font-size:12px;color:var(--muted);text-align:center;padding:6px;}
+  .v2Badge{font-size:11px;color:var(--accent2);font-weight:700;margin-left:6px;}
+  #mapTextModal input[type=text],#mapTextModal textarea,#mapTextModal select{background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);border-radius:8px;padding:9px 10px;font-size:14px;}
+  #mapTextModal button#mtDone,#mapTextModal button#mtDelete{padding:10px;border-radius:9px;font-weight:700;cursor:pointer;
+    border:1px solid var(--border);background:var(--panel2);color:var(--text);}
+  #mapTextModal button#mtDone{background:var(--accent2);color:#06131a;border-color:var(--accent2);}
+  #mapTextModal button#mtDelete{color:var(--danger);}
+  .lb-caption{font-size:13.5px;color:var(--text);margin-bottom:8px;}
+  .lb-sunBadge{display:inline-flex;align-items:center;gap:6px;background:rgba(245,182,63,.15);
+    color:var(--accent);border:1px solid rgba(245,182,63,.4);border-radius:999px;padding:3px 10px;font-size:11.5px;margin-bottom:8px;}
+  .lb-dots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;max-width:80vw;}
+  .lb-dots span{width:6px;height:6px;border-radius:50%;background:#444b58;cursor:pointer;}
+  .lb-dots span.on{background:var(--accent);}
+
+  /* ---------- Modals (media picker / export) ---------- */
+  .modalOverlay{position:fixed;inset:0;background:rgba(5,6,9,.8);z-index:2500;display:none;
+    align-items:center;justify-content:center;padding:20px;}
+  .modalOverlay.open{display:flex;}
+  .modalBox{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    width:100%;max-width:640px;max-height:84vh;display:flex;flex-direction:column;box-shadow:var(--shadow);}
+  .modalHead{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;
+    justify-content:space-between;align-items:center;}
+  .modalHead h2{margin:0;font-size:15px;}
+  .modalHead button{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;}
+  .modalBody{padding:16px 18px;overflow-y:auto;flex:1;}
+  .modalFoot{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+  .modalFoot button{padding:9px 16px;border-radius:9px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;}
+  .modalFoot button.primary{background:var(--accent);color:#1a1405;border-color:var(--accent);}
+
+  .pickerGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .pickerCard{position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1/1;
+    border:2px solid var(--border);background:#000;}
+  .pickerCard img{width:100%;height:100%;object-fit:cover;display:block;opacity:.75;}
+  .pickerCard:hover img{opacity:1;}
+  .pickerCard.selected{border-color:var(--accent);}
+  .pickerCard.selected img{opacity:1;}
+  .pickerCard .pTick{position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;
+    background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.4);display:flex;align-items:center;
+    justify-content:center;font-size:11px;}
+  .pickerCard.selected .pTick{background:var(--accent);color:#1a1405;border-color:var(--accent);}
+  .pickerCard .pType{position:absolute;bottom:4px;left:4px;font-size:10px;background:rgba(0,0,0,.6);
+    border-radius:5px;padding:0 4px;}
+  .pickerCard .pUsed{position:absolute;bottom:4px;right:4px;font-size:9px;background:rgba(0,0,0,.7);
+    color:var(--accent2);border-radius:5px;padding:0 4px;}
+
+  .gmapsBox{max-width:420px;}
+  .gmapsNote{font-size:11.5px;color:var(--muted);line-height:1.6;margin:0 0 10px;}
+  .gmapsInput{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);padding:9px 10px;font-size:13px;outline:none;}
+  .gmapsInput:focus{border-color:var(--accent2);}
+
+  .svBox{max-width:960px;width:100%;}
+  .svHeadRight{display:flex;align-items:center;gap:10px;}
+  .svOpenLink{font-size:11.5px;color:var(--accent2);text-decoration:none;white-space:nowrap;}
+  .svOpenLink:hover{text-decoration:underline;}
+  .svControls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:0 18px 12px;
+    border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);}
+  .svControls input[type=datetime-local]{background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);border-radius:7px;padding:5px 7px;font-size:12px;}
+  .svPathToggle{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  #svMovePinBtn{background:var(--panel2);border:1px solid var(--border);color:var(--accent);
+    border-radius:7px;font-size:11.5px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap;}
+  #svMovePinBtn:hover{border-color:var(--accent);}
+  #svSunReadout{color:var(--accent);font-weight:700;margin-left:auto;}
+  #svPanoWrap{position:relative;width:100%;height:60vh;background:#000;}
+  #svPano{position:absolute;inset:0;}
+  #svOverlay{position:absolute;inset:0;pointer-events:none;z-index:400;}
+  #svNoKeyMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:13px;padding:30px;text-align:center;}
+
+  #exportTextarea{width:100%;height:220px;background:#0b0d11;border:1px solid var(--border);
+    border-radius:8px;color:#8ee37c;font-family:"SF Mono",Menlo,monospace;font-size:11px;
+    padding:10px;resize:vertical;}
+  .exportNote{font-size:11.5px;color:var(--muted);margin:8px 0 14px;line-height:1.6;}
+  .exportDangerRow{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+  .exportDangerRow label{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+    padding:9px 10px;border-radius:9px;border:1px solid var(--border);background:var(--panel2);
+    color:var(--accent2);font-size:12px;font-weight:700;cursor:pointer;}
+  .exportDangerRow button{flex:1;}
+  #importFileInput{display:none;}
+
+  /* custom marker */
+  .loc-marker{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    color:#06131a;font-weight:800;font-size:11px;border:2px solid #0f1115;box-shadow:0 2px 6px rgba(0,0,0,.5);}
+  .loc-marker.new{animation:pulse 1s ease-out 2;}
+  .loc-marker.selForDel{outline:3px solid var(--danger);outline-offset:1px;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(245,182,63,.6);}100%{box-shadow:0 0 0 14px rgba(245,182,63,0);}}
+
+  .upProgressBar{width:100%;height:10px;border-radius:999px;background:var(--panel2);
+    border:1px solid var(--border);overflow:hidden;}
+  .upProgressFill{height:100%;width:0%;background:var(--accent2);transition:width .15s;}
+
+  .reviewBox{max-width:1000px;width:100%;}
+  .reviewCols{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;}
+  .reviewCol{flex:0 0 270px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:var(--radius);padding:10px;min-height:160px;transition:.15s;}
+  .reviewCol.dragover{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(79,179,255,.3);}
+  .reviewCol.unsorted{border-style:dashed;}
+  .reviewColHead{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;
+    margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .reviewColHead .rcDot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
+  .reviewColHead .rcName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .reviewColHead .rcCount{font-size:10.5px;color:var(--muted);font-weight:600;}
+  .reviewGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-height:40px;}
+  .reviewZone{border:1px dashed var(--border);border-radius:8px;padding:6px;margin-bottom:8px;transition:.15s;}
+  .reviewZone.sun{border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.05);}
+  .reviewZone.dragover{border-style:solid;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(79,179,255,.3);}
+  .reviewZone .rzHead{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;}
+  .reviewZone .reviewGrid{min-height:0;}
+  .reviewZone .rzEmpty{font-size:11px;color:var(--muted);text-align:center;padding:10px 4px;}
+  .sunDropEmpty{font-size:12px;color:var(--muted);text-align:center;padding:14px 6px;
+    border:1px dashed rgba(251,191,36,.45);border-radius:8px;}
+  .dp-section.dropTarget{outline:2px solid var(--accent2);outline-offset:3px;border-radius:8px;}
+  /* ↔ 사진 순서 바꾸기 — 놓을 자리 표시 */
+  .mediaCell.reorderBefore{box-shadow:-4px 0 0 0 var(--accent2);}
+  .mediaCell.reorderAfter{box-shadow:4px 0 0 0 var(--accent2);}
+  .reviewChip{position:relative;border-radius:7px;overflow:hidden;aspect-ratio:4/3;cursor:grab;
+    border:1px solid var(--border);background:#000;}
+  .reviewChip img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
+  .reviewChip.dragging{opacity:.35;}
+  .reviewChip .rcType{position:absolute;top:3px;left:3px;font-size:10px;background:rgba(0,0,0,.65);
+    border-radius:4px;padding:0 5px;pointer-events:none;}
+  .reviewChip .rcZoom{position:absolute;bottom:3px;right:3px;font-size:11px;background:rgba(0,0,0,.7);
+    border-radius:5px;padding:1px 5px;cursor:zoom-in;}
+  .reviewChip .rcZoom:hover{background:var(--accent2);color:#07131c;}
+
+  @media (max-width:760px){
+    #sidebar{width:88%;max-width:360px;transform:translateX(-100%);}
+    #sidebar.open{transform:translateX(0);}
+    #detailPanel{width:92%;max-width:420px;}
+    #toggleSidebarBtn{display:flex;}
+    .lb-stage{padding:50px 20px;}
+    .lb-nav{width:40px;height:40px;font-size:17px;}
+    .pickerGrid{grid-template-columns:repeat(3,1fr);}
+    .reviewCol{flex:0 0 160px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map" class="editing"></div>
+  <div id="saveToast"></div>
+
+  <button id="toggleSidebarBtn">☰</button>
+  <div id="mapTopBtns">
+    <button id="btnMapText"></button>
+    <button id="btnMapMode"></button>
+    <button id="btnPoi"></button>
+  </div>
+  <!-- 🅣 지도 글자 편집 -->
+  <div class="modalOverlay" id="mapTextModal">
+    <div class="modalBox" style="max-width:380px;">
+      <div class="modalHead"><h2 id="mtTitle"></h2><button id="mtClose">✕</button></div>
+      <div class="modalBody" style="display:flex;flex-direction:column;gap:10px;">
+        <textarea id="mtText" rows="3" style="width:100%;resize:vertical;"></textarea>
+        <p class="gmapsNote" id="mtHint" style="margin:0;"></p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label style="display:flex;gap:6px;align-items:center;font-size:12px;"><span id="mtColorLbl"></span> <input type="color" id="mtColor" value="#ffffff"></label>
+          <label style="display:flex;gap:6px;align-items:center;font-size:12px;"><span id="mtSizeLbl"></span>
+            <select id="mtSize"><option value="13">S</option><option value="17" selected>M</option><option value="24">L</option><option value="34">XL</option></select></label>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button id="mtDelete" style="flex:1;"></button>
+          <button id="mtDone" style="flex:2;"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside id="sidebar">
+    <div class="sb-head">
+      <h1><span id="appTitleText"></span> <span class="cnt" id="locCountBadge">0</span></h1>
+      <p id="appSubtitleText"></p>
+      <div class="sbActions">
+        <button id="btnEditToggle" class="on"></button>
+        <button id="btnSelectMode"></button>
+        <button id="btnExport"></button>
+        <button id="btnLang"></button>
+        <button id="btnBulkUpload" style="flex:1 1 100%;"></button>
+        <button id="btnUnsorted" style="flex:1 1 100%;display:none;"></button>
+      </div>
+      <p class="gmapsNote" id="uploadFolderHint" style="margin:6px 0 0;"></p>
+      <p class="gmapsNote" id="backupStatus" style="margin:6px 0 0;"></p>
+      <input type="file" id="bulkUploadInput" multiple accept="image/*,video/*" style="display:none;">
+    </div>
+    <div id="editBanner"></div>
+    <div id="bulkBar">
+      <span id="bulkBannerText"></span>
+      <div class="bulkActions">
+        <span id="bulkCount"></span>
+        <button id="bulkSelectAllBtn"></button>
+        <button id="bulkDeleteBtn" disabled></button>
+        <button id="bulkCancelBtn"></button>
+      </div>
+    </div>
+    <div class="viewToggle">
+      <button id="btnViewList" class="active"></button>
+      <button id="btnViewPhoto"></button>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div style="padding:2px 16px 0;"><button id="btnEditCats" class="catEditBtn"></button></div>
+    <div id="listWrap"></div>
+    <div class="photoGrid" id="photoGrid" style="display:none;"></div>
+  </aside>
+
+  <div id="detailPanel">
+    <div class="dp-head">
+      <div class="row">
+        <div style="flex:1;">
+          <input id="dpTitleInput" type="text" value="">
+          <div class="catRow">
+            <select id="dpCategorySelect"></select>
+            <input type="color" id="dpColorInput" value="#34d399">
+            <button id="dpStreetViewBtn" type="button"></button>
+            <button id="dpGmapsKeyBtn" type="button">⚙️</button>
+          </div>
+          <div id="dpCoordHint">—</div>
+        </div>
+        <button class="dp-close" id="dpClose">✕</button>
+      </div>
+    </div>
+    <div class="dp-body">
+      <div class="dp-section">
+        <h3><span id="lblAddress"></span> <span id="dpAddrStatus" style="font-weight:400;text-transform:none;"></span></h3>
+        <input id="dpAddressInput" type="text">
+      </div>
+      <div class="dp-section">
+        <h3 id="lblNotes"></h3>
+        <textarea id="dpNotesInput" rows="4"></textarea>
+      </div>
+      <!-- ☀️ 2026-10-09 대표 지시 — 「Sunseeker 노트」 칸은 뺐다(대표: 없어도 된다). 그 자리에 «Sunseeker 사진» 칸을 올렸다.
+           노트 칸이 사진 칸과 똑같이 생겨서, 사진을 옮겨도 「안 보인다」로 보였다(실제로는 아래쪽 사진 칸에 들어가 있었다).
+           노트 입력칸은 숨겨만 둔다 — 이미 적힌 메모 데이터는 지우지 않는다. -->
+      <div class="dp-section sunseeker" style="display:none;">
+        <h3 id="lblSunseeker"></h3>
+        <textarea id="dpSunseekerInput" rows="3"></textarea>
+      </div>
+      <div class="dp-section sunseeker" id="dpSunGroupWrap" style="display:none;">
+        <h3 id="lblSunMedia"></h3>
+        <div class="mediaGrid" id="dpMediaGridSun"></div>
+      </div>
+      <div class="dp-section">
+        <h3 id="lblDistances"></h3>
+        <div class="distList" id="dpDistList"></div>
+      </div>
+      <div class="dp-section">
+        <div class="mediaHead">
+          <h3 id="lblMedia" style="margin:0;"></h3>
+          <button id="dpAddMediaBtn"></button>
+        </div>
+        <div class="mediaGrid" id="dpMediaGrid"></div>
+      </div>
+      <!-- 💬 V2 — 함께 보는 사람들의 사진·댓글 (입장 코드로 들어온 사람 누구나 · 올리면 바로 보임) -->
+      <div class="dp-section v2Feed" id="dpV2Wrap" style="display:none;">
+        <h3 id="lblV2Feed"></h3>
+        <div class="v2Photos" id="v2Photos"></div>
+        <button id="v2AddPhoto" type="button"></button>
+        <input type="file" id="v2PhotoInput" accept="image/*" multiple style="display:none;">
+        <div class="v2Status" id="v2Status"></div>
+        <div class="v2Comments" id="v2Comments"></div>
+        <div class="v2Write">
+          <input type="text" id="v2Name" maxlength="40">
+          <textarea id="v2Text" rows="2" maxlength="2000"></textarea>
+          <button id="v2Send" type="button"></button>
+        </div>
+      </div>
+      <button id="dpDeleteBtn"></button>
+    </div>
+  </div>
+
+  <div id="lightbox">
+    <div class="lb-top">
+      <span class="lb-title" id="lbTitle">-</span>
+      <span id="lbCounter">1 / 1</span>
+      <button id="lbPairBtn" class="lbPairBtn" type="button" style="display:none;"></button>
+      <button id="lbAnnoBtn" class="lbAnnoBtn" type="button" style="display:none;"></button>
+      <a id="lbDownload" class="svOpenLink" href="#" download></a>
+      <button class="lb-close" id="lbClose">✕</button>
+    </div>
+    <div class="lb-stage">
+      <button class="lb-nav lb-prev" id="lbPrev">‹</button>
+      <div id="lbStageInner"></div>
+      <button class="lb-nav lb-next" id="lbNext">›</button>
+    </div>
+    <div id="lbAnnoBar">
+      <button data-tool="pen"></button>
+      <button data-tool="circle"></button>
+      <button data-tool="arrow"></button>
+      <button data-tool="text"></button>
+      <input type="color" id="annoColor" value="#ff3b30">
+      <select id="annoSize" title="글자 크기"><option value="0.03">S</option><option value="0.045" selected>M</option><option value="0.065">L</option><option value="0.09">XL</option><option value="0.13">XXL</option></select>
+      <button id="annoUndo"></button>
+      <button id="annoClear"></button>
+      <button id="annoDone" class="done"></button>
+    </div>
+    <div class="lb-bottom">
+      <div id="lbSunBadge" class="lb-sunBadge" style="display:none;">☀️ Sunseeker</div>
+      <div class="lb-caption" id="lbCaption">-</div>
+      <div class="lb-dots" id="lbDots"></div>
+    </div>
+  </div>
+
+  <!-- 미디어 보관함 선택 모달 -->
+  <div class="modalOverlay" id="mediaPickerModal">
+    <div class="modalBox">
+      <div class="modalHead"><h2 id="pickerModalTitle"></h2>
+        <button id="pickerClose">✕</button></div>
+      <div class="modalBody"><div class="pickerGrid" id="pickerGrid"></div></div>
+      <div class="modalFoot">
+        <button id="pickerCancel"></button>
+        <button id="pickerConfirm" class="primary"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 내보내기/백업 모달 -->
+  <div class="modalOverlay" id="exportModal">
+    <div class="modalBox">
+      <div class="modalHead"><h2 id="exportModalTitle"></h2>
+        <button id="exportClose">✕</button></div>
+      <div class="modalBody">
+        <textarea id="exportTextarea" readonly></textarea>
+        <div class="exportNote" id="exportNoteEl"></div>
+        <div class="exportDangerRow">
+          <button id="btnExportSelectAll"></button>
+          <button id="btnExportDownload"></button>
+          <label for="importFileInput" id="importLabel"></label>
+          <input type="file" id="importFileInput" accept=".js,.json,.txt">
+        </div>
+        <div class="exportDangerRow">
+          <button id="btnClearAll" style="color:#f87171;"></button>
+        </div>
+      </div>
+      <div class="modalFoot"><button id="exportDone" class="primary"></button></div>
+    </div>
+  </div>
+
+  <!-- Google API 키 설정 -->
+  <div class="modalOverlay" id="gmapsKeyModal">
+    <div class="modalBox gmapsBox">
+      <div class="modalHead"><h2 id="gmapsKeyModalTitle"></h2><button id="gmapsKeyClose">✕</button></div>
+      <div class="modalBody">
+        <p class="gmapsNote" id="gmapsKeyNote"></p>
+        <input type="text" id="gmapsKeyInput" class="gmapsInput" placeholder="AIzaSy...">
+      </div>
+      <div class="modalFoot"><button id="gmapsKeySave" class="primary"></button></div>
+    </div>
+  </div>
+
+  <!-- 스트리트뷰 + 태양궤적 -->
+  <div class="modalOverlay" id="svModal">
+    <div class="modalBox svBox">
+      <div class="modalHead">
+        <h2 id="svModalTitle">-</h2>
+        <div class="svHeadRight">
+          <a id="svOpenNewTab" class="svOpenLink" href="#" target="_blank" rel="noopener"></a>
+          <button id="svClose">✕</button>
+        </div>
+      </div>
+      <div class="svControls">
+        <input type="datetime-local" id="svDateTime">
+        <label class="svPathToggle"><input type="checkbox" id="svShowPath" checked> <span id="svShowPathLabel"></span></label>
+        <button id="svMovePinBtn" type="button"></button>
+        <span id="svSunReadout"></span>
+      </div>
+      <div class="modalBody" style="padding:0;">
+        <div id="svPanoWrap">
+          <div id="svPano"></div>
+          <canvas id="svOverlay"></canvas>
+          <div id="svNoKeyMsg" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 분류(카테고리) 편집 -->
+  <div class="modalOverlay" id="catModal">
+    <div class="modalBox" style="max-width:520px;">
+      <div class="modalHead"><h2 id="catModalTitle"></h2><button id="catClose">✕</button></div>
+      <div class="modalBody">
+        <p class="gmapsNote" id="catHint"></p>
+        <div id="catRows"></div>
+        <button id="catAddRow" class="catEditBtn" style="margin-top:10px;width:100%;"></button>
+      </div>
+      <div class="modalFoot"><button id="catDone" class="primary"></button></div>
+    </div>
+  </div>
+
+  <!-- 업로드 진행 -->
+  <div class="modalOverlay" id="uploadProgressModal">
+    <div class="modalBox" style="max-width:380px;">
+      <div class="modalHead"><h2 id="uploadProgressTitle"></h2></div>
+      <div class="modalBody">
+        <div class="upProgressBar"><div class="upProgressFill" id="upProgressFill"></div></div>
+        <p id="upProgressText" style="font-size:12px;color:var(--muted);margin:10px 0 0;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 업로드 결과 리뷰 (드래그로 자유 이동) -->
+  <div class="modalOverlay" id="reviewModal">
+    <div class="modalBox reviewBox">
+      <div class="modalHead"><h2 id="reviewModalTitle"></h2><button id="reviewClose">✕</button></div>
+      <div class="modalBody" style="padding:14px 14px 4px;">
+        <p class="gmapsNote" id="reviewHint" style="margin:0 0 10px;"></p>
+        <div class="reviewCols" id="reviewCols"></div>
+      </div>
+      <div class="modalFoot"><button id="reviewDone" class="primary"></button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
+<script>
+/* =========================================================
+   0. 프로젝트 — V2 는 «프로젝트마다» 따로 산다 (2026-10-09 대표 지시 「각 프로젝트마다 만들어서」)
+   · 편집: …/로케이션답사_V2.html?p=<프로젝트>   · 보기: luvparklife.github.io/자료/scout/?p=<프로젝트> (입장 코드)
+   · 브라우저 저장 열쇠도 프로젝트마다 다르다 — 서로 안 섞인다(261009 답사 편집본과도 안 섞인다)
+   ========================================================= */
+const V2_PROJECT = (function(){
+  try{
+    if(typeof SCOUT_PUBLISHED !== 'undefined' && SCOUT_PUBLISHED && SCOUT_PUBLISHED.v2) return SCOUT_PUBLISHED.v2.p;
+    return (new URLSearchParams(location.search).get('p') || '').trim();
+  }catch(e){ return ''; }
+})();
+const KP = 'scout2_' + (V2_PROJECT || '_none') + '_';
+const MEDIA_FOLDER = (V2_PROJECT || '프로젝트') + '_미디어/';
+function mediaThumbPath(file){ return MEDIA_FOLDER + '썸네일/' + file.replace(/\.[^.]+$/,'') + '.jpg'; }
+function mediaFullPath(file){ return MEDIA_FOLDER + '원본/' + file; }
+const MEDIA_FILES = [];   /* V2 는 미리 박아둔 목록이 없다 — 「사진 일괄 업로드」로 넣는다 */
+
+/* =========================================================
+   0-B. 다국어 (한/영) + 카테고리
+   ========================================================= */
+/* 🔴 분류는 대표님이 직접 추가·수정한다 (2026-10-09) — 전에는 코드에 네 개가 박혀 있었다.
+   기본 4개는 한/영 이름이 I18N 에 있고, 새로 만든 것은 label 에 적은 글자를 그대로 쓴다. */
+const CATEGORIES_DEFAULT = [
+  {key:'indoor',  color:'#60a5fa', icon:'🏠'},
+  {key:'outdoor', color:'#34d399', icon:'🌳'},
+  {key:'waiting', color:'#fbbf24', icon:'🛋'},
+  {key:'parking', color:'#f87171', icon:'🚐'}
+];
+const CATEGORIES_KEY = KP + 'categories';
+function loadCategories(){
+  /* 발행본은 파일에 박힌 분류를 그대로 쓴다 (보는 사람 브라우저 저장소와 무관) */
+  if(typeof SCOUT_PUBLISHED !== 'undefined' && SCOUT_PUBLISHED && Array.isArray(SCOUT_PUBLISHED.categories) && SCOUT_PUBLISHED.categories.length){
+    return SCOUT_PUBLISHED.categories.map(c=>({...c}));
+  }
+  try{
+    const raw = localStorage.getItem(CATEGORIES_KEY);
+    if(raw){
+      const arr = JSON.parse(raw);
+      if(Array.isArray(arr) && arr.length) return arr;
+    }
+  }catch(e){}
+  return CATEGORIES_DEFAULT.map(c=>({...c}));
+}
+let CATEGORIES = loadCategories();
+function saveCategories(){
+  if(typeof V2EDIT !== 'undefined' && V2EDIT){ v2SaveSoon(); return; }
+  try{ localStorage.setItem(CATEGORIES_KEY, JSON.stringify(CATEGORIES)); }catch(e){}
+}
+function catMeta(key){ return CATEGORIES.find(c=>c.key===key) || CATEGORIES[0] || CATEGORIES_DEFAULT[1]; }
+function catColor(key){ return catMeta(key).color; }
+function catIcon(key){ return catMeta(key).icon; }
+function catLabel(key){
+  const c = CATEGORIES.find(x=>x.key===key);
+  if(c && c.label) return c.label;                       /* 대표님이 직접 적은 이름 */
+  return (I18N[LANG].cat && I18N[LANG].cat[key]) || key; /* 기본 4개는 한/영 자동 */
+}
+
+const I18N = {
+  ko: {
+    appTitle: '🎬 로케이션 답사', subtitle: '편집 모드에서 지도를 클릭하면 새 핀이 생깁니다',
+    editOn: '🖊 편집 모드 켜짐', editOff: '👁 보기 모드',
+    selectBtn: '☑️ 선택 삭제', exportBtn: '📤 내보내기 / 백업', langBtnTo: '🌐 EN',
+    editBanner: '📍 지도를 클릭 → 새 핀 생성 · 핀을 드래그해서 정확한 위치로 옮기세요',
+    bulkBanner: '☑️ 지울 장소를 눌러 선택하세요 (지도 핀도 클릭 가능)',
+    bulkCount: n=>`${n}개 선택됨`, bulkSelectAll:'전체선택', bulkCancel:'선택 해제',
+    bulkDelete: n=>`🗑 선택 삭제 (${n})`, bulkDeleteConfirm: n=>`선택한 ${n}곳을 삭제할까요? 되돌릴 수 없습니다.`,
+    viewList: '📋 리스트형', viewPhoto: '🖼 사진 모아보기',
+    emptyList: '아직 만든 장소가 없습니다.<br>지도를 클릭해서 첫 핀을 만들어보세요.',
+    noMedia: '미디어 없음', mediaCount: n=>`🖼 미디어 ${n}개`, noAddress: '주소 없음', noTitle: '(이름 없음)',
+    titlePlaceholder: '장소 이름', newLocTitle: n=>`새 장소 ${n}`,
+    coordHint: (lat,lng,editable)=>`위도 ${lat} · 경도 ${lng}` + (editable?' · 드래그해서 조정 가능':''),
+    streetViewBtn: '🧭 스트리트뷰', pinColorTitle: '핀 색상',
+    lblAddress: '주소', addressPlaceholder: '주소를 입력하세요',
+    lblNotes: '현장 노트', notesPlaceholder: '전력·채광·소음·특이사항 등',
+    lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: '촬영 예정시각 / 고도 / 방위각 메모',
+    lblMedia: '미디어', lblSunMedia: '☀️ Sunseeker 사진', sunDropHint: '☀️ 사진을 여기로 끌어다 놓으면 Sunseeker 가 됩니다', photoDropHint: '여기로 놓으면 일반 사진', captionPlaceholder: '메모 추가 (예: 역광 심함, 16시 기준)',
+    addMediaBtn: '➕ 보관함에서 추가', deleteBtn: '🗑 이 장소 삭제',
+    deleteConfirm: title=>`「${title}」를 삭제할까요? 되돌릴 수 없습니다.`,
+    pickerTitle: '🖼 미디어 보관함 — 사진/영상을 골라 추가', pickerConfirm: n=>`선택한 것 추가 (${n})`, pickerCancel: '취소',
+    exportTitle: '📤 내보내기 / 백업',
+    exportNote: '이 브라우저에는 자동 저장되지만(새로고침해도 안 사라짐), 다른 컴퓨터로 옮기거나 영구 보관하려면 아래 중 하나로 백업하세요. <b>다운로드가 안 뜨면</b> 「전체 선택」으로 긁어서 메모장 등에 붙여넣으세요.',
+    selectAll: '전체 선택', download: '💾 파일로 내려받기', importBtn: '📥 불러오기',
+    clearAll: '🗑 전체 비우기', closeBtn: '닫기', clearAllConfirm: '만든 장소를 전부 지울까요? 되돌릴 수 없습니다.',
+    geoLoading: '⏳ 자동조회 중…', geoOk: '✓ 자동조회', geoFail: '⚠ 자동조회 실패 — 직접 입력',
+    saved: '💾 저장됨', saveFail: '⚠ 저장 실패 — 브라우저 저장공간을 확인하세요',
+    importFail: '⚠ 불러오기 실패 — 파일 형식을 확인하세요', downloadFail: '⚠ 다운로드 미지원 — 전체선택으로 복사하세요',
+    cat: { indoor:'실내', outdoor:'실외', waiting:'대기실', parking:'주차장' },
+    typeBadge: { sunseeker:'☀️ Sunseeker', video:'🎬 영상', image:'📷 사진' },
+    typeToggleTitle: '클릭하면 사진 ↔ Sunseeker 전환', sidebarToggleTitle: '목록 열기', countUnit: n=>`${n}곳`,
+    pageTitle: '로케이션 답사 V2 — ' + (V2_PROJECT || '프로젝트를 고르세요'), exportFileName: (V2_PROJECT||'project') + '_로케이션답사_데이터.js',
+    lblDistances: '📏 다른 장소까지 거리', noOtherSpots: '다른 장소가 아직 없습니다',
+    gmapsKeyBtnTitle: 'Google API 키 설정',
+    gmapsKeyModalTitle: '⚙️ Google 지도 API 키',
+    gmapsKeyNote: '페이지 안에서 스트리트뷰(+태양 궤적)를 보려면 무료 Google Maps API 키가 필요합니다. 한 번만 넣어두면 이 브라우저에 저장되고, 다음부터는 묻지 않습니다. 키 받는 방법은 채팅으로 안내해드렸습니다.',
+    gmapsKeySave: '저장',
+    svOpenNewTab: '🔗 새 탭에서 열기', svShowPathLabel: '하루 궤적 보기',
+    altitude: '고도', azimuth: '방위각', belowHorizon: '지평선 아래',
+    noStreetView: '이 위치엔 스트리트뷰 사진이 없습니다',
+    gmapsLoadFail: '지도를 못 불러왔습니다 — API 키가 올바른지, 「Maps JavaScript API」가 켜져 있는지 확인하세요',
+    btnBulkUpload: '📤 사진 일괄 업로드 (자동분류)',
+    btnUnsorted: n=>`🗂 미분류 ${n}개 — 확인하기`,
+    btnMoveMedia: '🗂 사진 옮기기 (장소끼리 끌어다 놓기)',
+    noFsApi: '이 브라우저는 파일 저장 기능을 지원하지 않습니다. 크롬 최신버전에서 열어주세요.',
+    folderPickNote: '사진·영상을 저장할 폴더를 선택하는 창이 뜹니다. 반드시 "' + MEDIA_FOLDER.slice(0,-1) + '" 폴더를 선택해주세요(이미 만들어져 있습니다).',
+    folderPickCancelled: '폴더 선택이 취소돼 업로드를 진행할 수 없습니다.',
+    folderConnected: '✅ 폴더가 연결됐습니다.\n이제 「📤 사진 일괄 업로드」를 한 번 더 눌러 사진을 골라주세요.',
+    uploadProgressTitle: '📤 업로드 중…',
+    upProgressText: (i,n,name)=>`${i} / ${n} · ${name}`,
+    reviewModalTitle: '📥 자동분류 결과 — 드래그해서 옮기세요',
+    reviewHint: '썸네일을 다른 칸으로 끌어다 놓으면 그 장소로 옮겨집니다(바로 반영). 🔍 를 누르거나 썸네일을 두 번 누르면 크게 보고 영상도 재생됩니다.',
+    reviewChipHint: '끌어서 옮기기 · 두 번 누르면 크게 보기',
+    reviewDone: '확인했습니다', unsortedColTitle: '🗂 미분류 (GPS 없음)',
+    newClusterTitle: n=>`새 스팟 ${n}`,
+    uploadDoneToast: n=>`✅ ${n}개 업로드 완료`,
+    lbDownload: '⬇ 이 사진 받기',
+    lbPairToSun: '☀️ 짝 Sunseeker 보기', lbPairToPhoto: '📷 짝 사진 보기', lbSpotSun: '☀️ 이 장소 Sunseeker', pairNone: '☀️ 짝 Sunseeker 없음',
+    mapModeToSat: '🛰 위성사진', mapModeToMap: '🗺 일반지도', v2AdminIn: '🔑 관리자', v2AdminOut: '🚪 관리자 나가기', v2AdminOn: '🔑 관리자 편집 중 — 고치면 바로 저장되고 보는 분들께 반영됩니다', v2AdminPrompt: '편집 비밀번호를 넣어주세요',
+    v2Saving: '저장 중…', v2Saved: '저장됨 · 보는 분들께 반영', v2SaveFail: '저장 실패 — 다시 시도합니다(고친 내용은 화면에 남아 있음)', v2Conflict: '다른 관리자가 먼저 고쳤습니다. 방금 고친 것은 저장하지 않았습니다.',
+    v2ReloadQ: '최신으로 새로고침할까요?', v2WaitSave: '저장이 끝난 뒤 나가주세요', v2WrongPw: '⚠ 비밀번호가 맞지 않습니다',
+    v2Title: '💬 사진·댓글 — 함께 보는 분들', v2AddPhoto: '📷 이 스팟에 사진 올리기', v2Name: '이름 (예: 홍길동 · 브랜드팀)', v2Text: '이 스팟에 대한 의견을 남겨주세요', v2Send: '댓글 등록',
+    v2NoFeed: '아직 올라온 사진·댓글이 없습니다', v2NeedName: '이름을 먼저 적어주세요', v2Sending: '⏳ 올리는 중…', v2SentPhoto: n=>`✓ 사진 ${n}장 올렸습니다`, v2SentComment: '✓ 등록했습니다',
+    v2Fail: '⚠ 실패했습니다 — 잠시 뒤 다시 해주세요', v2DelConfirm: '이 항목을 지울까요? (보는 사람 모두에게서 사라집니다)', v2Off: '서버 연결 전 — 발행하면 여기서 보는 분들의 사진·댓글을 함께 봅니다', v2PhotoOnly: '사진만 올릴 수 있습니다',
+    btnPoiOff: '🏷 주변 이름 켜기', btnPoiOn: '🏷 주변 이름 끄기', enMapNeedsKey: '영문 지도는 구글 키가 있어야 합니다 — 지금은 한글 지도로 보여드립니다',
+    btnMapText: '🅣 글자', btnMapTextOn: '🅣 글자 넣는 중 (끄기)', mapTextHint: '지도를 누르면 그 자리에 글자가 들어갑니다',
+    mtNew: '지도에 글자 넣기', mtEdit: '글자 고치기', mtColorLbl: '색', mtSizeLbl: '크기', mtDelete: '🗑 지우기', mtDone: '확인',
+    lbAnnoBtn: '✏️ 표시하기', toolPen: '✏️ 펜', toolCircle: '⭕ 동그라미', toolArrow: '➡️ 화살표', toolText: '🅣 글자',
+    annoUndo: '↩ 되돌리기', annoClear: '🗑 전부 지우기', annoDone: '완료', annoTextPrompt: '글자 입력 · Enter = 다음 줄', mtHint: 'Enter = 다음 줄 · ⌘+Enter = 확인 · 지도에서 글자를 끌면 옮겨지고, 누르면 다시 고칩니다',
+    annoClearConfirm: '이 사진의 표시를 전부 지울까요?',
+    svMovePinBtn: '📍 핀을 여기로 옮기기',
+    svMovePinDone: '✓ 핀이 이 위치로 이동됐습니다',
+    svMovePinFail: '⚠ 아직 위치를 못 읽었습니다 — 잠시 후 다시 눌러주세요',
+    btnEditCats: '⚙️ 분류 추가·수정',
+    catModalTitle: '⚙️ 핀 분류 편집',
+    catHint: '아이콘(이모지) · 이름 · 색을 바꿀 수 있습니다. 바로 저장됩니다. 쓰고 있는 분류는 지울 수 없습니다(먼저 그 장소들의 분류를 바꿔주세요).',
+    catAddRow: '➕ 분류 추가',
+    catNamePlaceholder: '분류 이름',
+    catInUse: n=>`${n}곳`,
+    catDeleteBlocked: n=>`⚠ ${n}곳이 이 분류를 쓰고 있어 못 지웁니다`,
+    catDeleteLast: '⚠ 분류가 최소 한 개는 있어야 합니다',
+    pinRightClickDelete: title=>`「${title}」 핀을 지울까요?`
+  },
+  en: {
+    appTitle: '🎬 Location Scout', subtitle: 'Click the map in edit mode to drop a new pin',
+    editOn: '🖊 Edit Mode: ON', editOff: '👁 View Mode',
+    selectBtn: '☑️ Select & Delete', exportBtn: '📤 Export / Backup', langBtnTo: '🌐 한',
+    editBanner: '📍 Click the map → new pin · Drag a pin to fine-tune its position',
+    bulkBanner: '☑️ Tap locations to select (map pins work too)',
+    bulkCount: n=>`${n} selected`, bulkSelectAll:'Select all', bulkCancel:'Clear selection',
+    bulkDelete: n=>`🗑 Delete selected (${n})`, bulkDeleteConfirm: n=>`Delete ${n} selected location(s)? This can't be undone.`,
+    viewList: '📋 List', viewPhoto: '🖼 Photo Grid',
+    emptyList: 'No locations yet.<br>Click the map to drop your first pin.',
+    noMedia: 'No media', mediaCount: n=>`🖼 ${n} media`, noAddress: 'No address', noTitle: '(untitled)',
+    titlePlaceholder: 'Location name', newLocTitle: n=>`New Location ${n}`,
+    coordHint: (lat,lng,editable)=>`Lat ${lat} · Lng ${lng}` + (editable?' · Drag to adjust':''),
+    streetViewBtn: '🧭 Street View', pinColorTitle: 'Pin color',
+    lblAddress: 'Address', addressPlaceholder: 'Enter address',
+    lblNotes: 'Field Notes', notesPlaceholder: 'Power, light, noise, anything else to flag',
+    lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: 'Shoot time / elevation / azimuth notes',
+    lblMedia: 'Media', lblSunMedia: '☀️ Sunseeker Photos', sunDropHint: '☀️ Drop a photo here to mark it as Sunseeker', photoDropHint: 'Drop here for a regular photo', captionPlaceholder: 'Add a note (e.g. harsh backlight at 4pm)',
+    addMediaBtn: '➕ Add from library', deleteBtn: '🗑 Delete this location',
+    deleteConfirm: title=>`Delete "${title}"? This can't be undone.`,
+    pickerTitle: '🖼 Media Library — pick photos/videos to add', pickerConfirm: n=>`Add selected (${n})`, pickerCancel: 'Cancel',
+    exportTitle: '📤 Export / Backup',
+    exportNote: 'This browser auto-saves your work (survives reload). To move it to another computer or back it up permanently, use one of the options below. <b>If the download doesn\'t appear</b>, use "Select All" and paste it into a text file.',
+    selectAll: 'Select All', download: '💾 Download as file', importBtn: '📥 Import',
+    clearAll: '🗑 Clear everything', closeBtn: 'Close', clearAllConfirm: "Delete all locations? This can't be undone.",
+    geoLoading: '⏳ Looking up address…', geoOk: '✓ Auto-filled', geoFail: '⚠ Lookup failed — enter manually',
+    saved: '💾 Saved', saveFail: '⚠ Save failed — check browser storage',
+    importFail: '⚠ Import failed — check the file format', downloadFail: '⚠ Download not supported — use Select All',
+    cat: { indoor:'Indoor', outdoor:'Outdoor', waiting:'Waiting Area', parking:'Parking' },
+    typeBadge: { sunseeker:'☀️ Sunseeker', video:'🎬 Video', image:'📷 Photo' },
+    typeToggleTitle: 'Click to toggle Photo ↔ Sunseeker', sidebarToggleTitle: 'Open list', countUnit: n=> n===1?'1 location':`${n} locations`,
+    pageTitle: 'Location Scout V2 — ' + (V2_PROJECT || 'choose a project'), exportFileName: (V2_PROJECT||'project') + '_location_scout_data.js',
+    lblDistances: '📏 Distance to other spots', noOtherSpots: 'No other spots yet',
+    gmapsKeyBtnTitle: 'Set Google API key',
+    gmapsKeyModalTitle: '⚙️ Google Maps API key',
+    gmapsKeyNote: 'Viewing Street View (with the sun path) inside the page needs a free Google Maps API key. Enter it once — it\'s saved in this browser and won\'t be asked again. Setup steps were given in chat.',
+    gmapsKeySave: 'Save',
+    svOpenNewTab: '🔗 Open in new tab', svShowPathLabel: "Show today's path",
+    altitude: 'Altitude', azimuth: 'Azimuth', belowHorizon: 'below horizon',
+    noStreetView: 'No Street View imagery here',
+    gmapsLoadFail: "Couldn't load the map — check your API key and that \"Maps JavaScript API\" is enabled",
+    btnBulkUpload: '📤 Bulk Upload Photos (auto-sort)',
+    btnUnsorted: n=>`🗂 ${n} unsorted — review`,
+    btnMoveMedia: '🗂 Move photos between spots',
+    noFsApi: "This browser doesn't support saving files. Please open this in a recent version of Chrome.",
+    folderPickNote: 'A folder picker will open. Please select the "' + MEDIA_FOLDER.slice(0,-1) + '" folder (it already exists).',
+    folderPickCancelled: "Folder selection was cancelled, so the upload can't continue.",
+    folderConnected: '✅ Folder connected.\nPress “📤 Bulk Upload Photos” once more to pick your photos.',
+    uploadProgressTitle: '📤 Uploading…',
+    upProgressText: (i,n,name)=>`${i} / ${n} · ${name}`,
+    reviewModalTitle: '📥 Auto-sort results — drag to move',
+    reviewHint: 'Drag a thumbnail into another column to move it (applies instantly). Click 🔍 or double-click to view it large / play the video.',
+    reviewChipHint: 'Drag to move · double-click to view',
+    reviewDone: 'Done', unsortedColTitle: '🗂 Unsorted (no GPS)',
+    newClusterTitle: n=>`New Spot ${n}`,
+    uploadDoneToast: n=>`✅ ${n} uploaded`,
+    lbDownload: '⬇ Download photo',
+    lbPairToSun: '☀️ Paired Sunseeker', lbPairToPhoto: '📷 Paired photo', lbSpotSun: '☀️ Sunseeker for this spot', pairNone: '☀️ No paired Sunseeker',
+    mapModeToSat: '🛰 Satellite', mapModeToMap: '🗺 Map', v2AdminIn: '🔑 Admin', v2AdminOut: '🚪 Leave admin', v2AdminOn: '🔑 Editing as admin — changes save instantly for all viewers', v2AdminPrompt: 'Enter the edit password',
+    v2Saving: 'Saving…', v2Saved: 'Saved · live for viewers', v2SaveFail: 'Save failed — will retry (your changes are still on screen)', v2Conflict: 'Another admin saved first. Your last change was NOT saved.',
+    v2ReloadQ: 'Reload to the latest version?', v2WaitSave: 'Please wait until saving finishes', v2WrongPw: '⚠ Wrong password',
+    v2Title: '💬 Photos & comments', v2AddPhoto: '📷 Add photos to this spot', v2Name: 'Your name (e.g. Jane · Brand team)', v2Text: 'Leave a note about this spot', v2Send: 'Post comment',
+    v2NoFeed: 'No photos or comments yet', v2NeedName: 'Please enter your name first', v2Sending: '⏳ Uploading…', v2SentPhoto: n=>`✓ ${n} photo(s) uploaded`, v2SentComment: '✓ Posted',
+    v2Fail: '⚠ Failed — please try again shortly', v2DelConfirm: 'Delete this item? (It disappears for everyone)', v2Off: 'Not connected yet — after publishing, viewers\' photos and comments appear here', v2PhotoOnly: 'Photos only',
+    btnPoiOff: '🏷 Show nearby names', btnPoiOn: '🏷 Hide nearby names', enMapNeedsKey: 'English map needs the Google key — showing the local map for now',
+    btnMapText: '🅣 Text', btnMapTextOn: '🅣 Adding text (off)', mapTextHint: 'Click the map to place text',
+    mtNew: 'Add text to map', mtEdit: 'Edit text', mtColorLbl: 'Color', mtSizeLbl: 'Size', mtDelete: '🗑 Delete', mtDone: 'OK',
+    lbAnnoBtn: '✏️ Mark up', toolPen: '✏️ Pen', toolCircle: '⭕ Circle', toolArrow: '➡️ Arrow', toolText: '🅣 Text',
+    annoUndo: '↩ Undo', annoClear: '🗑 Clear all', annoDone: 'Done', annoTextPrompt: 'Type · Enter = new line', mtHint: 'Enter = new line · ⌘+Enter = OK · Drag text on the map to move, click to edit',
+    annoClearConfirm: 'Remove all marks on this photo?',
+    svMovePinBtn: '📍 Move pin here',
+    svMovePinDone: '✓ Pin moved to this spot',
+    svMovePinFail: "⚠ Position not ready yet — try again in a moment",
+    btnEditCats: '⚙️ Edit categories',
+    catModalTitle: '⚙️ Pin categories',
+    catHint: 'Change the icon (emoji), name and color. Saved instantly. A category in use can’t be deleted — move those locations to another category first.',
+    catAddRow: '➕ Add category',
+    catNamePlaceholder: 'Category name',
+    catInUse: n=>`${n} used`,
+    catDeleteBlocked: n=>`⚠ ${n} location(s) still use this category`,
+    catDeleteLast: '⚠ You need at least one category',
+    pinRightClickDelete: title=>`Delete the pin "${title}"?`
+  }
+};
+let LANG = localStorage.getItem('scout2_lang') || 'ko';
+function t(key){ return I18N[LANG][key]; }
+
+/* =========================================================
+   1. 상태 — localStorage에 자동 저장
+   ========================================================= */
+/* 🔴 발행본(인터넷 공유용)은 «같은 파일»이다 — 뷰어를 따로 만들면 두 개가 되어 어긋난다(§1).
+   발행 스크립트가 이 파일 위에 SCOUT_PUBLISHED(장소 데이터 + 분류)를 끼워 넣는다.
+   그 값이 있으면 = 발행본 → 편집 기능을 전부 숨기고 브라우저 저장도 안 쓴다. */
+const PUBLISHED = (typeof SCOUT_PUBLISHED !== 'undefined') ? SCOUT_PUBLISHED : null;
+/* 🔑 2026-10-09 대표 지시 「관리자 모드 버튼 → 비밀번호 쳐서 편집」 — 공개 링크에서 편집 비밀번호를 넣고 들어온 상태.
+   화면은 편집본과 같고, 저장은 브라우저가 아니라 «서버»로 간다(보는 사람에게 바로 반영). */
+const V2EDIT = !!(PUBLISHED && PUBLISHED.v2 && PUBLISHED.v2.pw);
+
+const STORAGE_KEY = KP + 'locations';
+let LOCATIONS = [];
+if(PUBLISHED){
+  LOCATIONS = PUBLISHED.locations || [];
+} else {
+  try{
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if(saved) LOCATIONS = JSON.parse(saved);
+    /* 🔴 비어 있는데 직전 세대가 남아 있으면 그걸 되살린다 (업데이트 사고 대비) */
+    if((!LOCATIONS || !LOCATIONS.length)){
+      const prev = localStorage.getItem(STORAGE_KEY + '_prev');
+      if(prev){
+        const p = JSON.parse(prev);
+        if(Array.isArray(p) && p.length){ LOCATIONS = p; console.log('[복구] 직전 저장본에서 ' + p.length + '곳을 되살렸습니다'); }
+      }
+    }
+  }catch(e){ LOCATIONS = []; }
+}
+let nextId = LOCATIONS.reduce((m,l)=>Math.max(m,l.id||0),0) + 1;
+
+let editMode = !PUBLISHED || V2EDIT;
+let selectMode = false;
+let currentLocId = null;
+const markers = {};
+const activeCats = new Set(CATEGORIES.map(c=>c.key));
+const selectedIds = new Set();
+
+let saveToastTimer;
+function flashSaved(msg){
+  const el = document.getElementById('saveToast');
+  el.textContent = msg || t('saved'); el.className = 'toast show ok';
+  clearTimeout(saveToastTimer); saveToastTimer = setTimeout(()=> el.classList.remove('show'), msg ? 2600 : 1100);
+}
+function flashError(msg){
+  const el = document.getElementById('saveToast');
+  el.textContent = '⚠ ' + msg; el.className = 'toast show err';
+  clearTimeout(saveToastTimer); saveToastTimer = setTimeout(()=> el.classList.remove('show'), 3000);
+}
+function saveState(){
+  if(PUBLISHED){ if(V2EDIT) v2SaveSoon(); return; }   /* 발행본은 보는 것만 — 관리자 편집 중이면 서버로 */
+  try{
+    /* 🔴 「업데이트돼도 작업한 게 그대로 남게」 (2026-10-09 대표 지시)
+       ㉮ 저장소 열쇠(STORAGE_KEY)는 절대 안 바꾼다 — 바꾸면 그 순간 옛 작업이 안 보인다
+       ㉯ 덮어쓰기 «전»의 값을 한 세대 남긴다 — 코드 실수로 비워져도 되살릴 수 있다 */
+    const before = localStorage.getItem(STORAGE_KEY);
+    if(before && before !== '[]') localStorage.setItem(STORAGE_KEY + '_prev', before);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(LOCATIONS));
+    flashSaved();
+  }
+  catch(e){ flashError(t('saveFail')); }
+  scheduleBackup();       /* 🔴 드라이브 폴더에도 파일로 한 벌 더 — 크롬 데이터가 날아가도 살아남게 */
+}
+function debounce(fn, delay){
+  let tt; return function(...args){ clearTimeout(tt); tt = setTimeout(()=>fn.apply(this,args), delay); };
+}
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
+
+/* =========================================================
+   2. 지도 초기화
+   ========================================================= */
+const gpsPts = MEDIA_FILES.filter(f=>f.lat!=null);
+const centerLat = gpsPts.length ? gpsPts.reduce((s,p)=>s+p.lat,0)/gpsPts.length : 37.5665;
+const centerLng = gpsPts.length ? gpsPts.reduce((s,p)=>s+p.lng,0)/gpsPts.length : 126.9780;
+
+const map = L.map('map', { zoomControl:false }).setView([centerLat, centerLng], 18);
+L.control.zoom({ position:'bottomright' }).addTo(map);
+
+/* 지도 라벨 언어 — ko:OSM 기본(현지 표기) · en:위키미디어 다국어 타일(lang=en, 로마자 표기) */
+let tileLayer = null;
+/* 🔴 2026-10-09 대표 지시 — 「길 사이사이까지 봤으면 한다」.
+   일반 지도는 공원 안 산책로가 빈약하다 → «위성사진»을 같이 쓴다(키 불필요).
+   지도 모드는 브라우저에 기억시킨다. */
+let MAP_MODE = localStorage.getItem('scout2_mapmode') || 'map';   /* map | satellite */
+function buildTileLayer(){
+  if(MAP_MODE === 'satellite'){
+    return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics', maxZoom: 19, maxNativeZoom: 19
+    });
+  }
+  return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors', subdomains: 'abc', maxZoom: 19
+  });
+}
+/* 🔴 2026-10-09 대표 신고 「영문으로 바꾸면 지도가 안 보여」 — 영문 타일(위키미디어)이 외부 사이트를 막아(403) 빈 화면이었다.
+   한국은 지도 데이터 반출 제한 때문에 Esri·CARTO 등 무료 영문 지도도 비어 있다(실측).
+   → 영문일 때는 «구글 공식 지도»(스트리트뷰와 같은 키)를 영어로 띄운다. 키가 없거나 실패하면 일반 지도로 둔다. */
+let mapLayerSeq = 0;
+/* 🏷 2026-10-09 대표 지시 「지정한 스팟 외 장소들 이름때문에 너무 헷갈려」 — 구글 지도의 가게·건물·정류장 이름과 아이콘을 기본으로 숨긴다.
+   길·공원 모양·큰길 이름은 남긴다. 「🏷 주변 이름」 버튼으로 다시 켤 수 있다(브라우저에 기억). */
+const CLEAN_MAP_STYLES = [
+  { featureType:'poi', elementType:'labels', stylers:[{ visibility:'off' }] },
+  { featureType:'transit', stylers:[{ visibility:'off' }] },
+  { featureType:'landscape', elementType:'labels', stylers:[{ visibility:'off' }] },
+  { featureType:'road.local', elementType:'labels', stylers:[{ visibility:'off' }] }
+];
+let POI_ON = (function(){ try{ return localStorage.getItem('scout2_poi') === '1'; }catch(e){ return false; } })();
+function applyMapLayer(){
+  const seq = ++mapLayerSeq;
+  if(tileLayer) map.removeLayer(tileLayer);
+  tileLayer = buildTileLayer();
+  tileLayer.addTo(map);
+  /* 🔴 setTimeout 0 — 첫 화면에서는 키 읽는 부분(아래쪽 코드)이 아직 준비 전이라 바로 부르면 멈춘다 */
+  /* 🗺 2026-10-09 대표 「보기전용(구글) 지도가 더 정확」 — 한글일 때도 구글 지도를 기본으로(한글 표기). 키 없으면 오픈스트리트맵 */
+  if(MAP_MODE !== 'satellite') setTimeout(()=>{
+    if(seq !== mapLayerSeq) return;
+    const key = getGmapsKey();
+    if(!key || !L.gridLayer || !L.gridLayer.googleMutant){ if(LANG === 'en') flashError(t('enMapNeedsKey')); }
+    else if(window.google && window.google.maps && window.__gmapsLang && window.__gmapsLang !== LANG){
+      location.reload();   /* 구글은 한 번 불러오면 언어를 못 바꾼다 — 작업은 저장돼 있으니 새로고침으로 바꾼다 */
+      return;
+    } else {
+      loadGoogleMaps(key).then(()=>{
+        if(seq !== mapLayerSeq) return;      /* 그 사이 다시 바뀌었으면 무시 */
+        const g = L.gridLayer.googleMutant({ type:'roadmap', maxZoom: 21, styles: POI_ON ? [] : CLEAN_MAP_STYLES });
+        map.removeLayer(tileLayer); tileLayer = g; g.addTo(map);
+      }).catch(()=> flashError(t('enMapNeedsKey')));
+    }
+  }, 0);
+  /* 🔴 위성사진은 원래 어둡다 — 일반 지도에만 걸던 «반전 다크» 필터를 빼야 색이 제대로 나온다 */
+  document.getElementById('map').classList.toggle('satellite', MAP_MODE === 'satellite');
+  const b = document.getElementById('btnMapMode');
+  if(b) b.textContent = MAP_MODE === 'satellite' ? t('mapModeToMap') : t('mapModeToSat');
+}
+function setMapLanguage(lang){ applyMapLayer(); }
+applyMapLayer();
+
+function makeIcon(loc){
+  const color = loc.color || catColor(loc.category);
+  const sel = selectMode && selectedIds.has(loc.id) ? ' selForDel' : '';
+  /* 📍 핀 옆에 스팟 이름을 띄운다 (2026-10-09 대표 지시) */
+  /* 「스팟 번호도 같이」(대표 지시) — 번호 · 이름 */
+  const lbl = `<span class="pinLabel" style="border-left-color:${color}">${loc.id}${loc.title ? ' · ' + escapeHtml(loc.title) : ''}</span>`;
+  return L.divIcon({ className:'', html:`<div class="loc-marker${sel}" id="pin-${loc.id}" style="background:${color}">${loc.id}${lbl}</div>`,
+    iconSize:[26,26], iconAnchor:[13,13] });
+}
+function addMarker(loc){
+  const m = L.marker([loc.lat, loc.lng], { icon: makeIcon(loc), draggable:editMode }).addTo(map);
+  m.on('click', ()=>{
+    if(selectMode){ toggleSelect(loc.id); return; }
+    openDetail(loc.id, false);
+  });
+  /* 🔴 지도에서 바로 지우기 — 오른쪽 클릭 (편집 모드일 때만) */
+  m.on('contextmenu', (ev)=>{
+    if(ev.originalEvent) ev.originalEvent.preventDefault();
+    if(!editMode) return;
+    const target = LOCATIONS.find(l=>l.id===loc.id);
+    if(!target) return;
+    if(!confirm(t('pinRightClickDelete')(target.title || t('noTitle')))) return;
+    sendToUnsorted(target.media);
+    const mk = markers[target.id]; if(mk) map.removeLayer(mk);
+    delete markers[target.id];
+    LOCATIONS = LOCATIONS.filter(l=>l.id!==target.id);
+    if(currentLocId === target.id){
+      currentLocId = null;
+      document.getElementById('detailPanel').classList.remove('open');
+    }
+    selectedIds.delete(target.id);
+    applyFilter(); refreshDistancesIfOpen(); updateBulkBar(); saveState();
+  });
+  m.on('dragend', (ev)=>{
+    const ll = ev.target.getLatLng();
+    const L2 = LOCATIONS.find(l=>l.id===loc.id);
+    if(!L2) return;
+    L2.lat = ll.lat; L2.lng = ll.lng;
+    scheduleLabelLayout();
+    if(currentLocId===loc.id) updateCoordHint(L2);
+    refreshDistancesIfOpen();
+    saveState();
+  });
+  markers[loc.id] = m;
+  setTimeout(()=> bindMediaDrop(m.getElement(), loc.id), 0);
+}
+function rebuildAllMarkers(){
+  Object.values(markers).forEach(m=> map.removeLayer(m));
+  for(const k in markers) delete markers[k];
+  LOCATIONS.forEach(addMarker);
+  applyFilter();
+}
+function refreshDraggable(){
+  /* 🔴 선택 모드에서는 핀 끌기를 끈다 — 끌기와 「드래그로 범위 선택」이 서로 먹는다 */
+  const canDrag = editMode && !selectMode;
+  Object.values(markers).forEach(m=> canDrag ? m.dragging.enable() : m.dragging.disable());
+  if(selectMode) map.dragging.disable(); else map.dragging.enable();
+}
+
+/* ---- 드래그 박스로 여러 핀 한 번에 고르기 (선택 모드에서만) ---- */
+let boxSelStart = null, boxSelEl = null;
+map.on('mousedown', function(e){
+  if(!selectMode) return;
+  boxSelStart = e.containerPoint;
+  boxSelEl = document.createElement('div');
+  boxSelEl.className = 'boxSel';
+  boxSelEl.style.left = boxSelStart.x + 'px';
+  boxSelEl.style.top = boxSelStart.y + 'px';
+  boxSelEl.style.width = '0px'; boxSelEl.style.height = '0px';
+  map.getContainer().appendChild(boxSelEl);
+});
+/* 🔴 mousemove·mouseup 은 «문서»에 건다 — 지도에만 걸면 오른쪽 패널 위에서 손을 뗐을 때
+   지도가 그 이벤트를 못 받아 선택이 영영 안 끝나고 사각형만 남는다 (2026-10-09 검사에서 잡음) */
+document.addEventListener('mousemove', function(ev){
+  if(!boxSelStart || !boxSelEl) return;
+  const p = map.mouseEventToContainerPoint(ev);
+  boxSelEl.style.left = Math.min(p.x, boxSelStart.x) + 'px';
+  boxSelEl.style.top = Math.min(p.y, boxSelStart.y) + 'px';
+  boxSelEl.style.width = Math.abs(p.x - boxSelStart.x) + 'px';
+  boxSelEl.style.height = Math.abs(p.y - boxSelStart.y) + 'px';
+});
+document.addEventListener('mouseup', function(ev){
+  if(!boxSelStart) return;
+  const p = map.mouseEventToContainerPoint(ev);
+  const dragged = Math.abs(p.x - boxSelStart.x) > 4 || Math.abs(p.y - boxSelStart.y) > 4;
+  if(boxSelEl){ boxSelEl.remove(); boxSelEl = null; }
+  const start = boxSelStart; boxSelStart = null;
+  if(!dragged) return;                       /* 그냥 클릭한 것 — 선택을 안 건드린다 */
+  const bounds = L.latLngBounds(map.containerPointToLatLng(start), map.containerPointToLatLng(p));
+  LOCATIONS.forEach(loc=>{
+    if(!activeCats.has(loc.category)) return;   /* 필터로 숨긴 것은 안 고른다 */
+    if(bounds.contains(L.latLng(loc.lat, loc.lng))) selectedIds.add(loc.id);
+  });
+  refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+});
+function refreshMarkerIcons(){
+  LOCATIONS.forEach(loc=>{ const m = markers[loc.id]; if(m){ m.setIcon(makeIcon(loc)); bindMediaDrop(m.getElement(), loc.id); } });
+}
+function bindAllMarkerDrops(){
+  LOCATIONS.forEach(loc=>{ const m = markers[loc.id]; if(m) bindMediaDrop(m.getElement(), loc.id); });
+}
+LOCATIONS.forEach(addMarker);
+
+function createLocationAt(lat, lng, opts){
+  opts = opts || {};
+  /* 🔴 이름의 숫자는 «핀 번호(id)»와 같아야 한다 — 전에는 「지금 몇 개 있나」로 매겨서
+     중간에 하나를 지우면 핀은 1,3,4 인데 이름은 1,2,3 으로 벌어졌다 (2026-10-09 대표 신고) */
+  const id = nextId++;
+  const loc = {
+    id: id,
+    title: opts.title || t('newLocTitle')(id),
+    category: 'outdoor', color: catColor('outdoor'),
+    lat, lng, address:'', notes:'', sunseeker:'', media: opts.media || []
+  };
+  LOCATIONS.push(loc);
+  addMarker(loc);
+  if(opts.geocode !== false) reverseGeocode(loc);
+  return loc;
+}
+map.on('click', function(e){
+  if(!editMode || selectMode) return;
+  if(textMode){ addMapTextAt(e.latlng.lat, e.latlng.lng); return; }
+  const loc = createLocationAt(e.latlng.lat, e.latlng.lng);
+  applyFilter();
+  saveState();
+  openDetail(loc.id, false);
+  const el = document.getElementById('pin-'+loc.id);
+  if(el) el.classList.add('new');
+});
+
+/* =========================================================
+   2-B. 🅣 지도 위 글자 (2026-10-09 대표 지시 「지도에도 텍스트 입력하고싶어. 색상 변경 가능하게」)
+   「🅣 글자」 켜고 지도를 누르면 그 자리에 글자. 글자를 누르면 고치기·색·크기·지우기. 끌어서 옮김.
+   🔴 핀과 따로 저장한다(핀 데이터를 안 건드린다) — 발행본에도 실린다.
+   ========================================================= */
+const MAP_TEXTS_KEY = KP + 'maptexts';
+let MAP_TEXTS = (function(){
+  if(typeof SCOUT_PUBLISHED !== 'undefined') return Array.isArray(SCOUT_PUBLISHED.mapTexts) ? SCOUT_PUBLISHED.mapTexts : [];
+  try{ const v = JSON.parse(localStorage.getItem(MAP_TEXTS_KEY) || '[]'); return Array.isArray(v) ? v : []; }catch(e){ return []; }
+})();
+let textMode = false, mapTextMarkers = {}, mtEditingId = null, mtLastColor = '#ffffff', mtLastSize = 17;
+function saveMapTexts(){
+  if(typeof SCOUT_PUBLISHED !== 'undefined'){ if(V2EDIT) v2SaveSoon(); return; }
+  try{ localStorage.setItem(MAP_TEXTS_KEY, JSON.stringify(MAP_TEXTS)); flashSaved(); }catch(e){ flashError(t('saveFail')); }
+  if(typeof scheduleBackup === 'function') scheduleBackup();
+}
+function mapTextIcon(o){
+  return L.divIcon({ className:'', iconSize:null,
+    html:`<span class="mapText" style="color:${o.color||'#fff'};font-size:${o.size||17}px">${escapeHtml(o.text)}</span>` });
+}
+function drawMapText(o){
+  if(mapTextMarkers[o.id]) map.removeLayer(mapTextMarkers[o.id]);
+  const mk = L.marker([o.lat, o.lng], { icon: mapTextIcon(o), draggable: !!editMode, zIndexOffset: -100 }).addTo(map);
+  mk.on('click', (ev)=>{ L.DomEvent.stopPropagation(ev); if(editMode) openMapTextEditor(o.id); });
+  mk.on('dragend', ev=>{ const ll = ev.target.getLatLng(); o.lat = ll.lat; o.lng = ll.lng; saveMapTexts(); });
+  mapTextMarkers[o.id] = mk;
+}
+function redrawMapTexts(){
+  Object.values(mapTextMarkers).forEach(m=> map.removeLayer(m)); mapTextMarkers = {};
+  MAP_TEXTS.forEach(drawMapText);
+}
+function addMapTextAt(lat, lng){
+  const id = 't' + Date.now();
+  const o = { id, lat, lng, text: '', color: mtLastColor, size: mtLastSize };
+  MAP_TEXTS.push(o);
+  openMapTextEditor(id, true);
+}
+function openMapTextEditor(id, isNew){
+  const o = MAP_TEXTS.find(x=>x.id===id); if(!o) return;
+  mtEditingId = id;
+  document.getElementById('mtTitle').textContent = isNew ? t('mtNew') : t('mtEdit');
+  document.getElementById('mtText').value = o.text || '';
+  document.getElementById('mtColor').value = o.color || '#ffffff';
+  document.getElementById('mtSize').value = String(o.size || 17);
+  document.getElementById('mapTextModal').classList.add('open');
+  setTimeout(()=> document.getElementById('mtText').focus(), 30);
+}
+function closeMapTextEditor(){
+  const o = MAP_TEXTS.find(x=>x.id===mtEditingId);
+  if(o){
+    o.text = document.getElementById('mtText').value.trim();
+    o.color = document.getElementById('mtColor').value;
+    o.size = Number(document.getElementById('mtSize').value) || 17;
+    mtLastColor = o.color; mtLastSize = o.size;
+    if(!o.text){ MAP_TEXTS = MAP_TEXTS.filter(x=>x.id!==o.id); if(mapTextMarkers[o.id]){ map.removeLayer(mapTextMarkers[o.id]); delete mapTextMarkers[o.id]; } }
+    else drawMapText(o);
+    saveMapTexts();
+  }
+  mtEditingId = null;
+  document.getElementById('mapTextModal').classList.remove('open');
+}
+document.getElementById('mtDone').onclick = closeMapTextEditor;
+document.getElementById('mtClose').onclick = closeMapTextEditor;
+/* Enter = 다음 줄, ⌘/Ctrl+Enter = 확인 (2026-10-09 대표 지시) */
+document.getElementById('mtText').addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.metaKey||e.ctrlKey) && !e.isComposing){ e.preventDefault(); closeMapTextEditor(); } });
+document.getElementById('mtDelete').onclick = ()=>{
+  document.getElementById('mtText').value = '';
+  closeMapTextEditor();
+};
+document.getElementById('btnMapText').onclick = ()=>{
+  if(!editMode) return;
+  textMode = !textMode;
+  document.getElementById('btnMapText').classList.toggle('on', textMode);
+  document.getElementById('map').classList.toggle('texting', textMode);
+  document.getElementById('btnMapText').textContent = textMode ? t('btnMapTextOn') : t('btnMapText');
+  if(textMode) flashSaved(t('mapTextHint'));
+};
+redrawMapTexts();
+
+/* =========================================================
+   3. 편집모드 / 선택삭제모드 / 언어
+   ========================================================= */
+document.getElementById('btnEditToggle').onclick = ()=>{
+  editMode = !editMode;
+  document.getElementById('btnEditToggle').textContent = editMode ? t('editOn') : t('editOff');
+  document.getElementById('btnEditToggle').classList.toggle('on', editMode);
+  document.getElementById('editBanner').style.display = editMode ? 'block' : 'none';
+  document.getElementById('map').classList.toggle('editing', editMode);
+  refreshDraggable();
+  /* 🅣 편집을 끄면 글자 모드도 끄고, 글자 끌기도 막는다 */
+  if(!editMode && textMode){
+    textMode = false;
+    document.getElementById('btnMapText').classList.remove('on');
+    document.getElementById('map').classList.remove('texting');
+    document.getElementById('btnMapText').textContent = t('btnMapText');
+  }
+  document.getElementById('btnMapText').style.display = editMode ? '' : 'none';
+  redrawMapTexts();
+  if(currentLocId!=null) openDetail(currentLocId, false);
+};
+
+function toggleSelect(id){
+  if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+  refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+}
+function updateBulkBar(){
+  document.getElementById('bulkCount').textContent = t('bulkCount')(selectedIds.size);
+  document.getElementById('bulkDeleteBtn').textContent = t('bulkDelete')(selectedIds.size);
+  document.getElementById('bulkDeleteBtn').disabled = selectedIds.size===0;
+}
+document.getElementById('btnSelectMode').onclick = ()=>{
+  selectMode = !selectMode;
+  selectedIds.clear();
+  document.getElementById('btnSelectMode').classList.toggle('on', selectMode);
+  document.getElementById('bulkBar').style.display = selectMode ? 'block' : 'none';
+  refreshDraggable();
+  refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+};
+document.getElementById('bulkSelectAllBtn').onclick = ()=>{
+  LOCATIONS.filter(l=>activeCats.has(l.category)).forEach(l=>selectedIds.add(l.id));
+  refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+};
+document.getElementById('bulkCancelBtn').onclick = ()=>{
+  selectedIds.clear(); refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+};
+document.getElementById('bulkDeleteBtn').onclick = ()=>{
+  if(selectedIds.size===0) return;
+  if(!confirm(t('bulkDeleteConfirm')(selectedIds.size))) return;
+  LOCATIONS.filter(l=>selectedIds.has(l.id)).forEach(l=> sendToUnsorted(l.media));
+  selectedIds.forEach(id=>{ const m = markers[id]; if(m) map.removeLayer(m); delete markers[id]; });
+  LOCATIONS = LOCATIONS.filter(l=>!selectedIds.has(l.id));
+  if(currentLocId!=null && !LOCATIONS.find(l=>l.id===currentLocId)){
+    currentLocId = null; document.getElementById('detailPanel').classList.remove('open');
+  }
+  selectedIds.clear();
+  applyFilter(); saveState(); updateBulkBar(); refreshDistancesIfOpen();
+};
+
+document.getElementById('btnLang').onclick = ()=>{
+  LANG = LANG==='ko' ? 'en' : 'ko';
+  localStorage.setItem('scout2_lang', LANG);
+  applyLang();
+};
+function buildCategorySelect(){
+  const sel = document.getElementById('dpCategorySelect');
+  const cur = sel.value;
+  sel.innerHTML = CATEGORIES.map(c=>`<option value="${c.key}">${c.icon} ${catLabel(c.key)}</option>`).join('');
+  if(cur) sel.value = cur;
+}
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.title = t('pageTitle');
+  if(typeof setMapLanguage === 'function') setMapLanguage(LANG);
+  document.getElementById('btnLang').textContent = t('langBtnTo');
+  document.getElementById('appTitleText').textContent = t('appTitle');
+  document.getElementById('appSubtitleText').textContent = t('subtitle');
+  document.getElementById('btnEditToggle').textContent = editMode ? t('editOn') : t('editOff');
+  document.getElementById('btnSelectMode').textContent = t('selectBtn');
+  document.getElementById('btnExport').textContent = t('exportBtn');
+  document.getElementById('editBanner').textContent = t('editBanner');
+  document.getElementById('bulkBannerText').textContent = t('bulkBanner');
+  document.getElementById('bulkSelectAllBtn').textContent = t('bulkSelectAll');
+  document.getElementById('bulkCancelBtn').textContent = t('bulkCancel');
+  document.getElementById('btnViewList').textContent = t('viewList');
+  { const b=document.getElementById('btnMapMode'); if(b) b.textContent = (MAP_MODE==='satellite')?t('mapModeToMap'):t('mapModeToSat'); }
+  document.getElementById('btnViewPhoto').textContent = t('viewPhoto');
+  document.getElementById('toggleSidebarBtn').title = t('sidebarToggleTitle');
+  document.getElementById('dpTitleInput').placeholder = t('titlePlaceholder');
+  document.getElementById('dpColorInput').title = t('pinColorTitle');
+  document.getElementById('dpStreetViewBtn').textContent = t('streetViewBtn');
+  document.getElementById('dpGmapsKeyBtn').title = t('gmapsKeyBtnTitle');
+  document.getElementById('lblDistances').textContent = t('lblDistances');
+  document.getElementById('gmapsKeyModalTitle').textContent = t('gmapsKeyModalTitle');
+  document.getElementById('gmapsKeyNote').textContent = t('gmapsKeyNote');
+  document.getElementById('gmapsKeySave').textContent = t('gmapsKeySave');
+  document.getElementById('svShowPathLabel').textContent = t('svShowPathLabel');
+  document.getElementById('svMovePinBtn').textContent = t('svMovePinBtn');
+  document.getElementById('btnBulkUpload').textContent = t('btnBulkUpload');
+  document.getElementById('uploadFolderHint').textContent = t('folderPickNote');
+  document.getElementById('btnUnsorted').textContent = t('btnUnsorted')(loadUnsorted().length);
+  document.getElementById('uploadProgressTitle').textContent = t('uploadProgressTitle');
+  document.getElementById('reviewModalTitle').textContent = t('reviewModalTitle');
+  document.getElementById('reviewHint').textContent = t('reviewHint');
+  document.getElementById('reviewDone').textContent = t('reviewDone');
+  document.getElementById('lblAddress').textContent = t('lblAddress');
+  document.getElementById('dpAddressInput').placeholder = t('addressPlaceholder');
+  document.getElementById('lblNotes').textContent = t('lblNotes');
+  document.getElementById('dpNotesInput').placeholder = t('notesPlaceholder');
+  document.getElementById('lblSunseeker').textContent = t('lblSunseeker');
+  document.getElementById('dpSunseekerInput').placeholder = t('sunseekerPlaceholder');
+  document.getElementById('lblMedia').textContent = t('lblMedia');
+  document.getElementById('lblSunMedia').textContent = t('lblSunMedia');
+  { const pb = document.getElementById('btnPoi'); if(pb){ pb.textContent = POI_ON ? t('btnPoiOn') : t('btnPoiOff'); pb.classList.toggle('on', POI_ON); pb.style.display = (MAP_MODE === 'satellite') ? 'none' : ''; } }
+  if(typeof lastBackupStatus !== 'undefined' && lastBackupStatus) setBackupStatus(lastBackupStatus[0], lastBackupStatus[1]);
+  { const mtb = document.getElementById('btnMapText'); if(mtb) mtb.textContent = textMode ? t('btnMapTextOn') : t('btnMapText'); }
+  ['mtColorLbl','mtSizeLbl','mtDelete','mtDone','mtHint'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent = t(id); });
+  { const tl = {pen:'toolPen',circle:'toolCircle',arrow:'toolArrow',text:'toolText'};
+    document.querySelectorAll('#lbAnnoBar [data-tool]').forEach(b=> b.textContent = t(tl[b.dataset.tool])); }
+  ['annoUndo','annoClear','annoDone'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent = t(id); });
+  document.getElementById('btnEditCats').textContent = t('btnEditCats');
+  document.getElementById('catModalTitle').textContent = t('catModalTitle');
+  document.getElementById('catHint').textContent = t('catHint');
+  document.getElementById('catAddRow').textContent = t('catAddRow');
+  document.getElementById('catDone').textContent = t('closeBtn');
+  document.getElementById('dpAddMediaBtn').textContent = t('addMediaBtn');
+  document.getElementById('dpDeleteBtn').textContent = t('deleteBtn');
+  document.getElementById('pickerModalTitle').textContent = t('pickerTitle');
+  document.getElementById('pickerCancel').textContent = t('pickerCancel');
+  document.getElementById('pickerConfirm').textContent = t('pickerConfirm')(pickerSelected.size);
+  document.getElementById('exportModalTitle').textContent = t('exportTitle');
+  document.getElementById('exportNoteEl').innerHTML = t('exportNote');
+  document.getElementById('btnExportSelectAll').textContent = t('selectAll');
+  document.getElementById('btnExportDownload').textContent = t('download');
+  document.getElementById('importLabel').textContent = t('importBtn');
+  document.getElementById('btnClearAll').textContent = t('clearAll');
+  document.getElementById('exportDone').textContent = t('closeBtn');
+  buildCategorySelect();
+  renderFilters(); applyFilter(); updateBulkBar();
+  if(currentLocId!=null) openDetail(currentLocId, false);
+  if(document.getElementById('mediaPickerModal').classList.contains('open')) renderPickerGrid();
+}
+
+/* =========================================================
+   4. 필터 / 리스트 / 사진그리드
+   ========================================================= */
+function renderFilters(){
+  const el = document.getElementById('filters');
+  el.innerHTML = '';
+  CATEGORIES.forEach(c=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip on';
+    chip.style.color = activeCats.has(c.key) ? c.color : '';
+    chip.innerHTML = `<span class="dot" style="background:${c.color}"></span>${c.icon} ${catLabel(c.key)}`;
+    chip.onclick = ()=>{
+      if(activeCats.has(c.key)){ activeCats.delete(c.key); chip.classList.remove('on'); chip.style.color=''; }
+      else { activeCats.add(c.key); chip.classList.add('on'); chip.style.color = c.color; }
+      applyFilter();
+    };
+    el.appendChild(chip);
+  });
+}
+/* ---- ⚙️ 분류 편집 (추가·이름·색·아이콘·삭제) ---- */
+function catUsedCount(key){ return LOCATIONS.filter(l=>l.category===key).length; }
+function afterCatsChanged(){
+  saveCategories();
+  const keys = new Set(CATEGORIES.map(c=>c.key));
+  /* 🔴 없어진 분류를 쓰던 장소는 첫 분류로 옮긴다 — 안 그러면 필터에서 영영 안 보여
+     「핀이 사라졌다」가 된다 (삭제는 막혀 있지만, 옛 데이터를 불러올 때도 생길 수 있다) */
+  let orphan = 0;
+  LOCATIONS.forEach(l=>{ if(!keys.has(l.category)){ l.category = CATEGORIES[0].key; orphan++; } });
+  if(orphan){ saveState(); }
+  /* 없어진 분류가 필터에 남아 있으면 지우고, 새로 생긴 것은 기본으로 켠다 */
+  Array.from(activeCats).forEach(k=>{ if(!keys.has(k)) activeCats.delete(k); });
+  CATEGORIES.forEach(c=>{ if(!activeCats.has(c.key)) activeCats.add(c.key); });
+  renderFilters(); buildCategorySelect(); refreshMarkerIcons(); applyFilter();
+  if(currentLocId != null) openDetail(currentLocId, false);
+}
+function renderCatRows(){
+  const wrap = document.getElementById('catRows');
+  wrap.innerHTML = '';
+  CATEGORIES.forEach(c=>{
+    const used = catUsedCount(c.key);
+    const row = document.createElement('div');
+    row.className = 'catEditRow';
+    row.innerHTML = `
+      <input type="text" class="cIcon" maxlength="4" value="${escapeHtml(c.icon||'📍')}">
+      <input type="text" class="cName" value="${escapeHtml(catLabel(c.key))}" placeholder="${escapeHtml(t('catNamePlaceholder'))}">
+      <input type="color" class="cColor" value="${c.color || '#60a5fa'}">
+      <span class="cUsed">${used ? t('catInUse')(used) : ''}</span>
+      <button class="cDel" type="button">🗑</button>
+    `;
+    row.querySelector('.cIcon').addEventListener('input', debounce(function(){
+      c.icon = this.value || '📍'; afterCatsChanged();
+    }, 400));
+    row.querySelector('.cName').addEventListener('input', debounce(function(){
+      c.label = this.value; afterCatsChanged();
+    }, 400));
+    row.querySelector('.cColor').addEventListener('input', function(){
+      c.color = this.value; afterCatsChanged();
+    });
+    row.querySelector('.cDel').onclick = ()=>{
+      if(CATEGORIES.length <= 1){ flashError(t('catDeleteLast')); return; }
+      const n = catUsedCount(c.key);
+      if(n > 0){ flashError(t('catDeleteBlocked')(n)); return; }
+      CATEGORIES = CATEGORIES.filter(x=>x.key !== c.key);
+      afterCatsChanged(); renderCatRows(); flashSaved();
+    };
+    wrap.appendChild(row);
+  });
+}
+document.getElementById('btnEditCats').onclick = ()=>{
+  renderCatRows();
+  document.getElementById('catModal').classList.add('open');
+};
+document.getElementById('catAddRow').onclick = ()=>{
+  const palette = ['#60a5fa','#34d399','#fbbf24','#f87171','#c084fc','#22d3ee','#fb923c','#a3e635'];
+  CATEGORIES.push({
+    key: 'cat_' + Date.now(),
+    color: palette[CATEGORIES.length % palette.length],
+    icon: '📍',
+    label: t('catNamePlaceholder')
+  });
+  afterCatsChanged(); renderCatRows(); flashSaved();
+};
+document.getElementById('catClose').onclick = ()=> document.getElementById('catModal').classList.remove('open');
+document.getElementById('catDone').onclick = ()=> document.getElementById('catModal').classList.remove('open');
+
+function applyFilter(){
+  LOCATIONS.forEach(loc=>{
+    const show = activeCats.has(loc.category);
+    const m = markers[loc.id]; if(!m) return;
+    if(show){ if(!map.hasLayer(m)) m.addTo(map); } else { if(map.hasLayer(m)) map.removeLayer(m); }
+  });
+  renderList(); renderPhotoGrid();
+  document.getElementById('locCountBadge').textContent = t('countUnit')(LOCATIONS.length);
+}
+/* 📍 핀 이름표 겹침 피하기 (2026-10-09 대표 「손봐」 — #12·#14·#16 이름표가 서로 가렸다)
+   이름표마다 «오른쪽 → 왼쪽 → 위 → 아래 → 대각선» 순서로 놓아 보고, 다른 이름표·핀 동그라미와 안 겹치는 첫 자리에 둔다.
+   다 겹치면 가장 덜 겹치는 자리. 확대·축소·핀 이동·이름 변경 때마다 다시 계산한다. */
+const LABEL_POS = {
+  r:  'left:30px;right:auto;top:50%;bottom:auto;transform:translateY(-50%)',
+  l:  'left:auto;right:30px;top:50%;bottom:auto;transform:translateY(-50%)',
+  t:  'left:50%;right:auto;top:auto;bottom:30px;transform:translateX(-50%)',
+  b:  'left:50%;right:auto;top:30px;bottom:auto;transform:translateX(-50%)',
+  tr: 'left:18px;right:auto;top:auto;bottom:22px;transform:none',
+  br: 'left:18px;right:auto;top:22px;bottom:auto;transform:none',
+  tl: 'left:auto;right:18px;top:auto;bottom:22px;transform:none',
+  bl: 'left:auto;right:18px;top:22px;bottom:auto;transform:none'
+};
+let labelLayoutTimer = null;
+function scheduleLabelLayout(){ clearTimeout(labelLayoutTimer); labelLayoutTimer = setTimeout(layoutPinLabels, 60); }
+function layoutPinLabels(){
+  const pins = Array.from(document.querySelectorAll('#map .loc-marker')).filter(el=> el.offsetParent);
+  const circles = pins.map(el=> el.getBoundingClientRect());
+  const placed = [];
+  /* 보이는 지도 영역 — 왼쪽 목록판·오른쪽 상세판 «밑»은 가려지므로 빼고 계산한다 (16번 이름표가 목록판 밑으로 숨었던 문제) */
+  const mr = document.getElementById('map').getBoundingClientRect();
+  const view = { left: mr.left, right: mr.right, top: mr.top, bottom: mr.bottom };
+  const sb = document.getElementById('sidebar'); if(sb && sb.offsetParent){ const r = sb.getBoundingClientRect(); if(r.right > view.left && r.left <= view.left + 5) view.left = r.right; }
+  const dp = document.getElementById('detailPanel'); if(dp && dp.classList.contains('open')){ const r = dp.getBoundingClientRect(); if(r.left < view.right && r.width < mr.width*0.9) view.right = r.left; }
+  const outside = r => (r.right-r.left)*(r.bottom-r.top) - Math.max(0, Math.min(r.right,view.right)-Math.max(r.left,view.left)) * Math.max(0, Math.min(r.bottom,view.bottom)-Math.max(r.top,view.top));
+  const area = (a,b)=> Math.max(0, Math.min(a.right,b.right)-Math.max(a.left,b.left)) * Math.max(0, Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+  pins.forEach((el, i)=>{
+    const lb = el.querySelector('.pinLabel'); if(!lb) return;
+    let best = null;
+    for(const k of Object.keys(LABEL_POS)){
+      lb.style.cssText = lb.style.cssText.replace(/(left|right|top|bottom|transform):[^;]*;?/g,'') + ';' + LABEL_POS[k];
+      const r = lb.getBoundingClientRect(), pad = { left:r.left-2, right:r.right+2, top:r.top-2, bottom:r.bottom+2 };
+      let hit = 0;
+      placed.forEach(p=> hit += area(pad, p));
+      circles.forEach((c, j)=>{ if(j !== i) hit += area(pad, c); });
+      hit += outside(pad) * 3;   /* 가려지는 것은 겹치는 것보다 나쁘다 */
+      if(!best || hit < best.hit) best = { k, hit };
+      if(hit === 0) break;
+    }
+    lb.style.cssText = lb.style.cssText.replace(/(left|right|top|bottom|transform):[^;]*;?/g,'') + ';' + LABEL_POS[best.k];
+    placed.push(lb.getBoundingClientRect());
+  });
+}
+map.on('zoomend moveend', scheduleLabelLayout);   /* 끌어서 옮겨도 — 판 밑으로 들어가는 핀이 생긴다 */
+function renderList(){
+  scheduleLabelLayout();
+  const wrap = document.getElementById('listWrap');
+  wrap.innerHTML = '';
+  const list = LOCATIONS.filter(l=>activeCats.has(l.category));
+  if(list.length===0){ wrap.innerHTML = `<div class="emptyState">${t('emptyList')}</div>`; return; }
+  list.forEach(loc=>{
+    const isSel = selectMode && selectedIds.has(loc.id);
+    const color = loc.color || catColor(loc.category);
+    const card = document.createElement('div');
+    card.className = 'locCard' + (loc.id===currentLocId && !selectMode ? ' active' : '') + (isSel ? ' selForDel' : '');
+    card.dataset.locId = loc.id;
+    card.innerHTML = `
+      <div class="row1">
+        ${selectMode ? `<div class="selCheck${isSel?' on':''}">${isSel?'✓':''}</div>` : ''}
+        <div class="badge" style="background:${color}">${loc.id}</div>
+        <div class="title">${escapeHtml(loc.title||t('noTitle'))}</div>
+        <div class="cat">${catIcon(loc.category)}</div>
+      </div>
+      <div class="addr">${escapeHtml(loc.address || t('noAddress'))}</div>
+      <div class="mediaCount">${t('mediaCount')(loc.media.length)}</div>
+    `;
+    card.onclick = ()=> selectMode ? toggleSelect(loc.id) : openDetail(loc.id, true);
+    bindMediaDrop(card, loc.id);
+    wrap.appendChild(card);
+  });
+}
+function renderPhotoGrid(){
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = '';
+  const list = LOCATIONS.filter(l=>activeCats.has(l.category));
+  if(list.length===0){ grid.innerHTML = `<div class="emptyState" style="grid-column:1/-1;">${t('emptyList')}</div>`; return; }
+  list.forEach(loc=>{
+    const first = loc.media[0];
+    const isSel = selectMode && selectedIds.has(loc.id);
+    const color = loc.color || catColor(loc.category);
+    const card = document.createElement('div');
+    card.className = 'photoCard' + (isSel ? ' selForDel' : '');
+    card.innerHTML = `
+      ${selectMode ? `<div class="selCheck${isSel?' on':''}">${isSel?'✓':''}</div>` : `<span class="pcCat" style="background:${color}"></span>`}
+      <span class="pcCount">${t('mediaCount')(loc.media.length)}</span>
+      ${ first ? `<img src="${thumbFor(first)}" alt="">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:11px;">${t('noMedia')}</div>` }
+      <div class="pcLabel">${escapeHtml(loc.title||t('noTitle'))}</div>
+    `;
+    card.onclick = ()=>{
+      if(selectMode){ toggleSelect(loc.id); return; }
+      if(loc.media.length) openLightbox(loc.id, 0); else openDetail(loc.id, true);
+    };
+    grid.appendChild(card);
+  });
+}
+function thumbFor(media){ return media.thumb || mediaThumbPath(media.url.split('/').pop()); }   /* V2 발행본은 드라이브 썸네일(m.thumb) */
+
+document.getElementById('btnViewList').onclick = ()=> switchView('list');
+document.getElementById('btnViewPhoto').onclick = ()=> switchView('photo');
+function switchView(mode){
+  document.getElementById('btnViewList').classList.toggle('active', mode==='list');
+  document.getElementById('btnViewPhoto').classList.toggle('active', mode==='photo');
+  document.getElementById('listWrap').style.display = mode==='list' ? 'block' : 'none';
+  document.getElementById('photoGrid').style.display = mode==='photo' ? 'grid' : 'none';
+}
+document.getElementById('toggleSidebarBtn').onclick = ()=> document.getElementById('sidebar').classList.toggle('open');
+document.getElementById('btnPoi').onclick = ()=>{
+  POI_ON = !POI_ON;
+  try{ localStorage.setItem('scout2_poi', POI_ON ? '1' : '0'); }catch(e){}
+  document.getElementById('btnPoi').classList.toggle('on', POI_ON);
+  document.getElementById('btnPoi').textContent = POI_ON ? t('btnPoiOn') : t('btnPoiOff');
+  applyMapLayer();
+};
+document.getElementById('btnMapMode').onclick = ()=>{
+  MAP_MODE = (MAP_MODE === 'satellite') ? 'map' : 'satellite';
+  try{ localStorage.setItem('scout2_mapmode', MAP_MODE); }catch(e){}
+  applyMapLayer();
+  document.getElementById('btnPoi').style.display = (MAP_MODE === 'satellite') ? 'none' : '';   /* 위성사진엔 이름이 없다 */
+};
+
+/* =========================================================
+   5. 상세 패널
+   ========================================================= */
+function updateCoordHint(loc){
+  document.getElementById('dpCoordHint').textContent = t('coordHint')(loc.lat.toFixed(6), loc.lng.toFixed(6), editMode);
+}
+function haversineMeters(lat1,lng1,lat2,lng2){
+  const R=6371000, toRad=d=>d*Math.PI/180;
+  const dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return R*2*Math.asin(Math.sqrt(a));
+}
+function formatDist(m){ return m<1000 ? Math.round(m)+'m' : (m/1000).toFixed(2)+'km'; }
+function renderDpDistances(loc){
+  const wrap = document.getElementById('dpDistList');
+  const others = LOCATIONS.filter(l=>l.id!==loc.id)
+    .map(l=>({l, d: haversineMeters(loc.lat,loc.lng,l.lat,l.lng)}))
+    .sort((a,b)=>a.d-b.d);
+  if(others.length===0){ wrap.innerHTML = `<div class="emptyState" style="padding:8px 0;">${t('noOtherSpots')}</div>`; return; }
+  wrap.innerHTML = others.map(o=>`
+    <div class="distRow" data-id="${o.l.id}">
+      <span>${catIcon(o.l.category)}</span>
+      <span class="dName">${escapeHtml(o.l.title||t('noTitle'))}</span>
+      <span class="dVal">${formatDist(o.d)}</span>
+    </div>`).join('');
+  wrap.querySelectorAll('.distRow').forEach(row=>{
+    row.onclick = ()=> openDetail(Number(row.dataset.id), true);
+  });
+}
+function refreshDistancesIfOpen(){
+  if(currentLocId==null) return;
+  const loc = LOCATIONS.find(l=>l.id===currentLocId);
+  if(loc) renderDpDistances(loc);
+}
+function openDetail(locId, flyTo){
+  scheduleLabelLayout();
+  const loc = LOCATIONS.find(l=>l.id===locId);
+  if(!loc) return;
+  currentLocId = locId;
+  renderList();
+  if(flyTo) map.flyTo([loc.lat, loc.lng], Math.max(map.getZoom(),17), { duration:.5 });
+
+  document.getElementById('dpTitleInput').value = loc.title || '';
+  document.getElementById('dpTitleInput').readOnly = !editMode;
+  buildCategorySelect();
+  document.getElementById('dpCategorySelect').value = loc.category;
+  document.getElementById('dpCategorySelect').disabled = !editMode;
+  document.getElementById('dpColorInput').value = loc.color || catColor(loc.category);
+  document.getElementById('dpColorInput').disabled = !editMode;
+  document.getElementById('dpAddressInput').value = loc.address || '';
+  document.getElementById('dpAddressInput').readOnly = !editMode;
+  document.getElementById('dpNotesInput').value = loc.notes || '';
+  document.getElementById('dpNotesInput').readOnly = !editMode;
+  document.getElementById('dpSunseekerInput').value = loc.sunseeker || '';
+  document.getElementById('dpSunseekerInput').readOnly = !editMode;
+  document.getElementById('dpAddMediaBtn').style.display = editMode ? 'inline-flex' : 'none';
+  document.getElementById('dpDeleteBtn').style.display = editMode ? 'block' : 'none';
+  document.getElementById('dpAddrStatus').textContent = '';
+  updateCoordHint(loc);
+  renderDpDistances(loc);
+  renderDpMedia(loc);
+
+  document.getElementById('detailPanel').classList.add('open');
+  if(window.innerWidth <= 760) document.getElementById('sidebar').classList.remove('open');
+}
+document.getElementById('dpClose').onclick = ()=>{
+  document.getElementById('detailPanel').classList.remove('open');
+  currentLocId = null; renderList();
+};
+document.getElementById('dpTitleInput').addEventListener('input', debounce(function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.title = this.value; renderList(); renderPhotoGrid(); saveState();
+  const mk = markers[loc.id]; if(mk) mk.setIcon(makeIcon(loc));   /* divIcon 은 같은 요소를 재사용 — 끌어놓기 연결이 유지된다 */
+}, 350));
+document.getElementById('dpCategorySelect').addEventListener('change', function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.category = this.value;
+  const m = markers[loc.id]; if(m) m.setIcon(makeIcon(loc));
+  applyFilter(); saveState();
+});
+document.getElementById('dpColorInput').addEventListener('input', function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.color = this.value;
+  const m = markers[loc.id]; if(m) m.setIcon(makeIcon(loc));
+  renderList(); renderPhotoGrid();
+});
+document.getElementById('dpColorInput').addEventListener('change', ()=> saveState());
+
+/* ---- Google API 키 저장 ---- */
+const GMAPS_KEY_STORAGE = 'scout2_gmaps_key';
+/* 발행본은 파일에 박힌 키를 쓴다 — 구글 콘솔에서 «luvparklife.github.io 에서만 작동»
+   제한을 걸어두면 남이 소스에서 키를 봐도 다른 데서는 못 쓴다(구글 권장 방식). */
+function getGmapsKey(){
+  if(PUBLISHED && PUBLISHED.gmapsKey) return PUBLISHED.gmapsKey;
+  /* V2 처음 열 때 — 261009 편집본에 넣어둔 키를 «그대로» 가져온다(같은 맥·같은 브라우저). 화면엔 안 찍는다 */
+  let k = localStorage.getItem(GMAPS_KEY_STORAGE) || '';
+  if(!k){ try{ k = localStorage.getItem('scout_gmaps_key_' + '261009') || ''; if(k) localStorage.setItem(GMAPS_KEY_STORAGE, k); }catch(e){} }
+  return k;
+}
+function openGmapsKeyModal(){
+  document.getElementById('gmapsKeyInput').value = getGmapsKey();
+  document.getElementById('gmapsKeyModal').classList.add('open');
+}
+document.getElementById('dpGmapsKeyBtn').onclick = openGmapsKeyModal;
+document.getElementById('gmapsKeyClose').onclick = ()=> document.getElementById('gmapsKeyModal').classList.remove('open');
+document.getElementById('gmapsKeySave').onclick = ()=>{
+  const v = document.getElementById('gmapsKeyInput').value.trim();
+  localStorage.setItem(GMAPS_KEY_STORAGE, v);
+  document.getElementById('gmapsKeyModal').classList.remove('open');
+  flashSaved();
+};
+
+/* ---- 구글 지도 JS API 동적 로드 (키가 있을 때만) ---- */
+let gmapsLoadPromise = null;
+function loadGoogleMaps(key){
+  if(window.google && window.google.maps) return Promise.resolve(window.google);
+  if(gmapsLoadPromise) return gmapsLoadPromise;
+  gmapsLoadPromise = new Promise((resolve, reject)=>{
+    window.__gmapsReady = ()=> resolve(window.google);
+    const s = document.createElement('script');
+    /* 지도 글자 언어를 같이 정한다 — 구글은 한 번 불러오면 언어를 못 바꾼다(바꾸려면 새로고침) */
+    window.__gmapsLang = LANG;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&language=${LANG}&region=KR&callback=__gmapsReady`;
+    s.onerror = ()=>{ gmapsLoadPromise = null; reject(new Error('load fail')); };
+    document.head.appendChild(s);
+  });
+  return gmapsLoadPromise;
+}
+
+/* ---- 태양 위치 (SunCalc, 키 불필요) ---- */
+function sunPosDeg(lat,lng,date){
+  const p = SunCalc.getPosition(date, lat, lng);
+  return { az: (p.azimuth*180/Math.PI + 180 + 360) % 360, alt: p.altitude*180/Math.PI };
+}
+function fovForZoom(z){
+  if(!Number.isFinite(z)) z = 1;
+  return Math.min(180, 180 / Math.pow(1.5, z));
+}
+function getSelectedDateTime(){
+  const v = document.getElementById('svDateTime').value;
+  return v ? new Date(v) : new Date();
+}
+function toLocalDatetimeInputValue(d){
+  const pad = n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/* 🔴 2026-10-09 대표 지시 「태양궤적 일단 빼고 작업하자」 — 로드뷰는 그대로 두고 «겹쳐 그리는 것»만 끈다.
+   왜 뺐나 = 실제 구글 로드뷰 위에서 제대로 안 떴다. 클로드는 «가짜 로드뷰»로만 검증했고
+   진짜 화면에서 확인하지 못한 채 「고쳤다」고 세 번 말했다(§3-0-B 위반).
+   되살리기 = 이 줄을 true 로 바꾸면 코드는 전부 그대로 살아난다. */
+const SUN_OVERLAY_ON = false;
+let svPanorama = null, svLoc = null, svResizeBound = false;
+function drawSunOverlay(){
+  if(!SUN_OVERLAY_ON){
+    const c = document.getElementById('svOverlay');
+    if(c && c.getContext) c.getContext('2d').clearRect(0,0,c.width,c.height);
+    return;
+  }
+  if(!svPanorama || !svLoc) return;
+  const wrap = document.getElementById('svPanoWrap');
+  const canvas = document.getElementById('svOverlay');
+  const box = wrap.getBoundingClientRect();
+  if(!box.width || !box.height) return; // 모달이 아직 화면에 자리잡기 전 — 곧 재시도로 다시 그려짐
+  canvas.width = box.width; canvas.height = box.height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const pov = svPanorama.getPov() || {};
+  const heading = Number.isFinite(pov.heading) ? pov.heading : 0;
+  const pitch = Number.isFinite(pov.pitch) ? pov.pitch : 0;
+  const fovH = fovForZoom(svPanorama.getZoom());
+  const fovV = fovH * (canvas.height / Math.max(canvas.width,1));
+
+  function project(az, alt){
+    const dAz = ((az - heading + 540) % 360) - 180;
+    const x = canvas.width/2 + (dAz/(fovH/2)) * (canvas.width/2);
+    const dAlt = alt - pitch;
+    const y = canvas.height/2 - (dAlt/(fovV/2)) * (canvas.height/2);
+    return { x, y, inView: Math.abs(dAz) <= fovH/2 + 8 };
+  }
+
+  const dateVal = getSelectedDateTime();
+  if(document.getElementById('svShowPath').checked){
+    const times = SunCalc.getTimes(dateVal, svLoc.lat, svLoc.lng);
+    const start = (times.sunrise instanceof Date && !isNaN(times.sunrise)) ? times.sunrise.getTime()-30*60000 : dateVal.getTime()-6*3600000;
+    const end = (times.sunset instanceof Date && !isNaN(times.sunset)) ? times.sunset.getTime()+30*60000 : dateVal.getTime()+6*3600000;
+    ctx.beginPath();
+    let started = false, lastInView = false;
+    for(let tms=start; tms<=end; tms+=10*60000){
+      const { az, alt } = sunPosDeg(svLoc.lat, svLoc.lng, new Date(tms));
+      if(alt < -4) continue;
+      const p = project(az, alt);
+      if(!started || !lastInView && !p.inView){ ctx.moveTo(p.x,p.y); started = true; }
+      else ctx.lineTo(p.x,p.y);
+      lastInView = p.inView;
+    }
+    ctx.strokeStyle = 'rgba(245,182,63,.85)'; ctx.lineWidth = 2; ctx.stroke();
+  }
+
+  const cur = sunPosDeg(svLoc.lat, svLoc.lng, dateVal);
+  const p = project(cur.az, cur.alt);
+  if(cur.alt > -4){
+    if(p.inView){
+      ctx.beginPath(); ctx.arc(p.x, p.y, 11, 0, Math.PI*2);
+      ctx.fillStyle = '#ffd56b'; ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+      ctx.font = 'bold 12px -apple-system,sans-serif'; ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${cur.alt.toFixed(0)}°`, p.x, p.y - 18);
+    } else {
+      /* 🔴 태양이 화면 밖이면 «빈 화면»이 된다 — 어느 쪽으로 돌려야 하는지 가장자리에 알려준다
+         (2026-10-09 대표 신고 「아무 궤적이 안 뜬다」의 큰 원인) */
+      const dAz = ((cur.az - heading + 540) % 360) - 180;
+      const right = dAz > 0;
+      const x = right ? canvas.width - 38 : 38;
+      const y = canvas.height / 2;
+      ctx.beginPath();
+      ctx.moveTo(right ? x + 16 : x - 16, y);
+      ctx.lineTo(right ? x - 10 : x + 10, y - 14);
+      ctx.lineTo(right ? x - 10 : x + 10, y + 14);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(245,182,63,.92)'; ctx.fill();
+      ctx.font = 'bold 12px -apple-system,sans-serif';
+      ctx.fillStyle = '#ffd56b'; ctx.textAlign = 'center';
+      ctx.fillText('☀ ' + Math.abs(Math.round(dAz)) + '°', x, y + 34);
+    }
+  }
+  const belowTxt = cur.alt < 0 ? ` (${t('belowHorizon')})` : '';
+  document.getElementById('svSunReadout').textContent =
+    `☀️ ${t('altitude')} ${cur.alt.toFixed(0)}° · ${t('azimuth')} ${cur.az.toFixed(0)}°${belowTxt}`;
+}
+
+async function openStreetViewModal(loc){
+  svLoc = loc;
+  document.getElementById('svModalTitle').textContent = loc.title || t('noTitle');
+  document.getElementById('svOpenNewTab').textContent = t('svOpenNewTab');
+  document.getElementById('svOpenNewTab').href = `https://www.google.com/maps?layer=c&cbll=${loc.lat},${loc.lng}`;
+  document.getElementById('svShowPathLabel').textContent = t('svShowPathLabel');
+  document.getElementById('svDateTime').value = toLocalDatetimeInputValue(new Date());
+  if(!SUN_OVERLAY_ON){
+    ['svDateTime','svSunReadout'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
+    const lab = document.querySelector('.svPathToggle'); if(lab) lab.style.display='none';
+  }
+  document.getElementById('svNoKeyMsg').style.display = 'none';
+  document.getElementById('svModal').classList.add('open');
+
+  const key = getGmapsKey();
+  if(!key){
+    document.getElementById('svModal').classList.remove('open');
+    openGmapsKeyModal();
+    return;
+  }
+  try{ await loadGoogleMaps(key); }
+  catch(e){
+    document.getElementById('svNoKeyMsg').textContent = t('gmapsLoadFail');
+    document.getElementById('svNoKeyMsg').style.display = 'flex';
+    return;
+  }
+  if(!svPanorama){
+    svPanorama = new google.maps.StreetViewPanorama(document.getElementById('svPano'), {
+      position: { lat: loc.lat, lng: loc.lng },
+      pov: { heading: SUN_OVERLAY_ON ? sunPosDeg(loc.lat, loc.lng, getSelectedDateTime()).az : 0, pitch: 0 }, zoom: 1,
+      addressControl: false, fullscreenControl: false, motionTracking: false, motionTrackingControl: false
+    });
+    svPanorama.addListener('pov_changed', drawSunOverlay);
+    svPanorama.addListener('zoom_changed', drawSunOverlay);
+    svPanorama.addListener('status_changed', ()=>{
+      if(svPanorama.getStatus() !== 'OK'){
+        document.getElementById('svNoKeyMsg').textContent = t('noStreetView');
+        document.getElementById('svNoKeyMsg').style.display = 'flex';
+      } else {
+        document.getElementById('svNoKeyMsg').style.display = 'none';
+        drawSunOverlay();
+      }
+    });
+  } else {
+    svPanorama.setPosition({ lat: loc.lat, lng: loc.lng });
+    if(SUN_OVERLAY_ON){
+      const s0 = sunPosDeg(loc.lat, loc.lng, getSelectedDateTime());
+      svPanorama.setPov({ heading: s0.az, pitch: 10 });
+    }
+  }
+  if(!svResizeBound){
+    window.addEventListener('resize', ()=>{ if(document.getElementById('svModal').classList.contains('open')) drawSunOverlay(); });
+    svResizeBound = true;
+  }
+  // 🔴 로드뷰가 뜨는 속도가 매번 달라 단 한 번의 타이머로는 못 믿는다 — 몇 번 더 다시 그려서 맞춘다
+  [100, 400, 900, 1800].forEach(ms => setTimeout(drawSunOverlay, ms));
+}
+document.getElementById('svMovePinBtn').onclick = ()=>{
+  if(!svPanorama || !svLoc){ flashError(t('svMovePinFail')); return; }
+  const pos = svPanorama.getPosition();
+  if(!pos){ flashError(t('svMovePinFail')); return; }
+  const lat = pos.lat(), lng = pos.lng();
+  svLoc.lat = lat; svLoc.lng = lng;
+  const m = markers[svLoc.id]; if(m) m.setLatLng([lat, lng]);
+  if(currentLocId === svLoc.id) updateCoordHint(svLoc);
+  refreshDistancesIfOpen();
+  drawSunOverlay();
+  saveState();
+  flashSaved();
+};
+document.getElementById('dpStreetViewBtn').onclick = ()=>{
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  openStreetViewModal(loc);
+};
+document.getElementById('svClose').onclick = ()=> document.getElementById('svModal').classList.remove('open');
+document.getElementById('svDateTime').addEventListener('input', drawSunOverlay);
+document.getElementById('svShowPath').addEventListener('change', drawSunOverlay);
+document.getElementById('dpAddressInput').addEventListener('input', debounce(function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.address = this.value; renderList(); saveState();
+}, 350));
+document.getElementById('dpNotesInput').addEventListener('input', debounce(function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.notes = this.value; saveState();
+}, 350));
+document.getElementById('dpSunseekerInput').addEventListener('input', debounce(function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.sunseeker = this.value; saveState();
+}, 350));
+document.getElementById('dpDeleteBtn').onclick = function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  if(!confirm(t('deleteConfirm')(loc.title))) return;
+  sendToUnsorted(loc.media);
+  const m = markers[loc.id]; if(m) map.removeLayer(m);
+  delete markers[loc.id];
+  LOCATIONS = LOCATIONS.filter(l=>l.id!==loc.id);
+  currentLocId = null;
+  document.getElementById('detailPanel').classList.remove('open');
+  applyFilter(); saveState();
+};
+/* 🔴 Sunseeker 사진은 «따로 위에» 모은다 (2026-10-09 대표 지시) — 일반 사진에 섞이면
+   「해가 어디로 가나」를 보려고 할 때마다 찾아야 한다. 사진마다 메모도 여기서 적는다. */
+let mediaDrag = null;   /* {fromLocId, idx} */
+function moveMediaTo(targetLocId){
+  if(!mediaDrag) return;
+  const from = LOCATIONS.find(l=>l.id===mediaDrag.fromLocId);
+  const to   = LOCATIONS.find(l=>l.id===targetLocId);
+  if(!from || !to || from.id === to.id){ mediaDrag = null; return; }
+  const item = from.media[mediaDrag.idx];
+  if(!item){ mediaDrag = null; return; }
+  from.media.splice(mediaDrag.idx, 1);
+  to.media.push(item);
+  mediaDrag = null;
+  document.body.classList.remove('media-dragging');
+  if(currentLocId != null){
+    const cur = LOCATIONS.find(l=>l.id===currentLocId);
+    if(cur) renderDpMedia(cur);
+  }
+  renderList(); renderPhotoGrid(); saveState();
+  flashSaved();
+}
+function bindMediaDrop(el, locId){
+  if(!el) return;
+  el.addEventListener('dragover', (ev)=>{
+    if(!mediaDrag) return;
+    ev.preventDefault(); ev.dataTransfer.dropEffect = 'move';
+    el.classList.add('dropTarget');
+  });
+  el.addEventListener('dragleave', ()=> el.classList.remove('dropTarget'));
+  el.addEventListener('drop', (ev)=>{
+    if(!mediaDrag) return;
+    ev.preventDefault(); ev.stopPropagation();
+    el.classList.remove('dropTarget');
+    moveMediaTo(locId);
+  });
+}
+/* 🔴 핀에서 빠지는 사진은 «버리지 않는다» — 미분류 칸으로 보낸다 (2026-10-09 대표 신고로 발견:
+   #13 핀을 지우자 거기 있던 Sunseeker 7장·사진 1장이 같이 사라졌다) */
+function sendToUnsorted(mediaArr){
+  if(!mediaArr || !mediaArr.length) return 0;
+  const uns = loadUnsorted();
+  const have = new Set(uns.map(e=>e.file));
+  let n = 0;
+  mediaArr.forEach(m=>{
+    const fn = (m.url||'').split('/').pop(); if(!fn || have.has(fn)) return;
+    /* 🔴 Sunseeker 표시를 지우지 않는다 (2026-10-09 — 전엔 image 로 바꿔서, 미분류에서 다시 끌어오면 일반 사진이 됐다) */
+    uns.push(Object.assign({ file: fn, type: (m.type === 'video' || m.type === 'sunseeker') ? m.type : 'image', lat: null, lng: null }, m.sun ? { sun:true } : {},
+      m.thumb ? { url: m.url, thumb: m.thumb } : {}, m.drive ? { drive: m.drive } : {}, m.caption ? { caption: m.caption } : {}, m.marks ? { marks: m.marks } : {}));   /* V2: 드라이브 주소·표시를 들고 간다 */
+    have.add(fn); n++;
+  });
+  saveUnsorted(uns);
+  return n;
+}
+/* ☀️ Sunseeker 인가 — 사진은 종류가 sunseeker, 영상은 sun 표시 */
+function isSunM(m){ return !!m && (m.type === 'sunseeker' || (m.type === 'video' && m.sun === true)); }
+function renderDpMedia(loc){
+  const sunIdx = [], otherIdx = [];
+  loc.media.forEach((m, i)=> (isSunM(m) ? sunIdx : otherIdx).push(i));
+  renderMediaGroup_(document.getElementById('dpMediaGridSun'), loc, sunIdx);
+  renderMediaGroup_(document.getElementById('dpMediaGrid'), loc, otherIdx);
+  /* ☀️ 편집 중엔 비어 있어도 칸을 보여준다 — 사진을 여기로 끌어다 놓으면 Sunseeker 가 된다 (2026-10-09 대표 지시) */
+  const sunGrid = document.getElementById('dpMediaGridSun');
+  if(editMode && !sunIdx.length){
+    sunGrid.innerHTML = `<div class="sunDropEmpty" style="grid-column:1/-1">${t('sunDropHint')}</div>`;
+  }
+  document.getElementById('dpSunGroupWrap').style.display = (sunIdx.length || editMode) ? 'block' : 'none';
+}
+/* 상세패널의 「☀️ Sunseeker」·「미디어」 구역에 놓으면 종류가 바뀐다. 다른 핀에서 끌어오면 옮겨지면서 바뀐다. */
+function dropMediaAsKind(kind){
+  if(!mediaDrag || currentLocId == null) return;
+  const from = LOCATIONS.find(l=>l.id===mediaDrag.fromLocId);
+  const to   = LOCATIONS.find(l=>l.id===currentLocId);
+  const item = from && from.media[mediaDrag.idx];
+  mediaDrag = null; document.body.classList.remove('media-dragging');
+  if(!item || !to) return;
+  if(from.id !== to.id){ from.media.splice(from.media.indexOf(item), 1); to.media.push(item); }
+  /* 🎬 Sunseeker 화면 녹화(영상)도 ☀️ 칸에 들어간다 — 영상은 종류는 그대로 두고 sun 표시만 단다 (2026-10-09 대표 신고) */
+  if(item.type === 'video') item.sun = (kind === 'sun'); else item.type = (kind === 'sun') ? 'sunseeker' : 'image';
+  renderDpMedia(to); renderList(); renderPhotoGrid(); saveState(); flashSaved();
+}
+function bindKindDrop_(el, kind){
+  if(!el) return;
+  el.addEventListener('dragover', ev=>{ if(!mediaDrag) return; ev.preventDefault(); ev.dataTransfer.dropEffect='move'; el.classList.add('dropTarget'); });
+  el.addEventListener('dragleave', ev=>{ if(!el.contains(ev.relatedTarget)) el.classList.remove('dropTarget'); });
+  el.addEventListener('drop', ev=>{ if(!mediaDrag) return; ev.preventDefault(); ev.stopPropagation(); el.classList.remove('dropTarget'); dropMediaAsKind(kind); });
+}
+bindKindDrop_(document.getElementById('dpSunGroupWrap'), 'sun');
+bindKindDrop_(document.getElementById('dpMediaGrid').closest('.dp-section'), 'photo');
+function reorderMediaTo(loc, targetIdx, kind){
+  const from = LOCATIONS.find(l=>l.id===mediaDrag.fromLocId);
+  const item = from && from.media[mediaDrag.idx];
+  const srcIdx = mediaDrag.idx;
+  mediaDrag = null; document.body.classList.remove('media-dragging');
+  if(!item || (from.id === loc.id && srcIdx === targetIdx)) return;
+  const target = loc.media[targetIdx];
+  from.media.splice(srcIdx, 1);
+  let at = loc.media.indexOf(target);                         /* 빼고 나서 다시 찾는다(번호가 밀린다) */
+  if(from.id === loc.id && srcIdx < targetIdx) at += 1;       /* 오른쪽으로 끌었으면 그 사진 «뒤» */
+  loc.media.splice(Math.max(0, at), 0, item);
+  if(item.type === 'video') item.sun = (kind === 'sun'); else item.type = (kind === 'sun') ? 'sunseeker' : 'image';
+  renderDpMedia(loc); renderList(); renderPhotoGrid(); saveState(); flashSaved();
+}
+function renderMediaGroup_(grid, loc, indices){
+  grid.innerHTML = '';
+  indices.forEach(idx=>{
+    const m = loc.media[idx];
+    const badge = (m.type === 'video' && m.sun) ? '☀️ ' + (t('typeBadge').video || 'video') : (t('typeBadge')[m.type] || m.type);
+    const cell = document.createElement('div');
+    cell.className = 'mediaCell';
+    const card = document.createElement('div');
+    card.className = 'mediaThumb';
+    if(editMode){
+      /* 🔴 상세패널 사진을 «목록의 다른 장소»나 «지도 핀» 위로 끌어다 놓으면 그리로 옮겨진다
+         (2026-10-09 대표 지시 — 리뷰 모달까지 안 가고 바로 옮기게) */
+      card.draggable = true;
+      card.addEventListener('dragstart', (ev)=>{
+        mediaDrag = { fromLocId: loc.id, idx: idx };
+        card.classList.add('dragging');
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.dataTransfer.setData('text/plain','media');
+        document.body.classList.add('media-dragging');
+      });
+      card.addEventListener('dragend', ()=>{
+        card.classList.remove('dragging');
+        document.body.classList.remove('media-dragging');
+        mediaDrag = null;
+      });
+    }
+    card.innerHTML = `
+      <img src="${thumbFor(m)}" alt="">
+      ${m.type==='video' ? '<span class="mPlay">▶</span>' : ''}
+      ${(m.marks && m.marks.length) ? '<span class="mAnnoTag">✏️</span>' : ''}
+      <span class="mTypeBadge">${badge}</span>
+      ${editMode ? `<button class="mRemove" title="✕">✕</button>` : ''}
+    `;
+    card.onclick = ()=> openLightbox(loc.id, idx);
+    if(editMode){
+      card.querySelector('.mRemove').onclick = (ev)=>{
+        ev.stopPropagation();
+        sendToUnsorted(loc.media.splice(idx,1));
+        renderDpMedia(loc); renderList(); renderPhotoGrid(); saveState();
+      };
+      if(m.type !== 'video'){
+        const b = card.querySelector('.mTypeBadge');
+        b.style.cursor = 'pointer'; b.title = t('typeToggleTitle');
+        b.onclick = (ev)=>{
+          ev.stopPropagation();
+          m.type = (m.type==='sunseeker') ? 'image' : 'sunseeker';
+          renderDpMedia(loc); saveState();
+        };
+      }
+    }
+    cell.appendChild(card);
+    /* ↔ 2026-10-09 대표 지시 「사진 순서 바꿀 수 있게」 — 다른 사진 위에 놓으면 그 자리로.
+       오른쪽으로 끌면 그 사진 «뒤», 왼쪽으로 끌면 «앞». 다른 핀에서 끌어와도 그 자리에 들어간다.
+       ☀️ 칸 안에 놓으면 Sunseeker, 미디어 칸에 놓으면 일반(영상은 ☀️ 표시만) — 칸에 놓을 때와 같은 규칙 */
+    if(editMode){
+      const kind = grid.id === 'dpMediaGridSun' ? 'sun' : 'photo';
+      const after = ()=> mediaDrag && mediaDrag.fromLocId === loc.id && mediaDrag.idx < idx;
+      cell.addEventListener('dragover', ev=>{
+        if(!mediaDrag) return;
+        ev.preventDefault(); ev.stopPropagation(); ev.dataTransfer.dropEffect = 'move';
+        cell.classList.toggle('reorderAfter', after()); cell.classList.toggle('reorderBefore', !after());
+      });
+      cell.addEventListener('dragleave', ev=>{ if(!cell.contains(ev.relatedTarget)) cell.classList.remove('reorderAfter','reorderBefore'); });
+      cell.addEventListener('drop', ev=>{
+        if(!mediaDrag) return;
+        ev.preventDefault(); ev.stopPropagation();
+        cell.classList.remove('reorderAfter','reorderBefore');
+        reorderMediaTo(loc, idx, kind);
+      });
+    }
+
+    const cap = document.createElement('input');
+    cap.type = 'text'; cap.className = 'mCaption';
+    cap.value = m.caption || '';
+    cap.placeholder = t('captionPlaceholder');
+    cap.readOnly = !editMode;
+    cap.addEventListener('input', debounce(function(){
+      m.caption = this.value; saveState();
+    }, 350));
+    cell.appendChild(cap);
+
+    const suns = loc.media.filter(x => isSunM(x));
+    if(m.type === 'image' && suns.length){
+      const fn = u => (u||'').split('/').pop();
+      if(editMode){
+        const sel = document.createElement('select');
+        sel.className = 'mPair';
+        sel.innerHTML = `<option value="">${t('pairNone')}</option>` + suns.map((x,i)=>{
+          const f = fn(x.url);
+          return `<option value="${escapeHtml(f)}" ${m.pair===f?'selected':''}>☀️ ${escapeHtml(x.caption || ('Sunseeker ' + (i+1)))}</option>`;
+        }).join('');
+        sel.onchange = ()=>{ if(sel.value) m.pair = sel.value; else delete m.pair; saveState(); };
+        cell.appendChild(sel);
+      } else if(m.pair){
+        const tag = document.createElement('div'); tag.className = 'mPairTag';
+        const hit = suns.find(x => fn(x.url) === m.pair);
+        tag.textContent = '☀️ ' + (hit && hit.caption ? hit.caption : 'Sunseeker');
+        cell.appendChild(tag);
+      }
+    }
+
+    grid.appendChild(cell);
+  });
+}
+function reverseGeocode(loc){
+  const statusEl = document.getElementById('dpAddrStatus');
+  if(currentLocId===loc.id) statusEl.textContent = t('geoLoading');
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${loc.lat}&lon=${loc.lng}&accept-language=${LANG}&zoom=18`)
+    .then(r=>r.json())
+    .then(data=>{
+      if(data && data.display_name && !loc.address){
+        loc.address = data.display_name;
+        if(currentLocId===loc.id){ document.getElementById('dpAddressInput').value = loc.address; statusEl.textContent = t('geoOk'); }
+        renderList(); saveState();
+      } else if(currentLocId===loc.id){ statusEl.textContent=''; }
+    })
+    .catch(()=>{ if(currentLocId===loc.id) statusEl.textContent = t('geoFail'); });
+}
+
+/* =========================================================
+   6. 미디어 보관함 선택 모달
+   ========================================================= */
+let pickerTargetId = null;
+const pickerSelected = new Set();
+document.getElementById('dpAddMediaBtn').onclick = ()=>{
+  pickerTargetId = currentLocId;
+  pickerSelected.clear();
+  document.getElementById('pickerModalTitle').textContent = t('pickerTitle');
+  document.getElementById('pickerCancel').textContent = t('pickerCancel');
+  renderPickerGrid();
+  document.getElementById('mediaPickerModal').classList.add('open');
+};
+function usedElsewhereLabel(file){
+  const url = mediaFullPath(file);
+  for(const loc of LOCATIONS){ if(loc.media.some(m=>m.url===url)) return loc.title || '✓'; }
+  return null;
+}
+function renderPickerGrid(){
+  const grid = document.getElementById('pickerGrid');
+  grid.innerHTML = '';
+  allMediaFiles().forEach(f=>{
+    const used = usedElsewhereLabel(f.file);
+    const card = document.createElement('div');
+    card.className = 'pickerCard' + (pickerSelected.has(f.file) ? ' selected' : '');
+    card.innerHTML = `
+      <img src="${mediaThumbPath(f.file)}" alt="">
+      <span class="pType">${f.type==='video' ? '🎬' : '📷'}</span>
+      <span class="pTick">${pickerSelected.has(f.file)?'✓':''}</span>
+      ${used ? `<span class="pUsed">${escapeHtml(used)}</span>` : ''}
+    `;
+    card.onclick = ()=>{
+      if(pickerSelected.has(f.file)) pickerSelected.delete(f.file); else pickerSelected.add(f.file);
+      card.classList.toggle('selected');
+      card.querySelector('.pTick').textContent = pickerSelected.has(f.file) ? '✓' : '';
+      document.getElementById('pickerConfirm').textContent = t('pickerConfirm')(pickerSelected.size);
+    };
+    grid.appendChild(card);
+  });
+  document.getElementById('pickerConfirm').textContent = t('pickerConfirm')(pickerSelected.size);
+}
+document.getElementById('pickerClose').onclick = ()=> document.getElementById('mediaPickerModal').classList.remove('open');
+document.getElementById('pickerCancel').onclick = ()=> document.getElementById('mediaPickerModal').classList.remove('open');
+document.getElementById('pickerConfirm').onclick = ()=>{
+  const loc = LOCATIONS.find(l=>l.id===pickerTargetId);
+  if(loc){
+    allMediaFiles().filter(f=>pickerSelected.has(f.file)).forEach(f=>{
+      loc.media.push({ type: f.type==='video' ? 'video' : 'image', url: mediaFullPath(f.file), caption:'' });
+    });
+    renderDpMedia(loc); renderList(); renderPhotoGrid(); refreshDistancesIfOpen(); saveState();
+  }
+  document.getElementById('mediaPickerModal').classList.remove('open');
+};
+
+/* =========================================================
+   7. 라이트박스
+   ========================================================= */
+/* 🔴 라이트박스를 «장소에 매이지 않게» 일반화했다 (2026-10-09) —
+   사진 옮기기 화면의 「미분류」는 LOCATIONS 에 없어서, 전처럼 장소 id 로만 열면 못 본다. */
+let lbItems = [], lbTitle = '', lbIndex = 0;
+function openLightboxItems(items, index, title){
+  if(!items || !items.length) return;
+  lbItems = items; lbIndex = index || 0; lbTitle = title || '';
+  document.getElementById('lightbox').classList.add('open');
+  renderLightbox();
+}
+function openLightbox(locId, index){
+  const loc = LOCATIONS.find(l=>l.id===locId); if(!loc) return;
+  openLightboxItems(loc.media, index, loc.title);
+}
+function closeLightbox(){ stopAnnotating_(); document.getElementById('lightbox').classList.remove('open'); document.getElementById('lbStageInner').innerHTML=''; }
+
+/* ✏️ 사진 위 표시 (2026-10-09 대표 지시 「사진에 마킹이나 텍스트 입력해서 편집」)
+   🔴 사진 파일은 안 고친다 — 선·글자를 사진 «위에» 얹어 media.marks 에 저장한다(좌표는 0~1 비율).
+      그래서 원본은 그대로 남고, 지우면 깨끗이 돌아간다. 「받기」를 누르면 표시를 합친 그림이 내려받아진다. */
+let annoOn = false, annoTool = 'pen', annoDraft = null;
+let annoEdit = null;   /* 글자 입력칸 {media, idx(-1=새 글자), x, y, c, ta} */
+let annoMove = null;   /* 글자 끌기 {i, px, py, ox, oy, moved} */
+/* 🅣 글자는 사진 위에서 «바로» 친다 (2026-10-09 대표 지시 「글자 쓰면 이동하고 수정하고 다음칸으로 넘어가고 다 되야지」)
+   · Enter = 다음 줄 · 바깥 클릭/완료/⌘Enter/Esc = 끝 · 글자를 끌면 옮겨지고, 한 번 누르면 다시 고친다
+   🔴 치는 동안엔 화면을 다시 그리지 않는다 — 한글 조합이 끊기지 않게(CLAUDE.md §3-5 ⑧) */
+function openTextEditor_(media, x, y, c, idx){
+  commitTextEditor_();
+  const wrap = document.querySelector('#lbStageInner .lbImgWrap'); if(!wrap) return;
+  const r = wrap.querySelector('img').getBoundingClientRect();
+  const z = idx >= 0 ? (media.marks[idx].z || 0.045) : Number(document.getElementById('annoSize').value) || 0.045;
+  const fs = r.width * z;
+  const ta = document.createElement('textarea');
+  ta.className = 'annoTa';
+  ta.value = idx >= 0 ? (media.marks[idx].s || '') : '';
+  ta.placeholder = t('annoTextPrompt');
+  ta.style.left = (x * r.width) + 'px';
+  ta.style.top = (y * r.height - fs * 0.95) + 'px';
+  ta.style.fontSize = fs + 'px';
+  ta.style.color = c;
+  ta.addEventListener('keydown', ev=>{
+    ev.stopPropagation();   /* ←→·Esc 가 사진 넘김/닫기로 새지 않게 */
+    if(ev.isComposing) return;
+    if(ev.key === 'Escape' || ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter')){ ev.preventDefault(); commitTextEditor_(); }
+  });
+  ta.addEventListener('pointerdown', ev=> ev.stopPropagation());
+  ta.addEventListener('blur', ev=>{
+    /* 색 고르기 등 도구줄을 누른 건 «끝»이 아니다 — 입력칸을 남겨 둔다 */
+    if(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest('#lbAnnoBar') && ev.relatedTarget.id !== 'annoDone') return;
+    setTimeout(()=>{ if(annoEdit && annoEdit.ta === ta) commitTextEditor_(); }, 0);
+  });
+  wrap.appendChild(ta);
+  annoEdit = { media, idx, x, y, c, z, ta };
+  document.getElementById('annoSize').value = String(z);
+  drawAnno_(media);
+  setTimeout(()=>{ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 0);
+}
+function commitTextEditor_(){
+  if(!annoEdit) return;
+  const e = annoEdit; annoEdit = null;
+  const s = e.ta.value.replace(/\s+$/, '');
+  e.ta.remove();
+  const marks = (e.media.marks = e.media.marks || []);
+  if(e.idx >= 0){
+    if(s.trim()){ marks[e.idx].s = s; marks[e.idx].c = e.c; marks[e.idx].z = e.z; } else marks.splice(e.idx, 1);   /* 비우면 지워진다 */
+  } else if(s.trim()){
+    marks.push({ t:'text', x:e.x, y:e.y, s, c:e.c, z:e.z });
+  }
+  saveState(); drawAnno_(e.media);
+}
+function annoMedia_(){ return lbItems[lbIndex]; }
+function annoSvg_(){ return document.querySelector('#lbStageInner svg.annoLayer'); }
+function shapeSvg_(m, W, H, idx){
+  const c = m.c || '#ff3b30', sw = Math.max(2, W * 0.006);
+  if(m.t === 'pen'){
+    const d = m.pts.map((p,i)=> (i?'L':'M') + (p[0]*W).toFixed(1) + ' ' + (p[1]*H).toFixed(1)).join(' ');
+    return `<path d="${d}" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  if(m.t === 'circle'){
+    const cx=(m.x1+m.x2)/2*W, cy=(m.y1+m.y2)/2*H, rx=Math.abs(m.x2-m.x1)/2*W, ry=Math.abs(m.y2-m.y1)/2*H;
+    return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="${c}" stroke-width="${sw}"/>`;
+  }
+  if(m.t === 'arrow'){
+    const x1=m.x1*W, y1=m.y1*H, x2=m.x2*W, y2=m.y2*H, a=Math.atan2(y2-y1,x2-x1), h=sw*4.5;
+    const p1=[x2-h*Math.cos(a-0.45), y2-h*Math.sin(a-0.45)], p2=[x2-h*Math.cos(a+0.45), y2-h*Math.sin(a+0.45)];
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round"/>`
+         + `<polygon points="${x2},${y2} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}" fill="${c}"/>`;
+  }
+  if(m.t === 'text'){
+    /* 여러 줄 — 줄마다 tspan (Enter 로 다음 줄) */
+    const fs = W * (m.z || 0.045), x = m.x*W;   /* m.z = 글자 크기(사진 폭 대비) */
+    const lines = String(m.s||'').split('\n').map((ln,k)=> `<tspan x="${x}" dy="${k ? fs*1.2 : 0}">${escapeHtml(ln) || ' '}</tspan>`).join('');
+    return `<text data-i="${idx==null?'':idx}" x="${x}" y="${m.y*H}" fill="${c}" font-size="${fs}" font-weight="800" stroke="#000" stroke-width="${fs*0.08}" paint-order="stroke" font-family="-apple-system,'Apple SD Gothic Neo',sans-serif">${lines}</text>`;
+  }
+  return '';
+}
+function drawAnno_(media){
+  const svg = annoSvg_(); if(!svg) return;
+  const img = svg.parentNode.querySelector('img');
+  const W = img.naturalWidth || 1000, H = img.naturalHeight || 1000;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  const marks = media.marks || [];
+  const editing = (annoEdit && annoEdit.media === media) ? annoEdit.idx : -1;   /* 고치는 중인 글자는 입력칸이 대신 보인다 */
+  svg.innerHTML = marks.map((m,i)=> i === editing ? '' : shapeSvg_(m, W, H, i)).join('')
+                + (annoDraft ? shapeSvg_(annoDraft, W, H) : '');
+}
+function annoPoint_(ev){
+  const r = annoSvg_().getBoundingClientRect();
+  return [Math.min(1,Math.max(0,(ev.clientX - r.left)/r.width)), Math.min(1,Math.max(0,(ev.clientY - r.top)/r.height))];
+}
+function startAnnotating_(){
+  const media = annoMedia_(); if(!media) return;
+  annoOn = true;
+  document.querySelector('#lbStageInner .lbImgWrap').classList.add('annotating');
+  document.getElementById('lbAnnoBar').classList.add('open');
+  document.querySelectorAll('#lbAnnoBar [data-tool]').forEach(b=> b.classList.toggle('on', b.dataset.tool===annoTool));
+  const svg = annoSvg_();
+  svg.onpointerdown = (ev)=>{
+    ev.preventDefault(); ev.stopPropagation();
+    if(annoEdit){ commitTextEditor_(); return; }          /* 쓰는 중 바깥을 누르면 = 끝내기만 */
+    const [x,y] = annoPoint_(ev), c = document.getElementById('annoColor').value;
+    /* 글자 «덩어리» 전체를 누를 수 있게 — 글자 사이·줄 사이 빈틈을 눌러도 잡힌다 */
+    const hit = Array.from(svg.querySelectorAll('text[data-i]')).reverse().find(el=>{
+      const r = el.getBoundingClientRect(), pad = 6;
+      return ev.clientX >= r.left-pad && ev.clientX <= r.right+pad && ev.clientY >= r.top-pad && ev.clientY <= r.bottom+pad;
+    });
+    if(hit && hit.dataset.i !== ''){                      /* 이미 쓴 글자 — 끌면 이동, 누르면 고치기 */
+      const i = Number(hit.dataset.i), m = media.marks[i];
+      svg.setPointerCapture(ev.pointerId);
+      annoMove = { i, px:x, py:y, ox:m.x, oy:m.y, moved:false };
+      return;
+    }
+    if(annoTool === 'text'){ openTextEditor_(media, x, y, c, -1); return; }
+    svg.setPointerCapture(ev.pointerId);
+    annoDraft = annoTool === 'pen' ? { t:'pen', pts:[[x,y]], c } : { t:annoTool, x1:x, y1:y, x2:x, y2:y, c };
+    drawAnno_(media);
+  };
+  svg.onpointermove = (ev)=>{
+    if(annoMove){
+      const [x,y] = annoPoint_(ev), m = media.marks[annoMove.i];
+      if(Math.abs(x-annoMove.px) + Math.abs(y-annoMove.py) > 0.006) annoMove.moved = true;
+      if(annoMove.moved){ m.x = annoMove.ox + (x-annoMove.px); m.y = annoMove.oy + (y-annoMove.py); drawAnno_(media); }
+      return;
+    }
+    if(!annoDraft) return;
+    const [x,y] = annoPoint_(ev);
+    if(annoDraft.t === 'pen') annoDraft.pts.push([+x.toFixed(4), +y.toFixed(4)]); else { annoDraft.x2 = x; annoDraft.y2 = y; }
+    drawAnno_(media);
+  };
+  svg.onpointerup = ()=>{
+    if(annoMove){
+      const mv = annoMove; annoMove = null;
+      const m = media.marks[mv.i];
+      if(mv.moved) saveState(); else openTextEditor_(media, m.x, m.y, m.c, mv.i);
+      return;
+    }
+    if(!annoDraft) return;
+    const d = annoDraft; annoDraft = null;
+    const tiny = d.t === 'pen' ? d.pts.length < 2 : (Math.abs(d.x2-d.x1) + Math.abs(d.y2-d.y1) < 0.01);
+    if(!tiny){ (media.marks = media.marks || []).push(d); saveState(); }
+    drawAnno_(media);
+  };
+}
+function stopAnnotating_(){
+  if(!annoOn) return;
+  commitTextEditor_();
+  annoOn = false; annoDraft = null; annoMove = null;
+  const w = document.querySelector('#lbStageInner .lbImgWrap'); if(w) w.classList.remove('annotating');
+  document.getElementById('lbAnnoBar').classList.remove('open');
+  if(currentLocId != null){ const cur = LOCATIONS.find(l=>l.id===currentLocId); if(cur) renderDpMedia(cur); }
+}
+document.getElementById('lbAnnoBtn').onclick = ()=>{ if(annoOn) stopAnnotating_(); else startAnnotating_(); };
+document.querySelectorAll('#lbAnnoBar [data-tool]').forEach(b=> b.onclick = ()=>{
+  annoTool = b.dataset.tool;
+  document.querySelectorAll('#lbAnnoBar [data-tool]').forEach(x=> x.classList.toggle('on', x===b));
+});
+/* 쓰는 중에 색을 바꾸면 그 글자에 바로 */
+document.getElementById('annoColor').addEventListener('input', function(){ if(annoEdit){ annoEdit.c = this.value; annoEdit.ta.style.color = this.value; } });
+document.getElementById('annoColor').addEventListener('change', ()=>{ if(annoEdit) annoEdit.ta.focus(); });
+/* 글자 크기 — 쓰는 중이면 그 글자에 바로 */
+document.getElementById('annoSize').addEventListener('change', function(){
+  if(!annoEdit) return;
+  const r = annoEdit.ta.parentNode.querySelector('img').getBoundingClientRect();
+  const z = Number(this.value) || 0.045, oldFs = parseFloat(annoEdit.ta.style.fontSize) || 0;
+  annoEdit.z = z; annoEdit.ta.style.fontSize = (r.width * z) + 'px';
+  annoEdit.ta.style.top = (parseFloat(annoEdit.ta.style.top) + oldFs*0.95 - r.width*z*0.95) + 'px';
+  annoEdit.ta.focus();
+});
+document.getElementById('annoUndo').onclick = ()=>{ commitTextEditor_(); const m = annoMedia_(); if(m && m.marks && m.marks.length){ m.marks.pop(); saveState(); drawAnno_(m); } };
+document.getElementById('annoClear').onclick = ()=>{
+  commitTextEditor_();
+  const m = annoMedia_(); if(!m || !m.marks || !m.marks.length) return;
+  if(!confirm(t('annoClearConfirm'))) return;
+  m.marks = []; saveState(); drawAnno_(m);
+};
+document.getElementById('annoDone').onclick = ()=>{ stopAnnotating_(); renderLightbox(); };
+function downloadAnnotated_(media){
+  const img = new Image();
+  img.onload = ()=>{
+    try{
+      const W = img.naturalWidth, H = img.naturalHeight;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${(media.marks||[]).map(m=>shapeSvg_(m,W,H)).join('')}</svg>`;
+      const ov = new Image();
+      ov.onload = ()=>{
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); ctx.drawImage(ov, 0, 0);
+        cv.toBlob(b=>{
+          const u = URL.createObjectURL(b), a = document.createElement('a');
+          a.href = u; a.download = (media.url.split('/').pop()).replace(/\.\w+$/, '') + '_표시.jpg';
+          document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=> URL.revokeObjectURL(u), 3000);
+        }, 'image/jpeg', 0.9);
+      };
+      ov.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }catch(e){ flashError(t('downloadFail')); }
+  };
+  img.onerror = ()=> flashError(t('downloadFail'));
+  img.src = media.url;
+}
+document.getElementById('lbClose').onclick = closeLightbox;
+document.getElementById('lbPrev').onclick = ()=> stepLightbox(-1);
+document.getElementById('lbNext').onclick = ()=> stepLightbox(1);
+function stepLightbox(dir){
+  if(!lbItems.length) return;
+  lbIndex = (lbIndex + dir + lbItems.length) % lbItems.length;
+  renderLightbox();
+}
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('lightbox').classList.contains('open')) return;
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return;   /* 글자 치는 중엔 넘김·닫기 안 함 */
+  if(e.key === 'Escape') closeLightbox();
+  if(e.key === 'ArrowLeft') stepLightbox(-1);
+  if(e.key === 'ArrowRight') stepLightbox(1);
+});
+function renderLightbox(){
+  if(!lbItems.length) return;
+  const media = lbItems[lbIndex];
+  document.getElementById('lbTitle').textContent = lbTitle;
+  document.getElementById('lbCounter').textContent = `${lbIndex+1} / ${lbItems.length}`;
+  document.getElementById('lbCaption').textContent = media.caption || '';
+  document.getElementById('lbSunBadge').style.display = isSunM(media) ? 'inline-flex' : 'none';
+  /* ☀️ 짝 — 「이 사진의 Sunseeker 는 이것」(2026-10-09 대표 지시). 짝이 없으면 같은 장소의 Sunseeker 로 */
+  const fname = u => (u||'').split('/').pop();
+  const pb = document.getElementById('lbPairBtn');
+  let jumpTo = -1, label = '';
+  if(isSunM(media)){
+    jumpTo = lbItems.findIndex(x => x.pair && x.pair === fname(media.url));
+    if(jumpTo >= 0) label = t('lbPairToPhoto');
+  } else if(media.type !== 'video'){
+    if(media.pair){ jumpTo = lbItems.findIndex(x => fname(x.url) === media.pair); if(jumpTo >= 0) label = t('lbPairToSun'); }
+    if(jumpTo < 0){ jumpTo = lbItems.findIndex(x => isSunM(x)); if(jumpTo >= 0) label = t('lbSpotSun'); }
+  }
+  if(jumpTo >= 0){ pb.style.display = ''; pb.textContent = label; pb.onclick = ()=>{ lbIndex = jumpTo; renderLightbox(); }; }
+  else { pb.style.display = 'none'; pb.onclick = null; }
+  const dl = document.getElementById('lbDownload');
+  dl.href = media.url;
+  dl.setAttribute('download', media.url.split('/').pop());
+  dl.textContent = t('lbDownload');
+  const stage = document.getElementById('lbStageInner');
+  stopAnnotating_();
+  stage.innerHTML = media.type === 'video'
+    ? (media.drive ? `<iframe src="https://drive.google.com/file/d/${media.drive}/preview" style="width:min(92vw,1100px);height:min(78vh,620px);border:0;border-radius:8px;" allow="autoplay; fullscreen"></iframe>`
+                   : `<video src="${media.url}" controls autoplay></video>`)
+    : `<span class="lbImgWrap"><img src="${media.url}" alt="${escapeHtml(media.caption||'')}"><svg class="annoLayer"></svg></span>`;
+  if(media.type !== 'video'){
+    const img = stage.querySelector('img');
+    const go = ()=> drawAnno_(media);
+    if(img.complete && img.naturalWidth) go(); else img.addEventListener('load', go, { once:true });
+  }
+  /* ✏️ 표시 버튼 — 편집 중이고, 핀에 붙은 사진일 때만(미분류 사진은 옮긴 뒤에) */
+  const ab = document.getElementById('lbAnnoBtn');
+  const onPin = LOCATIONS.some(l => (l.media||[]).includes(media));
+  ab.style.display = (editMode && (!PUBLISHED || V2EDIT) && media.type !== 'video' && onPin) ? '' : 'none';
+  ab.textContent = t('lbAnnoBtn');
+  /* 표시가 있으면 「받기」는 표시를 합친 그림으로 */
+  dl.onclick = (media.marks && media.marks.length) ? (ev)=>{ ev.preventDefault(); downloadAnnotated_(media); } : null;
+  const dots = document.getElementById('lbDots');
+  dots.innerHTML = '';
+  lbItems.forEach((m, i)=>{
+    const d = document.createElement('span');
+    d.className = i===lbIndex ? 'on' : '';
+    d.onclick = ()=>{ lbIndex = i; renderLightbox(); };
+    dots.appendChild(d);
+  });
+}
+
+/* =========================================================
+   8. 내보내기 / 백업 / 불러오기
+   ========================================================= */
+document.getElementById('btnExport').onclick = ()=>{
+  /* 🔴 내보내기에는 «분류와 구글 키»도 같이 담는다 — 발행할 때 그 파일 하나만 있으면 되게.
+     키는 파일 안에만 있고 화면 글상자에는 «가린 채» 보여준다(어깨너머·화면공유 대비). */
+  const bundle = {
+    savedAt: new Date().toISOString(),
+    locations: LOCATIONS,
+    categories: CATEGORIES,
+    mapTexts: MAP_TEXTS,
+    gmapsKey: (localStorage.getItem(GMAPS_KEY_STORAGE) || '')
+  };
+  const shown = JSON.parse(JSON.stringify(bundle));
+  if(shown.gmapsKey) shown.gmapsKey = shown.gmapsKey.slice(0,6) + '…(파일에는 그대로 들어갑니다)';
+  document.getElementById('exportTextarea').value = 'const LOCATIONS = ' + JSON.stringify(shown, null, 2) + ';';
+  document.getElementById('exportTextarea').dataset.full = 'const LOCATIONS = ' + JSON.stringify(bundle, null, 2) + ';';
+  document.getElementById('exportModal').classList.add('open');
+};
+document.getElementById('exportClose').onclick = ()=> document.getElementById('exportModal').classList.remove('open');
+document.getElementById('exportDone').onclick = ()=> document.getElementById('exportModal').classList.remove('open');
+document.getElementById('btnExportSelectAll').onclick = ()=>{
+  const ta = document.getElementById('exportTextarea'); ta.focus(); ta.select();
+};
+document.getElementById('btnExportDownload').onclick = ()=>{
+  try{
+    const ta = document.getElementById('exportTextarea');
+    const blob = new Blob([ta.dataset.full || ta.value], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = t('exportFileName');
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  }catch(e){ flashError(t('downloadFail')); }
+};
+document.getElementById('importFileInput').addEventListener('change', function(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      let text = String(ev.target.result).replace(/^\s*const\s+LOCATIONS\s*=\s*/,'').replace(/;\s*$/,'');
+      const data = JSON.parse(text);
+      /* 옛 형식(배열)과 새 형식({locations,categories,gmapsKey}) 둘 다 받는다 */
+      if(data && data.mode === 'assign' && data.assign){
+        /* 🔴 「핀은 내가 지정한 곳 픽스」(2026-10-09 대표) — 핀은 건드리지 않고 «사진 배치만» 갈아끼운다 */
+        LOCATIONS.forEach(l=>{ l.media = Array.isArray(data.assign[l.id]) ? data.assign[l.id] : []; });
+        if(Array.isArray(data.mediaExtra)) saveMediaExtra(data.mediaExtra);
+        if(Array.isArray(data.unsorted)) saveUnsorted(data.unsorted);
+        const missing = Object.keys(data.assign).filter(id => !LOCATIONS.some(l => String(l.id) === String(id)));
+        if(missing.length) alert('⚠ 이 핀 번호가 지금 지도에 없어 그 사진은 못 넣었습니다: #' + missing.join(', #'));
+        rebuildAllMarkers(); saveState(); flashSaved();
+        if(currentLocId != null) openDetail(currentLocId, false);
+        document.getElementById('exportModal').classList.remove('open');
+        e.target.value = '';
+        return;
+      }
+      if(Array.isArray(data)){
+        LOCATIONS = data;
+      } else if(data && Array.isArray(data.locations)){
+        LOCATIONS = data.locations;
+        if(Array.isArray(data.categories) && data.categories.length){
+          CATEGORIES = data.categories; afterCatsChanged();
+        }
+        if(data.gmapsKey && !String(data.gmapsKey).includes('…')){
+          localStorage.setItem(GMAPS_KEY_STORAGE, data.gmapsKey);
+        }
+        if(Array.isArray(data.mediaExtra)) saveMediaExtra(data.mediaExtra);
+        if(Array.isArray(data.unsorted)) saveUnsorted(data.unsorted);
+        if(Array.isArray(data.mapTexts)){ MAP_TEXTS = data.mapTexts; saveMapTexts(); redrawMapTexts(); }
+      } else throw new Error('bad format');
+      nextId = LOCATIONS.reduce((m,l)=>Math.max(m,l.id||0),0)+1;
+      rebuildAllMarkers(); saveState(); flashSaved();
+      document.getElementById('exportModal').classList.remove('open');
+    }catch(err){ flashError(t('importFail')); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+document.getElementById('btnClearAll').onclick = ()=>{
+  if(!confirm(t('clearAllConfirm'))) return;
+  LOCATIONS = [];
+  rebuildAllMarkers(); currentLocId=null;
+  document.getElementById('detailPanel').classList.remove('open');
+  saveState();
+};
+
+/* =========================================================
+   9. 사진 일괄 업로드 — GPS 자동분류 + 드래그로 교정
+   ========================================================= */
+const CLUSTER_RADIUS_M = 60;
+const MEDIA_EXTRA_KEY = KP + 'media_extra';
+const UNSORTED_KEY = KP + 'unsorted';
+
+function loadMediaExtra(){
+  try{ return JSON.parse(localStorage.getItem(MEDIA_EXTRA_KEY) || '[]'); }catch(e){ return []; }
+}
+function saveMediaExtra(arr){ try{ localStorage.setItem(MEDIA_EXTRA_KEY, JSON.stringify(arr)); }catch(e){} }
+function allMediaFiles(){ return MEDIA_FILES.concat(loadMediaExtra()); }
+
+function loadUnsorted(){
+  if(V2EDIT) return (PUBLISHED.unsorted || []).slice();          /* 관리자 웹 편집 — 미분류도 서버 데이터 */
+  try{ return JSON.parse(localStorage.getItem(UNSORTED_KEY) || '[]'); }catch(e){ return []; }
+}
+function saveUnsorted(arr){
+  if(V2EDIT){ PUBLISHED.unsorted = arr.slice(); if(typeof V2 !== 'undefined' && V2 && V2.ready) v2SaveSoon(); }
+  else { try{ localStorage.setItem(UNSORTED_KEY, JSON.stringify(arr)); }catch(e){} }
+  const btn = document.getElementById('btnUnsorted');
+  /* 🔴 미분류가 0개여도 숨기지 않는다 — 이 버튼이 「사진을 장소끼리 옮기는」 유일한 문이다
+     (2026-10-09 대표 지적: "사진을 여기서 저기로 어떻게 옮겨") */
+  btn.style.display = (PUBLISHED && !V2EDIT) ? 'none' : 'block';
+  btn.textContent = arr.length ? t('btnUnsorted')(arr.length) : t('btnMoveMedia');
+}
+
+function sanitizeFilename(name){
+  return name.replace(/[^\w.\-가-힣]/g, '_');
+}
+
+/* ---- IndexedDB: 폴더 핸들 저장(세션 넘어 재사용) ---- */
+function idbOpen(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open('scout2_fs_' + (V2_PROJECT || '_none'), 1);
+    req.onupgradeneeded = ()=> req.result.createObjectStore('handles');
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbGet(key){
+  try{
+    const db = await idbOpen();
+    return await new Promise(res=>{
+      const r = db.transaction('handles','readonly').objectStore('handles').get(key);
+      r.onsuccess = ()=> res(r.result || null);
+      r.onerror = ()=> res(null);
+    });
+  }catch(e){ return null; }
+}
+async function idbSet(key, val){
+  try{
+    const db = await idbOpen();
+    await new Promise(res=>{
+      const tx = db.transaction('handles','readwrite');
+      tx.objectStore('handles').put(val, key);
+      tx.oncomplete = ()=> res(true);
+      tx.onerror = ()=> res(false);
+    });
+  }catch(e){}
+}
+
+/* 🔴 폴더 권한은 «페이지를 열 때 미리» 메모리에 올려 둔다 (2026-10-09 대표 신고로 고침).
+   왜 — 브라우저는 「방금 사람이 누른 직후」에만 폴더 창을 띄워준다. 버튼을 누른 «뒤에»
+   저장소를 뒤지느라(await) 시간이 가면 그 «직후»가 끊겨서 창이 조용히 막히고,
+   화면에는 「폴더 선택이 취소됐다」만 뜬다. 그래서 «누르기 전에» 미리 알아 둔다. */
+let mediaDirHandle = null;
+let mediaDirReady = false;     /* 동기적으로 판단해야 해서 따로 들고 있는다 */
+(async function preloadMediaDir(){
+  if(PUBLISHED) return;
+  try{
+    const h = await idbGet('mediaDir');
+    if(h){
+      /* 🔴 «저장돼 있던» 폴더도 이름을 다시 본다 — 전에 엉뚱한 폴더를 연결해 둔 채로 두면
+         사진이 계속 그리로 저장되고 화면에는 안 보인다 (2026-10-09 실제로 그랬다). */
+      if(h.name !== MEDIA_FOLDER.replace(/\/$/,'')){
+        mediaDirHandle = null; mediaDirReady = false;
+        await idbSet('mediaDir', null);
+        setBackupStatus('off');
+        return;
+      }
+      mediaDirHandle = h;
+      mediaDirReady = (await h.queryPermission({mode:'readwrite'})) === 'granted';
+    }
+  }catch(e){}
+})();
+
+async function ensureMediaDirHandle(){
+  if(!window.showDirectoryPicker){ alert(t('noFsApi')); return null; }
+  if(mediaDirHandle){
+    try{
+      if(await mediaDirHandle.queryPermission({mode:'readwrite'}) === 'granted') return mediaDirHandle;
+      if(await mediaDirHandle.requestPermission({mode:'readwrite'}) === 'granted') return mediaDirHandle;
+    }catch(e){ mediaDirHandle = null; }
+  }
+  const saved = await idbGet('mediaDir');
+  if(saved){
+    try{
+      let perm = await saved.queryPermission({mode:'readwrite'});
+      if(perm !== 'granted') perm = await saved.requestPermission({mode:'readwrite'});
+      if(perm === 'granted'){ mediaDirHandle = saved; return saved; }
+    }catch(e){}
+  }
+  try{
+    const handle = await window.showDirectoryPicker({ id:'scoutMediaDirV2', mode:'readwrite' });
+    mediaDirHandle = handle;
+    await idbSet('mediaDir', handle);
+    return handle;
+  }catch(e){ return null; }
+}
+async function writeFileToDir(dirHandle, subfolder, filename, blobOrFile){
+  const sub = await dirHandle.getDirectoryHandle(subfolder, { create:true });
+  const fh = await sub.getFileHandle(filename, { create:true });
+  const w = await fh.createWritable();
+  await w.write(blobOrFile);
+  await w.close();
+}
+
+function makeImageThumbnailBlob(file){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      const maxW = 360;
+      const scale = Math.min(1, maxW/img.width);
+      const w = Math.max(1, Math.round(img.width*scale)), h = Math.max(1, Math.round(img.height*scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      canvas.toBlob(b=>{ URL.revokeObjectURL(url); resolve(b); }, 'image/jpeg', 0.82);
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+function makeVideoThumbnailBlob(file){
+  return new Promise((resolve)=>{
+    const video = document.createElement('video');
+    video.preload = 'metadata'; video.muted = true; video.playsInline = true;
+    const url = URL.createObjectURL(file);
+    let done = false;
+    const finish = (b)=>{ if(done) return; done = true; URL.revokeObjectURL(url); resolve(b); };
+    video.addEventListener('loadeddata', ()=>{ video.currentTime = Math.min(1, (video.duration||2)/2); });
+    video.addEventListener('seeked', ()=>{
+      try{
+        const w = 360, h = Math.round(360 * ((video.videoHeight/video.videoWidth)||0.75));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(video,0,0,w,h);
+        canvas.toBlob(b=> finish(b), 'image/jpeg', 0.8);
+      }catch(e){ finish(null); }
+    });
+    video.addEventListener('error', ()=> finish(null));
+    setTimeout(()=> finish(null), 6000);
+    video.src = url;
+  });
+}
+
+function setUploadProgress(i, n, name){
+  document.getElementById('upProgressFill').style.width = Math.round(i/n*100)+'%';
+  document.getElementById('upProgressText').textContent = t('upProgressText')(i, n, name);
+}
+
+async function handleBulkUpload(fileList){
+  const files = Array.from(fileList);
+  if(!files.length) return;
+  /* 🔴 여기서는 폴더 창을 «띄우지 않는다» — 파일 선택을 거치며 「방금 누름」이 끊겨 막힌다.
+     폴더는 버튼 단계에서 이미 연결돼 있어야 한다. */
+  const dir = mediaDirReady ? mediaDirHandle : null;
+  if(!dir){ flashError(t('folderPickCancelled')); setBackupStatus('off'); return; }
+
+  document.getElementById('uploadProgressTitle').textContent = t('uploadProgressTitle');
+  document.getElementById('upProgressFill').style.width = '0%';
+  document.getElementById('uploadProgressModal').classList.add('open');
+
+  const newEntries = []; // {file,type,lat,lng}
+  for(let i=0;i<files.length;i++){
+    const f = files[i];
+    setUploadProgress(i, files.length, f.name);
+    const isVideo = f.type.startsWith('video/');
+    const safeName = `up_${Date.now()}_${i}_${sanitizeFilename(f.name)}`;
+    let lat = null, lng = null;
+    if(!isVideo){
+      try{ const gps = await exifr.gps(f); if(gps){ lat = gps.latitude; lng = gps.longitude; } }catch(e){}
+    }
+    try{
+      await writeFileToDir(dir, '원본', safeName, f);
+      const thumbBlob = isVideo ? await makeVideoThumbnailBlob(f) : await makeImageThumbnailBlob(f);
+      const thumbName = safeName.replace(/\.[^.]+$/,'') + '.jpg';
+      if(thumbBlob) await writeFileToDir(dir, '썸네일', thumbName, thumbBlob);
+      newEntries.push({ file: safeName, type: isVideo?'video':'image', lat, lng });
+    }catch(e){ /* 한 파일 실패해도 나머지는 계속 */ }
+  }
+  setUploadProgress(files.length, files.length, '');
+  const extra = loadMediaExtra().concat(newEntries);
+  saveMediaExtra(extra);
+
+  document.getElementById('uploadProgressModal').classList.remove('open');
+  if(!newEntries.length){
+    alert('⚠ 올라간 파일이 없습니다.\n폴더 연결이 「' + MEDIA_FOLDER.slice(0,-1) + '」 인지 확인해주세요.');
+    setBackupStatus('off');
+    return;
+  }
+  const affectedIds = clusterAndAssign(newEntries);
+  flashSaved();
+  openReviewModal(affectedIds);
+}
+
+/* ---- GPS 자동분류: 기존 핀 근처면 그 핀에, 아니면 새로운 핀끼리 묶기, GPS 없으면 미분류 ---- */
+function clusterAndAssign(newEntries){
+  const affected = new Set();
+  const withGps = [];
+  const unsorted = loadUnsorted();
+
+  newEntries.forEach(e=>{
+    if(e.lat==null || e.lng==null){ unsorted.push(e); return; }
+    let best = null, bestD = Infinity;
+    LOCATIONS.forEach(loc=>{
+      const d = haversineMeters(e.lat,e.lng, loc.lat, loc.lng);
+      if(d < bestD){ bestD = d; best = loc; }
+    });
+    if(best && bestD <= CLUSTER_RADIUS_M){
+      best.media.push({ type: e.type, url: mediaFullPath(e.file), caption:'' });
+      affected.add(best.id);
+    } else {
+      withGps.push(e);
+    }
+  });
+
+  // 남은 것들끼리 거리기준으로 묶기 (간단한 그리디 클러스터링)
+  const clusters = [];
+  withGps.forEach(e=>{
+    let joined = null;
+    for(const c of clusters){
+      if(haversineMeters(e.lat,e.lng, c.lat, c.lng) <= CLUSTER_RADIUS_M){ joined = c; break; }
+    }
+    if(joined){
+      joined.items.push(e);
+      joined.lat = joined.items.reduce((s,x)=>s+x.lat,0)/joined.items.length;
+      joined.lng = joined.items.reduce((s,x)=>s+x.lng,0)/joined.items.length;
+    } else {
+      clusters.push({ lat:e.lat, lng:e.lng, items:[e] });
+    }
+  });
+  let clusterN = 1;
+  clusters.forEach(c=>{
+    const media = c.items.map(e=>({ type:e.type, url:mediaFullPath(e.file), caption:'' }));
+    const loc = createLocationAt(c.lat, c.lng, { title: t('newClusterTitle')(clusterN++), media });
+    affected.add(loc.id);
+  });
+
+  saveUnsorted(unsorted);
+  applyFilter(); saveState(); refreshDistancesIfOpen();
+  return affected;
+}
+
+/* ---- 업로드 결과 리뷰 모달: 드래그로 자유 이동 ---- */
+let dragPayload = null; // {from:'loc'|'unsorted', locId, idx}
+function openReviewModal(affectedIds){
+  renderReviewModal(affectedIds || null);
+  document.getElementById('reviewModal').classList.add('open');
+}
+function reviewColumnsData(affectedIds){
+  const unsorted = loadUnsorted();
+  const locs = affectedIds
+    ? LOCATIONS.filter(l=> affectedIds.has(l.id))
+    : LOCATIONS.filter(l=> l.media.length>0);
+  return { unsorted, locs };
+}
+function renderReviewModal(affectedIds){
+  const wrap = document.getElementById('reviewCols');
+  wrap.innerHTML = '';
+  const { unsorted, locs } = reviewColumnsData(affectedIds);
+
+  // 미분류 칸
+  const unsortedCol = document.createElement('div');
+  unsortedCol.className = 'reviewCol unsorted';
+  unsortedCol.dataset.target = 'unsorted';
+  unsortedCol.innerHTML = `<div class="reviewColHead"><span class="rcName">${t('unsortedColTitle')}</span><span class="rcCount">${unsorted.length}</span></div>
+    <div class="reviewGrid" data-grid="unsorted"></div>`;
+  wrap.appendChild(unsortedCol);
+  const uGrid = unsortedCol.querySelector('.reviewGrid');
+  const unsortedAsMedia = unsorted.map(e=>({ type:e.type, url: e.url || mediaFullPath(e.file), drive: e.drive, caption:'' }));
+  unsorted.forEach((e,idx)=>{
+    uGrid.appendChild(makeReviewChip(e.type, e.thumb || mediaThumbPath(e.file), 'unsorted', null, idx,
+      ()=> openLightboxItems(unsortedAsMedia, idx, t('unsortedColTitle'))));
+  });
+  bindDropzone(unsortedCol);
+
+  locs.forEach(loc=>{
+    const col = document.createElement('div');
+    col.className = 'reviewCol';
+    col.dataset.target = 'loc'; col.dataset.locId = loc.id;
+    const color = loc.color || catColor(loc.category);
+    col.innerHTML = `<div class="reviewColHead"><span class="rcDot" style="background:${color}"></span>
+      <span class="rcName">${escapeHtml(loc.title||t('noTitle'))}</span><span class="rcCount">${loc.media.length}</span></div>
+      <div class="reviewZone sun" data-kind="sun"><div class="rzHead">${t('lblSunMedia')}</div><div class="reviewGrid"></div><div class="rzEmpty">${t('sunDropHint')}</div></div>
+      <div class="reviewZone" data-kind="photo"><div class="rzHead">📷 ${t('lblMedia')}</div><div class="reviewGrid"></div><div class="rzEmpty">${t('photoDropHint')}</div></div>`;
+    wrap.appendChild(col);
+    /* ☀️ 2026-10-09 대표 지시 「썬시커로 사진 옮길수 있게」 — 핀 칸을 Sunseeker / 사진 두 구역으로 나눴다.
+       놓은 구역에 따라 종류가 바뀐다(영상은 그대로). 칸 머리에 놓으면 종류는 안 바뀐다. */
+    const sunGrid = col.querySelector('.reviewZone.sun .reviewGrid');
+    const phoGrid = col.querySelector('.reviewZone[data-kind="photo"] .reviewGrid');
+    loc.media.forEach((m,idx)=>{
+      (isSunM(m) ? sunGrid : phoGrid).appendChild(makeReviewChip(m.type, thumbFor(m), 'loc', loc.id, idx,
+        ()=> openLightboxItems(loc.media, idx, loc.title || t('noTitle'))));
+    });
+    col.querySelectorAll('.reviewZone').forEach(z=>{
+      if(z.querySelector('.reviewGrid').children.length) z.querySelector('.rzEmpty').style.display = 'none';
+      bindDropzone(z, loc.id);
+    });
+    bindDropzone(col);
+  });
+}
+function makeReviewChip(type, thumbSrc, from, locId, idx, onOpen){
+  const chip = document.createElement('div');
+  chip.className = 'reviewChip';
+  chip.draggable = true;
+  chip.title = t('reviewChipHint');
+  chip.innerHTML = `<img src="${thumbSrc}" alt=""><span class="rcType">${type==='video'?'🎬':(type==='sunseeker'?'☀️':'📷')}</span>`
+    + `<span class="rcZoom">🔍</span>`;
+  /* 🔴 더블클릭 = 크게 보기(영상은 재생). 끌어서 옮기기와 안 부딪힌다 */
+  if(onOpen){
+    chip.addEventListener('dblclick', (ev)=>{ ev.preventDefault(); ev.stopPropagation(); onOpen(); });
+    const z = chip.querySelector('.rcZoom');
+    z.addEventListener('click', (ev)=>{ ev.preventDefault(); ev.stopPropagation(); onOpen(); });
+    z.draggable = false;
+  }
+  chip.addEventListener('dragstart', (ev)=>{
+    dragPayload = { from, locId, idx };
+    chip.classList.add('dragging');
+    ev.dataTransfer.effectAllowed = 'move';
+    ev.dataTransfer.setData('text/plain', 'x');
+  });
+  chip.addEventListener('dragend', ()=> chip.classList.remove('dragging'));
+  return chip;
+}
+function bindDropzone(col, zoneLocId){
+  col.addEventListener('dragover', (ev)=>{ ev.preventDefault(); if(zoneLocId!=null) ev.stopPropagation(); col.classList.add('dragover'); });
+  col.addEventListener('dragleave', ()=> col.classList.remove('dragover'));
+  col.addEventListener('drop', (ev)=>{
+    ev.preventDefault();
+    col.classList.remove('dragover');
+    if(zoneLocId != null){   /* 구역(Sunseeker/사진)에 놓음 — 칸 전체 drop 은 안 돌게 */
+      ev.stopPropagation();
+      const colEl = col.closest('.reviewCol'); if(colEl) colEl.classList.remove('dragover');
+      if(!dragPayload) return;
+      moveReviewItem(dragPayload, {target:'loc', locId:zoneLocId, kind:col.dataset.kind});
+      dragPayload = null;
+      return;
+    }
+    if(!dragPayload) return;
+    moveReviewItem(dragPayload, col.dataset.target==='unsorted' ? {target:'unsorted'} : {target:'loc', locId:Number(col.dataset.locId)});
+    dragPayload = null;
+  });
+}
+function moveReviewItem(src, dst){
+  // 꺼내기
+  let item = null, itemKind = null;
+  if(src.from === 'unsorted'){
+    const uns = loadUnsorted();
+    item = uns[src.idx]; itemKind = 'raw';
+    if(!item) return;
+    uns.splice(src.idx,1); saveUnsorted(uns);
+  } else {
+    const loc = LOCATIONS.find(l=>l.id===src.locId);
+    if(!loc) return;
+    item = loc.media[src.idx]; itemKind = 'media';
+    if(!item) return;
+    loc.media.splice(src.idx,1);
+  }
+  // 넣기
+  if(dst.target === 'unsorted'){
+    const uns = loadUnsorted();
+    if(itemKind === 'media'){
+      const fname = item.url.split('/').pop();
+      uns.push(Object.assign({ file:fname, type:item.type, lat:null, lng:null }, item.sun ? { sun:true } : {}));
+    } else {
+      uns.push(item);
+    }
+    saveUnsorted(uns);
+  } else {
+    const loc = LOCATIONS.find(l=>l.id===dst.locId);
+    if(!loc) return;
+    let added;
+    if(itemKind === 'raw'){
+      added = { type: item.type, url: item.url || mediaFullPath(item.file), caption: item.caption || '' };
+      if(item.thumb) added.thumb = item.thumb; if(item.drive) added.drive = item.drive; if(item.marks) added.marks = item.marks;
+      if(item.sun) added.sun = true;
+    } else {
+      added = item;
+    }
+    /* ☀️ 「Sunseeker」 칸에 놓으면 Sunseeker, 「사진」 칸에 놓으면 일반 사진 (영상은 그대로) */
+    if(added.type === 'video'){
+      if(dst.kind) added.sun = (dst.kind === 'sun');
+    } else {
+      if(dst.kind === 'sun') added.type = 'sunseeker';
+      else if(dst.kind === 'photo') added.type = 'image';
+    }
+    loc.media.push(added);
+  }
+  renderReviewModal(null);
+  renderList(); renderPhotoGrid(); refreshDistancesIfOpen();
+  if(currentLocId!=null) renderDpMedia(LOCATIONS.find(l=>l.id===currentLocId) || {media:[]});
+  saveState();
+}
+
+/* =========================================================
+   9-B. 드라이브 폴더 자동 백업 — 크롬 저장소가 날아가도 살아남게
+   🔴 브라우저는 아무 폴더에나 못 쓴다. 사진 업로드 때 받아둔 «그 폴더 권한»을 그대로 쓴다.
+   🔴 권한이 끊기면 «조용히» 넘어가지 않는다 — 화면에 꺼졌다고 띄우고 다시 연결할 단추를 준다.
+   ========================================================= */
+const BACKUP_FILENAME = '_백업_데이터.js';
+let backupTimer = null, backupBusy = false;
+
+let lastBackupStatus = null;
+function setBackupStatus(kind, extra){
+  lastBackupStatus = [kind, extra];
+  const el = document.getElementById('backupStatus');
+  if(!el) return;
+  if(kind === 'ok'){
+    el.innerHTML = (LANG==='en' ? '💾 Backed up to Drive · ' : '💾 드라이브 백업됨 · ') + extra;
+    el.style.color = '#7ee787';
+  } else if(kind === 'off'){
+    el.innerHTML = LANG==='en' ? `⚠ Auto-backup off — <button id="btnBackupConnect" class="catEditBtn">Connect folder</button>`
+                               : `⚠ 자동 백업 꺼짐 — <button id="btnBackupConnect" class="catEditBtn">폴더 연결</button>`;
+    el.style.color = 'var(--accent)';
+    const b = document.getElementById('btnBackupConnect');
+    if(b) b.onclick = ()=> connectMediaFolder();
+  } else {
+    el.innerHTML = LANG==='en' ? '⚠ Backup failed — check folder permission' : '⚠ 백업 실패 — 폴더 권한을 다시 확인해주세요';
+    el.style.color = 'var(--danger)';
+  }
+}
+function scheduleBackup(){
+  if(PUBLISHED) return;
+  clearTimeout(backupTimer);
+  backupTimer = setTimeout(doBackup, 2500);   /* 손이 멈춘 뒤 한 번만 */
+}
+async function doBackup(){
+  if(PUBLISHED || backupBusy) return;
+  backupBusy = true;
+  try{
+    let dir = mediaDirHandle;
+    if(!dir) dir = await idbGet('mediaDir');
+    if(!dir){ setBackupStatus('off'); return; }
+    /* 🔴 권한 «재요청»은 사람이 누를 때만 된다 — 여기서는 확인만 하고, 없으면 단추를 띄운다 */
+    if(await dir.queryPermission({mode:'readwrite'}) !== 'granted'){ setBackupStatus('off'); return; }
+    mediaDirHandle = dir;
+    const bundle = {
+      savedAt: new Date().toISOString(),
+      locations: LOCATIONS,
+      categories: CATEGORIES,
+      mapTexts: MAP_TEXTS,
+      gmapsKey: (localStorage.getItem(GMAPS_KEY_STORAGE) || '')
+    };
+    const fh = await dir.getFileHandle(BACKUP_FILENAME, { create:true });
+    const w = await fh.createWritable();
+    await w.write('const LOCATIONS = ' + JSON.stringify(bundle, null, 2) + ';');
+    await w.close();
+    const d = new Date();
+    setBackupStatus('ok', `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
+  }catch(e){
+    setBackupStatus('fail');
+  }finally{ backupBusy = false; }
+}
+if(!PUBLISHED) setTimeout(doBackup, 1200);   /* 열자마자 한 번 — 상태를 바로 보여준다 */
+
+/* 🔴 업로드는 «두 걸음»이다 — ①폴더 연결 ②파일 고르기.
+   한 번에 하면 브라우저가 폴더 창을 막는다(위 preloadMediaDir 주석 참고).
+   폴더가 이미 연결돼 있으면 ①을 건너뛰고 바로 파일 창이 열린다. */
+function connectMediaFolder(onDone){
+  /* 🔴 이 함수는 «클릭 핸들러 안에서 곧바로» 불려야 한다 — 앞에 await 를 두면 안 된다 */
+  let p;
+  try{
+    p = mediaDirHandle
+      ? mediaDirHandle.requestPermission({mode:'readwrite'})
+      : (window.showDirectoryPicker
+          ? window.showDirectoryPicker({ id:'scoutMediaDirV2', mode:'readwrite' })
+          : Promise.reject(new Error('no-fs-api')));
+  }catch(e){ p = Promise.reject(e); }
+
+  p.then(async (res)=>{
+    if(typeof res === 'string'){
+      if(res !== 'granted'){ setBackupStatus('off'); flashError(t('folderPickCancelled')); return; }
+    } else if(res){
+      /* 🔴 폴더를 «잘못 고르면» 사진이 엉뚱한 데 저장돼 화면에 안 보인다 (2026-10-09 실제로 겪음 —
+         대표님이 원본이 있던 다운로드 폴더를 고르셨고, 업로드가 조용히 실패했다).
+         이 페이지는 사진을 «이 폴더 이름»으로만 찾으므로, 이름이 다르면 받지 않는다. */
+      if(res.name !== MEDIA_FOLDER.replace(/\/$/,'')){
+        alert(t('folderWrong')(res.name));
+        setBackupStatus('off');
+        return;
+      }
+      mediaDirHandle = res;
+      await idbSet('mediaDir', res);
+    }
+    mediaDirReady = true;
+    doBackup();
+    if(onDone) onDone();
+  }).catch((e)=>{
+    if(String(e && e.message) === 'no-fs-api'){ alert(t('noFsApi')); return; }
+    setBackupStatus('off');
+    flashError(t('folderPickCancelled'));
+  });
+}
+document.getElementById('btnBulkUpload').onclick = ()=>{
+  if(mediaDirReady){ document.getElementById('bulkUploadInput').click(); return; }
+  connectMediaFolder(()=>{
+    setBackupStatus('ok', '연결됨');
+    alert(t('folderConnected'));
+  });
+};
+document.getElementById('bulkUploadInput').addEventListener('change', (e)=>{
+  const files = e.target.files;
+  if(files && files.length) handleBulkUpload(files);
+  e.target.value = '';
+});
+document.getElementById('btnUnsorted').onclick = ()=> openReviewModal(null);
+document.getElementById('reviewClose').onclick = ()=> document.getElementById('reviewModal').classList.remove('open');
+document.getElementById('reviewDone').onclick = ()=> document.getElementById('reviewModal').classList.remove('open');
+
+
+/* (261009 답사 전용 «한 번만» 고침들은 V2 에서 뺐다 — 원본 편집본에만 있다) */
+/* =========================================================
+   💬 V2 — 보는 사람들의 사진·댓글 (2026-10-09 대표 확정: 입장 코드 · 올리면 바로 보임)
+   · 보는 쪽(공개 링크): SCOUT_PUBLISHED.v2 = {api, p, code, feed} 를 로더가 넣어준다
+   · 편집 쪽(맥): 같은 폴더의 「_관리자키.html」 을 읽어 관리자 키로 붙는다 — 지우기 단추가 생긴다
+   🔴 사진은 브라우저에서 긴 변 1600px JPEG 로 줄여서 보낸다(폰 원본 그대로면 느리고 서버 한도에 걸린다)
+   ========================================================= */
+const V2_API = 'https://script.google.com/macros/s/AKfycbzgj1gQlGiTNAUhF5FqLKJ11oAbq3lmjBvZKei3IkFUnFLEdQogRIFk_SuVUK8RFs4F2g/exec';
+var V2 = {   /* var — 위쪽 코드가 처음 그릴 때 먼저 불러도 멈추지 않게(아직 undefined 일 뿐) */
+  api: (PUBLISHED && PUBLISHED.v2 && PUBLISHED.v2.api) || V2_API,
+  p: V2_PROJECT, code: (PUBLISHED && PUBLISHED.v2 && PUBLISHED.v2.code) || '', admin: '',
+  feed: (PUBLISHED && PUBLISHED.v2 && PUBLISHED.v2.feed) || [], on: !!(PUBLISHED && PUBLISHED.v2),
+  pw: (PUBLISHED && PUBLISHED.v2 && PUBLISHED.v2.pw) || '', rev: (PUBLISHED && PUBLISHED.v2 && Number(PUBLISHED.v2.rev)) || 0,
+  ready: false, saving: false, dirty: false, timer: null
+};
+async function v2Call(body){
+  const r = await fetch(V2.api, { method:'POST', body: JSON.stringify(body) });   /* text/plain → 사전요청 없이 간다 */
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.err || 'fail');
+  return j;
+}
+function v2Auth(extra){ return Object.assign(V2.admin ? { key: V2.admin } : { code: V2.code, pw: V2.pw }, { p: V2.p }, extra || {}); }
+/* ☁️ 관리자 웹 편집 — 고칠 때마다 1.2초 모았다가 서버에 통째로 저장. 다른 관리자가 먼저 저장했으면(rev 다름) 덮지 않고 알린다 */
+function v2Project(){
+  return { title: PUBLISHED.title || '', subtitle: PUBLISHED.subtitle || '', locations: LOCATIONS, categories: CATEGORIES,
+           mapTexts: (typeof MAP_TEXTS !== 'undefined') ? MAP_TEXTS : [], unsorted: PUBLISHED.unsorted || [] };
+}
+function v2Toast(msg, kind){ const el = document.getElementById('saveToast'); el.textContent = msg; el.className = 'toast show ' + (kind || 'ok'); clearTimeout(saveToastTimer); if(kind !== 'wait') saveToastTimer = setTimeout(()=> el.classList.remove('show'), kind === 'err' ? 6000 : 1400); }
+function v2SaveSoon(){
+  if(!V2EDIT || !V2 || !V2.ready) return;
+  V2.dirty = true; clearTimeout(V2.timer); V2.timer = setTimeout(v2SaveNow, 1200);
+}
+async function v2SaveNow(){
+  if(!V2.dirty) return;
+  if(V2.saving){ V2.timer = setTimeout(v2SaveNow, 800); return; }
+  V2.saving = true; V2.dirty = false; v2Toast('⏳ ' + t('v2Saving'), 'wait');
+  try{
+    const r = await fetch(V2.api, { method:'POST', body: JSON.stringify(v2Auth({ action:'editSave', project: v2Project(), rev: V2.rev })) });
+    const j = await r.json();
+    if(j.ok){ V2.rev = j.rev; v2Toast('☁️ ' + t('v2Saved'), 'ok'); }
+    else if(j.err === 'conflict'){ V2.dirty = false; v2Toast('⚠ ' + t('v2Conflict'), 'err'); if(confirm(t('v2Conflict') + '\n\n' + t('v2ReloadQ'))) location.reload(); }
+    else { V2.dirty = true; v2Toast('⚠ ' + t('v2SaveFail') + ' (' + j.err + ')', 'err'); }
+  }catch(e){ V2.dirty = true; v2Toast('⚠ ' + t('v2SaveFail'), 'err'); }
+  V2.saving = false;
+}
+window.addEventListener('beforeunload', e=>{ if(V2EDIT && (V2.dirty || V2.saving)){ e.preventDefault(); e.returnValue = ''; } });
+function v2AdminButton(){
+  if(!V2.on) return;
+  const box = document.querySelector('.sbActions'); if(!box || document.getElementById('btnV2Admin')) return;
+  const b = document.createElement('button'); b.id = 'btnV2Admin'; b.style.flex = '1 1 100%';
+  b.textContent = V2EDIT ? t('v2AdminOut') : t('v2AdminIn');
+  b.onclick = ()=>{
+    const key = 'scout2_pw_' + V2.p;
+    if(V2EDIT){
+      if(V2.dirty || V2.saving){ alert(t('v2WaitSave')); return; }
+      try{ sessionStorage.removeItem(key); }catch(e){} location.reload(); return;
+    }
+    const pw = prompt(t('v2AdminPrompt')); if(!pw) return;
+    try{ sessionStorage.setItem(key, pw.trim()); }catch(e){}
+    location.reload();   /* 입장 페이지가 비밀번호를 확인하고 편집 화면으로 다시 연다 */
+  };
+  box.appendChild(b);
+  if(V2EDIT){ const st = document.getElementById('appSubtitleText'); if(st) st.textContent = t('v2AdminOn'); }
+}
+function v2Img(id, w){ return 'https://lh3.googleusercontent.com/d/' + id + '=w' + (w || 1600); }
+function v2Status(msg, kind){ const el = document.getElementById('v2Status'); el.textContent = msg || ''; el.className = 'v2Status' + (kind ? ' ' + kind : ''); }
+async function v2Refresh(){
+  if(!V2.on) return;
+  try{
+    const j = V2.admin ? await v2Call(v2Auth({ action:'adminFeed' })) : await v2Call(v2Auth({ action:'feed' }));
+    V2.feed = j.feed || [];
+    v2RenderSpot(); v2Badges();
+  }catch(e){ /* 조용히 — 다음 새로고침에 다시 */ }
+}
+function v2ItemsFor(locId){ return V2.feed.filter(f => String(f.spot) === String(locId)); }
+function v2FmtTime(iso){ try{ const d = new Date(iso); return (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }catch(e){ return ''; } }
+function v2RenderSpot(){
+  const wrap = document.getElementById('dpV2Wrap');
+  if(currentLocId == null){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  document.getElementById('lblV2Feed').textContent = t('v2Title');
+  document.getElementById('v2AddPhoto').textContent = t('v2AddPhoto');
+  document.getElementById('v2Send').textContent = t('v2Send');
+  document.getElementById('v2Name').placeholder = t('v2Name');
+  document.getElementById('v2Text').placeholder = t('v2Text');
+  const off = !V2.on;
+  ['v2AddPhoto','v2Send','v2Name','v2Text'].forEach(id => document.getElementById(id).disabled = off);
+  const items = v2ItemsFor(currentLocId);
+  const photos = items.filter(f => f.kind === 'photo'), comments = items.filter(f => f.kind === 'comment');
+  const pg = document.getElementById('v2Photos'); pg.innerHTML = '';
+  photos.forEach((f, i)=>{
+    const d = document.createElement('div'); d.className = 'v2Photo';
+    d.innerHTML = `<img src="${v2Img(f.file, 400)}" alt="" loading="lazy"><div class="who">${escapeHtml(f.name || '')}</div>` + ((V2.admin || V2.pw) ? '<button class="v2Del" title="지우기">✕</button>' : '');
+    d.onclick = ()=> openLightboxItems(photos.map(x => ({ type:'image', url: v2Img(x.file), caption: (x.name ? x.name + ' · ' : '') + v2FmtTime(x.time) + (x.text ? ' — ' + x.text : '') })), i, t('v2Title'));
+    if(V2.admin || V2.pw) d.querySelector('.v2Del').onclick = (ev)=>{ ev.stopPropagation(); v2Delete(f.id); };
+    pg.appendChild(d);
+  });
+  const cg = document.getElementById('v2Comments'); cg.innerHTML = '';
+  comments.slice().reverse().forEach(f=>{
+    const d = document.createElement('div'); d.className = 'v2C';
+    d.innerHTML = `<div class="h"><b>${escapeHtml(f.name || '—')}</b> · ${v2FmtTime(f.time)}</div><div class="b">${escapeHtml(f.text)}</div>` + ((V2.admin || V2.pw) ? '<button class="v2Del" title="지우기">✕</button>' : '');
+    if(V2.admin || V2.pw) d.querySelector('.v2Del').onclick = ()=> v2Delete(f.id);
+    cg.appendChild(d);
+  });
+  if(off) cg.innerHTML = `<div class="v2Empty">${t('v2Off')}</div>`;
+  else if(!items.length) cg.innerHTML = `<div class="v2Empty">${t('v2NoFeed')}</div>`;
+}
+function v2Badges(){
+  document.querySelectorAll('#listWrap .locCard').forEach(card=>{
+    const old = card.querySelector('.v2Badge'); if(old) old.remove();
+    const items = v2ItemsFor(card.dataset.locId); if(!items.length) return;
+    const np = items.filter(f => f.kind === 'photo').length, nc = items.length - np;
+    const b = document.createElement('span'); b.className = 'v2Badge';
+    b.textContent = (nc ? '💬' + nc + ' ' : '') + (np ? '📷' + np : '');
+    const h = card.querySelector('.mediaCount'); if(h) h.appendChild(b);
+  });
+}
+function v2Name(){
+  const v = document.getElementById('v2Name').value.trim();
+  if(v){ try{ localStorage.setItem('scout2_name', v); }catch(e){} }
+  return v;
+}
+async function v2Shrink(file){
+  /* 긴 변 1600px JPEG 로 — 사진 방향(EXIF)도 바르게 */
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const sc = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * sc); cv.height = Math.round(bmp.height * sc);
+  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+  const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.85));
+  const b64 = await new Promise(res=>{ const fr = new FileReader(); fr.onload = ()=> res(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+  return b64;
+}
+document.getElementById('v2AddPhoto').onclick = ()=>{
+  if(!v2Name()){ v2Status(t('v2NeedName'), 'err'); document.getElementById('v2Name').focus(); return; }
+  document.getElementById('v2PhotoInput').click();
+};
+document.getElementById('v2PhotoInput').addEventListener('change', async function(){
+  const files = Array.from(this.files || []); this.value = '';
+  if(!files.length || currentLocId == null) return;
+  const spot = currentLocId, name = v2Name();
+  let ok = 0;
+  for(let i = 0; i < files.length; i++){
+    const f = files[i];
+    if(!/^image\//.test(f.type)){ v2Status(t('v2PhotoOnly'), 'err'); continue; }
+    v2Status(t('v2Sending') + ' (' + (i+1) + '/' + files.length + ')');
+    try{
+      const data = await v2Shrink(f);
+      const j = await v2Call(v2Auth({ action:'photo', spot, name, data, mime:'image/jpeg', fname: (f.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg' }));
+      V2.feed.push(j.row); ok++;
+      v2RenderSpot(); v2Badges();
+    }catch(e){ v2Status(t('v2Fail') + ' (' + e.message + ')', 'err'); }
+  }
+  if(ok) v2Status(t('v2SentPhoto')(ok), 'ok');
+});
+document.getElementById('v2Send').onclick = async ()=>{
+  const name = v2Name(), ta = document.getElementById('v2Text'), text = ta.value.trim();
+  if(!name){ v2Status(t('v2NeedName'), 'err'); document.getElementById('v2Name').focus(); return; }
+  if(!text || currentLocId == null) return;
+  const btn = document.getElementById('v2Send'); btn.disabled = true; v2Status(t('v2Sending'));
+  try{
+    const j = await v2Call(v2Auth({ action:'comment', spot: currentLocId, name, text }));
+    V2.feed.push(j.row); ta.value = '';
+    v2RenderSpot(); v2Badges(); v2Status(t('v2SentComment'), 'ok');
+  }catch(e){ v2Status(t('v2Fail') + ' (' + e.message + ')', 'err'); }
+  btn.disabled = false;
+};
+async function v2Delete(id){
+  if(!(V2.admin || V2.pw) || !confirm(t('v2DelConfirm'))) return;
+  try{ await v2Call(v2Auth({ action: V2.admin ? 'adminDelete' : 'editDelete', id })); V2.feed = V2.feed.filter(f => f.id !== id); v2RenderSpot(); v2Badges(); }
+  catch(e){ v2Status(t('v2Fail') + ' (' + e.message + ')', 'err'); }
+}
+try{ document.getElementById('v2Name').value = localStorage.getItem('scout2_name') || ''; }catch(e){}
+/* 상세를 열 때·목록을 그릴 때 같이 */
+{ const _od = openDetail; openDetail = function(){ const r = _od.apply(this, arguments); v2RenderSpot(); return r; }; }
+{ const _rl = renderList; renderList = function(){ const r = _rl.apply(this, arguments); v2Badges(); return r; }; }
+{ const _dc = document.getElementById('dpClose').onclick; document.getElementById('dpClose').onclick = function(){ if(_dc) _dc.apply(this, arguments); document.getElementById('dpV2Wrap').style.display = 'none'; }; }
+/* 편집 쪽: 같은 폴더의 관리자 키 파일(맥 안에서만 열린다)을 읽어 붙는다 */
+if(!PUBLISHED && V2_PROJECT && location.hostname === 'localhost'){
+  fetch('_관리자키.html', { cache:'no-store' }).then(r => r.ok ? r.text() : '').then(txt=>{
+    const m = /data-key="([A-Za-z0-9_\-]{24,})"/.exec(txt || '');
+    if(m){ V2.admin = m[1]; V2.on = true; v2Refresh(); }
+  }).catch(()=>{});
+}
+if(V2.on) setInterval(()=>{ if(document.visibilityState === 'visible') v2Refresh(); }, 45000);
+setTimeout(v2Badges, 300);
+setTimeout(()=>{ V2.ready = true; }, 1500);   /* 처음 그리는 동안의 저장 호출은 무시(아무것도 안 바뀌었다) */
+/* =========================================================
+   10. 초기 렌더
+   ========================================================= */
+saveUnsorted(loadUnsorted());
+applyLang();
+
+/* 🔴 발행본이면 «편집에 관한 것»을 전부 숨긴다 — 보는 사람은 누르면 안 되고, 눌러도 저장이 안 된다.
+   🔴 스트리트뷰는 «새 탭 구글맵»으로 돌린다 — API 키를 공개 페이지에 넣으면 남이 그 키를 써서
+      대표님 계정에 요금이 붙을 수 있다. 공개본에는 절대 키를 싣지 않는다. */
+if(PUBLISHED){
+  /* 관리자 웹 편집이면 «맥 전용»(폴더·내보내기·키 설정·보관함)만 숨기고 편집 단추는 둔다 */
+  (V2EDIT ? ['btnExport','btnBulkUpload','uploadFolderHint','dpGmapsKeyBtn','dpAddMediaBtn','backupStatus']
+          : ['btnEditToggle','btnSelectMode','btnExport','btnBulkUpload','btnUnsorted',
+             'btnEditCats','editBanner','bulkBar','uploadFolderHint','dpGmapsKeyBtn','svMovePinBtn','btnMapText','lbAnnoBtn','dpAddMediaBtn','backupStatus'])
+    .forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+  if(!V2EDIT) document.getElementById('map').classList.remove('editing');
+  v2AdminButton();
+  /* 🔴 키가 같이 발행됐으면 로드뷰·태양궤적을 그대로 쓴다(대표 확정 B안).
+     키가 없으면 구글맵 새 탭으로 돌린다 — 빈 화면이 뜨면 안 되니까. */
+  if(!(PUBLISHED.gmapsKey)){
+    document.getElementById('dpStreetViewBtn').onclick = ()=>{
+      const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+      window.open(`https://www.google.com/maps?layer=c&cbll=${loc.lat},${loc.lng}`, '_blank', 'noopener');
+    };
+  }
+  if(PUBLISHED.title){
+    document.getElementById('appTitleText').textContent = PUBLISHED.title;
+    document.title = PUBLISHED.title;
+  }
+  if(PUBLISHED.subtitle) document.getElementById('appSubtitleText').textContent = PUBLISHED.subtitle;
+  /* 지도를 모든 핀이 들어오게 맞춘다 — 보는 사람은 어디를 봐야 할지 모른다 */
+  if(LOCATIONS.length){
+    const b = L.latLngBounds(LOCATIONS.map(l=>[l.lat, l.lng]));
+    map.fitBounds(b, { padding:[60,60], maxZoom:18 });
+  }
+}
+</script>
+</body>
+</html>
