@@ -392,6 +392,7 @@
   .reviewColHead .rcName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .reviewColHead .rcCount{font-size:10.5px;color:var(--muted);font-weight:600;}
   .reviewGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-height:40px;}
+  .reviewChip .rcFile{position:absolute;left:3px;bottom:3px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:1px 4px;border-radius:4px;font-family:ui-monospace,monospace;}
   .reviewZone{border:1px dashed var(--border);border-radius:8px;padding:6px;margin-bottom:8px;transition:.15s;}
   .reviewZone.sun{border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.05);}
   .reviewZone.dragover{border-style:solid;border-color:var(--accent2);box-shadow:0 0 0 2px rgba(79,179,255,.3);}
@@ -775,7 +776,7 @@ const I18N = {
     editBanner: '📍 지도를 클릭 → 새 핀 생성 · 핀을 드래그해서 정확한 위치로 옮기세요',
     bulkBanner: '☑️ 지울 장소를 눌러 선택하세요 (지도 핀도 클릭 가능)',
     bulkCount: n=>`${n}개 선택됨`, bulkSelectAll:'전체선택', bulkCancel:'선택 해제',
-    bulkDelete: n=>`🗑 선택 삭제 (${n})`, bulkDeleteConfirm: n=>`선택한 ${n}곳을 삭제할까요? 되돌릴 수 없습니다.`,
+    bulkDelete: n=>`🗑 선택 삭제 (${n})`, bulkDeleteConfirm: n=>`선택한 ${n}곳을 삭제할까요? (사진은 🗄 보관함으로 갑니다)`,
     viewList: '📋 리스트형', viewPhoto: '🖼 사진 모아보기',
     emptyList: '아직 만든 장소가 없습니다.<br>지도를 클릭해서 첫 핀을 만들어보세요.',
     noMedia: '미디어 없음', mediaCount: n=>`🖼 미디어 ${n}개`, noAddress: '주소 없음', noTitle: '(이름 없음)',
@@ -787,7 +788,7 @@ const I18N = {
     lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: '촬영 예정시각 / 고도 / 방위각 메모',
     lblMedia: '미디어', lblSunMedia: '☀️ Sunseeker 사진', sunDropHint: '☀️ 사진을 여기로 끌어다 놓으면 Sunseeker 가 됩니다', photoDropHint: '여기로 놓으면 일반 사진', captionPlaceholder: '메모 추가 (예: 역광 심함, 16시 기준)',
     addMediaBtn: '➕ 보관함에서 추가', deleteBtn: '🗑 이 장소 삭제',
-    deleteConfirm: title=>`「${title}」를 삭제할까요? 되돌릴 수 없습니다.`,
+    deleteConfirm: title=>`「${title}」를 삭제할까요? (사진은 🗄 보관함으로 갑니다)`,
     pickerTitle: '🖼 미디어 보관함 — 사진/영상을 골라 추가', pickerConfirm: n=>`선택한 것 추가 (${n})`, pickerCancel: '취소',
     exportTitle: '📤 내보내기 / 백업',
     exportNote: '이 브라우저에는 자동 저장되지만(새로고침해도 안 사라짐), 다른 컴퓨터로 옮기거나 영구 보관하려면 아래 중 하나로 백업하세요. <b>다운로드가 안 뜨면</b> 「전체 선택」으로 긁어서 메모장 등에 붙여넣으세요.',
@@ -810,7 +811,7 @@ const I18N = {
     noStreetView: '이 위치엔 스트리트뷰 사진이 없습니다',
     gmapsLoadFail: '지도를 못 불러왔습니다 — API 키가 올바른지, 「Maps JavaScript API」가 켜져 있는지 확인하세요',
     btnBulkUpload: '📤 사진 일괄 업로드 (자동분류)',
-    btnUnsorted: n=>`🗂 미분류 ${n}개 — 확인하기`,
+    btnUnsorted: n=>`🗂 사진 옮기기 · 🗄 보관함 ${n}개(뺀 사진)`,
     btnMoveMedia: '🗂 사진 옮기기 (장소끼리 끌어다 놓기)',
     noFsApi: '이 브라우저는 파일 저장 기능을 지원하지 않습니다. 크롬 최신버전에서 열어주세요.',
     folderPickNote: '사진·영상을 저장할 폴더를 선택하는 창이 뜹니다. 반드시 "' + MEDIA_FOLDER.slice(0,-1) + '" 폴더를 선택해주세요(이미 만들어져 있습니다).',
@@ -821,7 +822,7 @@ const I18N = {
     reviewModalTitle: '📥 자동분류 결과 — 드래그해서 옮기세요',
     reviewHint: '썸네일을 다른 칸으로 끌어다 놓으면 그 장소로 옮겨집니다(바로 반영). 🔍 를 누르거나 썸네일을 두 번 누르면 크게 보고 영상도 재생됩니다.',
     reviewChipHint: '끌어서 옮기기 · 두 번 누르면 크게 보기',
-    reviewDone: '확인했습니다', unsortedColTitle: '🗂 미분류 (GPS 없음)',
+    reviewDone: '닫기', unsortedColTitle: '🗄 보관함 — 뺀 사진 (원본은 맥 미디어 폴더에)',
     newClusterTitle: n=>`새 스팟 ${n}`,
     uploadDoneToast: n=>`✅ ${n}개 업로드 완료`,
     lbDownload: '⬇ 이 사진 받기',
@@ -849,7 +850,7 @@ const I18N = {
     catInUse: n=>`${n}곳`,
     catDeleteBlocked: n=>`⚠ ${n}곳이 이 분류를 쓰고 있어 못 지웁니다`,
     catDeleteLast: '⚠ 분류가 최소 한 개는 있어야 합니다',
-    pinRightClickDelete: title=>`「${title}」 핀을 지울까요?`
+    pinRightClickDelete: title=>`「${title}」 핀을 지울까요? (사진은 🗄 보관함으로 갑니다)`
   },
   en: {
     appTitle: '🎬 Location Scout', subtitle: 'Click the map in edit mode to drop a new pin',
@@ -858,7 +859,7 @@ const I18N = {
     editBanner: '📍 Click the map → new pin · Drag a pin to fine-tune its position',
     bulkBanner: '☑️ Tap locations to select (map pins work too)',
     bulkCount: n=>`${n} selected`, bulkSelectAll:'Select all', bulkCancel:'Clear selection',
-    bulkDelete: n=>`🗑 Delete selected (${n})`, bulkDeleteConfirm: n=>`Delete ${n} selected location(s)? This can't be undone.`,
+    bulkDelete: n=>`🗑 Delete selected (${n})`, bulkDeleteConfirm: n=>`Delete ${n} selected location(s)? (Photos go to the 🗄 archive)`,
     viewList: '📋 List', viewPhoto: '🖼 Photo Grid',
     emptyList: 'No locations yet.<br>Click the map to drop your first pin.',
     noMedia: 'No media', mediaCount: n=>`🖼 ${n} media`, noAddress: 'No address', noTitle: '(untitled)',
@@ -870,7 +871,7 @@ const I18N = {
     lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: 'Shoot time / elevation / azimuth notes',
     lblMedia: 'Media', lblSunMedia: '☀️ Sunseeker Photos', sunDropHint: '☀️ Drop a photo here to mark it as Sunseeker', photoDropHint: 'Drop here for a regular photo', captionPlaceholder: 'Add a note (e.g. harsh backlight at 4pm)',
     addMediaBtn: '➕ Add from library', deleteBtn: '🗑 Delete this location',
-    deleteConfirm: title=>`Delete "${title}"? This can't be undone.`,
+    deleteConfirm: title=>`Delete "${title}"? (Photos go to the 🗄 archive)`,
     pickerTitle: '🖼 Media Library — pick photos/videos to add', pickerConfirm: n=>`Add selected (${n})`, pickerCancel: 'Cancel',
     exportTitle: '📤 Export / Backup',
     exportNote: 'This browser auto-saves your work (survives reload). To move it to another computer or back it up permanently, use one of the options below. <b>If the download doesn\'t appear</b>, use "Select All" and paste it into a text file.',
@@ -893,7 +894,7 @@ const I18N = {
     noStreetView: 'No Street View imagery here',
     gmapsLoadFail: "Couldn't load the map — check your API key and that \"Maps JavaScript API\" is enabled",
     btnBulkUpload: '📤 Bulk Upload Photos (auto-sort)',
-    btnUnsorted: n=>`🗂 ${n} unsorted — review`,
+    btnUnsorted: n=>`🗂 Move photos · 🗄 archive ${n} (removed)`,
     btnMoveMedia: '🗂 Move photos between spots',
     noFsApi: "This browser doesn't support saving files. Please open this in a recent version of Chrome.",
     folderPickNote: 'A folder picker will open. Please select the "' + MEDIA_FOLDER.slice(0,-1) + '" folder (it already exists).',
@@ -904,7 +905,7 @@ const I18N = {
     reviewModalTitle: '📥 Auto-sort results — drag to move',
     reviewHint: 'Drag a thumbnail into another column to move it (applies instantly). Click 🔍 or double-click to view it large / play the video.',
     reviewChipHint: 'Drag to move · double-click to view',
-    reviewDone: 'Done', unsortedColTitle: '🗂 Unsorted (no GPS)',
+    reviewDone: 'Close', unsortedColTitle: '🗄 Archive — removed photos (originals on the Mac)',
     newClusterTitle: n=>`New Spot ${n}`,
     uploadDoneToast: n=>`✅ ${n} uploaded`,
     lbDownload: '⬇ Download photo',
@@ -932,7 +933,7 @@ const I18N = {
     catInUse: n=>`${n} used`,
     catDeleteBlocked: n=>`⚠ ${n} location(s) still use this category`,
     catDeleteLast: '⚠ You need at least one category',
-    pinRightClickDelete: title=>`Delete the pin "${title}"?`
+    pinRightClickDelete: title=>`Delete the pin "${title}"? (Photos go to the 🗄 archive)`
   }
 };
 let LANG = localStorage.getItem('scout2_lang') || 'ko';
@@ -2904,10 +2905,15 @@ function renderReviewModal(affectedIds){
     <div class="reviewGrid" data-grid="unsorted"></div>`;
   wrap.appendChild(unsortedCol);
   const uGrid = unsortedCol.querySelector('.reviewGrid');
-  const unsortedAsMedia = unsorted.map(e=>({ type:e.type, url: e.url || mediaFullPath(e.file), drive: e.drive, caption:'' }));
+  const unsortedAsMedia = unsorted.map(e=>({ type:e.type, url: e.url || mediaFullPath(e.file), drive: e.drive, caption: '원본 파일: ' + (e.file || '') }));
   unsorted.forEach((e,idx)=>{
-    uGrid.appendChild(makeReviewChip(e.type, e.thumb || mediaThumbPath(e.file), 'unsorted', null, idx,
-      ()=> openLightboxItems(unsortedAsMedia, idx, t('unsortedColTitle'))));
+    const chip = makeReviewChip(e.type, e.thumb || mediaThumbPath(e.file), 'unsorted', null, idx,
+      ()=> openLightboxItems(unsortedAsMedia, idx, t('unsortedColTitle')));
+    /* 🗄 보관함 — 원본 파일 이름을 보여준다(맥 「…_미디어/원본」에서 이 이름으로 찾는다) · 2026-10-09 대표 지시 */
+    chip.title = (e.file || '') + ' — ' + t('reviewChipHint');
+    const nm = document.createElement('span'); nm.className = 'rcFile'; nm.textContent = (e.file || '').replace(/\.[^.]+$/, '').slice(0, 8);
+    chip.appendChild(nm);
+    uGrid.appendChild(chip);
   });
   bindDropzone(unsortedCol);
 
