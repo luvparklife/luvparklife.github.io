@@ -206,7 +206,8 @@
   #saveToast.err{color:var(--danger);border-color:#5c2a2a;}
 
   /* ---------- Lightbox ---------- */
-  #lightbox{position:fixed;inset:0;background:rgba(5,6,9,.94);z-index:2000;
+  #lightbox{position:fixed;inset:0;background:rgba(5,6,9,.94);z-index:3000;   /* 🔴 「사진 옮기기」 창(2500)보다 앞 — 거기서 사진을 눌러도 뒤에 깔리지 않게(2026-10-09 대표 신고) */
+   
     display:none;align-items:center;justify-content:center;flex-direction:column;}
   #lightbox.open{display:flex;}
   .lb-top{position:absolute;top:0;left:0;right:0;padding:14px 18px;display:flex;
@@ -274,6 +275,20 @@
   .v2Photo img{width:100%;height:100%;object-fit:cover;display:block;}
   .v2Photo .who{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:10px;padding:8px 5px 3px;color:#fff;}
   .v2Del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-size:12px;}
+  /* 왼쪽 목록(340px) «옆» 지도 위 — 목록의 핀 카드를 가리면 거기에 놓을 수가 없다(시험에서 잡음) */
+  #libPanel{display:none;position:fixed;left:352px;bottom:12px;width:min(340px,calc(100vw - 364px));max-height:55vh;z-index:1500;
+    background:var(--panel);border:1px solid var(--accent2);border-radius:14px;box-shadow:var(--shadow);flex-direction:column;}
+  #libPanel.open{display:flex;}
+  #libPanel .libHead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px 4px;font-size:13px;}
+  #libPanel .libHead button{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;}
+  #libPanel .libHint{font-size:11px;color:var(--muted);padding:0 12px 8px;}
+  #libPanel .libGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 12px 12px;overflow-y:auto;}
+  .libChip{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#000;cursor:grab;border:1px solid var(--border);}
+  .libChip img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
+  .libChip .lcBtn{position:absolute;top:3px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.7);color:#fff;font-size:11px;cursor:pointer;}
+  .libChip .lcView{left:3px;} .libChip .lcDel{right:3px;}
+  .libChip .lcType{position:absolute;left:3px;bottom:3px;font-size:11px;background:rgba(0,0,0,.6);border-radius:4px;padding:0 3px;}
+  .libEmpty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:14px 4px;}
   #v2AdminUpload{background:var(--accent2);color:#06131a;border:none;border-radius:8px;padding:6px 10px;font-weight:800;cursor:pointer;font-size:12px;}
   #v2AddPhoto,#v2Send{background:var(--accent2);color:#06131a;border:none;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;font-size:13px;}
   #v2AddPhoto{width:100%;}
@@ -424,6 +439,7 @@
     .lb-nav{width:40px;height:40px;font-size:17px;}
     .pickerGrid{grid-template-columns:repeat(3,1fr);}
     .reviewCol{flex:0 0 160px;}
+    #libPanel{left:12px;width:calc(100vw - 24px);max-height:40vh;}
   }
 </style>
 </head>
@@ -561,6 +577,12 @@
     </div>
   </div>
 
+  <!-- 📚 라이브러리 — 관리자 웹 편집 전용 · 핀에 안 들어간 사진만 · 끌어서 핀(지도·목록·상세)에 넣는다 -->
+  <div id="libPanel">
+    <div class="libHead"><b id="libTitle"></b><button id="libClose" type="button">✕</button></div>
+    <div class="libHint" id="libHint"></div>
+    <div class="libGrid" id="libGrid"></div>
+  </div>
   <div id="lightbox">
     <div class="lb-top">
       <span class="lb-title" id="lbTitle">-</span>
@@ -827,7 +849,7 @@ const I18N = {
     uploadDoneToast: n=>`✅ ${n}개 업로드 완료`,
     lbDownload: '⬇ 이 사진 받기',
     lbPairToSun: '☀️ 짝 Sunseeker 보기', lbPairToPhoto: '📷 짝 사진 보기', lbSpotSun: '☀️ 이 장소 Sunseeker', pairNone: '☀️ 짝 Sunseeker 없음',
-    mapModeToSat: '🛰 위성사진', mapModeToMap: '🗺 일반지도', v2AdminUpload: '📷 사진·영상 올리기', v2Uploading: '올리는 중', v2Uploaded: n=>`${n}개 올렸습니다`, v2UploadFail: n=>`${n}개를 못 올렸습니다`, v2VideoTooBig: '영상이 30MB보다 큽니다(대표님께 전달해 주세요)', v2AdminIn: '🔑 관리자', v2AdminOut: '🚪 관리자 나가기', v2AdminOn: '🔑 관리자 편집 중 — 고치면 바로 저장되고 보는 분들께 반영됩니다', v2AdminPrompt: '편집 비밀번호를 넣어주세요',
+    mapModeToSat: '🛰 위성사진', mapModeToMap: '🗺 일반지도', v2ArchiveFail: '보관함으로 옮기기 실패', btnLibrary: n=>`📚 라이브러리 ${n}장 (핀에 안 넣은 사진)`, libHint: '사진을 끌어서 지도의 핀이나 왼쪽 목록에 놓으면 그 핀에 들어갑니다', libEmpty: '핀에 안 넣은 사진이 없습니다. 핀에서 사진을 ✕ 로 빼면 여기로 옵니다', libDelTitle: '필요 없음 → 보관함', libDelConfirm: '이 사진을 지도에서 완전히 뺄까요?\n(드라이브 프로젝트 폴더의 「보관함」에 남습니다)', libArchived: '보관함으로 옮겼습니다', v2AdminUpload: '📷 사진·영상 올리기', v2Uploading: '올리는 중', v2Uploaded: n=>`${n}개 올렸습니다`, v2UploadFail: n=>`${n}개를 못 올렸습니다`, v2VideoTooBig: '영상이 30MB보다 큽니다(대표님께 전달해 주세요)', v2AdminIn: '🔑 관리자', v2AdminOut: '🚪 관리자 나가기', v2AdminOn: '🔑 관리자 편집 중 — 고치면 바로 저장되고 보는 분들께 반영됩니다', v2AdminPrompt: '편집 비밀번호를 넣어주세요',
     v2Saving: '저장 중…', v2Saved: '저장됨 · 보는 분들께 반영', v2SaveFail: '저장 실패 — 다시 시도합니다(고친 내용은 화면에 남아 있음)', v2Conflict: '다른 관리자가 먼저 고쳤습니다. 방금 고친 것은 저장하지 않았습니다.',
     v2ReloadQ: '최신으로 새로고침할까요?', v2WaitSave: '저장이 끝난 뒤 나가주세요', v2WrongPw: '⚠ 비밀번호가 맞지 않습니다',
     v2Title: '💬 사진·댓글 — 함께 보는 분들', v2AddPhoto: '📷 이 스팟에 사진 올리기', v2Name: '이름 (예: 홍길동 · 브랜드팀)', v2Text: '이 스팟에 대한 의견을 남겨주세요', v2Send: '댓글 등록',
@@ -910,7 +932,7 @@ const I18N = {
     uploadDoneToast: n=>`✅ ${n} uploaded`,
     lbDownload: '⬇ Download photo',
     lbPairToSun: '☀️ Paired Sunseeker', lbPairToPhoto: '📷 Paired photo', lbSpotSun: '☀️ Sunseeker for this spot', pairNone: '☀️ No paired Sunseeker',
-    mapModeToSat: '🛰 Satellite', mapModeToMap: '🗺 Map', v2AdminUpload: '📷 Upload photos/videos', v2Uploading: 'Uploading', v2Uploaded: n=>`${n} uploaded`, v2UploadFail: n=>`${n} failed`, v2VideoTooBig: 'video over 30MB (send it to the owner)', v2AdminIn: '🔑 Admin', v2AdminOut: '🚪 Leave admin', v2AdminOn: '🔑 Editing as admin — changes save instantly for all viewers', v2AdminPrompt: 'Enter the edit password',
+    mapModeToSat: '🛰 Satellite', mapModeToMap: '🗺 Map', v2ArchiveFail: 'Archiving failed', btnLibrary: n=>`📚 Library ${n} (not on any pin)`, libHint: 'Drag a photo onto a pin on the map or the list to place it', libEmpty: 'No unplaced photos. Photos removed from pins with ✕ come here', libDelTitle: 'Not needed → archive', libDelConfirm: 'Remove this photo from the map for good?\n(It stays in the project folder\'s archive on Drive)', libArchived: 'Moved to archive', v2AdminUpload: '📷 Upload photos/videos', v2Uploading: 'Uploading', v2Uploaded: n=>`${n} uploaded`, v2UploadFail: n=>`${n} failed`, v2VideoTooBig: 'video over 30MB (send it to the owner)', v2AdminIn: '🔑 Admin', v2AdminOut: '🚪 Leave admin', v2AdminOn: '🔑 Editing as admin — changes save instantly for all viewers', v2AdminPrompt: 'Enter the edit password',
     v2Saving: 'Saving…', v2Saved: 'Saved · live for viewers', v2SaveFail: 'Save failed — will retry (your changes are still on screen)', v2Conflict: 'Another admin saved first. Your last change was NOT saved.',
     v2ReloadQ: 'Reload to the latest version?', v2WaitSave: 'Please wait until saving finishes', v2WrongPw: '⚠ Wrong password',
     v2Title: '💬 Photos & comments', v2AddPhoto: '📷 Add photos to this spot', v2Name: 'Your name (e.g. Jane · Brand team)', v2Text: 'Leave a note about this spot', v2Send: 'Post comment',
@@ -1977,15 +1999,22 @@ document.getElementById('dpDeleteBtn').onclick = function(){
 /* 🔴 Sunseeker 사진은 «따로 위에» 모은다 (2026-10-09 대표 지시) — 일반 사진에 섞이면
    「해가 어디로 가나」를 보려고 할 때마다 찾아야 한다. 사진마다 메모도 여기서 적는다. */
 let mediaDrag = null;   /* {fromLocId, idx} */
+/* 📚 라이브러리(핀에 안 들어간 사진)에서 끌어온 것도 핀 사진처럼 다룬다 — 출발지만 다르다 */
+function dragFromLoc_(){
+  if(!mediaDrag) return null;
+  if(mediaDrag.fromLocId === '__lib__') return { id:'__lib__', media: V2EDIT ? (PUBLISHED.unsorted = PUBLISHED.unsorted || []) : loadUnsorted() };
+  return LOCATIONS.find(l=>l.id===mediaDrag.fromLocId);
+}
 function moveMediaTo(targetLocId){
   if(!mediaDrag) return;
-  const from = LOCATIONS.find(l=>l.id===mediaDrag.fromLocId);
+  const from = dragFromLoc_();
   const to   = LOCATIONS.find(l=>l.id===targetLocId);
   if(!from || !to || from.id === to.id){ mediaDrag = null; return; }
   const item = from.media[mediaDrag.idx];
   if(!item){ mediaDrag = null; return; }
   from.media.splice(mediaDrag.idx, 1);
   to.media.push(item);
+  if(from.id === '__lib__') saveUnsorted(from.media);
   mediaDrag = null;
   document.body.classList.remove('media-dragging');
   if(currentLocId != null){
@@ -2012,8 +2041,59 @@ function bindMediaDrop(el, locId){
 }
 /* 🔴 핀에서 빠지는 사진은 «버리지 않는다» — 미분류 칸으로 보낸다 (2026-10-09 대표 신고로 발견:
    #13 핀을 지우자 거기 있던 Sunseeker 7장·사진 1장이 같이 사라졌다) */
+/* 🗄 관리자 웹 편집에서 뺀 사진은 «미분류»가 아니라 드라이브 「보관함」 폴더로 (지도 화면에선 사라진다)
+   2026-10-09 대표: 「아카이브 폴더는 평상시에는 안 보이고 원본 폴더 들어가야 보이는 거지. 로케이션 맵에서는 없어져야」 */
+function v2DriveId(u){ const m = /\/d\/([A-Za-z0-9_\-]{20,})/.exec(u || ''); return m ? m[1] : ''; }
+function v2Archive(mediaArr, from){
+  const items = mediaArr.map(m => ({
+    file: (m.file || (m.url || '').split('/').pop() || '').replace(/=w\d+$/, ''), type: m.type, from: from || '',
+    id: m.drive || (m.type === 'video' ? '' : v2DriveId(m.url)), thumb: v2DriveId(m.thumb), caption: m.caption || ''
+  }));
+  PUBLISHED.archive = (PUBLISHED.archive || []).concat(items.map(x => Object.assign({ at: new Date().toISOString() }, x)));
+  v2Call(v2Auth({ action:'editArchive', items })).catch(e => v2Toast('⚠ ' + t('v2ArchiveFail') + ' (' + e.message + ')', 'err'));
+  return items.length;
+}
+function toggleLib(force){
+  const pnl = document.getElementById('libPanel');
+  const on = (force === undefined) ? !pnl.classList.contains('open') : force;
+  pnl.classList.toggle('open', on); if(on) renderLib();
+}
+function renderLib(){
+  const pnl = document.getElementById('libPanel'); if(!pnl || !V2EDIT) return;
+  const lib = PUBLISHED.unsorted = PUBLISHED.unsorted || [];
+  document.getElementById('libTitle').textContent = t('btnLibrary')(lib.length);
+  document.getElementById('libHint').textContent = t('libHint');
+  const g = document.getElementById('libGrid'); g.innerHTML = '';
+  if(!lib.length){ g.innerHTML = `<div class="libEmpty">${t('libEmpty')}</div>`; return; }
+  lib.forEach((m, idx)=>{
+    const c = document.createElement('div'); c.className = 'libChip'; c.draggable = true; c.title = (m.file || '') + ' — ' + t('libHint');
+    c.innerHTML = `<img src="${m.thumb || m.url}" alt=""><button class="lcBtn lcView" title="크게">🔍</button><button class="lcBtn lcDel" title="${t('libDelTitle')}">🗑</button>`
+      + `<span class="lcType">${m.type === 'video' ? '🎬' : (isSunM(m) ? '☀️' : '📷')}</span>`;
+    c.addEventListener('dragstart', ev=>{ mediaDrag = { fromLocId:'__lib__', idx }; ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain','lib'); document.body.classList.add('media-dragging'); });
+    c.addEventListener('dragend', ()=>{ mediaDrag = null; document.body.classList.remove('media-dragging'); });
+    const view = ()=> openLightboxItems(lib, idx, t('btnLibrary')(lib.length));
+    c.querySelector('.lcView').onclick = (ev)=>{ ev.stopPropagation(); view(); };
+    c.addEventListener('dblclick', view);
+    c.querySelector('.lcDel').onclick = (ev)=>{
+      ev.stopPropagation();
+      if(!confirm(t('libDelConfirm'))) return;
+      const it = lib.splice(idx, 1);
+      v2Archive(it, '(라이브러리에서 뺌)');
+      saveUnsorted(lib); v2Toast('🗄 ' + t('libArchived'), 'ok');
+    };
+    g.appendChild(c);
+  });
+}
+document.getElementById('libClose').onclick = ()=> toggleLib(false);
 function sendToUnsorted(mediaArr){
   if(!mediaArr || !mediaArr.length) return 0;
+  if(V2EDIT){
+    /* 관리자 웹 편집: 핀에서 뺀 사진은 📚 라이브러리로(주소·표시 그대로). 정말 필요 없으면 라이브러리에서 🗑 → 드라이브 보관함 */
+    const lib = PUBLISHED.unsorted = PUBLISHED.unsorted || [];
+    mediaArr.forEach(m => lib.push(Object.assign({ file: (m.file || (m.url || '').split('/').pop() || '') }, m)));
+    saveUnsorted(lib);
+    return mediaArr.length;
+  }
   const uns = loadUnsorted();
   const have = new Set(uns.map(e=>e.file));
   let n = 0;
@@ -2044,12 +2124,12 @@ function renderDpMedia(loc){
 /* 상세패널의 「☀️ Sunseeker」·「미디어」 구역에 놓으면 종류가 바뀐다. 다른 핀에서 끌어오면 옮겨지면서 바뀐다. */
 function dropMediaAsKind(kind){
   if(!mediaDrag || currentLocId == null) return;
-  const from = LOCATIONS.find(l=>l.id===mediaDrag.fromLocId);
+  const from = dragFromLoc_();
   const to   = LOCATIONS.find(l=>l.id===currentLocId);
   const item = from && from.media[mediaDrag.idx];
   mediaDrag = null; document.body.classList.remove('media-dragging');
   if(!item || !to) return;
-  if(from.id !== to.id){ from.media.splice(from.media.indexOf(item), 1); to.media.push(item); }
+  if(from.id !== to.id){ from.media.splice(from.media.indexOf(item), 1); to.media.push(item); if(from.id === '__lib__') saveUnsorted(from.media); }
   /* 🎬 Sunseeker 화면 녹화(영상)도 ☀️ 칸에 들어간다 — 영상은 종류는 그대로 두고 sun 표시만 단다 (2026-10-09 대표 신고) */
   if(item.type === 'video') item.sun = (kind === 'sun'); else item.type = (kind === 'sun') ? 'sunseeker' : 'image';
   renderDpMedia(to); renderList(); renderPhotoGrid(); saveState(); flashSaved();
@@ -2063,13 +2143,14 @@ function bindKindDrop_(el, kind){
 bindKindDrop_(document.getElementById('dpSunGroupWrap'), 'sun');
 bindKindDrop_(document.getElementById('dpMediaGrid').closest('.dp-section'), 'photo');
 function reorderMediaTo(loc, targetIdx, kind){
-  const from = LOCATIONS.find(l=>l.id===mediaDrag.fromLocId);
+  const from = dragFromLoc_();
   const item = from && from.media[mediaDrag.idx];
   const srcIdx = mediaDrag.idx;
   mediaDrag = null; document.body.classList.remove('media-dragging');
   if(!item || (from.id === loc.id && srcIdx === targetIdx)) return;
   const target = loc.media[targetIdx];
   from.media.splice(srcIdx, 1);
+  if(from.id === '__lib__') saveUnsorted(from.media);
   let at = loc.media.indexOf(target);                         /* 빼고 나서 다시 찾는다(번호가 밀린다) */
   if(from.id === loc.id && srcIdx < targetIdx) at += 1;       /* 오른쪽으로 끌었으면 그 사진 «뒤» */
   loc.media.splice(Math.max(0, at), 0, item);
@@ -2637,17 +2718,17 @@ function saveMediaExtra(arr){ try{ localStorage.setItem(MEDIA_EXTRA_KEY, JSON.st
 function allMediaFiles(){ return MEDIA_FILES.concat(loadMediaExtra()); }
 
 function loadUnsorted(){
-  if(V2EDIT) return (PUBLISHED.unsorted || []).slice();          /* 관리자 웹 편집 — 미분류도 서버 데이터 */
+  if(V2EDIT) return (PUBLISHED.unsorted = PUBLISHED.unsorted || []);          /* 관리자 웹 편집 — 미분류도 서버 데이터 */
   try{ return JSON.parse(localStorage.getItem(UNSORTED_KEY) || '[]'); }catch(e){ return []; }
 }
 function saveUnsorted(arr){
-  if(V2EDIT){ PUBLISHED.unsorted = arr.slice(); if(typeof V2 !== 'undefined' && V2 && V2.ready) v2SaveSoon(); }
+  if(V2EDIT){ PUBLISHED.unsorted = arr; if(typeof V2 !== 'undefined' && V2 && V2.ready) v2SaveSoon(); if(typeof renderLib === 'function') renderLib(); }
   else { try{ localStorage.setItem(UNSORTED_KEY, JSON.stringify(arr)); }catch(e){} }
   const btn = document.getElementById('btnUnsorted');
   /* 🔴 미분류가 0개여도 숨기지 않는다 — 이 버튼이 「사진을 장소끼리 옮기는」 유일한 문이다
      (2026-10-09 대표 지적: "사진을 여기서 저기로 어떻게 옮겨") */
   btn.style.display = (PUBLISHED && !V2EDIT) ? 'none' : 'block';
-  btn.textContent = arr.length ? t('btnUnsorted')(arr.length) : t('btnMoveMedia');
+  btn.textContent = V2EDIT ? t('btnLibrary')(arr.length) : (arr.length ? t('btnUnsorted')(arr.length) : t('btnMoveMedia'));
 }
 
 function sanitizeFilename(name){
@@ -2903,7 +2984,7 @@ function renderReviewModal(affectedIds){
   unsortedCol.dataset.target = 'unsorted';
   unsortedCol.innerHTML = `<div class="reviewColHead"><span class="rcName">${t('unsortedColTitle')}</span><span class="rcCount">${unsorted.length}</span></div>
     <div class="reviewGrid" data-grid="unsorted"></div>`;
-  wrap.appendChild(unsortedCol);
+  if(!V2EDIT) wrap.appendChild(unsortedCol);   /* 관리자 웹 편집엔 미분류 칸이 없다 — 뺀 사진은 드라이브 보관함으로 */
   const uGrid = unsortedCol.querySelector('.reviewGrid');
   const unsortedAsMedia = unsorted.map(e=>({ type:e.type, url: e.url || mediaFullPath(e.file), drive: e.drive, caption: '원본 파일: ' + (e.file || '') }));
   unsorted.forEach((e,idx)=>{
@@ -3146,7 +3227,7 @@ document.getElementById('bulkUploadInput').addEventListener('change', (e)=>{
   if(files && files.length) handleBulkUpload(files);
   e.target.value = '';
 });
-document.getElementById('btnUnsorted').onclick = ()=> openReviewModal(null);
+document.getElementById('btnUnsorted').onclick = ()=> V2EDIT ? toggleLib() : openReviewModal(null);
 document.getElementById('reviewClose').onclick = ()=> document.getElementById('reviewModal').classList.remove('open');
 document.getElementById('reviewDone').onclick = ()=> document.getElementById('reviewModal').classList.remove('open');
 
@@ -3179,7 +3260,7 @@ function v2Auth(extra){ return Object.assign(V2.admin ? { key: V2.admin } : { co
 /* ☁️ 관리자 웹 편집 — 고칠 때마다 1.2초 모았다가 서버에 통째로 저장. 다른 관리자가 먼저 저장했으면(rev 다름) 덮지 않고 알린다 */
 function v2Project(){
   return { title: PUBLISHED.title || '', subtitle: PUBLISHED.subtitle || '', locations: LOCATIONS, categories: CATEGORIES,
-           mapTexts: (typeof MAP_TEXTS !== 'undefined') ? MAP_TEXTS : [], unsorted: PUBLISHED.unsorted || [] };
+           mapTexts: (typeof MAP_TEXTS !== 'undefined') ? MAP_TEXTS : [], unsorted: PUBLISHED.unsorted || [], archive: PUBLISHED.archive || [], libMigrated: !!PUBLISHED.libMigrated };
 }
 function v2Toast(msg, kind){ const el = document.getElementById('saveToast'); el.textContent = msg; el.className = 'toast show ' + (kind || 'ok'); clearTimeout(saveToastTimer); if(kind !== 'wait') saveToastTimer = setTimeout(()=> el.classList.remove('show'), kind === 'err' ? 6000 : 1400); }
 function v2SaveSoon(){
@@ -3390,7 +3471,19 @@ if(!PUBLISHED && V2_PROJECT && location.hostname === 'localhost'){
 }
 if(V2.on) setInterval(()=>{ if(document.visibilityState === 'visible') v2Refresh(); }, 45000);
 setTimeout(v2Badges, 300);
-setTimeout(()=>{ V2.ready = true; }, 1500);   /* 처음 그리는 동안의 저장 호출은 무시(아무것도 안 바뀌었다) */
+setTimeout(()=>{
+  V2.ready = true;
+  /* 예전 「미분류」(V1 에서 옮겨 온 11개)도 한 번만 보관함으로 — 관리자가 처음 들어올 때 */
+  /* 🔴 «한 번만» — 표시(libMigrated)를 프로젝트에 남긴다. 안 그러면 관리자가 들어올 때마다 라이브러리를 비운다 */
+  if(V2EDIT && !PUBLISHED.libMigrated){
+    PUBLISHED.libMigrated = true;
+    if((PUBLISHED.unsorted || []).length){
+      const old = PUBLISHED.unsorted.slice();
+      v2Archive(old, '(예전 미분류 — 대표: 필요 없어서 뺀 것)'); saveUnsorted([]);
+    }
+    v2SaveSoon();
+  }
+}, 1500);   /* 처음 그리는 동안의 저장 호출은 무시(아무것도 안 바뀌었다) */
 /* =========================================================
    10. 초기 렌더
    ========================================================= */

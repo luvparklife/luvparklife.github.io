@@ -75,7 +75,7 @@ async function enter(code){
     try{ localStorage.setItem('scout2_code_' + P, code); }catch(e){}
     const pr = j.project || {};
     const pub = { title: pr.title || ('📍 ' + P), subtitle: pr.subtitle || '', locations: pr.locations || [], categories: pr.categories || [],
-                  mapTexts: pr.mapTexts || [], unsorted: pr.unsorted || [], gmapsKey: j.gkey || '',
+                  mapTexts: pr.mapTexts || [], unsorted: pr.unsorted || [], archive: pr.archive || [], libMigrated: !!pr.libMigrated, gmapsKey: j.gkey || '',
                   v2: { api: API, p: P, code, feed: j.feed || [], pw: pw || '', rev: Number(j.rev || pr.rev || 0) } };
     const html = await (await fetch('app.html', { cache:'no-store' })).text();
     const marker = '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>';
