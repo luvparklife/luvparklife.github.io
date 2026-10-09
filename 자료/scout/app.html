@@ -307,6 +307,7 @@
   .libChip .lcBtn{position:absolute;top:3px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.7);color:#fff;font-size:11px;cursor:pointer;}
   .libChip .lcView{right:30px;} .libChip .lcDel{right:3px;}
   .libChip .lcType{position:absolute;left:3px;bottom:3px;font-size:11px;background:rgba(0,0,0,.6);border-radius:4px;padding:0 3px;}
+  .libSec{grid-column:1/-1;font-size:12px;font-weight:800;color:var(--muted);margin-top:6px;padding-bottom:4px;border-bottom:1px solid var(--border);}
   .libEmpty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:14px 4px;}
   #v2AdminUpload{background:var(--accent2);color:#06131a;border:none;border-radius:8px;padding:6px 10px;font-weight:800;cursor:pointer;font-size:12px;}
   #v2AddPhoto,#v2Send{background:var(--accent2);color:#06131a;border:none;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;font-size:13px;}
@@ -578,6 +579,11 @@
         </div>
         <div class="mediaGrid" id="dpMediaGrid"></div>
       </div>
+      <!-- 🎬 영상은 따로 (2026-10-09 대표 지시 「모든 뷰에서 사진과 동영상을 분류」) -->
+      <div class="dp-section" id="dpVideoWrap" style="display:none;">
+        <h3 id="lblVideoMedia"></h3>
+        <div class="mediaGrid" id="dpMediaGridVid"></div>
+      </div>
       <!-- 💬 V2 — 함께 보는 사람들의 사진·댓글 (입장 코드로 들어온 사람 누구나 · 올리면 바로 보임) -->
       <div class="dp-section v2Feed" id="dpV2Wrap" style="display:none;">
         <h3 id="lblV2Feed"></h3>
@@ -839,7 +845,7 @@ const I18N = {
     lblAddress: '주소', addressPlaceholder: '주소를 입력하세요',
     lblNotes: '현장 노트', notesPlaceholder: '전력·채광·소음·특이사항 등',
     lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: '촬영 예정시각 / 고도 / 방위각 메모',
-    lblMedia: '미디어', lblSunMedia: '☀️ Sunseeker 사진', sunDropHint: '☀️ 사진을 여기로 끌어다 놓으면 Sunseeker 가 됩니다', photoDropHint: '여기로 놓으면 일반 사진', captionPlaceholder: '메모 추가 (예: 역광 심함, 16시 기준)',
+    lblMedia: '미디어', lblPhotoMedia: n=>`📷 사진 ${n}장`, lblVideoMedia: n=>`🎬 영상 ${n}개`, vidEmpty: '영상이 없습니다 — 위 「📷 사진·영상 올리기」로 올리면 여기에 들어갑니다', lblSunMedia: '☀️ Sunseeker 사진', sunDropHint: '☀️ 사진을 여기로 끌어다 놓으면 Sunseeker 가 됩니다', photoDropHint: '여기로 놓으면 일반 사진', captionPlaceholder: '메모 추가 (예: 역광 심함, 16시 기준)',
     addMediaBtn: '➕ 보관함에서 추가', deleteBtn: '🗑 이 장소 삭제',
     deleteConfirm: title=>`「${title}」를 삭제할까요? (사진은 🗄 보관함으로 갑니다)`,
     pickerTitle: '🖼 미디어 보관함 — 사진/영상을 골라 추가', pickerConfirm: n=>`선택한 것 추가 (${n})`, pickerCancel: '취소',
@@ -922,7 +928,7 @@ const I18N = {
     lblAddress: 'Address', addressPlaceholder: 'Enter address',
     lblNotes: 'Field Notes', notesPlaceholder: 'Power, light, noise, anything else to flag',
     lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: 'Shoot time / elevation / azimuth notes',
-    lblMedia: 'Media', lblSunMedia: '☀️ Sunseeker Photos', sunDropHint: '☀️ Drop a photo here to mark it as Sunseeker', photoDropHint: 'Drop here for a regular photo', captionPlaceholder: 'Add a note (e.g. harsh backlight at 4pm)',
+    lblMedia: 'Media', lblPhotoMedia: n=>`📷 Photos ${n}`, lblVideoMedia: n=>`🎬 Videos ${n}`, vidEmpty: 'No videos — upload with 「📷 Upload photos/videos」 above', lblSunMedia: '☀️ Sunseeker Photos', sunDropHint: '☀️ Drop a photo here to mark it as Sunseeker', photoDropHint: 'Drop here for a regular photo', captionPlaceholder: 'Add a note (e.g. harsh backlight at 4pm)',
     addMediaBtn: '➕ Add from library', deleteBtn: '🗑 Delete this location',
     deleteConfirm: title=>`Delete "${title}"? (Photos go to the 🗄 archive)`,
     pickerTitle: '🖼 Media Library — pick photos/videos to add', pickerConfirm: n=>`Add selected (${n})`, pickerCancel: 'Cancel',
@@ -1450,6 +1456,7 @@ function applyLang(){
   document.getElementById('lblSunseeker').textContent = t('lblSunseeker');
   document.getElementById('dpSunseekerInput').placeholder = t('sunseekerPlaceholder');
   document.getElementById('lblMedia').textContent = t('lblMedia');
+  { const cur = (typeof currentLocId !== 'undefined' && currentLocId != null) ? LOCATIONS.find(l=>l.id===currentLocId) : null; if(cur && typeof renderDpMedia === 'function') renderDpMedia(cur); }
   document.getElementById('lblSunMedia').textContent = t('lblSunMedia');
   { const pb = document.getElementById('btnPoi'); if(pb){ pb.textContent = POI_ON ? t('btnPoiOn') : t('btnPoiOff'); pb.classList.toggle('on', POI_ON); pb.style.display = (MAP_MODE === 'satellite') ? 'none' : ''; } }
   if(typeof lastBackupStatus !== 'undefined' && lastBackupStatus) setBackupStatus(lastBackupStatus[0], lastBackupStatus[1]);
@@ -2104,7 +2111,13 @@ function renderLib(){
   const del = document.getElementById('libDelSel'); del.textContent = t('libDelSel')(LIB_SEL.size); del.disabled = !LIB_SEL.size;
   const g = document.getElementById('libGrid'); g.innerHTML = '';
   if(!lib.length){ g.innerHTML = `<div class="libEmpty">${t('libEmpty')}</div>`; return; }
-  lib.forEach((m, idx)=>{
+  /* 📷 사진 / 🎬 영상 으로 나눠서 (idx 는 라이브러리 원래 번호 그대로 — 끌기·삭제가 그 번호로 간다) */
+  const order = lib.map((m, idx)=>({ m, idx }));
+  const photos = order.filter(x => x.m.type !== 'video'), videos = order.filter(x => x.m.type === 'video');
+  const head = (txt)=>{ const h = document.createElement('div'); h.className = 'libSec'; h.textContent = txt; g.appendChild(h); };
+  const groups = [[t('lblPhotoMedia')(photos.length), photos], [t('lblVideoMedia')(videos.length), videos]];
+  groups.forEach(([title, arr])=>{ if(!arr.length) return; head(title); arr.forEach(({ m, idx })=> libChip_(m, idx)); });
+  function libChip_(m, idx){
     const c = document.createElement('div'); c.className = 'libChip' + (LIB_SEL.has(m) ? ' sel' : ''); c.draggable = true; c.title = (m.file || '') + ' — ' + t('libHint');
     c.innerHTML = `<img src="${m.thumb || m.url}" alt=""><span class="lcChk">${LIB_SEL.has(m) ? '✓' : ''}</span><button class="lcBtn lcView" title="크게">🔍</button><button class="lcBtn lcDel" title="${t('libDelTitle')}">🗑</button>`
       + `<span class="lcType">${m.type === 'video' ? '🎬' : (isSunM(m) ? '☀️' : '📷')}</span>`;
@@ -2128,7 +2141,7 @@ function renderLib(){
       saveUnsorted(lib); v2Toast('🗄 ' + t('libArchived'), 'ok');
     };
     g.appendChild(c);
-  });
+  }
 }
 document.getElementById('libClose').onclick = ()=> toggleLib(false);
 var LIB_SEL = new Set();   /* var — 처음 그릴 때 먼저 불려도 멈추지 않게 */
@@ -2188,10 +2201,15 @@ function sendToUnsorted(mediaArr){
 /* ☀️ Sunseeker 인가 — 사진은 종류가 sunseeker, 영상은 sun 표시 */
 function isSunM(m){ return !!m && (m.type === 'sunseeker' || (m.type === 'video' && m.sun === true)); }
 function renderDpMedia(loc){
-  const sunIdx = [], otherIdx = [];
-  loc.media.forEach((m, i)=> (isSunM(m) ? sunIdx : otherIdx).push(i));
+  const sunIdx = [], otherIdx = [], vidIdx = [];
+  loc.media.forEach((m, i)=> (isSunM(m) ? sunIdx : (m.type === 'video' ? vidIdx : otherIdx)).push(i));
   renderMediaGroup_(document.getElementById('dpMediaGridSun'), loc, sunIdx);
   renderMediaGroup_(document.getElementById('dpMediaGrid'), loc, otherIdx);
+  renderMediaGroup_(document.getElementById('dpMediaGridVid'), loc, vidIdx);
+  document.getElementById('lblVideoMedia').textContent = t('lblVideoMedia')(vidIdx.length);
+  document.getElementById('lblMedia').textContent = t('lblPhotoMedia')(otherIdx.length);
+  document.getElementById('dpVideoWrap').style.display = (vidIdx.length || editMode) ? 'block' : 'none';
+  if(editMode && !vidIdx.length) document.getElementById('dpMediaGridVid').innerHTML = `<div class="sunDropEmpty" style="grid-column:1/-1;border-color:var(--border)">${t('vidEmpty')}</div>`;
   /* ☀️ 편집 중엔 비어 있어도 칸을 보여준다 — 사진을 여기로 끌어다 놓으면 Sunseeker 가 된다 (2026-10-09 대표 지시) */
   const sunGrid = document.getElementById('dpMediaGridSun');
   if(editMode && !sunIdx.length){
@@ -2221,6 +2239,7 @@ function bindKindDrop_(el, kind){
 }
 bindKindDrop_(document.getElementById('dpSunGroupWrap'), 'sun');
 bindKindDrop_(document.getElementById('dpMediaGrid').closest('.dp-section'), 'photo');
+bindKindDrop_(document.getElementById('dpVideoWrap'), 'photo');   /* 영상 칸에 놓아도 «Sunseeker 아님» — 영상이면 여기, 사진이면 사진 칸으로 간다 */
 function reorderMediaTo(loc, targetIdx, kind){
   if(mediaDrag && mediaDrag.items) return libDropMany_(loc, kind, loc.media[targetIdx]);
   const from = dragFromLoc_();
