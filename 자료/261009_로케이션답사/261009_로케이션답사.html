@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>로케이션 답사 지도 — 편집</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e2229; --border:#2a2f3a;
+    --text:#e7e9ee; --muted:#9aa3b2; --accent:#f5b63f; --accent2:#4fb3ff; --danger:#f87171;
+    --radius:12px; --shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif;}
+  #app{position:relative;width:100%;height:100vh;overflow:hidden;}
+  #map{position:absolute;inset:0;background:#0b0d11;}
+  #map.editing{cursor:crosshair;}
+  /* 무료 OSM 타일을 다크테마로 — 키 필요한 CARTO 다크타일이 막혀서 반전필터로 대체(261009) */
+  #map .leaflet-tile-pane{ filter:invert(1) hue-rotate(200deg) brightness(.92) contrast(.85) saturate(.7); }
+  .leaflet-control-attribution{background:rgba(15,17,21,.7)!important;color:#8892a0!important;font-size:10px;}
+  .leaflet-control-attribution a{color:#aab4c4!important;}
+  .leaflet-control-zoom a{background:var(--panel)!important;color:var(--text)!important;border-color:var(--border)!important;}
+
+  input,select,textarea,button{font-family:inherit;}
+
+  /* ---------- Sidebar ---------- */
+  #sidebar{
+    position:absolute;top:0;left:0;height:100%;width:340px;
+    background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;z-index:500;
+    transition:transform .25s ease;
+  }
+  #sidebar.collapsed{transform:translateX(-100%);}
+  .sb-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);}
+  .sb-head h1{margin:0 0 2px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .sb-head h1 .cnt{font-size:11px;color:var(--muted);font-weight:600;background:var(--panel2);
+    border:1px solid var(--border);border-radius:999px;padding:2px 9px;}
+  .sb-head p{margin:0;font-size:11.5px;color:var(--muted);}
+  .sbActions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .sbActions button{flex:1 1 calc(50% - 6px);padding:8px 6px;border-radius:9px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:11.5px;font-weight:700;cursor:pointer;}
+  #btnEditToggle.on{background:var(--accent);color:#1a1405;border-color:var(--accent);}
+  #btnSelectMode.on{background:var(--accent2);color:#07131c;border-color:var(--accent2);}
+
+  #editBanner,#bulkBar{margin:10px 16px 0;padding:8px 10px;border-radius:9px;font-size:11.5px;line-height:1.5;}
+  #editBanner{background:rgba(245,182,63,.12);border:1px solid rgba(245,182,63,.35);color:var(--accent);}
+  #bulkBar{background:rgba(79,179,255,.1);border:1px solid rgba(79,179,255,.35);color:var(--accent2);}
+  .bulkActions{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;}
+  .bulkActions button{padding:5px 9px;border-radius:7px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;}
+  .bulkActions button#bulkDeleteBtn{color:var(--danger);border-color:#5c2a2a;background:rgba(248,113,113,.1);}
+  .bulkActions button#bulkDeleteBtn:disabled{opacity:.4;cursor:default;}
+  #bulkCount{font-weight:700;color:var(--text);}
+
+  .viewToggle{display:flex;gap:6px;margin:12px 16px 4px;}
+  .viewToggle button{flex:1;padding:7px 8px;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--muted);font-size:12.5px;cursor:pointer;font-weight:600;}
+  .viewToggle button.active{background:var(--accent2);color:#07131c;border-color:var(--accent2);}
+
+  .filters{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px 4px;}
+  .chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;
+    border:1px solid var(--border);background:var(--panel2);color:var(--muted);
+    font-size:12px;cursor:pointer;user-select:none;}
+  .chip .dot{width:8px;height:8px;border-radius:50%;}
+  .chip.on{color:var(--text);border-color:currentColor;}
+
+  #listWrap{flex:1;overflow-y:auto;padding:10px 12px 20px;}
+  .emptyState{padding:30px 14px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.7;}
+
+  .selCheck{width:18px;height:18px;border-radius:50%;border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:11px;flex:0 0 auto;
+    background:var(--panel);color:transparent;}
+  .selCheck.on{background:var(--danger);border-color:var(--danger);color:#fff;}
+
+  .locCard{background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:.15s;}
+  .locCard:hover{border-color:var(--accent2);}
+  .locCard.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+  .locCard.selForDel{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger);}
+  .locCard .row1{display:flex;align-items:center;gap:8px;}
+  .locCard .badge{width:20px;height:20px;border-radius:50%;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#06131a;}
+  .locCard .title{font-size:13.5px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .locCard .cat{font-size:10.5px;color:var(--muted);flex:0 0 auto;}
+  .locCard .addr{font-size:11.5px;color:var(--muted);margin-top:4px;padding-left:28px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .locCard .mediaCount{font-size:11px;color:var(--accent2);margin-top:4px;padding-left:28px;}
+
+  .photoGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px 20px;overflow-y:auto;flex:1;}
+  .photoCard{position:relative;border-radius:var(--radius);overflow:hidden;cursor:pointer;
+    border:1px solid var(--border);aspect-ratio:4/3;background:#000;}
+  .photoCard.selForDel{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger);}
+  .photoCard img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.85);}
+  .photoCard:hover img{filter:brightness(1);}
+  .photoCard .pcLabel{position:absolute;left:0;right:0;bottom:0;padding:6px 8px;
+    background:linear-gradient(transparent,rgba(0,0,0,.85));font-size:11.5px;font-weight:700;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .photoCard .pcCount{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);
+    border-radius:999px;padding:2px 7px;font-size:10.5px;}
+  .photoCard .pcCat{position:absolute;top:6px;left:6px;width:9px;height:9px;border-radius:50%;}
+  .photoCard .selCheck{position:absolute;top:5px;left:5px;}
+
+  #toggleSidebarBtn{position:absolute;top:14px;left:14px;z-index:600;width:40px;height:40px;
+    border-radius:10px;background:var(--panel);border:1px solid var(--border);color:var(--text);
+    font-size:17px;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+
+  /* ---------- Detail Panel ---------- */
+  #detailPanel{position:absolute;top:0;right:0;height:100%;width:380px;background:var(--panel);
+    border-left:1px solid var(--border);z-index:550;transform:translateX(100%);
+    transition:transform .25s ease;display:flex;flex-direction:column;}
+  #detailPanel.open{transform:translateX(0);}
+  .dp-head{padding:16px;border-bottom:1px solid var(--border);}
+  .dp-head .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .dp-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:2px;}
+  .dp-close:hover{color:var(--text);}
+  #dpTitleInput{width:100%;background:transparent;border:none;color:var(--text);font-size:16px;
+    font-weight:700;padding:3px 0;outline:none;}
+  #dpTitleInput:not([readonly]){border-bottom:1px dashed var(--border);}
+  #dpTitleInput:not([readonly]):focus{border-color:var(--accent2);}
+  .catRow{display:flex;align-items:center;gap:6px;margin-top:8px;}
+  #dpCategorySelect{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:6px;font-size:11.5px;padding:4px 6px;flex:1;}
+  #dpColorInput{width:34px;height:28px;padding:2px;border-radius:6px;border:1px solid var(--border);
+    background:var(--panel2);cursor:pointer;flex:0 0 auto;}
+  #dpStreetViewBtn{background:var(--panel2);border:1px solid var(--border);color:var(--accent2);
+    border-radius:6px;font-size:11.5px;font-weight:700;padding:4px 8px;cursor:pointer;flex:0 0 auto;white-space:nowrap;}
+  #dpGmapsKeyBtn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    border-radius:6px;font-size:13px;padding:4px 7px;cursor:pointer;flex:0 0 auto;}
+  .distList{display:flex;flex-direction:column;gap:4px;}
+  .distRow{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;
+    background:var(--panel2);border:1px solid var(--border);cursor:pointer;font-size:12.5px;}
+  .distRow:hover{border-color:var(--accent2);}
+  .distRow .dName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .distRow .dVal{color:var(--accent2);font-weight:700;font-size:11.5px;flex:0 0 auto;}
+  #dpCoordHint{font-size:10.5px;color:var(--muted);margin-top:6px;}
+  .dp-body{flex:1;overflow-y:auto;padding:16px;}
+  .dp-section{margin-bottom:18px;}
+  .dp-section h3{margin:0 0 6px;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .dp-section textarea, .dp-section input[type=text]{
+    width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-size:13.5px;line-height:1.55;padding:8px 10px;resize:vertical;outline:none;}
+  .dp-section textarea:focus, .dp-section input[type=text]:focus{border-color:var(--accent2);}
+  .dp-section textarea[readonly], .dp-section input[readonly]{background:transparent;border-color:transparent;padding:0;}
+  .dp-section.sunseeker{background:rgba(245,182,63,.08);border:1px solid rgba(245,182,63,.3);
+    border-radius:10px;padding:10px 12px;}
+  .dp-section.sunseeker h3{color:var(--accent);}
+  .dp-section.sunseeker textarea{background:transparent;border-color:rgba(245,182,63,.25);}
+  .mediaHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .mediaHead button{background:var(--panel2);border:1px solid var(--border);color:var(--accent2);
+    font-size:11.5px;font-weight:700;border-radius:7px;padding:5px 9px;cursor:pointer;}
+  .mediaGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .boxSel{position:absolute;border:1.5px dashed var(--accent2);background:rgba(79,179,255,.14);
+    pointer-events:none;z-index:450;border-radius:3px;}
+  .catEditBtn{background:var(--panel2);border:1px solid var(--border);color:var(--accent2);
+    border-radius:7px;font-size:11px;font-weight:700;padding:4px 9px;cursor:pointer;}
+  .catEditBtn:hover{border-color:var(--accent2);}
+  /* 🔴 이름이 «catEditRow» 인 이유 — 상세 패널에 이미 .catRow 가 있다. 같은 이름을 쓰면
+     스타일이 섞이고 querySelectorAll 이 남의 줄까지 집는다 (2026-10-09 검사에서 실제로 걸림) */
+  .catEditRow{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+  .catEditRow input[type=text].cIcon{width:46px;text-align:center;flex:0 0 auto;}
+  .catEditRow input[type=text]{flex:1;background:var(--panel2);border:1px solid var(--border);
+    border-radius:7px;color:var(--text);font-size:12.5px;padding:6px 8px;outline:none;}
+  .catEditRow input[type=text]:focus{border-color:var(--accent2);}
+  .catEditRow input[type=color]{width:34px;height:30px;padding:2px;border-radius:6px;
+    border:1px solid var(--border);background:var(--panel2);cursor:pointer;flex:0 0 auto;}
+  .catEditRow .cDel{background:rgba(248,113,113,.1);border:1px solid #5c2a2a;color:var(--danger);
+    border-radius:6px;font-size:12px;padding:5px 8px;cursor:pointer;flex:0 0 auto;}
+  .catEditRow .cUsed{font-size:10px;color:var(--muted);flex:0 0 auto;min-width:34px;text-align:right;}
+  .mediaCell{display:flex;flex-direction:column;gap:4px;}
+  .mCaption{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);font-size:11px;padding:4px 6px;outline:none;}
+  .mCaption:focus{border-color:var(--accent2);}
+  .mCaption[readonly]{background:transparent;border-color:transparent;padding:0 2px;color:var(--muted);}
+  .mediaThumb{position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;
+    border:1px solid var(--border);background:#000;}
+  .mediaThumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .mediaThumb .mTypeBadge{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.65);
+    border-radius:6px;padding:1px 6px;font-size:10px;}
+  .mediaThumb .mRemove{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;
+    background:rgba(0,0,0,.7);border:none;color:#fff;font-size:12px;cursor:pointer;line-height:1;}
+  .mediaThumb .mPlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:20px;background:rgba(0,0,0,.2);pointer-events:none;}
+  #dpDeleteBtn{width:100%;margin-top:4px;padding:9px;border-radius:9px;border:1px solid #5c2a2a;
+    background:rgba(248,113,113,.12);color:var(--danger);font-size:12.5px;font-weight:700;cursor:pointer;}
+
+  /* ---------- Toast ---------- */
+  #saveToast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-10px);
+    background:#111;border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:999px;
+    font-size:12px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:3000;box-shadow:var(--shadow);}
+  #saveToast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #saveToast.ok{color:#7ee787;border-color:#1f4a2e;}
+  #saveToast.err{color:var(--danger);border-color:#5c2a2a;}
+
+  /* ---------- Lightbox ---------- */
+  #lightbox{position:fixed;inset:0;background:rgba(5,6,9,.94);z-index:2000;
+    display:none;align-items:center;justify-content:center;flex-direction:column;}
+  #lightbox.open{display:flex;}
+  .lb-top{position:absolute;top:0;left:0;right:0;padding:14px 18px;display:flex;
+    justify-content:space-between;align-items:center;color:var(--muted);font-size:13px;z-index:10;}
+  .lb-top .lb-title{color:var(--text);font-weight:700;font-size:14px;}
+  .lb-close{background:none;border:none;color:var(--text);font-size:26px;cursor:pointer;line-height:1;}
+  .lb-stage{flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative;padding:60px 70px;}
+  .lb-stage img,.lb-stage video{max-width:100%;max-height:78vh;border-radius:8px;box-shadow:var(--shadow);}
+  .lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:var(--text);
+    font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .lb-nav:hover{background:rgba(255,255,255,.18);}
+  .lb-prev{left:14px;} .lb-next{right:14px;}
+  .lb-bottom{padding:10px 18px 22px;text-align:center;}
+  .lb-caption{font-size:13.5px;color:var(--text);margin-bottom:8px;}
+  .lb-sunBadge{display:inline-flex;align-items:center;gap:6px;background:rgba(245,182,63,.15);
+    color:var(--accent);border:1px solid rgba(245,182,63,.4);border-radius:999px;padding:3px 10px;font-size:11.5px;margin-bottom:8px;}
+  .lb-dots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;max-width:80vw;}
+  .lb-dots span{width:6px;height:6px;border-radius:50%;background:#444b58;cursor:pointer;}
+  .lb-dots span.on{background:var(--accent);}
+
+  /* ---------- Modals (media picker / export) ---------- */
+  .modalOverlay{position:fixed;inset:0;background:rgba(5,6,9,.8);z-index:2500;display:none;
+    align-items:center;justify-content:center;padding:20px;}
+  .modalOverlay.open{display:flex;}
+  .modalBox{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    width:100%;max-width:640px;max-height:84vh;display:flex;flex-direction:column;box-shadow:var(--shadow);}
+  .modalHead{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;
+    justify-content:space-between;align-items:center;}
+  .modalHead h2{margin:0;font-size:15px;}
+  .modalHead button{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;}
+  .modalBody{padding:16px 18px;overflow-y:auto;flex:1;}
+  .modalFoot{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+  .modalFoot button{padding:9px 16px;border-radius:9px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;}
+  .modalFoot button.primary{background:var(--accent);color:#1a1405;border-color:var(--accent);}
+
+  .pickerGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .pickerCard{position:relative;border-radius:8px;overflow:hidden;cursor:pointer;aspect-ratio:1/1;
+    border:2px solid var(--border);background:#000;}
+  .pickerCard img{width:100%;height:100%;object-fit:cover;display:block;opacity:.75;}
+  .pickerCard:hover img{opacity:1;}
+  .pickerCard.selected{border-color:var(--accent);}
+  .pickerCard.selected img{opacity:1;}
+  .pickerCard .pTick{position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;
+    background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.4);display:flex;align-items:center;
+    justify-content:center;font-size:11px;}
+  .pickerCard.selected .pTick{background:var(--accent);color:#1a1405;border-color:var(--accent);}
+  .pickerCard .pType{position:absolute;bottom:4px;left:4px;font-size:10px;background:rgba(0,0,0,.6);
+    border-radius:5px;padding:0 4px;}
+  .pickerCard .pUsed{position:absolute;bottom:4px;right:4px;font-size:9px;background:rgba(0,0,0,.7);
+    color:var(--accent2);border-radius:5px;padding:0 4px;}
+
+  .gmapsBox{max-width:420px;}
+  .gmapsNote{font-size:11.5px;color:var(--muted);line-height:1.6;margin:0 0 10px;}
+  .gmapsInput{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);padding:9px 10px;font-size:13px;outline:none;}
+  .gmapsInput:focus{border-color:var(--accent2);}
+
+  .svBox{max-width:960px;width:100%;}
+  .svHeadRight{display:flex;align-items:center;gap:10px;}
+  .svOpenLink{font-size:11.5px;color:var(--accent2);text-decoration:none;white-space:nowrap;}
+  .svOpenLink:hover{text-decoration:underline;}
+  .svControls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:0 18px 12px;
+    border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);}
+  .svControls input[type=datetime-local]{background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);border-radius:7px;padding:5px 7px;font-size:12px;}
+  .svPathToggle{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  #svMovePinBtn{background:var(--panel2);border:1px solid var(--border);color:var(--accent);
+    border-radius:7px;font-size:11.5px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap;}
+  #svMovePinBtn:hover{border-color:var(--accent);}
+  #svSunReadout{color:var(--accent);font-weight:700;margin-left:auto;}
+  #svPanoWrap{position:relative;width:100%;height:60vh;background:#000;}
+  #svPano{position:absolute;inset:0;}
+  #svOverlay{position:absolute;inset:0;pointer-events:none;}
+  #svNoKeyMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:13px;padding:30px;text-align:center;}
+
+  #exportTextarea{width:100%;height:220px;background:#0b0d11;border:1px solid var(--border);
+    border-radius:8px;color:#8ee37c;font-family:"SF Mono",Menlo,monospace;font-size:11px;
+    padding:10px;resize:vertical;}
+  .exportNote{font-size:11.5px;color:var(--muted);margin:8px 0 14px;line-height:1.6;}
+  .exportDangerRow{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+  .exportDangerRow label{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+    padding:9px 10px;border-radius:9px;border:1px solid var(--border);background:var(--panel2);
+    color:var(--accent2);font-size:12px;font-weight:700;cursor:pointer;}
+  .exportDangerRow button{flex:1;}
+  #importFileInput{display:none;}
+
+  /* custom marker */
+  .loc-marker{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    color:#06131a;font-weight:800;font-size:11px;border:2px solid #0f1115;box-shadow:0 2px 6px rgba(0,0,0,.5);}
+  .loc-marker.new{animation:pulse 1s ease-out 2;}
+  .loc-marker.selForDel{outline:3px solid var(--danger);outline-offset:1px;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(245,182,63,.6);}100%{box-shadow:0 0 0 14px rgba(245,182,63,0);}}
+
+  .upProgressBar{width:100%;height:10px;border-radius:999px;background:var(--panel2);
+    border:1px solid var(--border);overflow:hidden;}
+  .upProgressFill{height:100%;width:0%;background:var(--accent2);transition:width .15s;}
+
+  .reviewBox{max-width:1000px;width:100%;}
+  .reviewCols{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;}
+  .reviewCol{flex:0 0 220px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:var(--radius);padding:10px;min-height:160px;transition:.15s;}
+  .reviewCol.dragover{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(79,179,255,.3);}
+  .reviewCol.unsorted{border-style:dashed;}
+  .reviewColHead{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;
+    margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .reviewColHead .rcDot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
+  .reviewColHead .rcName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .reviewColHead .rcCount{font-size:10.5px;color:var(--muted);font-weight:600;}
+  .reviewGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-height:40px;}
+  .reviewChip{position:relative;border-radius:7px;overflow:hidden;aspect-ratio:4/3;cursor:grab;
+    border:1px solid var(--border);background:#000;}
+  .reviewChip img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
+  .reviewChip.dragging{opacity:.35;}
+  .reviewChip .rcType{position:absolute;top:3px;left:3px;font-size:9px;background:rgba(0,0,0,.65);
+    border-radius:4px;padding:0 4px;pointer-events:none;}
+
+  @media (max-width:760px){
+    #sidebar{width:88%;max-width:360px;transform:translateX(-100%);}
+    #sidebar.open{transform:translateX(0);}
+    #detailPanel{width:92%;max-width:420px;}
+    #toggleSidebarBtn{display:flex;}
+    .lb-stage{padding:50px 20px;}
+    .lb-nav{width:40px;height:40px;font-size:17px;}
+    .pickerGrid{grid-template-columns:repeat(3,1fr);}
+    .reviewCol{flex:0 0 160px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map" class="editing"></div>
+  <div id="saveToast"></div>
+
+  <button id="toggleSidebarBtn">☰</button>
+
+  <aside id="sidebar">
+    <div class="sb-head">
+      <h1><span id="appTitleText"></span> <span class="cnt" id="locCountBadge">0</span></h1>
+      <p id="appSubtitleText"></p>
+      <div class="sbActions">
+        <button id="btnEditToggle" class="on"></button>
+        <button id="btnSelectMode"></button>
+        <button id="btnExport"></button>
+        <button id="btnLang"></button>
+        <button id="btnBulkUpload" style="flex:1 1 100%;"></button>
+        <button id="btnUnsorted" style="flex:1 1 100%;display:none;"></button>
+      </div>
+      <p class="gmapsNote" id="uploadFolderHint" style="margin:6px 0 0;"></p>
+      <p class="gmapsNote" id="backupStatus" style="margin:6px 0 0;"></p>
+      <input type="file" id="bulkUploadInput" multiple accept="image/*,video/*" style="display:none;">
+    </div>
+    <div id="editBanner"></div>
+    <div id="bulkBar">
+      <span id="bulkBannerText"></span>
+      <div class="bulkActions">
+        <span id="bulkCount"></span>
+        <button id="bulkSelectAllBtn"></button>
+        <button id="bulkDeleteBtn" disabled></button>
+        <button id="bulkCancelBtn"></button>
+      </div>
+    </div>
+    <div class="viewToggle">
+      <button id="btnViewList" class="active"></button>
+      <button id="btnViewPhoto"></button>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div style="padding:2px 16px 0;"><button id="btnEditCats" class="catEditBtn"></button></div>
+    <div id="listWrap"></div>
+    <div class="photoGrid" id="photoGrid" style="display:none;"></div>
+  </aside>
+
+  <div id="detailPanel">
+    <div class="dp-head">
+      <div class="row">
+        <div style="flex:1;">
+          <input id="dpTitleInput" type="text" value="">
+          <div class="catRow">
+            <select id="dpCategorySelect"></select>
+            <input type="color" id="dpColorInput" value="#34d399">
+            <button id="dpStreetViewBtn" type="button"></button>
+            <button id="dpGmapsKeyBtn" type="button">⚙️</button>
+          </div>
+          <div id="dpCoordHint">—</div>
+        </div>
+        <button class="dp-close" id="dpClose">✕</button>
+      </div>
+    </div>
+    <div class="dp-body">
+      <div class="dp-section">
+        <h3><span id="lblAddress"></span> <span id="dpAddrStatus" style="font-weight:400;text-transform:none;"></span></h3>
+        <input id="dpAddressInput" type="text">
+      </div>
+      <div class="dp-section">
+        <h3 id="lblNotes"></h3>
+        <textarea id="dpNotesInput" rows="4"></textarea>
+      </div>
+      <div class="dp-section sunseeker">
+        <h3 id="lblSunseeker"></h3>
+        <textarea id="dpSunseekerInput" rows="3"></textarea>
+      </div>
+      <div class="dp-section">
+        <h3 id="lblDistances"></h3>
+        <div class="distList" id="dpDistList"></div>
+      </div>
+      <div class="dp-section sunseeker" id="dpSunGroupWrap" style="display:none;">
+        <h3 id="lblSunMedia"></h3>
+        <div class="mediaGrid" id="dpMediaGridSun"></div>
+      </div>
+      <div class="dp-section">
+        <div class="mediaHead">
+          <h3 id="lblMedia" style="margin:0;"></h3>
+          <button id="dpAddMediaBtn"></button>
+        </div>
+        <div class="mediaGrid" id="dpMediaGrid"></div>
+      </div>
+      <button id="dpDeleteBtn"></button>
+    </div>
+  </div>
+
+  <div id="lightbox">
+    <div class="lb-top">
+      <span class="lb-title" id="lbTitle">-</span>
+      <span id="lbCounter">1 / 1</span>
+      <a id="lbDownload" class="svOpenLink" href="#" download></a>
+      <button class="lb-close" id="lbClose">✕</button>
+    </div>
+    <div class="lb-stage">
+      <button class="lb-nav lb-prev" id="lbPrev">‹</button>
+      <div id="lbStageInner"></div>
+      <button class="lb-nav lb-next" id="lbNext">›</button>
+    </div>
+    <div class="lb-bottom">
+      <div id="lbSunBadge" class="lb-sunBadge" style="display:none;">☀️ Sunseeker</div>
+      <div class="lb-caption" id="lbCaption">-</div>
+      <div class="lb-dots" id="lbDots"></div>
+    </div>
+  </div>
+
+  <!-- 미디어 보관함 선택 모달 -->
+  <div class="modalOverlay" id="mediaPickerModal">
+    <div class="modalBox">
+      <div class="modalHead"><h2 id="pickerModalTitle"></h2>
+        <button id="pickerClose">✕</button></div>
+      <div class="modalBody"><div class="pickerGrid" id="pickerGrid"></div></div>
+      <div class="modalFoot">
+        <button id="pickerCancel"></button>
+        <button id="pickerConfirm" class="primary"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 내보내기/백업 모달 -->
+  <div class="modalOverlay" id="exportModal">
+    <div class="modalBox">
+      <div class="modalHead"><h2 id="exportModalTitle"></h2>
+        <button id="exportClose">✕</button></div>
+      <div class="modalBody">
+        <textarea id="exportTextarea" readonly></textarea>
+        <div class="exportNote" id="exportNoteEl"></div>
+        <div class="exportDangerRow">
+          <button id="btnExportSelectAll"></button>
+          <button id="btnExportDownload"></button>
+          <label for="importFileInput" id="importLabel"></label>
+          <input type="file" id="importFileInput" accept=".js,.json,.txt">
+        </div>
+        <div class="exportDangerRow">
+          <button id="btnClearAll" style="color:#f87171;"></button>
+        </div>
+      </div>
+      <div class="modalFoot"><button id="exportDone" class="primary"></button></div>
+    </div>
+  </div>
+
+  <!-- Google API 키 설정 -->
+  <div class="modalOverlay" id="gmapsKeyModal">
+    <div class="modalBox gmapsBox">
+      <div class="modalHead"><h2 id="gmapsKeyModalTitle"></h2><button id="gmapsKeyClose">✕</button></div>
+      <div class="modalBody">
+        <p class="gmapsNote" id="gmapsKeyNote"></p>
+        <input type="text" id="gmapsKeyInput" class="gmapsInput" placeholder="AIzaSy...">
+      </div>
+      <div class="modalFoot"><button id="gmapsKeySave" class="primary"></button></div>
+    </div>
+  </div>
+
+  <!-- 스트리트뷰 + 태양궤적 -->
+  <div class="modalOverlay" id="svModal">
+    <div class="modalBox svBox">
+      <div class="modalHead">
+        <h2 id="svModalTitle">-</h2>
+        <div class="svHeadRight">
+          <a id="svOpenNewTab" class="svOpenLink" href="#" target="_blank" rel="noopener"></a>
+          <button id="svClose">✕</button>
+        </div>
+      </div>
+      <div class="svControls">
+        <input type="datetime-local" id="svDateTime">
+        <label class="svPathToggle"><input type="checkbox" id="svShowPath" checked> <span id="svShowPathLabel"></span></label>
+        <button id="svMovePinBtn" type="button"></button>
+        <span id="svSunReadout"></span>
+      </div>
+      <div class="modalBody" style="padding:0;">
+        <div id="svPanoWrap">
+          <div id="svPano"></div>
+          <canvas id="svOverlay"></canvas>
+          <div id="svNoKeyMsg" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 분류(카테고리) 편집 -->
+  <div class="modalOverlay" id="catModal">
+    <div class="modalBox" style="max-width:520px;">
+      <div class="modalHead"><h2 id="catModalTitle"></h2><button id="catClose">✕</button></div>
+      <div class="modalBody">
+        <p class="gmapsNote" id="catHint"></p>
+        <div id="catRows"></div>
+        <button id="catAddRow" class="catEditBtn" style="margin-top:10px;width:100%;"></button>
+      </div>
+      <div class="modalFoot"><button id="catDone" class="primary"></button></div>
+    </div>
+  </div>
+
+  <!-- 업로드 진행 -->
+  <div class="modalOverlay" id="uploadProgressModal">
+    <div class="modalBox" style="max-width:380px;">
+      <div class="modalHead"><h2 id="uploadProgressTitle"></h2></div>
+      <div class="modalBody">
+        <div class="upProgressBar"><div class="upProgressFill" id="upProgressFill"></div></div>
+        <p id="upProgressText" style="font-size:12px;color:var(--muted);margin:10px 0 0;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 업로드 결과 리뷰 (드래그로 자유 이동) -->
+  <div class="modalOverlay" id="reviewModal">
+    <div class="modalBox reviewBox">
+      <div class="modalHead"><h2 id="reviewModalTitle"></h2><button id="reviewClose">✕</button></div>
+      <div class="modalBody" style="padding:14px 14px 4px;">
+        <p class="gmapsNote" id="reviewHint" style="margin:0 0 10px;"></p>
+        <div class="reviewCols" id="reviewCols"></div>
+      </div>
+      <div class="modalFoot"><button id="reviewDone" class="primary"></button></div>
+    </div>
+  </div>
+</div>
+
+<script>window.SCOUT_PUBLISHED = {"title": "🎬 로케이션 답사", "subtitle": "장소 4곳 · 보기 전용", "locations": [{"id": 1, "title": "고하송진우선생동상", "category": "outdoor", "color": "#34d399", "lat": 37.5506837, "lng": 127.0782735, "address": "고하송진우선생동상, 능동로24길, 능동, 광진구, 서울특별시, 04990, 대한민국", "notes": "", "sunseeker": "", "media": [{"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/3CD8982C-A16A-4E56-A157-1C92C5208032.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/5E87A9FC-B7AE-4592-B1B2-B9323719715D.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/B6921FF4-CAF0-42A9-B4DD-0332B53D6E1C.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/B885A79B-87C3-4E21-A505-505DBF77B51F.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/E1075E15-C3E5-43CC-9444-02F5ED6930C8.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/0BFAF17F-B807-4494-85FC-69F3DA219653.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/0CF5EE54-C741-4729-ADA4-65C4B889CF63.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/130566B2-3C8C-4470-8E8B-166AB2A53BAC.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/3DCDAF37-528F-499D-93E4-DF299C494E48.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/7F67AFEC-5A96-4A57-956C-EA0A46B83EB0.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/867B105C-46EE-49F5-9D38-155D79545792.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/B918A828-3EFE-4CBB-9846-6FAED5DAA613.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/D81E65C2-94AF-429E-9CFD-EEAA76302F77.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/EB995884-F578-4DE9-8AE1-F40CB6B1CA3F.JPG", "caption": ""}, {"type": "image", "url": "261009_로케이션답사_미디어/원본/EECB5490-1F71-44A5-BA3C-7B424C4D9007.JPG", "caption": ""}]}, {"id": 2, "title": "능동로", "category": "outdoor", "color": "#60a5fa", "lat": 37.5500317, "lng": 127.0781992, "address": "능동로, 능동, 광진구, 서울특별시, 05006, 대한민국", "notes": "", "sunseeker": "", "media": [{"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/4EA30581-92BD-4BD9-8E1A-D06368891FD8.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/90B50A1D-1DE4-44E7-8B02-ECBB3496703B.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/91347FD2-609A-4490-B959-F15AC2C802A3.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/BC1655A2-169D-4BC4-A146-3E8FA7709645.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/EDA677DC-6570-4D8C-8F26-B13DB5C3C706.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/F9B73331-842F-42EA-AA0B-42B7D424A15B.JPG", "caption": ""}, {"type": "sunseeker", "url": "261009_로케이션답사_미디어/원본/FC3290ED-C8C6-443D-94C2-532C6213BDCE.JPG", "caption": ""}]}, {"id": 3, "title": "단풍잎놀이터", "category": "outdoor", "color": "#fbbf24", "lat": 37.5508533, "lng": 127.0796362, "address": "단풍잎놀이터, 천호대로116길, 능동, 광진구, 서울특별시, 04989, 대한민국", "notes": "", "sunseeker": "", "media": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/875BB54E-2EB5-435A-AD79-88B0A7697208.JPG", "caption": ""}]}, {"id": 4, "title": "풋살경기장", "category": "outdoor", "color": "#f87171", "lat": 37.5513, "lng": 127.080025, "address": "풋살경기장, 능동로24길, 능동, 광진구, 서울특별시, 04989, 대한민국", "notes": "", "sunseeker": "", "media": [{"type": "image", "url": "261009_로케이션답사_미디어/원본/A0A89234-44B1-40CA-B2A7-878BE81A6111.JPG", "caption": ""}]}], "categories": [], "gmapsKey": "AIzaSyDViRSe_eSSdoZM9QR2Z7mTSaAhFX3WHt0"};</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
+<script>
+/* =========================================================
+   0. 미디어 보관함 — ~/Downloads/10:9_답사 를 그대로 복사한 폴더
+   ========================================================= */
+const MEDIA_FOLDER = '261009_로케이션답사_미디어/';
+function mediaThumbPath(file){ return MEDIA_FOLDER + '썸네일/' + file.replace(/\.[^.]+$/,'') + '.jpg'; }
+function mediaFullPath(file){ return MEDIA_FOLDER + '원본/' + file; }
+
+const MEDIA_FILES = [
+  {file:"0BFAF17F-B807-4494-85FC-69F3DA219653.JPG",type:"image",lat:37.550545,lng:127.0785221666667},
+  {file:"0CF5EE54-C741-4729-ADA4-65C4B889CF63.JPG",type:"image",lat:37.55073833333334,lng:127.0781778333333},
+  {file:"130566B2-3C8C-4470-8E8B-166AB2A53BAC.JPG",type:"image",lat:37.55083,lng:127.0782471666667},
+  {file:"2504C192-E66D-4FEA-997F-FB5908AB725F.MP4",type:"video",lat:null,lng:null},
+  {file:"33D0756B-FA62-4D13-B8A0-50DDC76D6972.MP4",type:"video",lat:null,lng:null},
+  {file:"3CD8982C-A16A-4E56-A157-1C92C5208032.JPG",type:"image",lat:37.55068333333333,lng:127.0781708333333},
+  {file:"3DCDAF37-528F-499D-93E4-DF299C494E48.JPG",type:"image",lat:37.55078,lng:127.0783778333333},
+  {file:"4EA30581-92BD-4BD9-8E1A-D06368891FD8.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"5E87A9FC-B7AE-4592-B1B2-B9323719715D.JPG",type:"image",lat:37.55052,lng:127.0781898333333},
+  {file:"7F67AFEC-5A96-4A57-956C-EA0A46B83EB0.JPG",type:"image",lat:37.550655,lng:127.0782388333333},
+  {file:"867B105C-46EE-49F5-9D38-155D79545792.JPG",type:"image",lat:37.55074666666667,lng:127.0782166666667},
+  {file:"875BB54E-2EB5-435A-AD79-88B0A7697208.JPG",type:"image",lat:37.55085333333334,lng:127.0796361666667},
+  {file:"8F1D924A-6CF9-4DF5-B334-595AA3896A60.MP4",type:"video",lat:null,lng:null},
+  {file:"90B50A1D-1DE4-44E7-8B02-ECBB3496703B.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"91347FD2-609A-4490-B959-F15AC2C802A3.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"98D3081A-C558-4B6E-925A-6708FDB76706.MP4",type:"video",lat:null,lng:null},
+  {file:"994CCD69-0F19-4C73-8A07-7404189D76EE.MP4",type:"video",lat:null,lng:null},
+  {file:"A0A89234-44B1-40CA-B2A7-878BE81A6111.JPG",type:"image",lat:37.5513,lng:127.080025},
+  {file:"AC44C66F-BB73-4283-9A22-0C0DDF611963.MP4",type:"video",lat:null,lng:null},
+  {file:"B6921FF4-CAF0-42A9-B4DD-0332B53D6E1C.JPG",type:"image",lat:37.55068333333333,lng:127.0781708333333},
+  {file:"B885A79B-87C3-4E21-A505-505DBF77B51F.JPG",type:"image",lat:37.55068333333333,lng:127.0781708333333},
+  {file:"B918A828-3EFE-4CBB-9846-6FAED5DAA613.JPG",type:"image",lat:37.55073,lng:127.0784},
+  {file:"BC1655A2-169D-4BC4-A146-3E8FA7709645.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"D81E65C2-94AF-429E-9CFD-EEAA76302F77.JPG",type:"image",lat:37.55072166666667,lng:127.0784305},
+  {file:"D91F8C91-DB2C-4D70-9697-43666C7409E4.PNG",type:"image",lat:null,lng:null},
+  {file:"E1075E15-C3E5-43CC-9444-02F5ED6930C8.JPG",type:"image",lat:37.55052,lng:127.0781898333333},
+  {file:"EB995884-F578-4DE9-8AE1-F40CB6B1CA3F.JPG",type:"image",lat:37.55072166666667,lng:127.0781778333333},
+  {file:"EDA677DC-6570-4D8C-8F26-B13DB5C3C706.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"EECB5490-1F71-44A5-BA3C-7B424C4D9007.JPG",type:"image",lat:37.55069666666667,lng:127.0784221666667},
+  {file:"F9B73331-842F-42EA-AA0B-42B7D424A15B.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667},
+  {file:"FC3290ED-C8C6-443D-94C2-532C6213BDCE.JPG",type:"image",lat:37.55003166666667,lng:127.0781991666667}
+];
+
+/* =========================================================
+   0-B. 다국어 (한/영) + 카테고리
+   ========================================================= */
+/* 🔴 분류는 대표님이 직접 추가·수정한다 (2026-10-09) — 전에는 코드에 네 개가 박혀 있었다.
+   기본 4개는 한/영 이름이 I18N 에 있고, 새로 만든 것은 label 에 적은 글자를 그대로 쓴다. */
+const CATEGORIES_DEFAULT = [
+  {key:'indoor',  color:'#60a5fa', icon:'🏠'},
+  {key:'outdoor', color:'#34d399', icon:'🌳'},
+  {key:'waiting', color:'#fbbf24', icon:'🛋'},
+  {key:'parking', color:'#f87171', icon:'🚐'}
+];
+const CATEGORIES_KEY = 'scout_categories_261009';
+function loadCategories(){
+  /* 발행본은 파일에 박힌 분류를 그대로 쓴다 (보는 사람 브라우저 저장소와 무관) */
+  if(typeof SCOUT_PUBLISHED !== 'undefined' && SCOUT_PUBLISHED && Array.isArray(SCOUT_PUBLISHED.categories) && SCOUT_PUBLISHED.categories.length){
+    return SCOUT_PUBLISHED.categories.map(c=>({...c}));
+  }
+  try{
+    const raw = localStorage.getItem(CATEGORIES_KEY);
+    if(raw){
+      const arr = JSON.parse(raw);
+      if(Array.isArray(arr) && arr.length) return arr;
+    }
+  }catch(e){}
+  return CATEGORIES_DEFAULT.map(c=>({...c}));
+}
+let CATEGORIES = loadCategories();
+function saveCategories(){
+  try{ localStorage.setItem(CATEGORIES_KEY, JSON.stringify(CATEGORIES)); }catch(e){}
+}
+function catMeta(key){ return CATEGORIES.find(c=>c.key===key) || CATEGORIES[0] || CATEGORIES_DEFAULT[1]; }
+function catColor(key){ return catMeta(key).color; }
+function catIcon(key){ return catMeta(key).icon; }
+function catLabel(key){
+  const c = CATEGORIES.find(x=>x.key===key);
+  if(c && c.label) return c.label;                       /* 대표님이 직접 적은 이름 */
+  return (I18N[LANG].cat && I18N[LANG].cat[key]) || key; /* 기본 4개는 한/영 자동 */
+}
+
+const I18N = {
+  ko: {
+    appTitle: '🎬 로케이션 답사', subtitle: '편집 모드에서 지도를 클릭하면 새 핀이 생깁니다',
+    editOn: '🖊 편집 모드 켜짐', editOff: '👁 보기 모드',
+    selectBtn: '☑️ 선택 삭제', exportBtn: '📤 내보내기 / 백업', langBtnTo: '🌐 EN',
+    editBanner: '📍 지도를 클릭 → 새 핀 생성 · 핀을 드래그해서 정확한 위치로 옮기세요',
+    bulkBanner: '☑️ 지울 장소를 눌러 선택하세요 (지도 핀도 클릭 가능)',
+    bulkCount: n=>`${n}개 선택됨`, bulkSelectAll:'전체선택', bulkCancel:'선택 해제',
+    bulkDelete: n=>`🗑 선택 삭제 (${n})`, bulkDeleteConfirm: n=>`선택한 ${n}곳을 삭제할까요? 되돌릴 수 없습니다.`,
+    viewList: '📋 리스트형', viewPhoto: '🖼 사진 모아보기',
+    emptyList: '아직 만든 장소가 없습니다.<br>지도를 클릭해서 첫 핀을 만들어보세요.',
+    noMedia: '미디어 없음', mediaCount: n=>`🖼 미디어 ${n}개`, noAddress: '주소 없음', noTitle: '(이름 없음)',
+    titlePlaceholder: '장소 이름', newLocTitle: n=>`새 장소 ${n}`,
+    coordHint: (lat,lng,editable)=>`위도 ${lat} · 경도 ${lng}` + (editable?' · 드래그해서 조정 가능':''),
+    streetViewBtn: '🧭 스트리트뷰', pinColorTitle: '핀 색상',
+    lblAddress: '주소', addressPlaceholder: '주소를 입력하세요',
+    lblNotes: '현장 노트', notesPlaceholder: '전력·채광·소음·특이사항 등',
+    lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: '촬영 예정시각 / 고도 / 방위각 메모',
+    lblMedia: '미디어', lblSunMedia: '☀️ Sunseeker 사진', captionPlaceholder: '메모 추가 (예: 역광 심함, 16시 기준)',
+    addMediaBtn: '➕ 보관함에서 추가', deleteBtn: '🗑 이 장소 삭제',
+    deleteConfirm: title=>`「${title}」를 삭제할까요? 되돌릴 수 없습니다.`,
+    pickerTitle: '🖼 미디어 보관함 — 사진/영상을 골라 추가', pickerConfirm: n=>`선택한 것 추가 (${n})`, pickerCancel: '취소',
+    exportTitle: '📤 내보내기 / 백업',
+    exportNote: '이 브라우저에는 자동 저장되지만(새로고침해도 안 사라짐), 다른 컴퓨터로 옮기거나 영구 보관하려면 아래 중 하나로 백업하세요. <b>다운로드가 안 뜨면</b> 「전체 선택」으로 긁어서 메모장 등에 붙여넣으세요.',
+    selectAll: '전체 선택', download: '💾 파일로 내려받기', importBtn: '📥 불러오기',
+    clearAll: '🗑 전체 비우기', closeBtn: '닫기', clearAllConfirm: '만든 장소를 전부 지울까요? 되돌릴 수 없습니다.',
+    geoLoading: '⏳ 자동조회 중…', geoOk: '✓ 자동조회', geoFail: '⚠ 자동조회 실패 — 직접 입력',
+    saved: '💾 저장됨', saveFail: '⚠ 저장 실패 — 브라우저 저장공간을 확인하세요',
+    importFail: '⚠ 불러오기 실패 — 파일 형식을 확인하세요', downloadFail: '⚠ 다운로드 미지원 — 전체선택으로 복사하세요',
+    cat: { indoor:'실내', outdoor:'실외', waiting:'대기실', parking:'주차장' },
+    typeBadge: { sunseeker:'☀️ Sunseeker', video:'🎬 영상', image:'📷 사진' },
+    typeToggleTitle: '클릭하면 사진 ↔ Sunseeker 전환', sidebarToggleTitle: '목록 열기', countUnit: n=>`${n}곳`,
+    pageTitle: '로케이션 답사 지도 — 편집', exportFileName: '261009_로케이션답사_데이터.js',
+    lblDistances: '📏 다른 장소까지 거리', noOtherSpots: '다른 장소가 아직 없습니다',
+    gmapsKeyBtnTitle: 'Google API 키 설정',
+    gmapsKeyModalTitle: '⚙️ Google 지도 API 키',
+    gmapsKeyNote: '페이지 안에서 스트리트뷰(+태양 궤적)를 보려면 무료 Google Maps API 키가 필요합니다. 한 번만 넣어두면 이 브라우저에 저장되고, 다음부터는 묻지 않습니다. 키 받는 방법은 채팅으로 안내해드렸습니다.',
+    gmapsKeySave: '저장',
+    svOpenNewTab: '🔗 새 탭에서 열기', svShowPathLabel: '하루 궤적 보기',
+    altitude: '고도', azimuth: '방위각', belowHorizon: '지평선 아래',
+    noStreetView: '이 위치엔 스트리트뷰 사진이 없습니다',
+    gmapsLoadFail: '지도를 못 불러왔습니다 — API 키가 올바른지, 「Maps JavaScript API」가 켜져 있는지 확인하세요',
+    btnBulkUpload: '📤 사진 일괄 업로드 (자동분류)',
+    btnUnsorted: n=>`🗂 미분류 ${n}개 — 확인하기`,
+    noFsApi: '이 브라우저는 파일 저장 기능을 지원하지 않습니다. 크롬 최신버전에서 열어주세요.',
+    folderPickNote: '사진·영상을 저장할 폴더를 선택하는 창이 뜹니다. 반드시 "261009_로케이션답사_미디어" 폴더를 선택해주세요(이미 만들어져 있습니다).',
+    folderPickCancelled: '폴더 선택이 취소돼 업로드를 진행할 수 없습니다.',
+    folderConnected: '✅ 폴더가 연결됐습니다.\n이제 「📤 사진 일괄 업로드」를 한 번 더 눌러 사진을 골라주세요.',
+    uploadProgressTitle: '📤 업로드 중…',
+    upProgressText: (i,n,name)=>`${i} / ${n} · ${name}`,
+    reviewModalTitle: '📥 자동분류 결과 — 드래그해서 옮기세요',
+    reviewHint: '사진이 GPS로 자동 분류됐습니다. 잘못 들어간 게 있으면 썸네일을 다른 칸으로 드래그하세요. 바로 반영됩니다.',
+    reviewDone: '확인했습니다', unsortedColTitle: '🗂 미분류 (GPS 없음)',
+    newClusterTitle: n=>`새 스팟 ${n}`,
+    uploadDoneToast: n=>`✅ ${n}개 업로드 완료`,
+    lbDownload: '⬇ 이 사진 받기',
+    svMovePinBtn: '📍 핀을 여기로 옮기기',
+    svMovePinDone: '✓ 핀이 이 위치로 이동됐습니다',
+    svMovePinFail: '⚠ 아직 위치를 못 읽었습니다 — 잠시 후 다시 눌러주세요',
+    btnEditCats: '⚙️ 분류 추가·수정',
+    catModalTitle: '⚙️ 핀 분류 편집',
+    catHint: '아이콘(이모지) · 이름 · 색을 바꿀 수 있습니다. 바로 저장됩니다. 쓰고 있는 분류는 지울 수 없습니다(먼저 그 장소들의 분류를 바꿔주세요).',
+    catAddRow: '➕ 분류 추가',
+    catNamePlaceholder: '분류 이름',
+    catInUse: n=>`${n}곳`,
+    catDeleteBlocked: n=>`⚠ ${n}곳이 이 분류를 쓰고 있어 못 지웁니다`,
+    catDeleteLast: '⚠ 분류가 최소 한 개는 있어야 합니다',
+    pinRightClickDelete: title=>`「${title}」 핀을 지울까요?`
+  },
+  en: {
+    appTitle: '🎬 Location Scout', subtitle: 'Click the map in edit mode to drop a new pin',
+    editOn: '🖊 Edit Mode: ON', editOff: '👁 View Mode',
+    selectBtn: '☑️ Select & Delete', exportBtn: '📤 Export / Backup', langBtnTo: '🌐 한',
+    editBanner: '📍 Click the map → new pin · Drag a pin to fine-tune its position',
+    bulkBanner: '☑️ Tap locations to select (map pins work too)',
+    bulkCount: n=>`${n} selected`, bulkSelectAll:'Select all', bulkCancel:'Clear selection',
+    bulkDelete: n=>`🗑 Delete selected (${n})`, bulkDeleteConfirm: n=>`Delete ${n} selected location(s)? This can't be undone.`,
+    viewList: '📋 List', viewPhoto: '🖼 Photo Grid',
+    emptyList: 'No locations yet.<br>Click the map to drop your first pin.',
+    noMedia: 'No media', mediaCount: n=>`🖼 ${n} media`, noAddress: 'No address', noTitle: '(untitled)',
+    titlePlaceholder: 'Location name', newLocTitle: n=>`New Location ${n}`,
+    coordHint: (lat,lng,editable)=>`Lat ${lat} · Lng ${lng}` + (editable?' · Drag to adjust':''),
+    streetViewBtn: '🧭 Street View', pinColorTitle: 'Pin color',
+    lblAddress: 'Address', addressPlaceholder: 'Enter address',
+    lblNotes: 'Field Notes', notesPlaceholder: 'Power, light, noise, anything else to flag',
+    lblSunseeker: '☀️ Sunseeker', sunseekerPlaceholder: 'Shoot time / elevation / azimuth notes',
+    lblMedia: 'Media', lblSunMedia: '☀️ Sunseeker Photos', captionPlaceholder: 'Add a note (e.g. harsh backlight at 4pm)',
+    addMediaBtn: '➕ Add from library', deleteBtn: '🗑 Delete this location',
+    deleteConfirm: title=>`Delete "${title}"? This can't be undone.`,
+    pickerTitle: '🖼 Media Library — pick photos/videos to add', pickerConfirm: n=>`Add selected (${n})`, pickerCancel: 'Cancel',
+    exportTitle: '📤 Export / Backup',
+    exportNote: 'This browser auto-saves your work (survives reload). To move it to another computer or back it up permanently, use one of the options below. <b>If the download doesn\'t appear</b>, use "Select All" and paste it into a text file.',
+    selectAll: 'Select All', download: '💾 Download as file', importBtn: '📥 Import',
+    clearAll: '🗑 Clear everything', closeBtn: 'Close', clearAllConfirm: "Delete all locations? This can't be undone.",
+    geoLoading: '⏳ Looking up address…', geoOk: '✓ Auto-filled', geoFail: '⚠ Lookup failed — enter manually',
+    saved: '💾 Saved', saveFail: '⚠ Save failed — check browser storage',
+    importFail: '⚠ Import failed — check the file format', downloadFail: '⚠ Download not supported — use Select All',
+    cat: { indoor:'Indoor', outdoor:'Outdoor', waiting:'Waiting Area', parking:'Parking' },
+    typeBadge: { sunseeker:'☀️ Sunseeker', video:'🎬 Video', image:'📷 Photo' },
+    typeToggleTitle: 'Click to toggle Photo ↔ Sunseeker', sidebarToggleTitle: 'Open list', countUnit: n=> n===1?'1 location':`${n} locations`,
+    pageTitle: 'Location Scout Map — Editor', exportFileName: '261009_location_scout_data.js',
+    lblDistances: '📏 Distance to other spots', noOtherSpots: 'No other spots yet',
+    gmapsKeyBtnTitle: 'Set Google API key',
+    gmapsKeyModalTitle: '⚙️ Google Maps API key',
+    gmapsKeyNote: 'Viewing Street View (with the sun path) inside the page needs a free Google Maps API key. Enter it once — it\'s saved in this browser and won\'t be asked again. Setup steps were given in chat.',
+    gmapsKeySave: 'Save',
+    svOpenNewTab: '🔗 Open in new tab', svShowPathLabel: "Show today's path",
+    altitude: 'Altitude', azimuth: 'Azimuth', belowHorizon: 'below horizon',
+    noStreetView: 'No Street View imagery here',
+    gmapsLoadFail: "Couldn't load the map — check your API key and that \"Maps JavaScript API\" is enabled",
+    btnBulkUpload: '📤 Bulk Upload Photos (auto-sort)',
+    btnUnsorted: n=>`🗂 ${n} unsorted — review`,
+    noFsApi: "This browser doesn't support saving files. Please open this in a recent version of Chrome.",
+    folderPickNote: 'A folder picker will open. Please select the "261009_로케이션답사_미디어" folder (it already exists).',
+    folderPickCancelled: "Folder selection was cancelled, so the upload can't continue.",
+    folderConnected: '✅ Folder connected.\nPress “📤 Bulk Upload Photos” once more to pick your photos.',
+    uploadProgressTitle: '📤 Uploading…',
+    upProgressText: (i,n,name)=>`${i} / ${n} · ${name}`,
+    reviewModalTitle: '📥 Auto-sort results — drag to move',
+    reviewHint: 'Photos were auto-sorted by GPS. If something landed in the wrong spot, drag its thumbnail to another column — it applies immediately.',
+    reviewDone: 'Done', unsortedColTitle: '🗂 Unsorted (no GPS)',
+    newClusterTitle: n=>`New Spot ${n}`,
+    uploadDoneToast: n=>`✅ ${n} uploaded`,
+    lbDownload: '⬇ Download photo',
+    svMovePinBtn: '📍 Move pin here',
+    svMovePinDone: '✓ Pin moved to this spot',
+    svMovePinFail: "⚠ Position not ready yet — try again in a moment",
+    btnEditCats: '⚙️ Edit categories',
+    catModalTitle: '⚙️ Pin categories',
+    catHint: 'Change the icon (emoji), name and color. Saved instantly. A category in use can’t be deleted — move those locations to another category first.',
+    catAddRow: '➕ Add category',
+    catNamePlaceholder: 'Category name',
+    catInUse: n=>`${n} used`,
+    catDeleteBlocked: n=>`⚠ ${n} location(s) still use this category`,
+    catDeleteLast: '⚠ You need at least one category',
+    pinRightClickDelete: title=>`Delete the pin "${title}"?`
+  }
+};
+let LANG = localStorage.getItem('scout_lang_261009') || 'ko';
+function t(key){ return I18N[LANG][key]; }
+
+/* =========================================================
+   1. 상태 — localStorage에 자동 저장
+   ========================================================= */
+/* 🔴 발행본(인터넷 공유용)은 «같은 파일»이다 — 뷰어를 따로 만들면 두 개가 되어 어긋난다(§1).
+   발행 스크립트가 이 파일 위에 SCOUT_PUBLISHED(장소 데이터 + 분류)를 끼워 넣는다.
+   그 값이 있으면 = 발행본 → 편집 기능을 전부 숨기고 브라우저 저장도 안 쓴다. */
+const PUBLISHED = (typeof SCOUT_PUBLISHED !== 'undefined') ? SCOUT_PUBLISHED : null;
+
+const STORAGE_KEY = 'scout_locations_261009_v2';
+let LOCATIONS = [];
+if(PUBLISHED){
+  LOCATIONS = PUBLISHED.locations || [];
+} else {
+  try{
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if(saved) LOCATIONS = JSON.parse(saved);
+  }catch(e){ LOCATIONS = []; }
+}
+let nextId = LOCATIONS.reduce((m,l)=>Math.max(m,l.id||0),0) + 1;
+
+let editMode = !PUBLISHED;
+let selectMode = false;
+let currentLocId = null;
+const markers = {};
+const activeCats = new Set(CATEGORIES.map(c=>c.key));
+const selectedIds = new Set();
+
+let saveToastTimer;
+function flashSaved(){
+  const el = document.getElementById('saveToast');
+  el.textContent = t('saved'); el.className = 'toast show ok';
+  clearTimeout(saveToastTimer); saveToastTimer = setTimeout(()=> el.classList.remove('show'), 1100);
+}
+function flashError(msg){
+  const el = document.getElementById('saveToast');
+  el.textContent = '⚠ ' + msg; el.className = 'toast show err';
+  clearTimeout(saveToastTimer); saveToastTimer = setTimeout(()=> el.classList.remove('show'), 3000);
+}
+function saveState(){
+  if(PUBLISHED) return;   /* 발행본은 보는 것만 — 아무것도 저장하지 않는다 */
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(LOCATIONS)); flashSaved(); }
+  catch(e){ flashError(t('saveFail')); }
+  scheduleBackup();       /* 🔴 드라이브 폴더에도 파일로 한 벌 더 — 크롬 데이터가 날아가도 살아남게 */
+}
+function debounce(fn, delay){
+  let tt; return function(...args){ clearTimeout(tt); tt = setTimeout(()=>fn.apply(this,args), delay); };
+}
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
+
+/* =========================================================
+   2. 지도 초기화
+   ========================================================= */
+const gpsPts = MEDIA_FILES.filter(f=>f.lat!=null);
+const centerLat = gpsPts.length ? gpsPts.reduce((s,p)=>s+p.lat,0)/gpsPts.length : 37.5665;
+const centerLng = gpsPts.length ? gpsPts.reduce((s,p)=>s+p.lng,0)/gpsPts.length : 126.9780;
+
+const map = L.map('map', { zoomControl:false }).setView([centerLat, centerLng], 18);
+L.control.zoom({ position:'bottomright' }).addTo(map);
+
+/* 지도 라벨 언어 — ko:OSM 기본(현지 표기) · en:위키미디어 다국어 타일(lang=en, 로마자 표기) */
+let tileLayer = null;
+function setMapLanguage(lang){
+  if(tileLayer) map.removeLayer(tileLayer);
+  tileLayer = (lang === 'en')
+    ? L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png?lang=en', {
+        attribution: '&copy; OpenStreetMap contributors · Tiles: Wikimedia', maxZoom: 19
+      })
+    : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors', subdomains: 'abc', maxZoom: 19
+      });
+  tileLayer.addTo(map);
+}
+setMapLanguage(LANG);
+
+function makeIcon(loc){
+  const color = loc.color || catColor(loc.category);
+  const sel = selectMode && selectedIds.has(loc.id) ? ' selForDel' : '';
+  return L.divIcon({ className:'', html:`<div class="loc-marker${sel}" id="pin-${loc.id}" style="background:${color}">${loc.id}</div>`,
+    iconSize:[26,26], iconAnchor:[13,13] });
+}
+function addMarker(loc){
+  const m = L.marker([loc.lat, loc.lng], { icon: makeIcon(loc), draggable:editMode }).addTo(map);
+  m.on('click', ()=>{
+    if(selectMode){ toggleSelect(loc.id); return; }
+    openDetail(loc.id, false);
+  });
+  /* 🔴 지도에서 바로 지우기 — 오른쪽 클릭 (편집 모드일 때만) */
+  m.on('contextmenu', (ev)=>{
+    if(ev.originalEvent) ev.originalEvent.preventDefault();
+    if(!editMode) return;
+    const target = LOCATIONS.find(l=>l.id===loc.id);
+    if(!target) return;
+    if(!confirm(t('pinRightClickDelete')(target.title || t('noTitle')))) return;
+    const mk = markers[target.id]; if(mk) map.removeLayer(mk);
+    delete markers[target.id];
+    LOCATIONS = LOCATIONS.filter(l=>l.id!==target.id);
+    if(currentLocId === target.id){
+      currentLocId = null;
+      document.getElementById('detailPanel').classList.remove('open');
+    }
+    selectedIds.delete(target.id);
+    applyFilter(); refreshDistancesIfOpen(); updateBulkBar(); saveState();
+  });
+  m.on('dragend', (ev)=>{
+    const ll = ev.target.getLatLng();
+    const L2 = LOCATIONS.find(l=>l.id===loc.id);
+    if(!L2) return;
+    L2.lat = ll.lat; L2.lng = ll.lng;
+    if(currentLocId===loc.id) updateCoordHint(L2);
+    refreshDistancesIfOpen();
+    saveState();
+  });
+  markers[loc.id] = m;
+}
+function rebuildAllMarkers(){
+  Object.values(markers).forEach(m=> map.removeLayer(m));
+  for(const k in markers) delete markers[k];
+  LOCATIONS.forEach(addMarker);
+  applyFilter();
+}
+function refreshDraggable(){
+  /* 🔴 선택 모드에서는 핀 끌기를 끈다 — 끌기와 「드래그로 범위 선택」이 서로 먹는다 */
+  const canDrag = editMode && !selectMode;
+  Object.values(markers).forEach(m=> canDrag ? m.dragging.enable() : m.dragging.disable());
+  if(selectMode) map.dragging.disable(); else map.dragging.enable();
+}
+
+/* ---- 드래그 박스로 여러 핀 한 번에 고르기 (선택 모드에서만) ---- */
+let boxSelStart = null, boxSelEl = null;
+map.on('mousedown', function(e){
+  if(!selectMode) return;
+  boxSelStart = e.containerPoint;
+  boxSelEl = document.createElement('div');
+  boxSelEl.className = 'boxSel';
+  boxSelEl.style.left = boxSelStart.x + 'px';
+  boxSelEl.style.top = boxSelStart.y + 'px';
+  boxSelEl.style.width = '0px'; boxSelEl.style.height = '0px';
+  map.getContainer().appendChild(boxSelEl);
+});
+/* 🔴 mousemove·mouseup 은 «문서»에 건다 — 지도에만 걸면 오른쪽 패널 위에서 손을 뗐을 때
+   지도가 그 이벤트를 못 받아 선택이 영영 안 끝나고 사각형만 남는다 (2026-10-09 검사에서 잡음) */
+document.addEventListener('mousemove', function(ev){
+  if(!boxSelStart || !boxSelEl) return;
+  const p = map.mouseEventToContainerPoint(ev);
+  boxSelEl.style.left = Math.min(p.x, boxSelStart.x) + 'px';
+  boxSelEl.style.top = Math.min(p.y, boxSelStart.y) + 'px';
+  boxSelEl.style.width = Math.abs(p.x - boxSelStart.x) + 'px';
+  boxSelEl.style.height = Math.abs(p.y - boxSelStart.y) + 'px';
+});
+document.addEventListener('mouseup', function(ev){
+  if(!boxSelStart) return;
+  const p = map.mouseEventToContainerPoint(ev);
+  const dragged = Math.abs(p.x - boxSelStart.x) > 4 || Math.abs(p.y - boxSelStart.y) > 4;
+  if(boxSelEl){ boxSelEl.remove(); boxSelEl = null; }
+  const start = boxSelStart; boxSelStart = null;
+  if(!dragged) return;                       /* 그냥 클릭한 것 — 선택을 안 건드린다 */
+  const bounds = L.latLngBounds(map.containerPointToLatLng(start), map.containerPointToLatLng(p));
+  LOCATIONS.forEach(loc=>{
+    if(!activeCats.has(loc.category)) return;   /* 필터로 숨긴 것은 안 고른다 */
+    if(bounds.contains(L.latLng(loc.lat, loc.lng))) selectedIds.add(loc.id);
+  });
+  refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+});
+function refreshMarkerIcons(){
+  LOCATIONS.forEach(loc=>{ const m = markers[loc.id]; if(m) m.setIcon(makeIcon(loc)); });
+}
+LOCATIONS.forEach(addMarker);
+
+function createLocationAt(lat, lng, opts){
+  opts = opts || {};
+  /* 🔴 이름의 숫자는 «핀 번호(id)»와 같아야 한다 — 전에는 「지금 몇 개 있나」로 매겨서
+     중간에 하나를 지우면 핀은 1,3,4 인데 이름은 1,2,3 으로 벌어졌다 (2026-10-09 대표 신고) */
+  const id = nextId++;
+  const loc = {
+    id: id,
+    title: opts.title || t('newLocTitle')(id),
+    category: 'outdoor', color: catColor('outdoor'),
+    lat, lng, address:'', notes:'', sunseeker:'', media: opts.media || []
+  };
+  LOCATIONS.push(loc);
+  addMarker(loc);
+  if(opts.geocode !== false) reverseGeocode(loc);
+  return loc;
+}
+map.on('click', function(e){
+  if(!editMode || selectMode) return;
+  const loc = createLocationAt(e.latlng.lat, e.latlng.lng);
+  applyFilter();
+  saveState();
+  openDetail(loc.id, false);
+  const el = document.getElementById('pin-'+loc.id);
+  if(el) el.classList.add('new');
+});
+
+/* =========================================================
+   3. 편집모드 / 선택삭제모드 / 언어
+   ========================================================= */
+document.getElementById('btnEditToggle').onclick = ()=>{
+  editMode = !editMode;
+  document.getElementById('btnEditToggle').textContent = editMode ? t('editOn') : t('editOff');
+  document.getElementById('btnEditToggle').classList.toggle('on', editMode);
+  document.getElementById('editBanner').style.display = editMode ? 'block' : 'none';
+  document.getElementById('map').classList.toggle('editing', editMode);
+  refreshDraggable();
+  if(currentLocId!=null) openDetail(currentLocId, false);
+};
+
+function toggleSelect(id){
+  if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+  refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+}
+function updateBulkBar(){
+  document.getElementById('bulkCount').textContent = t('bulkCount')(selectedIds.size);
+  document.getElementById('bulkDeleteBtn').textContent = t('bulkDelete')(selectedIds.size);
+  document.getElementById('bulkDeleteBtn').disabled = selectedIds.size===0;
+}
+document.getElementById('btnSelectMode').onclick = ()=>{
+  selectMode = !selectMode;
+  selectedIds.clear();
+  document.getElementById('btnSelectMode').classList.toggle('on', selectMode);
+  document.getElementById('bulkBar').style.display = selectMode ? 'block' : 'none';
+  refreshDraggable();
+  refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+};
+document.getElementById('bulkSelectAllBtn').onclick = ()=>{
+  LOCATIONS.filter(l=>activeCats.has(l.category)).forEach(l=>selectedIds.add(l.id));
+  refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+};
+document.getElementById('bulkCancelBtn').onclick = ()=>{
+  selectedIds.clear(); refreshMarkerIcons(); renderList(); renderPhotoGrid(); updateBulkBar();
+};
+document.getElementById('bulkDeleteBtn').onclick = ()=>{
+  if(selectedIds.size===0) return;
+  if(!confirm(t('bulkDeleteConfirm')(selectedIds.size))) return;
+  selectedIds.forEach(id=>{ const m = markers[id]; if(m) map.removeLayer(m); delete markers[id]; });
+  LOCATIONS = LOCATIONS.filter(l=>!selectedIds.has(l.id));
+  if(currentLocId!=null && !LOCATIONS.find(l=>l.id===currentLocId)){
+    currentLocId = null; document.getElementById('detailPanel').classList.remove('open');
+  }
+  selectedIds.clear();
+  applyFilter(); saveState(); updateBulkBar(); refreshDistancesIfOpen();
+};
+
+document.getElementById('btnLang').onclick = ()=>{
+  LANG = LANG==='ko' ? 'en' : 'ko';
+  localStorage.setItem('scout_lang_261009', LANG);
+  applyLang();
+};
+function buildCategorySelect(){
+  const sel = document.getElementById('dpCategorySelect');
+  const cur = sel.value;
+  sel.innerHTML = CATEGORIES.map(c=>`<option value="${c.key}">${c.icon} ${catLabel(c.key)}</option>`).join('');
+  if(cur) sel.value = cur;
+}
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.title = t('pageTitle');
+  if(typeof setMapLanguage === 'function') setMapLanguage(LANG);
+  document.getElementById('btnLang').textContent = t('langBtnTo');
+  document.getElementById('appTitleText').textContent = t('appTitle');
+  document.getElementById('appSubtitleText').textContent = t('subtitle');
+  document.getElementById('btnEditToggle').textContent = editMode ? t('editOn') : t('editOff');
+  document.getElementById('btnSelectMode').textContent = t('selectBtn');
+  document.getElementById('btnExport').textContent = t('exportBtn');
+  document.getElementById('editBanner').textContent = t('editBanner');
+  document.getElementById('bulkBannerText').textContent = t('bulkBanner');
+  document.getElementById('bulkSelectAllBtn').textContent = t('bulkSelectAll');
+  document.getElementById('bulkCancelBtn').textContent = t('bulkCancel');
+  document.getElementById('btnViewList').textContent = t('viewList');
+  document.getElementById('btnViewPhoto').textContent = t('viewPhoto');
+  document.getElementById('toggleSidebarBtn').title = t('sidebarToggleTitle');
+  document.getElementById('dpTitleInput').placeholder = t('titlePlaceholder');
+  document.getElementById('dpColorInput').title = t('pinColorTitle');
+  document.getElementById('dpStreetViewBtn').textContent = t('streetViewBtn');
+  document.getElementById('dpGmapsKeyBtn').title = t('gmapsKeyBtnTitle');
+  document.getElementById('lblDistances').textContent = t('lblDistances');
+  document.getElementById('gmapsKeyModalTitle').textContent = t('gmapsKeyModalTitle');
+  document.getElementById('gmapsKeyNote').textContent = t('gmapsKeyNote');
+  document.getElementById('gmapsKeySave').textContent = t('gmapsKeySave');
+  document.getElementById('svShowPathLabel').textContent = t('svShowPathLabel');
+  document.getElementById('svMovePinBtn').textContent = t('svMovePinBtn');
+  document.getElementById('btnBulkUpload').textContent = t('btnBulkUpload');
+  document.getElementById('uploadFolderHint').textContent = t('folderPickNote');
+  document.getElementById('btnUnsorted').textContent = t('btnUnsorted')(loadUnsorted().length);
+  document.getElementById('uploadProgressTitle').textContent = t('uploadProgressTitle');
+  document.getElementById('reviewModalTitle').textContent = t('reviewModalTitle');
+  document.getElementById('reviewHint').textContent = t('reviewHint');
+  document.getElementById('reviewDone').textContent = t('reviewDone');
+  document.getElementById('lblAddress').textContent = t('lblAddress');
+  document.getElementById('dpAddressInput').placeholder = t('addressPlaceholder');
+  document.getElementById('lblNotes').textContent = t('lblNotes');
+  document.getElementById('dpNotesInput').placeholder = t('notesPlaceholder');
+  document.getElementById('lblSunseeker').textContent = t('lblSunseeker');
+  document.getElementById('dpSunseekerInput').placeholder = t('sunseekerPlaceholder');
+  document.getElementById('lblMedia').textContent = t('lblMedia');
+  document.getElementById('lblSunMedia').textContent = t('lblSunMedia');
+  document.getElementById('btnEditCats').textContent = t('btnEditCats');
+  document.getElementById('catModalTitle').textContent = t('catModalTitle');
+  document.getElementById('catHint').textContent = t('catHint');
+  document.getElementById('catAddRow').textContent = t('catAddRow');
+  document.getElementById('catDone').textContent = t('closeBtn');
+  document.getElementById('dpAddMediaBtn').textContent = t('addMediaBtn');
+  document.getElementById('dpDeleteBtn').textContent = t('deleteBtn');
+  document.getElementById('pickerModalTitle').textContent = t('pickerTitle');
+  document.getElementById('pickerCancel').textContent = t('pickerCancel');
+  document.getElementById('pickerConfirm').textContent = t('pickerConfirm')(pickerSelected.size);
+  document.getElementById('exportModalTitle').textContent = t('exportTitle');
+  document.getElementById('exportNoteEl').innerHTML = t('exportNote');
+  document.getElementById('btnExportSelectAll').textContent = t('selectAll');
+  document.getElementById('btnExportDownload').textContent = t('download');
+  document.getElementById('importLabel').textContent = t('importBtn');
+  document.getElementById('btnClearAll').textContent = t('clearAll');
+  document.getElementById('exportDone').textContent = t('closeBtn');
+  buildCategorySelect();
+  renderFilters(); applyFilter(); updateBulkBar();
+  if(currentLocId!=null) openDetail(currentLocId, false);
+  if(document.getElementById('mediaPickerModal').classList.contains('open')) renderPickerGrid();
+}
+
+/* =========================================================
+   4. 필터 / 리스트 / 사진그리드
+   ========================================================= */
+function renderFilters(){
+  const el = document.getElementById('filters');
+  el.innerHTML = '';
+  CATEGORIES.forEach(c=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip on';
+    chip.style.color = activeCats.has(c.key) ? c.color : '';
+    chip.innerHTML = `<span class="dot" style="background:${c.color}"></span>${c.icon} ${catLabel(c.key)}`;
+    chip.onclick = ()=>{
+      if(activeCats.has(c.key)){ activeCats.delete(c.key); chip.classList.remove('on'); chip.style.color=''; }
+      else { activeCats.add(c.key); chip.classList.add('on'); chip.style.color = c.color; }
+      applyFilter();
+    };
+    el.appendChild(chip);
+  });
+}
+/* ---- ⚙️ 분류 편집 (추가·이름·색·아이콘·삭제) ---- */
+function catUsedCount(key){ return LOCATIONS.filter(l=>l.category===key).length; }
+function afterCatsChanged(){
+  saveCategories();
+  const keys = new Set(CATEGORIES.map(c=>c.key));
+  /* 🔴 없어진 분류를 쓰던 장소는 첫 분류로 옮긴다 — 안 그러면 필터에서 영영 안 보여
+     「핀이 사라졌다」가 된다 (삭제는 막혀 있지만, 옛 데이터를 불러올 때도 생길 수 있다) */
+  let orphan = 0;
+  LOCATIONS.forEach(l=>{ if(!keys.has(l.category)){ l.category = CATEGORIES[0].key; orphan++; } });
+  if(orphan){ saveState(); }
+  /* 없어진 분류가 필터에 남아 있으면 지우고, 새로 생긴 것은 기본으로 켠다 */
+  Array.from(activeCats).forEach(k=>{ if(!keys.has(k)) activeCats.delete(k); });
+  CATEGORIES.forEach(c=>{ if(!activeCats.has(c.key)) activeCats.add(c.key); });
+  renderFilters(); buildCategorySelect(); refreshMarkerIcons(); applyFilter();
+  if(currentLocId != null) openDetail(currentLocId, false);
+}
+function renderCatRows(){
+  const wrap = document.getElementById('catRows');
+  wrap.innerHTML = '';
+  CATEGORIES.forEach(c=>{
+    const used = catUsedCount(c.key);
+    const row = document.createElement('div');
+    row.className = 'catEditRow';
+    row.innerHTML = `
+      <input type="text" class="cIcon" maxlength="4" value="${escapeHtml(c.icon||'📍')}">
+      <input type="text" class="cName" value="${escapeHtml(catLabel(c.key))}" placeholder="${escapeHtml(t('catNamePlaceholder'))}">
+      <input type="color" class="cColor" value="${c.color || '#60a5fa'}">
+      <span class="cUsed">${used ? t('catInUse')(used) : ''}</span>
+      <button class="cDel" type="button">🗑</button>
+    `;
+    row.querySelector('.cIcon').addEventListener('input', debounce(function(){
+      c.icon = this.value || '📍'; afterCatsChanged();
+    }, 400));
+    row.querySelector('.cName').addEventListener('input', debounce(function(){
+      c.label = this.value; afterCatsChanged();
+    }, 400));
+    row.querySelector('.cColor').addEventListener('input', function(){
+      c.color = this.value; afterCatsChanged();
+    });
+    row.querySelector('.cDel').onclick = ()=>{
+      if(CATEGORIES.length <= 1){ flashError(t('catDeleteLast')); return; }
+      const n = catUsedCount(c.key);
+      if(n > 0){ flashError(t('catDeleteBlocked')(n)); return; }
+      CATEGORIES = CATEGORIES.filter(x=>x.key !== c.key);
+      afterCatsChanged(); renderCatRows(); flashSaved();
+    };
+    wrap.appendChild(row);
+  });
+}
+document.getElementById('btnEditCats').onclick = ()=>{
+  renderCatRows();
+  document.getElementById('catModal').classList.add('open');
+};
+document.getElementById('catAddRow').onclick = ()=>{
+  const palette = ['#60a5fa','#34d399','#fbbf24','#f87171','#c084fc','#22d3ee','#fb923c','#a3e635'];
+  CATEGORIES.push({
+    key: 'cat_' + Date.now(),
+    color: palette[CATEGORIES.length % palette.length],
+    icon: '📍',
+    label: t('catNamePlaceholder')
+  });
+  afterCatsChanged(); renderCatRows(); flashSaved();
+};
+document.getElementById('catClose').onclick = ()=> document.getElementById('catModal').classList.remove('open');
+document.getElementById('catDone').onclick = ()=> document.getElementById('catModal').classList.remove('open');
+
+function applyFilter(){
+  LOCATIONS.forEach(loc=>{
+    const show = activeCats.has(loc.category);
+    const m = markers[loc.id]; if(!m) return;
+    if(show){ if(!map.hasLayer(m)) m.addTo(map); } else { if(map.hasLayer(m)) map.removeLayer(m); }
+  });
+  renderList(); renderPhotoGrid();
+  document.getElementById('locCountBadge').textContent = t('countUnit')(LOCATIONS.length);
+}
+function renderList(){
+  const wrap = document.getElementById('listWrap');
+  wrap.innerHTML = '';
+  const list = LOCATIONS.filter(l=>activeCats.has(l.category));
+  if(list.length===0){ wrap.innerHTML = `<div class="emptyState">${t('emptyList')}</div>`; return; }
+  list.forEach(loc=>{
+    const isSel = selectMode && selectedIds.has(loc.id);
+    const color = loc.color || catColor(loc.category);
+    const card = document.createElement('div');
+    card.className = 'locCard' + (loc.id===currentLocId && !selectMode ? ' active' : '') + (isSel ? ' selForDel' : '');
+    card.innerHTML = `
+      <div class="row1">
+        ${selectMode ? `<div class="selCheck${isSel?' on':''}">${isSel?'✓':''}</div>` : ''}
+        <div class="badge" style="background:${color}">${loc.id}</div>
+        <div class="title">${escapeHtml(loc.title||t('noTitle'))}</div>
+        <div class="cat">${catIcon(loc.category)}</div>
+      </div>
+      <div class="addr">${escapeHtml(loc.address || t('noAddress'))}</div>
+      <div class="mediaCount">${t('mediaCount')(loc.media.length)}</div>
+    `;
+    card.onclick = ()=> selectMode ? toggleSelect(loc.id) : openDetail(loc.id, true);
+    wrap.appendChild(card);
+  });
+}
+function renderPhotoGrid(){
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = '';
+  const list = LOCATIONS.filter(l=>activeCats.has(l.category));
+  if(list.length===0){ grid.innerHTML = `<div class="emptyState" style="grid-column:1/-1;">${t('emptyList')}</div>`; return; }
+  list.forEach(loc=>{
+    const first = loc.media[0];
+    const isSel = selectMode && selectedIds.has(loc.id);
+    const color = loc.color || catColor(loc.category);
+    const card = document.createElement('div');
+    card.className = 'photoCard' + (isSel ? ' selForDel' : '');
+    card.innerHTML = `
+      ${selectMode ? `<div class="selCheck${isSel?' on':''}">${isSel?'✓':''}</div>` : `<span class="pcCat" style="background:${color}"></span>`}
+      <span class="pcCount">${t('mediaCount')(loc.media.length)}</span>
+      ${ first ? `<img src="${thumbFor(first)}" alt="">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:11px;">${t('noMedia')}</div>` }
+      <div class="pcLabel">${escapeHtml(loc.title||t('noTitle'))}</div>
+    `;
+    card.onclick = ()=>{
+      if(selectMode){ toggleSelect(loc.id); return; }
+      if(loc.media.length) openLightbox(loc.id, 0); else openDetail(loc.id, true);
+    };
+    grid.appendChild(card);
+  });
+}
+function thumbFor(media){ return mediaThumbPath(media.url.split('/').pop()); }
+
+document.getElementById('btnViewList').onclick = ()=> switchView('list');
+document.getElementById('btnViewPhoto').onclick = ()=> switchView('photo');
+function switchView(mode){
+  document.getElementById('btnViewList').classList.toggle('active', mode==='list');
+  document.getElementById('btnViewPhoto').classList.toggle('active', mode==='photo');
+  document.getElementById('listWrap').style.display = mode==='list' ? 'block' : 'none';
+  document.getElementById('photoGrid').style.display = mode==='photo' ? 'grid' : 'none';
+}
+document.getElementById('toggleSidebarBtn').onclick = ()=> document.getElementById('sidebar').classList.toggle('open');
+
+/* =========================================================
+   5. 상세 패널
+   ========================================================= */
+function updateCoordHint(loc){
+  document.getElementById('dpCoordHint').textContent = t('coordHint')(loc.lat.toFixed(6), loc.lng.toFixed(6), editMode);
+}
+function haversineMeters(lat1,lng1,lat2,lng2){
+  const R=6371000, toRad=d=>d*Math.PI/180;
+  const dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return R*2*Math.asin(Math.sqrt(a));
+}
+function formatDist(m){ return m<1000 ? Math.round(m)+'m' : (m/1000).toFixed(2)+'km'; }
+function renderDpDistances(loc){
+  const wrap = document.getElementById('dpDistList');
+  const others = LOCATIONS.filter(l=>l.id!==loc.id)
+    .map(l=>({l, d: haversineMeters(loc.lat,loc.lng,l.lat,l.lng)}))
+    .sort((a,b)=>a.d-b.d);
+  if(others.length===0){ wrap.innerHTML = `<div class="emptyState" style="padding:8px 0;">${t('noOtherSpots')}</div>`; return; }
+  wrap.innerHTML = others.map(o=>`
+    <div class="distRow" data-id="${o.l.id}">
+      <span>${catIcon(o.l.category)}</span>
+      <span class="dName">${escapeHtml(o.l.title||t('noTitle'))}</span>
+      <span class="dVal">${formatDist(o.d)}</span>
+    </div>`).join('');
+  wrap.querySelectorAll('.distRow').forEach(row=>{
+    row.onclick = ()=> openDetail(Number(row.dataset.id), true);
+  });
+}
+function refreshDistancesIfOpen(){
+  if(currentLocId==null) return;
+  const loc = LOCATIONS.find(l=>l.id===currentLocId);
+  if(loc) renderDpDistances(loc);
+}
+function openDetail(locId, flyTo){
+  const loc = LOCATIONS.find(l=>l.id===locId);
+  if(!loc) return;
+  currentLocId = locId;
+  renderList();
+  if(flyTo) map.flyTo([loc.lat, loc.lng], Math.max(map.getZoom(),17), { duration:.5 });
+
+  document.getElementById('dpTitleInput').value = loc.title || '';
+  document.getElementById('dpTitleInput').readOnly = !editMode;
+  buildCategorySelect();
+  document.getElementById('dpCategorySelect').value = loc.category;
+  document.getElementById('dpCategorySelect').disabled = !editMode;
+  document.getElementById('dpColorInput').value = loc.color || catColor(loc.category);
+  document.getElementById('dpColorInput').disabled = !editMode;
+  document.getElementById('dpAddressInput').value = loc.address || '';
+  document.getElementById('dpAddressInput').readOnly = !editMode;
+  document.getElementById('dpNotesInput').value = loc.notes || '';
+  document.getElementById('dpNotesInput').readOnly = !editMode;
+  document.getElementById('dpSunseekerInput').value = loc.sunseeker || '';
+  document.getElementById('dpSunseekerInput').readOnly = !editMode;
+  document.getElementById('dpAddMediaBtn').style.display = editMode ? 'inline-flex' : 'none';
+  document.getElementById('dpDeleteBtn').style.display = editMode ? 'block' : 'none';
+  document.getElementById('dpAddrStatus').textContent = '';
+  updateCoordHint(loc);
+  renderDpDistances(loc);
+  renderDpMedia(loc);
+
+  document.getElementById('detailPanel').classList.add('open');
+  if(window.innerWidth <= 760) document.getElementById('sidebar').classList.remove('open');
+}
+document.getElementById('dpClose').onclick = ()=>{
+  document.getElementById('detailPanel').classList.remove('open');
+  currentLocId = null; renderList();
+};
+document.getElementById('dpTitleInput').addEventListener('input', debounce(function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.title = this.value; renderList(); renderPhotoGrid(); saveState();
+}, 350));
+document.getElementById('dpCategorySelect').addEventListener('change', function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.category = this.value;
+  const m = markers[loc.id]; if(m) m.setIcon(makeIcon(loc));
+  applyFilter(); saveState();
+});
+document.getElementById('dpColorInput').addEventListener('input', function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.color = this.value;
+  const m = markers[loc.id]; if(m) m.setIcon(makeIcon(loc));
+  renderList(); renderPhotoGrid();
+});
+document.getElementById('dpColorInput').addEventListener('change', ()=> saveState());
+
+/* ---- Google API 키 저장 ---- */
+const GMAPS_KEY_STORAGE = 'scout_gmaps_key_261009';
+/* 발행본은 파일에 박힌 키를 쓴다 — 구글 콘솔에서 «luvparklife.github.io 에서만 작동»
+   제한을 걸어두면 남이 소스에서 키를 봐도 다른 데서는 못 쓴다(구글 권장 방식). */
+function getGmapsKey(){
+  if(PUBLISHED && PUBLISHED.gmapsKey) return PUBLISHED.gmapsKey;
+  return localStorage.getItem(GMAPS_KEY_STORAGE) || '';
+}
+function openGmapsKeyModal(){
+  document.getElementById('gmapsKeyInput').value = getGmapsKey();
+  document.getElementById('gmapsKeyModal').classList.add('open');
+}
+document.getElementById('dpGmapsKeyBtn').onclick = openGmapsKeyModal;
+document.getElementById('gmapsKeyClose').onclick = ()=> document.getElementById('gmapsKeyModal').classList.remove('open');
+document.getElementById('gmapsKeySave').onclick = ()=>{
+  const v = document.getElementById('gmapsKeyInput').value.trim();
+  localStorage.setItem(GMAPS_KEY_STORAGE, v);
+  document.getElementById('gmapsKeyModal').classList.remove('open');
+  flashSaved();
+};
+
+/* ---- 구글 지도 JS API 동적 로드 (키가 있을 때만) ---- */
+let gmapsLoadPromise = null;
+function loadGoogleMaps(key){
+  if(window.google && window.google.maps) return Promise.resolve(window.google);
+  if(gmapsLoadPromise) return gmapsLoadPromise;
+  gmapsLoadPromise = new Promise((resolve, reject)=>{
+    window.__gmapsReady = ()=> resolve(window.google);
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&callback=__gmapsReady`;
+    s.onerror = ()=>{ gmapsLoadPromise = null; reject(new Error('load fail')); };
+    document.head.appendChild(s);
+  });
+  return gmapsLoadPromise;
+}
+
+/* ---- 태양 위치 (SunCalc, 키 불필요) ---- */
+function sunPosDeg(lat,lng,date){
+  const p = SunCalc.getPosition(date, lat, lng);
+  return { az: (p.azimuth*180/Math.PI + 180 + 360) % 360, alt: p.altitude*180/Math.PI };
+}
+function fovForZoom(z){
+  if(!Number.isFinite(z)) z = 1;
+  return Math.min(180, 180 / Math.pow(1.5, z));
+}
+function getSelectedDateTime(){
+  const v = document.getElementById('svDateTime').value;
+  return v ? new Date(v) : new Date();
+}
+function toLocalDatetimeInputValue(d){
+  const pad = n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+let svPanorama = null, svLoc = null, svResizeBound = false;
+function drawSunOverlay(){
+  if(!svPanorama || !svLoc) return;
+  const wrap = document.getElementById('svPanoWrap');
+  const canvas = document.getElementById('svOverlay');
+  const box = wrap.getBoundingClientRect();
+  if(!box.width || !box.height) return; // 모달이 아직 화면에 자리잡기 전 — 곧 재시도로 다시 그려짐
+  canvas.width = box.width; canvas.height = box.height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const pov = svPanorama.getPov() || {};
+  const heading = Number.isFinite(pov.heading) ? pov.heading : 0;
+  const pitch = Number.isFinite(pov.pitch) ? pov.pitch : 0;
+  const fovH = fovForZoom(svPanorama.getZoom());
+  const fovV = fovH * (canvas.height / Math.max(canvas.width,1));
+
+  function project(az, alt){
+    const dAz = ((az - heading + 540) % 360) - 180;
+    const x = canvas.width/2 + (dAz/(fovH/2)) * (canvas.width/2);
+    const dAlt = alt - pitch;
+    const y = canvas.height/2 - (dAlt/(fovV/2)) * (canvas.height/2);
+    return { x, y, inView: Math.abs(dAz) <= fovH/2 + 8 };
+  }
+
+  const dateVal = getSelectedDateTime();
+  if(document.getElementById('svShowPath').checked){
+    const times = SunCalc.getTimes(dateVal, svLoc.lat, svLoc.lng);
+    const start = (times.sunrise instanceof Date && !isNaN(times.sunrise)) ? times.sunrise.getTime()-30*60000 : dateVal.getTime()-6*3600000;
+    const end = (times.sunset instanceof Date && !isNaN(times.sunset)) ? times.sunset.getTime()+30*60000 : dateVal.getTime()+6*3600000;
+    ctx.beginPath();
+    let started = false, lastInView = false;
+    for(let tms=start; tms<=end; tms+=10*60000){
+      const { az, alt } = sunPosDeg(svLoc.lat, svLoc.lng, new Date(tms));
+      if(alt < -4) continue;
+      const p = project(az, alt);
+      if(!started || !lastInView && !p.inView){ ctx.moveTo(p.x,p.y); started = true; }
+      else ctx.lineTo(p.x,p.y);
+      lastInView = p.inView;
+    }
+    ctx.strokeStyle = 'rgba(245,182,63,.85)'; ctx.lineWidth = 2; ctx.stroke();
+  }
+
+  const cur = sunPosDeg(svLoc.lat, svLoc.lng, dateVal);
+  const p = project(cur.az, cur.alt);
+  if(cur.alt > -4){
+    ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, Math.PI*2);
+    ctx.fillStyle = '#ffd56b'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+  }
+  const belowTxt = cur.alt < 0 ? ` (${t('belowHorizon')})` : '';
+  document.getElementById('svSunReadout').textContent =
+    `☀️ ${t('altitude')} ${cur.alt.toFixed(0)}° · ${t('azimuth')} ${cur.az.toFixed(0)}°${belowTxt}`;
+}
+
+async function openStreetViewModal(loc){
+  svLoc = loc;
+  document.getElementById('svModalTitle').textContent = loc.title || t('noTitle');
+  document.getElementById('svOpenNewTab').textContent = t('svOpenNewTab');
+  document.getElementById('svOpenNewTab').href = `https://www.google.com/maps?layer=c&cbll=${loc.lat},${loc.lng}`;
+  document.getElementById('svShowPathLabel').textContent = t('svShowPathLabel');
+  document.getElementById('svDateTime').value = toLocalDatetimeInputValue(new Date());
+  document.getElementById('svNoKeyMsg').style.display = 'none';
+  document.getElementById('svModal').classList.add('open');
+
+  const key = getGmapsKey();
+  if(!key){
+    document.getElementById('svModal').classList.remove('open');
+    openGmapsKeyModal();
+    return;
+  }
+  try{ await loadGoogleMaps(key); }
+  catch(e){
+    document.getElementById('svNoKeyMsg').textContent = t('gmapsLoadFail');
+    document.getElementById('svNoKeyMsg').style.display = 'flex';
+    return;
+  }
+  if(!svPanorama){
+    svPanorama = new google.maps.StreetViewPanorama(document.getElementById('svPano'), {
+      position: { lat: loc.lat, lng: loc.lng }, pov: { heading: 0, pitch: 0 }, zoom: 1,
+      addressControl: false, fullscreenControl: false, motionTracking: false, motionTrackingControl: false
+    });
+    svPanorama.addListener('pov_changed', drawSunOverlay);
+    svPanorama.addListener('zoom_changed', drawSunOverlay);
+    svPanorama.addListener('status_changed', ()=>{
+      if(svPanorama.getStatus() !== 'OK'){
+        document.getElementById('svNoKeyMsg').textContent = t('noStreetView');
+        document.getElementById('svNoKeyMsg').style.display = 'flex';
+      } else {
+        document.getElementById('svNoKeyMsg').style.display = 'none';
+        drawSunOverlay();
+      }
+    });
+  } else {
+    svPanorama.setPosition({ lat: loc.lat, lng: loc.lng });
+  }
+  if(!svResizeBound){
+    window.addEventListener('resize', ()=>{ if(document.getElementById('svModal').classList.contains('open')) drawSunOverlay(); });
+    svResizeBound = true;
+  }
+  // 🔴 로드뷰가 뜨는 속도가 매번 달라 단 한 번의 타이머로는 못 믿는다 — 몇 번 더 다시 그려서 맞춘다
+  [100, 400, 900, 1800].forEach(ms => setTimeout(drawSunOverlay, ms));
+}
+document.getElementById('svMovePinBtn').onclick = ()=>{
+  if(!svPanorama || !svLoc){ flashError(t('svMovePinFail')); return; }
+  const pos = svPanorama.getPosition();
+  if(!pos){ flashError(t('svMovePinFail')); return; }
+  const lat = pos.lat(), lng = pos.lng();
+  svLoc.lat = lat; svLoc.lng = lng;
+  const m = markers[svLoc.id]; if(m) m.setLatLng([lat, lng]);
+  if(currentLocId === svLoc.id) updateCoordHint(svLoc);
+  refreshDistancesIfOpen();
+  drawSunOverlay();
+  saveState();
+  flashSaved();
+};
+document.getElementById('dpStreetViewBtn').onclick = ()=>{
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  openStreetViewModal(loc);
+};
+document.getElementById('svClose').onclick = ()=> document.getElementById('svModal').classList.remove('open');
+document.getElementById('svDateTime').addEventListener('input', drawSunOverlay);
+document.getElementById('svShowPath').addEventListener('change', drawSunOverlay);
+document.getElementById('dpAddressInput').addEventListener('input', debounce(function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.address = this.value; renderList(); saveState();
+}, 350));
+document.getElementById('dpNotesInput').addEventListener('input', debounce(function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.notes = this.value; saveState();
+}, 350));
+document.getElementById('dpSunseekerInput').addEventListener('input', debounce(function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  loc.sunseeker = this.value; saveState();
+}, 350));
+document.getElementById('dpDeleteBtn').onclick = function(){
+  const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+  if(!confirm(t('deleteConfirm')(loc.title))) return;
+  const m = markers[loc.id]; if(m) map.removeLayer(m);
+  delete markers[loc.id];
+  LOCATIONS = LOCATIONS.filter(l=>l.id!==loc.id);
+  currentLocId = null;
+  document.getElementById('detailPanel').classList.remove('open');
+  applyFilter(); saveState();
+};
+/* 🔴 Sunseeker 사진은 «따로 위에» 모은다 (2026-10-09 대표 지시) — 일반 사진에 섞이면
+   「해가 어디로 가나」를 보려고 할 때마다 찾아야 한다. 사진마다 메모도 여기서 적는다. */
+function renderDpMedia(loc){
+  const sunIdx = [], otherIdx = [];
+  loc.media.forEach((m, i)=> (m.type === 'sunseeker' ? sunIdx : otherIdx).push(i));
+  renderMediaGroup_(document.getElementById('dpMediaGridSun'), loc, sunIdx);
+  renderMediaGroup_(document.getElementById('dpMediaGrid'), loc, otherIdx);
+  document.getElementById('dpSunGroupWrap').style.display = sunIdx.length ? 'block' : 'none';
+}
+function renderMediaGroup_(grid, loc, indices){
+  grid.innerHTML = '';
+  indices.forEach(idx=>{
+    const m = loc.media[idx];
+    const badge = t('typeBadge')[m.type] || m.type;
+    const cell = document.createElement('div');
+    cell.className = 'mediaCell';
+    const card = document.createElement('div');
+    card.className = 'mediaThumb';
+    card.innerHTML = `
+      <img src="${thumbFor(m)}" alt="">
+      ${m.type==='video' ? '<span class="mPlay">▶</span>' : ''}
+      <span class="mTypeBadge">${badge}</span>
+      ${editMode ? `<button class="mRemove" title="✕">✕</button>` : ''}
+    `;
+    card.onclick = ()=> openLightbox(loc.id, idx);
+    if(editMode){
+      card.querySelector('.mRemove').onclick = (ev)=>{
+        ev.stopPropagation();
+        loc.media.splice(idx,1);
+        renderDpMedia(loc); renderList(); renderPhotoGrid(); saveState();
+      };
+      if(m.type !== 'video'){
+        const b = card.querySelector('.mTypeBadge');
+        b.style.cursor = 'pointer'; b.title = t('typeToggleTitle');
+        b.onclick = (ev)=>{
+          ev.stopPropagation();
+          m.type = (m.type==='sunseeker') ? 'image' : 'sunseeker';
+          renderDpMedia(loc); saveState();
+        };
+      }
+    }
+    cell.appendChild(card);
+
+    const cap = document.createElement('input');
+    cap.type = 'text'; cap.className = 'mCaption';
+    cap.value = m.caption || '';
+    cap.placeholder = t('captionPlaceholder');
+    cap.readOnly = !editMode;
+    cap.addEventListener('input', debounce(function(){
+      m.caption = this.value; saveState();
+    }, 350));
+    cell.appendChild(cap);
+
+    grid.appendChild(cell);
+  });
+}
+function reverseGeocode(loc){
+  const statusEl = document.getElementById('dpAddrStatus');
+  if(currentLocId===loc.id) statusEl.textContent = t('geoLoading');
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${loc.lat}&lon=${loc.lng}&accept-language=${LANG}&zoom=18`)
+    .then(r=>r.json())
+    .then(data=>{
+      if(data && data.display_name && !loc.address){
+        loc.address = data.display_name;
+        if(currentLocId===loc.id){ document.getElementById('dpAddressInput').value = loc.address; statusEl.textContent = t('geoOk'); }
+        renderList(); saveState();
+      } else if(currentLocId===loc.id){ statusEl.textContent=''; }
+    })
+    .catch(()=>{ if(currentLocId===loc.id) statusEl.textContent = t('geoFail'); });
+}
+
+/* =========================================================
+   6. 미디어 보관함 선택 모달
+   ========================================================= */
+let pickerTargetId = null;
+const pickerSelected = new Set();
+document.getElementById('dpAddMediaBtn').onclick = ()=>{
+  pickerTargetId = currentLocId;
+  pickerSelected.clear();
+  document.getElementById('pickerModalTitle').textContent = t('pickerTitle');
+  document.getElementById('pickerCancel').textContent = t('pickerCancel');
+  renderPickerGrid();
+  document.getElementById('mediaPickerModal').classList.add('open');
+};
+function usedElsewhereLabel(file){
+  const url = mediaFullPath(file);
+  for(const loc of LOCATIONS){ if(loc.media.some(m=>m.url===url)) return loc.title || '✓'; }
+  return null;
+}
+function renderPickerGrid(){
+  const grid = document.getElementById('pickerGrid');
+  grid.innerHTML = '';
+  allMediaFiles().forEach(f=>{
+    const used = usedElsewhereLabel(f.file);
+    const card = document.createElement('div');
+    card.className = 'pickerCard' + (pickerSelected.has(f.file) ? ' selected' : '');
+    card.innerHTML = `
+      <img src="${mediaThumbPath(f.file)}" alt="">
+      <span class="pType">${f.type==='video' ? '🎬' : '📷'}</span>
+      <span class="pTick">${pickerSelected.has(f.file)?'✓':''}</span>
+      ${used ? `<span class="pUsed">${escapeHtml(used)}</span>` : ''}
+    `;
+    card.onclick = ()=>{
+      if(pickerSelected.has(f.file)) pickerSelected.delete(f.file); else pickerSelected.add(f.file);
+      card.classList.toggle('selected');
+      card.querySelector('.pTick').textContent = pickerSelected.has(f.file) ? '✓' : '';
+      document.getElementById('pickerConfirm').textContent = t('pickerConfirm')(pickerSelected.size);
+    };
+    grid.appendChild(card);
+  });
+  document.getElementById('pickerConfirm').textContent = t('pickerConfirm')(pickerSelected.size);
+}
+document.getElementById('pickerClose').onclick = ()=> document.getElementById('mediaPickerModal').classList.remove('open');
+document.getElementById('pickerCancel').onclick = ()=> document.getElementById('mediaPickerModal').classList.remove('open');
+document.getElementById('pickerConfirm').onclick = ()=>{
+  const loc = LOCATIONS.find(l=>l.id===pickerTargetId);
+  if(loc){
+    allMediaFiles().filter(f=>pickerSelected.has(f.file)).forEach(f=>{
+      loc.media.push({ type: f.type==='video' ? 'video' : 'image', url: mediaFullPath(f.file), caption:'' });
+    });
+    renderDpMedia(loc); renderList(); renderPhotoGrid(); refreshDistancesIfOpen(); saveState();
+  }
+  document.getElementById('mediaPickerModal').classList.remove('open');
+};
+
+/* =========================================================
+   7. 라이트박스
+   ========================================================= */
+let lbLocId = null, lbIndex = 0;
+function openLightbox(locId, index){
+  lbLocId = locId; lbIndex = index;
+  document.getElementById('lightbox').classList.add('open');
+  renderLightbox();
+}
+function closeLightbox(){ document.getElementById('lightbox').classList.remove('open'); document.getElementById('lbStageInner').innerHTML=''; }
+document.getElementById('lbClose').onclick = closeLightbox;
+document.getElementById('lbPrev').onclick = ()=> stepLightbox(-1);
+document.getElementById('lbNext').onclick = ()=> stepLightbox(1);
+function stepLightbox(dir){
+  const loc = LOCATIONS.find(l=>l.id===lbLocId); if(!loc) return;
+  lbIndex = (lbIndex + dir + loc.media.length) % loc.media.length;
+  renderLightbox();
+}
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('lightbox').classList.contains('open')) return;
+  if(e.key === 'Escape') closeLightbox();
+  if(e.key === 'ArrowLeft') stepLightbox(-1);
+  if(e.key === 'ArrowRight') stepLightbox(1);
+});
+function renderLightbox(){
+  const loc = LOCATIONS.find(l=>l.id===lbLocId); if(!loc || !loc.media.length) return;
+  const media = loc.media[lbIndex];
+  document.getElementById('lbTitle').textContent = loc.title;
+  document.getElementById('lbCounter').textContent = `${lbIndex+1} / ${loc.media.length}`;
+  document.getElementById('lbCaption').textContent = media.caption || '';
+  document.getElementById('lbSunBadge').style.display = media.type==='sunseeker' ? 'inline-flex' : 'none';
+  const dl = document.getElementById('lbDownload');
+  dl.href = media.url;
+  dl.setAttribute('download', media.url.split('/').pop());
+  dl.textContent = t('lbDownload');
+  const stage = document.getElementById('lbStageInner');
+  stage.innerHTML = media.type === 'video'
+    ? `<video src="${media.url}" controls autoplay></video>`
+    : `<img src="${media.url}" alt="${escapeHtml(media.caption||'')}">`;
+  const dots = document.getElementById('lbDots');
+  dots.innerHTML = '';
+  loc.media.forEach((m, i)=>{
+    const d = document.createElement('span');
+    d.className = i===lbIndex ? 'on' : '';
+    d.onclick = ()=>{ lbIndex = i; renderLightbox(); };
+    dots.appendChild(d);
+  });
+}
+
+/* =========================================================
+   8. 내보내기 / 백업 / 불러오기
+   ========================================================= */
+document.getElementById('btnExport').onclick = ()=>{
+  /* 🔴 내보내기에는 «분류와 구글 키»도 같이 담는다 — 발행할 때 그 파일 하나만 있으면 되게.
+     키는 파일 안에만 있고 화면 글상자에는 «가린 채» 보여준다(어깨너머·화면공유 대비). */
+  const bundle = {
+    savedAt: new Date().toISOString(),
+    locations: LOCATIONS,
+    categories: CATEGORIES,
+    gmapsKey: (localStorage.getItem(GMAPS_KEY_STORAGE) || '')
+  };
+  const shown = JSON.parse(JSON.stringify(bundle));
+  if(shown.gmapsKey) shown.gmapsKey = shown.gmapsKey.slice(0,6) + '…(파일에는 그대로 들어갑니다)';
+  document.getElementById('exportTextarea').value = 'const LOCATIONS = ' + JSON.stringify(shown, null, 2) + ';';
+  document.getElementById('exportTextarea').dataset.full = 'const LOCATIONS = ' + JSON.stringify(bundle, null, 2) + ';';
+  document.getElementById('exportModal').classList.add('open');
+};
+document.getElementById('exportClose').onclick = ()=> document.getElementById('exportModal').classList.remove('open');
+document.getElementById('exportDone').onclick = ()=> document.getElementById('exportModal').classList.remove('open');
+document.getElementById('btnExportSelectAll').onclick = ()=>{
+  const ta = document.getElementById('exportTextarea'); ta.focus(); ta.select();
+};
+document.getElementById('btnExportDownload').onclick = ()=>{
+  try{
+    const ta = document.getElementById('exportTextarea');
+    const blob = new Blob([ta.dataset.full || ta.value], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = t('exportFileName');
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  }catch(e){ flashError(t('downloadFail')); }
+};
+document.getElementById('importFileInput').addEventListener('change', function(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      let text = String(ev.target.result).replace(/^\s*const\s+LOCATIONS\s*=\s*/,'').replace(/;\s*$/,'');
+      const data = JSON.parse(text);
+      /* 옛 형식(배열)과 새 형식({locations,categories,gmapsKey}) 둘 다 받는다 */
+      if(Array.isArray(data)){
+        LOCATIONS = data;
+      } else if(data && Array.isArray(data.locations)){
+        LOCATIONS = data.locations;
+        if(Array.isArray(data.categories) && data.categories.length){
+          CATEGORIES = data.categories; afterCatsChanged();
+        }
+        if(data.gmapsKey && !String(data.gmapsKey).includes('…')){
+          localStorage.setItem(GMAPS_KEY_STORAGE, data.gmapsKey);
+        }
+      } else throw new Error('bad format');
+      nextId = LOCATIONS.reduce((m,l)=>Math.max(m,l.id||0),0)+1;
+      rebuildAllMarkers(); saveState(); flashSaved();
+      document.getElementById('exportModal').classList.remove('open');
+    }catch(err){ flashError(t('importFail')); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+document.getElementById('btnClearAll').onclick = ()=>{
+  if(!confirm(t('clearAllConfirm'))) return;
+  LOCATIONS = [];
+  rebuildAllMarkers(); currentLocId=null;
+  document.getElementById('detailPanel').classList.remove('open');
+  saveState();
+};
+
+/* =========================================================
+   9. 사진 일괄 업로드 — GPS 자동분류 + 드래그로 교정
+   ========================================================= */
+const CLUSTER_RADIUS_M = 60;
+const MEDIA_EXTRA_KEY = 'scout_media_extra_261009';
+const UNSORTED_KEY = 'scout_unsorted_261009';
+
+function loadMediaExtra(){
+  try{ return JSON.parse(localStorage.getItem(MEDIA_EXTRA_KEY) || '[]'); }catch(e){ return []; }
+}
+function saveMediaExtra(arr){ try{ localStorage.setItem(MEDIA_EXTRA_KEY, JSON.stringify(arr)); }catch(e){} }
+function allMediaFiles(){ return MEDIA_FILES.concat(loadMediaExtra()); }
+
+function loadUnsorted(){
+  try{ return JSON.parse(localStorage.getItem(UNSORTED_KEY) || '[]'); }catch(e){ return []; }
+}
+function saveUnsorted(arr){
+  try{ localStorage.setItem(UNSORTED_KEY, JSON.stringify(arr)); }catch(e){}
+  const btn = document.getElementById('btnUnsorted');
+  btn.style.display = arr.length ? 'block' : 'none';
+  btn.textContent = t('btnUnsorted')(arr.length);
+}
+
+function sanitizeFilename(name){
+  return name.replace(/[^\w.\-가-힣]/g, '_');
+}
+
+/* ---- IndexedDB: 폴더 핸들 저장(세션 넘어 재사용) ---- */
+function idbOpen(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open('scout_fs_261009', 1);
+    req.onupgradeneeded = ()=> req.result.createObjectStore('handles');
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbGet(key){
+  try{
+    const db = await idbOpen();
+    return await new Promise(res=>{
+      const r = db.transaction('handles','readonly').objectStore('handles').get(key);
+      r.onsuccess = ()=> res(r.result || null);
+      r.onerror = ()=> res(null);
+    });
+  }catch(e){ return null; }
+}
+async function idbSet(key, val){
+  try{
+    const db = await idbOpen();
+    await new Promise(res=>{
+      const tx = db.transaction('handles','readwrite');
+      tx.objectStore('handles').put(val, key);
+      tx.oncomplete = ()=> res(true);
+      tx.onerror = ()=> res(false);
+    });
+  }catch(e){}
+}
+
+/* 🔴 폴더 권한은 «페이지를 열 때 미리» 메모리에 올려 둔다 (2026-10-09 대표 신고로 고침).
+   왜 — 브라우저는 「방금 사람이 누른 직후」에만 폴더 창을 띄워준다. 버튼을 누른 «뒤에»
+   저장소를 뒤지느라(await) 시간이 가면 그 «직후»가 끊겨서 창이 조용히 막히고,
+   화면에는 「폴더 선택이 취소됐다」만 뜬다. 그래서 «누르기 전에» 미리 알아 둔다. */
+let mediaDirHandle = null;
+let mediaDirReady = false;     /* 동기적으로 판단해야 해서 따로 들고 있는다 */
+(async function preloadMediaDir(){
+  if(PUBLISHED) return;
+  try{
+    const h = await idbGet('mediaDir');
+    if(h){
+      mediaDirHandle = h;
+      mediaDirReady = (await h.queryPermission({mode:'readwrite'})) === 'granted';
+    }
+  }catch(e){}
+})();
+
+async function ensureMediaDirHandle(){
+  if(!window.showDirectoryPicker){ alert(t('noFsApi')); return null; }
+  if(mediaDirHandle){
+    try{
+      if(await mediaDirHandle.queryPermission({mode:'readwrite'}) === 'granted') return mediaDirHandle;
+      if(await mediaDirHandle.requestPermission({mode:'readwrite'}) === 'granted') return mediaDirHandle;
+    }catch(e){ mediaDirHandle = null; }
+  }
+  const saved = await idbGet('mediaDir');
+  if(saved){
+    try{
+      let perm = await saved.queryPermission({mode:'readwrite'});
+      if(perm !== 'granted') perm = await saved.requestPermission({mode:'readwrite'});
+      if(perm === 'granted'){ mediaDirHandle = saved; return saved; }
+    }catch(e){}
+  }
+  try{
+    const handle = await window.showDirectoryPicker({ id:'scoutMediaDir261009', mode:'readwrite' });
+    mediaDirHandle = handle;
+    await idbSet('mediaDir', handle);
+    return handle;
+  }catch(e){ return null; }
+}
+async function writeFileToDir(dirHandle, subfolder, filename, blobOrFile){
+  const sub = await dirHandle.getDirectoryHandle(subfolder, { create:true });
+  const fh = await sub.getFileHandle(filename, { create:true });
+  const w = await fh.createWritable();
+  await w.write(blobOrFile);
+  await w.close();
+}
+
+function makeImageThumbnailBlob(file){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      const maxW = 360;
+      const scale = Math.min(1, maxW/img.width);
+      const w = Math.max(1, Math.round(img.width*scale)), h = Math.max(1, Math.round(img.height*scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      canvas.toBlob(b=>{ URL.revokeObjectURL(url); resolve(b); }, 'image/jpeg', 0.82);
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+function makeVideoThumbnailBlob(file){
+  return new Promise((resolve)=>{
+    const video = document.createElement('video');
+    video.preload = 'metadata'; video.muted = true; video.playsInline = true;
+    const url = URL.createObjectURL(file);
+    let done = false;
+    const finish = (b)=>{ if(done) return; done = true; URL.revokeObjectURL(url); resolve(b); };
+    video.addEventListener('loadeddata', ()=>{ video.currentTime = Math.min(1, (video.duration||2)/2); });
+    video.addEventListener('seeked', ()=>{
+      try{
+        const w = 360, h = Math.round(360 * ((video.videoHeight/video.videoWidth)||0.75));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(video,0,0,w,h);
+        canvas.toBlob(b=> finish(b), 'image/jpeg', 0.8);
+      }catch(e){ finish(null); }
+    });
+    video.addEventListener('error', ()=> finish(null));
+    setTimeout(()=> finish(null), 6000);
+    video.src = url;
+  });
+}
+
+function setUploadProgress(i, n, name){
+  document.getElementById('upProgressFill').style.width = Math.round(i/n*100)+'%';
+  document.getElementById('upProgressText').textContent = t('upProgressText')(i, n, name);
+}
+
+async function handleBulkUpload(fileList){
+  const files = Array.from(fileList);
+  if(!files.length) return;
+  /* 🔴 여기서는 폴더 창을 «띄우지 않는다» — 파일 선택을 거치며 「방금 누름」이 끊겨 막힌다.
+     폴더는 버튼 단계에서 이미 연결돼 있어야 한다. */
+  const dir = mediaDirReady ? mediaDirHandle : null;
+  if(!dir){ flashError(t('folderPickCancelled')); setBackupStatus('off'); return; }
+
+  document.getElementById('uploadProgressTitle').textContent = t('uploadProgressTitle');
+  document.getElementById('upProgressFill').style.width = '0%';
+  document.getElementById('uploadProgressModal').classList.add('open');
+
+  const newEntries = []; // {file,type,lat,lng}
+  for(let i=0;i<files.length;i++){
+    const f = files[i];
+    setUploadProgress(i, files.length, f.name);
+    const isVideo = f.type.startsWith('video/');
+    const safeName = `up_${Date.now()}_${i}_${sanitizeFilename(f.name)}`;
+    let lat = null, lng = null;
+    if(!isVideo){
+      try{ const gps = await exifr.gps(f); if(gps){ lat = gps.latitude; lng = gps.longitude; } }catch(e){}
+    }
+    try{
+      await writeFileToDir(dir, '원본', safeName, f);
+      const thumbBlob = isVideo ? await makeVideoThumbnailBlob(f) : await makeImageThumbnailBlob(f);
+      const thumbName = safeName.replace(/\.[^.]+$/,'') + '.jpg';
+      if(thumbBlob) await writeFileToDir(dir, '썸네일', thumbName, thumbBlob);
+      newEntries.push({ file: safeName, type: isVideo?'video':'image', lat, lng });
+    }catch(e){ /* 한 파일 실패해도 나머지는 계속 */ }
+  }
+  setUploadProgress(files.length, files.length, '');
+  const extra = loadMediaExtra().concat(newEntries);
+  saveMediaExtra(extra);
+
+  document.getElementById('uploadProgressModal').classList.remove('open');
+  const affectedIds = clusterAndAssign(newEntries);
+  flashSaved();
+  openReviewModal(affectedIds);
+}
+
+/* ---- GPS 자동분류: 기존 핀 근처면 그 핀에, 아니면 새로운 핀끼리 묶기, GPS 없으면 미분류 ---- */
+function clusterAndAssign(newEntries){
+  const affected = new Set();
+  const withGps = [];
+  const unsorted = loadUnsorted();
+
+  newEntries.forEach(e=>{
+    if(e.lat==null || e.lng==null){ unsorted.push(e); return; }
+    let best = null, bestD = Infinity;
+    LOCATIONS.forEach(loc=>{
+      const d = haversineMeters(e.lat,e.lng, loc.lat, loc.lng);
+      if(d < bestD){ bestD = d; best = loc; }
+    });
+    if(best && bestD <= CLUSTER_RADIUS_M){
+      best.media.push({ type: e.type, url: mediaFullPath(e.file), caption:'' });
+      affected.add(best.id);
+    } else {
+      withGps.push(e);
+    }
+  });
+
+  // 남은 것들끼리 거리기준으로 묶기 (간단한 그리디 클러스터링)
+  const clusters = [];
+  withGps.forEach(e=>{
+    let joined = null;
+    for(const c of clusters){
+      if(haversineMeters(e.lat,e.lng, c.lat, c.lng) <= CLUSTER_RADIUS_M){ joined = c; break; }
+    }
+    if(joined){
+      joined.items.push(e);
+      joined.lat = joined.items.reduce((s,x)=>s+x.lat,0)/joined.items.length;
+      joined.lng = joined.items.reduce((s,x)=>s+x.lng,0)/joined.items.length;
+    } else {
+      clusters.push({ lat:e.lat, lng:e.lng, items:[e] });
+    }
+  });
+  let clusterN = 1;
+  clusters.forEach(c=>{
+    const media = c.items.map(e=>({ type:e.type, url:mediaFullPath(e.file), caption:'' }));
+    const loc = createLocationAt(c.lat, c.lng, { title: t('newClusterTitle')(clusterN++), media });
+    affected.add(loc.id);
+  });
+
+  saveUnsorted(unsorted);
+  applyFilter(); saveState(); refreshDistancesIfOpen();
+  return affected;
+}
+
+/* ---- 업로드 결과 리뷰 모달: 드래그로 자유 이동 ---- */
+let dragPayload = null; // {from:'loc'|'unsorted', locId, idx}
+function openReviewModal(affectedIds){
+  renderReviewModal(affectedIds || null);
+  document.getElementById('reviewModal').classList.add('open');
+}
+function reviewColumnsData(affectedIds){
+  const unsorted = loadUnsorted();
+  const locs = affectedIds
+    ? LOCATIONS.filter(l=> affectedIds.has(l.id))
+    : LOCATIONS.filter(l=> l.media.length>0);
+  return { unsorted, locs };
+}
+function renderReviewModal(affectedIds){
+  const wrap = document.getElementById('reviewCols');
+  wrap.innerHTML = '';
+  const { unsorted, locs } = reviewColumnsData(affectedIds);
+
+  // 미분류 칸
+  const unsortedCol = document.createElement('div');
+  unsortedCol.className = 'reviewCol unsorted';
+  unsortedCol.dataset.target = 'unsorted';
+  unsortedCol.innerHTML = `<div class="reviewColHead"><span class="rcName">${t('unsortedColTitle')}</span><span class="rcCount">${unsorted.length}</span></div>
+    <div class="reviewGrid" data-grid="unsorted"></div>`;
+  wrap.appendChild(unsortedCol);
+  const uGrid = unsortedCol.querySelector('.reviewGrid');
+  unsorted.forEach((e,idx)=>{
+    uGrid.appendChild(makeReviewChip(e.type, mediaThumbPath(e.file), 'unsorted', null, idx));
+  });
+  bindDropzone(unsortedCol);
+
+  locs.forEach(loc=>{
+    const col = document.createElement('div');
+    col.className = 'reviewCol';
+    col.dataset.target = 'loc'; col.dataset.locId = loc.id;
+    const color = loc.color || catColor(loc.category);
+    col.innerHTML = `<div class="reviewColHead"><span class="rcDot" style="background:${color}"></span>
+      <span class="rcName">${escapeHtml(loc.title||t('noTitle'))}</span><span class="rcCount">${loc.media.length}</span></div>
+      <div class="reviewGrid" data-grid="${loc.id}"></div>`;
+    wrap.appendChild(col);
+    const grid = col.querySelector('.reviewGrid');
+    loc.media.forEach((m,idx)=>{
+      grid.appendChild(makeReviewChip(m.type, thumbFor(m), 'loc', loc.id, idx));
+    });
+    bindDropzone(col);
+  });
+}
+function makeReviewChip(type, thumbSrc, from, locId, idx){
+  const chip = document.createElement('div');
+  chip.className = 'reviewChip';
+  chip.draggable = true;
+  chip.innerHTML = `<img src="${thumbSrc}" alt=""><span class="rcType">${type==='video'?'🎬':(type==='sunseeker'?'☀️':'📷')}</span>`;
+  chip.addEventListener('dragstart', (ev)=>{
+    dragPayload = { from, locId, idx };
+    chip.classList.add('dragging');
+    ev.dataTransfer.effectAllowed = 'move';
+    ev.dataTransfer.setData('text/plain', 'x');
+  });
+  chip.addEventListener('dragend', ()=> chip.classList.remove('dragging'));
+  return chip;
+}
+function bindDropzone(col){
+  col.addEventListener('dragover', (ev)=>{ ev.preventDefault(); col.classList.add('dragover'); });
+  col.addEventListener('dragleave', ()=> col.classList.remove('dragover'));
+  col.addEventListener('drop', (ev)=>{
+    ev.preventDefault();
+    col.classList.remove('dragover');
+    if(!dragPayload) return;
+    moveReviewItem(dragPayload, col.dataset.target==='unsorted' ? {target:'unsorted'} : {target:'loc', locId:Number(col.dataset.locId)});
+    dragPayload = null;
+  });
+}
+function moveReviewItem(src, dst){
+  // 꺼내기
+  let item = null, itemKind = null;
+  if(src.from === 'unsorted'){
+    const uns = loadUnsorted();
+    item = uns[src.idx]; itemKind = 'raw';
+    if(!item) return;
+    uns.splice(src.idx,1); saveUnsorted(uns);
+  } else {
+    const loc = LOCATIONS.find(l=>l.id===src.locId);
+    if(!loc) return;
+    item = loc.media[src.idx]; itemKind = 'media';
+    if(!item) return;
+    loc.media.splice(src.idx,1);
+  }
+  // 넣기
+  if(dst.target === 'unsorted'){
+    const uns = loadUnsorted();
+    if(itemKind === 'media'){
+      const fname = item.url.split('/').pop();
+      uns.push({ file:fname, type:item.type==='sunseeker'?'image':item.type, lat:null, lng:null });
+    } else {
+      uns.push(item);
+    }
+    saveUnsorted(uns);
+  } else {
+    const loc = LOCATIONS.find(l=>l.id===dst.locId);
+    if(!loc) return;
+    if(itemKind === 'raw'){
+      loc.media.push({ type: item.type, url: mediaFullPath(item.file), caption:'' });
+    } else {
+      loc.media.push(item);
+    }
+  }
+  renderReviewModal(null);
+  renderList(); renderPhotoGrid(); refreshDistancesIfOpen();
+  if(currentLocId!=null) renderDpMedia(LOCATIONS.find(l=>l.id===currentLocId) || {media:[]});
+  saveState();
+}
+
+/* =========================================================
+   9-B. 드라이브 폴더 자동 백업 — 크롬 저장소가 날아가도 살아남게
+   🔴 브라우저는 아무 폴더에나 못 쓴다. 사진 업로드 때 받아둔 «그 폴더 권한»을 그대로 쓴다.
+   🔴 권한이 끊기면 «조용히» 넘어가지 않는다 — 화면에 꺼졌다고 띄우고 다시 연결할 단추를 준다.
+   ========================================================= */
+const BACKUP_FILENAME = '_백업_데이터.js';
+let backupTimer = null, backupBusy = false;
+
+function setBackupStatus(kind, extra){
+  const el = document.getElementById('backupStatus');
+  if(!el) return;
+  if(kind === 'ok'){
+    el.innerHTML = `💾 드라이브 백업됨 · ${extra}`;
+    el.style.color = '#7ee787';
+  } else if(kind === 'off'){
+    el.innerHTML = `⚠ 자동 백업 꺼짐 — <button id="btnBackupConnect" class="catEditBtn">폴더 연결</button>`;
+    el.style.color = 'var(--accent)';
+    const b = document.getElementById('btnBackupConnect');
+    if(b) b.onclick = ()=> connectMediaFolder();
+  } else {
+    el.innerHTML = '⚠ 백업 실패 — 폴더 권한을 다시 확인해주세요';
+    el.style.color = 'var(--danger)';
+  }
+}
+function scheduleBackup(){
+  if(PUBLISHED) return;
+  clearTimeout(backupTimer);
+  backupTimer = setTimeout(doBackup, 2500);   /* 손이 멈춘 뒤 한 번만 */
+}
+async function doBackup(){
+  if(PUBLISHED || backupBusy) return;
+  backupBusy = true;
+  try{
+    let dir = mediaDirHandle;
+    if(!dir) dir = await idbGet('mediaDir');
+    if(!dir){ setBackupStatus('off'); return; }
+    /* 🔴 권한 «재요청»은 사람이 누를 때만 된다 — 여기서는 확인만 하고, 없으면 단추를 띄운다 */
+    if(await dir.queryPermission({mode:'readwrite'}) !== 'granted'){ setBackupStatus('off'); return; }
+    mediaDirHandle = dir;
+    const bundle = {
+      savedAt: new Date().toISOString(),
+      locations: LOCATIONS,
+      categories: CATEGORIES,
+      gmapsKey: (localStorage.getItem(GMAPS_KEY_STORAGE) || '')
+    };
+    const fh = await dir.getFileHandle(BACKUP_FILENAME, { create:true });
+    const w = await fh.createWritable();
+    await w.write('const LOCATIONS = ' + JSON.stringify(bundle, null, 2) + ';');
+    await w.close();
+    const d = new Date();
+    setBackupStatus('ok', `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
+  }catch(e){
+    setBackupStatus('fail');
+  }finally{ backupBusy = false; }
+}
+if(!PUBLISHED) setTimeout(doBackup, 1200);   /* 열자마자 한 번 — 상태를 바로 보여준다 */
+
+/* 🔴 업로드는 «두 걸음»이다 — ①폴더 연결 ②파일 고르기.
+   한 번에 하면 브라우저가 폴더 창을 막는다(위 preloadMediaDir 주석 참고).
+   폴더가 이미 연결돼 있으면 ①을 건너뛰고 바로 파일 창이 열린다. */
+function connectMediaFolder(onDone){
+  /* 🔴 이 함수는 «클릭 핸들러 안에서 곧바로» 불려야 한다 — 앞에 await 를 두면 안 된다 */
+  let p;
+  try{
+    p = mediaDirHandle
+      ? mediaDirHandle.requestPermission({mode:'readwrite'})
+      : (window.showDirectoryPicker
+          ? window.showDirectoryPicker({ id:'scoutMediaDir261009', mode:'readwrite' })
+          : Promise.reject(new Error('no-fs-api')));
+  }catch(e){ p = Promise.reject(e); }
+
+  p.then(async (res)=>{
+    if(typeof res === 'string'){
+      if(res !== 'granted'){ setBackupStatus('off'); flashError(t('folderPickCancelled')); return; }
+    } else if(res){
+      /* 🔴 폴더를 «잘못 고르면» 사진이 엉뚱한 데 저장돼 화면에 안 보인다 (2026-10-09 실제로 겪음 —
+         대표님이 원본이 있던 다운로드 폴더를 고르셨고, 업로드가 조용히 실패했다).
+         이 페이지는 사진을 «이 폴더 이름»으로만 찾으므로, 이름이 다르면 받지 않는다. */
+      if(res.name !== MEDIA_FOLDER.replace(/\/$/,'')){
+        alert(t('folderWrong')(res.name));
+        setBackupStatus('off');
+        return;
+      }
+      mediaDirHandle = res;
+      await idbSet('mediaDir', res);
+    }
+    mediaDirReady = true;
+    doBackup();
+    if(onDone) onDone();
+  }).catch((e)=>{
+    if(String(e && e.message) === 'no-fs-api'){ alert(t('noFsApi')); return; }
+    setBackupStatus('off');
+    flashError(t('folderPickCancelled'));
+  });
+}
+document.getElementById('btnBulkUpload').onclick = ()=>{
+  if(mediaDirReady){ document.getElementById('bulkUploadInput').click(); return; }
+  connectMediaFolder(()=>{
+    setBackupStatus('ok', '연결됨');
+    alert(t('folderConnected'));
+  });
+};
+document.getElementById('bulkUploadInput').addEventListener('change', (e)=>{
+  const files = e.target.files;
+  if(files && files.length) handleBulkUpload(files);
+  e.target.value = '';
+});
+document.getElementById('btnUnsorted').onclick = ()=> openReviewModal(null);
+document.getElementById('reviewClose').onclick = ()=> document.getElementById('reviewModal').classList.remove('open');
+document.getElementById('reviewDone').onclick = ()=> document.getElementById('reviewModal').classList.remove('open');
+
+/* =========================================================
+   10. 초기 렌더
+   ========================================================= */
+saveUnsorted(loadUnsorted());
+applyLang();
+
+/* 🔴 발행본이면 «편집에 관한 것»을 전부 숨긴다 — 보는 사람은 누르면 안 되고, 눌러도 저장이 안 된다.
+   🔴 스트리트뷰는 «새 탭 구글맵»으로 돌린다 — API 키를 공개 페이지에 넣으면 남이 그 키를 써서
+      대표님 계정에 요금이 붙을 수 있다. 공개본에는 절대 키를 싣지 않는다. */
+if(PUBLISHED){
+  ['btnEditToggle','btnSelectMode','btnExport','btnBulkUpload','btnUnsorted',
+   'btnEditCats','editBanner','bulkBar','uploadFolderHint','dpGmapsKeyBtn','svMovePinBtn']
+    .forEach(id=>{ const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+  document.getElementById('map').classList.remove('editing');
+  /* 🔴 키가 같이 발행됐으면 로드뷰·태양궤적을 그대로 쓴다(대표 확정 B안).
+     키가 없으면 구글맵 새 탭으로 돌린다 — 빈 화면이 뜨면 안 되니까. */
+  if(!(PUBLISHED.gmapsKey)){
+    document.getElementById('dpStreetViewBtn').onclick = ()=>{
+      const loc = LOCATIONS.find(l=>l.id===currentLocId); if(!loc) return;
+      window.open(`https://www.google.com/maps?layer=c&cbll=${loc.lat},${loc.lng}`, '_blank', 'noopener');
+    };
+  }
+  if(PUBLISHED.title){
+    document.getElementById('appTitleText').textContent = PUBLISHED.title;
+    document.title = PUBLISHED.title;
+  }
+  if(PUBLISHED.subtitle) document.getElementById('appSubtitleText').textContent = PUBLISHED.subtitle;
+  /* 지도를 모든 핀이 들어오게 맞춘다 — 보는 사람은 어디를 봐야 할지 모른다 */
+  if(LOCATIONS.length){
+    const b = L.latLngBounds(LOCATIONS.map(l=>[l.lat, l.lng]));
+    map.fitBounds(b, { padding:[60,60], maxZoom:18 });
+  }
+}
+</script>
+</body>
+</html>
