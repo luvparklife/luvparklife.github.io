@@ -274,6 +274,7 @@
   .v2Photo img{width:100%;height:100%;object-fit:cover;display:block;}
   .v2Photo .who{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.75));font-size:10px;padding:8px 5px 3px;color:#fff;}
   .v2Del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;font-size:12px;}
+  #v2AdminUpload{background:var(--accent2);color:#06131a;border:none;border-radius:8px;padding:6px 10px;font-weight:800;cursor:pointer;font-size:12px;}
   #v2AddPhoto,#v2Send{background:var(--accent2);color:#06131a;border:none;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;font-size:13px;}
   #v2AddPhoto{width:100%;}
   .v2Status{font-size:12px;margin:6px 0;color:var(--muted);min-height:1em;}
@@ -536,6 +537,8 @@
         <div class="mediaHead">
           <h3 id="lblMedia" style="margin:0;"></h3>
           <button id="dpAddMediaBtn"></button>
+          <button id="v2AdminUpload" type="button" style="display:none;"></button>
+          <input type="file" id="v2AdminUploadInput" accept="image/*,video/*" multiple style="display:none;">
         </div>
         <div class="mediaGrid" id="dpMediaGrid"></div>
       </div>
@@ -720,6 +723,9 @@ const MEDIA_FOLDER = (V2_PROJECT || '프로젝트') + '_미디어/';
 function mediaThumbPath(file){ return MEDIA_FOLDER + '썸네일/' + file.replace(/\.[^.]+$/,'') + '.jpg'; }
 function mediaFullPath(file){ return MEDIA_FOLDER + '원본/' + file; }
 const MEDIA_FILES = [];   /* V2 는 미리 박아둔 목록이 없다 — 「사진 일괄 업로드」로 넣는다 */
+/* ☀️ 2026-10-09 대표 지시 「썬시커 페어링도 빼놓자」 — 사진 밑 「이 사진의 Sunseeker」 고르기 + 크게 보기의 짝 단추를 끈다.
+   이미 적힌 짝(m.pair) 데이터는 지우지 않는다 — true 로 바꾸면 그대로 돌아온다. */
+const SUN_PAIR_ON = false;
 
 /* =========================================================
    0-B. 다국어 (한/영) + 카테고리
@@ -820,7 +826,7 @@ const I18N = {
     uploadDoneToast: n=>`✅ ${n}개 업로드 완료`,
     lbDownload: '⬇ 이 사진 받기',
     lbPairToSun: '☀️ 짝 Sunseeker 보기', lbPairToPhoto: '📷 짝 사진 보기', lbSpotSun: '☀️ 이 장소 Sunseeker', pairNone: '☀️ 짝 Sunseeker 없음',
-    mapModeToSat: '🛰 위성사진', mapModeToMap: '🗺 일반지도', v2AdminIn: '🔑 관리자', v2AdminOut: '🚪 관리자 나가기', v2AdminOn: '🔑 관리자 편집 중 — 고치면 바로 저장되고 보는 분들께 반영됩니다', v2AdminPrompt: '편집 비밀번호를 넣어주세요',
+    mapModeToSat: '🛰 위성사진', mapModeToMap: '🗺 일반지도', v2AdminUpload: '📷 사진·영상 올리기', v2Uploading: '올리는 중', v2Uploaded: n=>`${n}개 올렸습니다`, v2UploadFail: n=>`${n}개를 못 올렸습니다`, v2VideoTooBig: '영상이 30MB보다 큽니다(대표님께 전달해 주세요)', v2AdminIn: '🔑 관리자', v2AdminOut: '🚪 관리자 나가기', v2AdminOn: '🔑 관리자 편집 중 — 고치면 바로 저장되고 보는 분들께 반영됩니다', v2AdminPrompt: '편집 비밀번호를 넣어주세요',
     v2Saving: '저장 중…', v2Saved: '저장됨 · 보는 분들께 반영', v2SaveFail: '저장 실패 — 다시 시도합니다(고친 내용은 화면에 남아 있음)', v2Conflict: '다른 관리자가 먼저 고쳤습니다. 방금 고친 것은 저장하지 않았습니다.',
     v2ReloadQ: '최신으로 새로고침할까요?', v2WaitSave: '저장이 끝난 뒤 나가주세요', v2WrongPw: '⚠ 비밀번호가 맞지 않습니다',
     v2Title: '💬 사진·댓글 — 함께 보는 분들', v2AddPhoto: '📷 이 스팟에 사진 올리기', v2Name: '이름 (예: 홍길동 · 브랜드팀)', v2Text: '이 스팟에 대한 의견을 남겨주세요', v2Send: '댓글 등록',
@@ -903,7 +909,7 @@ const I18N = {
     uploadDoneToast: n=>`✅ ${n} uploaded`,
     lbDownload: '⬇ Download photo',
     lbPairToSun: '☀️ Paired Sunseeker', lbPairToPhoto: '📷 Paired photo', lbSpotSun: '☀️ Sunseeker for this spot', pairNone: '☀️ No paired Sunseeker',
-    mapModeToSat: '🛰 Satellite', mapModeToMap: '🗺 Map', v2AdminIn: '🔑 Admin', v2AdminOut: '🚪 Leave admin', v2AdminOn: '🔑 Editing as admin — changes save instantly for all viewers', v2AdminPrompt: 'Enter the edit password',
+    mapModeToSat: '🛰 Satellite', mapModeToMap: '🗺 Map', v2AdminUpload: '📷 Upload photos/videos', v2Uploading: 'Uploading', v2Uploaded: n=>`${n} uploaded`, v2UploadFail: n=>`${n} failed`, v2VideoTooBig: 'video over 30MB (send it to the owner)', v2AdminIn: '🔑 Admin', v2AdminOut: '🚪 Leave admin', v2AdminOn: '🔑 Editing as admin — changes save instantly for all viewers', v2AdminPrompt: 'Enter the edit password',
     v2Saving: 'Saving…', v2Saved: 'Saved · live for viewers', v2SaveFail: 'Save failed — will retry (your changes are still on screen)', v2Conflict: 'Another admin saved first. Your last change was NOT saved.',
     v2ReloadQ: 'Reload to the latest version?', v2WaitSave: 'Please wait until saving finishes', v2WrongPw: '⚠ Wrong password',
     v2Title: '💬 Photos & comments', v2AddPhoto: '📷 Add photos to this spot', v2Name: 'Your name (e.g. Jane · Brand team)', v2Text: 'Leave a note about this spot', v2Send: 'Post comment',
@@ -2151,7 +2157,7 @@ function renderMediaGroup_(grid, loc, indices){
     cell.appendChild(cap);
 
     const suns = loc.media.filter(x => isSunM(x));
-    if(m.type === 'image' && suns.length){
+    if(SUN_PAIR_ON && m.type === 'image' && suns.length){
       const fn = u => (u||'').split('/').pop();
       if(editMode){
         const sel = document.createElement('select');
@@ -2495,6 +2501,7 @@ function renderLightbox(){
     if(media.pair){ jumpTo = lbItems.findIndex(x => fname(x.url) === media.pair); if(jumpTo >= 0) label = t('lbPairToSun'); }
     if(jumpTo < 0){ jumpTo = lbItems.findIndex(x => isSunM(x)); if(jumpTo >= 0) label = t('lbSpotSun'); }
   }
+  if(!SUN_PAIR_ON) jumpTo = -1;
   if(jumpTo >= 0){ pb.style.display = ''; pb.textContent = label; pb.onclick = ()=>{ lbIndex = jumpTo; renderLightbox(); }; }
   else { pb.style.display = 'none'; pb.onclick = null; }
   const dl = document.getElementById('lbDownload');
@@ -3145,6 +3152,9 @@ document.getElementById('reviewDone').onclick = ()=> document.getElementById('re
    · 편집 쪽(맥): 같은 폴더의 「_관리자키.html」 을 읽어 관리자 키로 붙는다 — 지우기 단추가 생긴다
    🔴 사진은 브라우저에서 긴 변 1600px JPEG 로 줄여서 보낸다(폰 원본 그대로면 느리고 서버 한도에 걸린다)
    ========================================================= */
+/* 🔒 2026-10-09 대표 지시 「관리자만 사진 올릴 수 있고 코멘트는 일단 빼자」 — 보는 사람의 사진·댓글 칸을 끈다(서버도 거절).
+   다시 켜려면 true + 서버 스크립트 속성 FEED_ON='1'. */
+const V2_FEED_ON = false;
 const V2_API = 'https://script.google.com/macros/s/AKfycbzgj1gQlGiTNAUhF5FqLKJ11oAbq3lmjBvZKei3IkFUnFLEdQogRIFk_SuVUK8RFs4F2g/exec';
 var V2 = {   /* var — 위쪽 코드가 처음 그릴 때 먼저 불러도 멈추지 않게(아직 undefined 일 뿐) */
   api: (PUBLISHED && PUBLISHED.v2 && PUBLISHED.v2.api) || V2_API,
@@ -3216,6 +3226,9 @@ function v2ItemsFor(locId){ return V2.feed.filter(f => String(f.spot) === String
 function v2FmtTime(iso){ try{ const d = new Date(iso); return (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }catch(e){ return ''; } }
 function v2RenderSpot(){
   const wrap = document.getElementById('dpV2Wrap');
+  const up = document.getElementById('v2AdminUpload');
+  up.style.display = V2EDIT ? '' : 'none'; up.textContent = t('v2AdminUpload');
+  if(!V2_FEED_ON){ wrap.style.display = 'none'; return; }
   if(currentLocId == null){ wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   document.getElementById('lblV2Feed').textContent = t('v2Title');
@@ -3246,6 +3259,7 @@ function v2RenderSpot(){
   else if(!items.length) cg.innerHTML = `<div class="v2Empty">${t('v2NoFeed')}</div>`;
 }
 function v2Badges(){
+  if(!V2_FEED_ON) return;
   document.querySelectorAll('#listWrap .locCard').forEach(card=>{
     const old = card.querySelector('.v2Badge'); if(old) old.remove();
     const items = v2ItemsFor(card.dataset.locId); if(!items.length) return;
@@ -3309,6 +3323,53 @@ async function v2Delete(id){
   try{ await v2Call(v2Auth({ action: V2.admin ? 'adminDelete' : 'editDelete', id })); V2.feed = V2.feed.filter(f => f.id !== id); v2RenderSpot(); v2Badges(); }
   catch(e){ v2Status(t('v2Fail') + ' (' + e.message + ')', 'err'); }
 }
+/* 📷 관리자 올리기 — 지금 열린 스팟의 «미디어»로 바로 들어간다(사진 1600px JPEG · 영상은 30MB 이하 원본) */
+async function v2Thumb(fileOrBlob, isVideo){
+  let src;
+  if(isVideo){
+    const url = URL.createObjectURL(fileOrBlob), v = document.createElement('video');
+    v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+    await new Promise((res, rej)=>{ v.onloadeddata = res; v.onerror = rej; setTimeout(res, 8000); });
+    try{ v.currentTime = Math.min(1, (v.duration || 2) / 2); await new Promise(res=>{ v.onseeked = res; setTimeout(res, 3000); }); }catch(e){}
+    src = v;
+  } else {
+    src = await createImageBitmap(fileOrBlob, { imageOrientation: 'from-image' });
+  }
+  const w = src.videoWidth || src.width, h = src.videoHeight || src.height;
+  const sc = Math.min(1, 480 / Math.max(w, h));
+  const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * sc)); cv.height = Math.max(1, Math.round(h * sc));
+  cv.getContext('2d').drawImage(src, 0, 0, cv.width, cv.height);
+  const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.8));
+  return await new Promise(res=>{ const fr = new FileReader(); fr.onload = ()=> res(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+}
+function v2B64(file){ return new Promise((res, rej)=>{ const fr = new FileReader(); fr.onload = ()=> res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(file); }); }
+document.getElementById('v2AdminUpload').onclick = ()=>{ if(V2EDIT && currentLocId != null) document.getElementById('v2AdminUploadInput').click(); };
+document.getElementById('v2AdminUploadInput').addEventListener('change', async function(){
+  const files = Array.from(this.files || []); this.value = '';
+  const loc = LOCATIONS.find(l => l.id === currentLocId);
+  if(!files.length || !loc) return;
+  let ok = 0, fail = [];
+  for(let i = 0; i < files.length; i++){
+    const f = files[i], isVideo = /^video\//.test(f.type);
+    v2Toast('⏳ ' + t('v2Uploading') + ' (' + (i+1) + '/' + files.length + ')', 'wait');
+    try{
+      if(isVideo && f.size > 30 * 1024 * 1024){ fail.push(f.name + ' — ' + t('v2VideoTooBig')); continue; }
+      const thumb = await v2Thumb(f, isVideo);
+      const tid = (await v2Call(v2Auth({ action:'editUpload', data: thumb, mime:'image/jpeg', fname:'썸네일_' + f.name.replace(/\.[^.]+$/, '') + '.jpg' }))).file;
+      if(isVideo){
+        const vid = (await v2Call(v2Auth({ action:'editUpload', data: await v2B64(f), mime: f.type || 'video/mp4', fname: f.name }))).file;
+        loc.media.push({ type:'video', drive: vid, url: v2Img(tid, 1600), thumb: v2Img(tid, 480), caption:'' });
+      } else {
+        const fid = (await v2Call(v2Auth({ action:'editUpload', data: await v2Shrink(f), mime:'image/jpeg', fname: f.name.replace(/\.[^.]+$/, '') + '.jpg' }))).file;
+        loc.media.push({ type:'image', url: v2Img(fid, 1600), thumb: v2Img(tid, 480), caption:'' });
+      }
+      ok++;
+      renderDpMedia(loc); renderList(); renderPhotoGrid(); saveState();
+    }catch(e){ fail.push(f.name + ' — ' + (e.message || 'fail')); }
+  }
+  if(fail.length){ v2Toast('⚠ ' + t('v2UploadFail')(fail.length), 'err'); alert(t('v2UploadFail')(fail.length) + '\n\n' + fail.join('\n')); }
+  else v2Toast('✓ ' + t('v2Uploaded')(ok), 'ok');
+});
 try{ document.getElementById('v2Name').value = localStorage.getItem('scout2_name') || ''; }catch(e){}
 /* 상세를 열 때·목록을 그릴 때 같이 */
 { const _od = openDetail; openDetail = function(){ const r = _od.apply(this, arguments); v2RenderSpot(); return r; }; }
