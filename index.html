@@ -848,6 +848,9 @@
     .papick .r.now{background:#e8f4ee; font-weight:800}
     .papick .r.add{color:#2563eb; font-weight:700}
     .papick .sep{height:1px; background:#e2e6ee; margin:4px 2px}
+    .papick .gt{font-size:11.5px; font-weight:800; color:#5b6678; padding:7px 9px 3px; position:sticky; top:-6px; background:#fff}
+    .papick .d{display:block; font-size:11px; color:#8a93a3; font-weight:400; margin-top:1px}
+    .papick .tg{font-size:10.5px; background:#eceff4; color:#667; border-radius:4px; padding:0 5px; margin-left:4px; font-weight:600}
 
     /* ═══ 📑 프로젝트 탭 3개 (2026-09-11 대표 확정) ═══════════════════
        대표 지시: *"세개 탭으로 나누면 좋을것 같아."*
@@ -12159,14 +12162,55 @@
     if(on === undefined) on = pk.hidden;
     if(!on){ pk.hidden = true; pk.innerHTML = ''; return; }
     var now = paProjNow();
-    var rows = (PJ_CACHE || []).map(function(p){ return (p && p.name) || p; })
-                 .filter(function(n){ return n && String(n).trim(); });
+    /* 📅 2026-10-12 대표 지시 — 「예정 / 날짜 없음 / 지난」으로 묶는다(견적앱 fillPjSel 과 «같은 판정»).
+       🔴 [규칙을 새로 안 만든다] 견적앱 quote_app2.html 의 pjGroupOf_/pjSortGroups_ 를 그대로 옮겼다(§1).
+          허브 행은 from(시작)·to(끝)·st(상태)를 준다. 시작일이 비면 이름 앞 YYMMDD_ 로 읽는다.
+       🔴 [PJ_CACHE 순서·내용은 안 건드린다] 복사해서 나눈다 — 아래 목록 화면이 그 순서를 그대로 쓴다.
+       🔴 [눌렀을 때 하는 일(data-pa="pj" · data-pan)은 전과 똑같다] 묶음 제목은 그냥 글자다.
+       되돌리기 = "허브 프로젝트 예정지난 되돌려줘" (백업 ~/.claude/backups/hub_index_261012_프로젝트고르기전.html) */
+    var rows = (PJ_CACHE || []).map(function(p){ return (p && typeof p === 'object') ? p : { name: p }; })
+                 .filter(function(p){ return p.name && String(p.name).trim(); });
+    var today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);   /* 한국 시간 기준 */
+    function ymd(v){ var m = String(v == null ? '' : v).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+      return (m && +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31) ? m[0] : ''; }
+    function firstOf(x){ var f = ymd(x.from); if(f) return f;
+      var m = String(x.name || '').match(/^(\d{2})(\d{2})(\d{2})_/);
+      return m ? ymd('20' + m[1] + '-' + m[2] + '-' + m[3]) : ''; }
+    function isOff(x){ var t = String(x.st || ''); return t.indexOf('캔슬') >= 0 || t.indexOf('드롭') >= 0 || t === '완료'; }
+    function groupOf(x){
+      if(isOff(x)) return 'past';
+      var f = firstOf(x); if(!f) return 'nodate';
+      var l = ymd(x.to); if(!l || l < f) l = f;
+      return l >= today ? 'up' : 'past';
+    }
+    function byName(a, b){ return String(a.name).localeCompare(String(b.name)); }
+    var G = { up: [], nodate: [], past: [] };
+    rows.forEach(function(x){ if(x.name === now) return; G[groupOf(x)].push(x); });
+    G.up.sort(function(a, b){ return firstOf(a).localeCompare(firstOf(b)) || byName(a, b); });
+    G.nodate.sort(function(a, b){ return byName(b, a); });
+    G.past.sort(function(a, b){
+      var ao = isOff(a) ? 1 : 0, bo = isOff(b) ? 1 : 0;
+      if(ao !== bo) return ao - bo;
+      return firstOf(b).localeCompare(firstOf(a)) || byName(b, a);
+    });
+    function md(v){ return (+v.slice(5, 7)) + '/' + (+v.slice(8, 10)); }
+    function dateTxt(x){
+      var f = firstOf(x); if(!f) return '';
+      var l = ymd(x.to) || f; if(l < f) l = f;
+      return md(f) + (l !== f ? ' ~ ' + md(l) : '') + (ymd(x.from) ? '' : ' (이름에서)');
+    }
     var h = '';
     if(now) h += '<button class="r now" type="button" data-pa="pj" data-pan="' + pjEsc(now) + '">✓ 📁 '
                + pjEsc(now) + '</button>';
-    rows.forEach(function(n){
-      if(n === now) return;
-      h += '<button class="r" type="button" data-pa="pj" data-pan="' + pjEsc(n) + '">📁 ' + pjEsc(n) + '</button>';
+    [['up', '🟢 예정'], ['nodate', '📅 날짜 없음'], ['past', '⚪ 지난']].forEach(function(g){
+      var L = G[g[0]]; if(!L.length) return;
+      h += '<div class="gt">' + g[1] + ' (' + L.length + ')</div>';
+      L.forEach(function(x){
+        var tag = isOff(x) ? '<span class="tg">' + (x.st === '완료' ? '끝남' : '캔슬') + '</span>' : '';
+        var dt = dateTxt(x);
+        h += '<button class="r" type="button" data-pa="pj" data-pan="' + pjEsc(x.name) + '">📁 ' + pjEsc(x.name) + tag
+           + (dt ? '<span class="d">' + pjEsc(dt) + '</span>' : '') + '</button>';
+      });
     });
     if(!rows.length && !now) h += '<div class="r" style="color:#8a837b">목록을 불러오는 중…</div>';
     h += '<div class="sep"></div>'
