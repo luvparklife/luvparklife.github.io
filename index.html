@@ -5338,6 +5338,13 @@
                 + '" data-pjmode="' + (x.link ? 'refresh' : 'make') + '">'
                 + (x.link ? '🔄 새로고침' : '🌐 만들기') + '</a>'
               : '')
+        /* 📋 2026-10-15 대표 지시 *"장비공유할때 항상 이 시트 어떻게 보는지 설명해주는데 복사버튼 만들어서 복붙만"*
+           🔴 [파일이 «있을 때만»] 보낼 링크가 있어야 안내가 완성된다. 만들기 전에는 안 붙인다.
+           🔴 [등급은 만들기와 같은 기준] canShare — 「관리」 이상. 글은 SHARE_GUIDE_TXT 한 곳에서만 정한다. */
+        +  ((canShare(x) && x.link)
+              ? '<a href="#" class="fill" data-pjact="shcopy" data-pjproj="' + pjEsc(d.proj || '')
+                + '" data-pjurl="' + pjEsc(x.link) + '">📋 안내 복사</a>'
+              : '')
         +  '</div>';
     });
     if(need) h = '<div class="stg" style="color:#c0392b;margin-bottom:6px">🔴 꼭 필요한 것 '
@@ -10338,6 +10345,32 @@
      🔴 [새 창구를 안 만들었다] `pjAdmin` 을 그대로 쓴다 — 통행증·기다리기·거절 처리가
         거기 한 벌뿐이다(§1). 서버도 「관리」 이상만 받는다(NEED.share = PROJ_EDIT_ROLE).
      되돌리기 = **"허브에서 공유파일 만들기 빼줘"** */
+  /* 📋 2026-10-15 대표 확정 — 외부장비공유를 보낼 때 붙이는 「보는 법」 안내 (원본은 여기 한 곳 · §1)
+     🔴 이 글은 «대표님이 직접 다듬어 확정»하셨다(2026-10-15) — 뜻·순서를 함부로 안 바꾼다(§3-2-C).
+        자리 둘 [PROJECT]·[LINK] 만 프로젝트 이름과 공유파일 주소로 채운다.
+     🔴 시트의 실제 칸 이름·탭 이름(Code.js TEAM_TAB_FILTER·TEAM_SHARE_COLS_*·TEAM_REPLY_*)과 맞춰 썼다 —
+        시트 쪽 이름을 바꾸면 이 글도 같이 고친다.
+     되돌리기 = **"안내복사 버튼 빼줘"** */
+  var SHARE_GUIDE_TXT = [
+    '안녕하세요, [PROJECT] 장비 공유 시트입니다.',
+    '[LINK]',
+    '(로그인 없이 링크로 열고 바로 적으실 수 있습니다.)',
+    '',
+    '보는 법',
+    '- 아래 탭: ALL = 요청하신 품목과 하나씩 대조 / PHOTO·DIGI·GAFFER·PRODUCTION·ART = 부서별 챙길 장비 / BY CATEGORY = 장비 종류별 보기(보기 전용)',
+    '- 초록 칸은 저희(PA)가 채웁니다. 고치지 마세요.',
+    '- 노란 칸이 적는 칸입니다. ALL 탭은 YOUR NOTE, 부서 탭은 AVAILABLE QTY(예: "Y 2" = 가능, 2개)와 TEAM NOTE.',
+    '- 파란 칸은 저희 답변입니다.',
+    '- QTY·ITEM = 지금 준비 가능한 수량·품목, REQ QTY·REQUESTED ITEM = 요청하신 것.',
+    '- STATUS: confirm 확정 / sourcing 조달중 / alt 대체품 / short 부족',
+    '- 맨 오른쪽 CHANGE LOG = 지난 갱신 이후 바뀐 것',
+    '- 1행의 「Updated by PA」 시간이 최신인지 확인하고 챙겨 주세요. 바뀌면 저희가 갱신하고, 새로고침하면 보입니다.'
+  ].join('\n');
+  function shareGuideText_(proj, url){
+    /* split/join 으로 «모든» 자리를 바꾼다 (replace 는 첫 번째만) */
+    return SHARE_GUIDE_TXT.split('[PROJECT]').join(proj || '').split('[LINK]').join(url || '');
+  }
+
   function pjShareGo(name, mode){
     if(!name || PJ_BUSY) return;
     pjBusy(true, '공유파일을 확인하는 중…');
@@ -11373,6 +11406,11 @@
       if(act === 'shmake'){
         pjShareGo(el.getAttribute('data-pjproj') || PJ_NOW,
                   el.getAttribute('data-pjmode') || 'make'); return;
+      }
+      /* 📋 2026-10-15 — 외부장비공유 「이 시트 보는 법」 안내를 복사한다 (카톡·메일에 붙여 보낸다) */
+      if(act === 'shcopy'){
+        pjCopy_(shareGuideText_(el.getAttribute('data-pjproj') || PJ_NOW, el.getAttribute('data-pjurl') || ''), el);
+        return;
       }
       if(act === 'rename'){ pjRename(el.getAttribute('data-pjproj')); return; }
       if(act === 'del'){    pjDelete(el.getAttribute('data-pjproj')); return; }
