@@ -6745,6 +6745,8 @@
                        + '\n     「📋 목록에서 보기」를 누르면 그 줄로 바로 갑니다)\n';
     if(d.folder) body += '\n📂 폴더: ' + d.folder;
     if(nOk && nd.url) body += '\n📝 노션: ' + nd.url;
+    /* ⏱ 2026-10-19 — 오래 걸린 날은 «어느 단계가 느렸는지»를 한 줄로(다음에 고칠 자리를 찾으려고). 평소엔 안 붙는다. */
+    if(d.slow && d.timing) body += '\n\n⏱ 서버가 평소보다 오래 걸렸습니다 (시작부터 몇 초): ' + d.timing;
 
     pjResultModal_(!bad.length, head, body, function(){
       /* 🔁 노션만 안 됐으면 그 자리에서 다시 해 본다 — 대개 «정산앱이 잠깐 안 되던 것»이라 다시 하면 된다
@@ -6813,22 +6815,50 @@
         목록 쪽 캐시(60초)가 있어도 2분 안에 한 번은 새로 읽힌다.
      🔴 목록을 못 읽은 것(답 없음)은 «없다»가 아니다 — 끝까지 못 찾으면 «확인 못 했다»고 말하지 «안 만들어졌다»고 하지 않는다.
      cb(row | null) — row 에는 번호(no)가 들어 있다. */
-  function pjNewVerify(name, btn, cb){
-    var t0 = Date.now(), LIMIT = 120000, STEP = 5000, tick = null;
+  /* ⏱ 2026-10-19 대표 신고 — 「만들어졌습니다 · 확인 못 한 것 1가지(폴더·그랜터 태그·회차는 서버가 늦게 답해 확인 못 했습니다)」 → 「고쳐」
+     [원인] 위 로직은 «프로젝트 목록에 줄이 생겼나»만 봤다. 줄은 서버가 «맨 처음에» 만들므로, 폴더 복사·그랜터 태그(2곳)·정렬이
+       아직 일하는 중인데도 «만들어졌다»고 보고 지나갔고, 그래서 «확인 못 했다»를 사람에게 넘겼다(실제로는 다 됐는데 말이다).
+     [고침] 서버가 끝내면 «결과를 1시간 보관»한다(Project.js projMakeStash_). 늦으면 «그 결과»가 도착할 때까지 기다렸다가 받아
+       진짜 된 것·안 된 것을 그대로 보여준다 → 사람이 폴더·태그를 직접 열어볼 일이 없다.
+     🔴 새 통로를 안 만들었다 — 허브가 쓰는 같은 JSONP 창구(askCount)에 «결과 읽기» 한 줄만 더했다(§4-1).
+     🔴 «옛 서버»(결과 읽기가 아직 없는 배포본)면 예전처럼 «목록에 줄이 있나»로 돌아간다 — 허브만 먼저 올라가도 안 깨진다.
+     🔴 끝내 결과가 안 오면 «안 만들어졌다»고 하지 않는다 — 줄이 있으면 예전 문구(확인 못 한 것)로, 줄도 없으면 「확인하지 못했습니다」로.
+     cb(res) — res = { result:서버 결과 } | { row:목록 줄 } | null
+     되돌리기 = "새 프로젝트 결과 기다리기 빼줘" (백업 hub_index_261019_결과기다리기전.html) */
+  function pjNewVerify(name, btn, since, cb){
+    var t0 = Date.now(), LIMIT = 210000, STEP = 5000, tick = null, oldSrv = false, unk = 0;
     function paint(){
-      btn.textContent = '서버 응답이 늦습니다 — 만들어졌는지 확인하는 중… ' + Math.round((Date.now() - t0) / 1000) + '초';
+      btn.textContent = '서버가 아직 일하는 중입니다 — 폴더·그랜터 태그까지 끝나기를 기다리는 중… ' + Math.round((Date.now() - t0) / 1000) + '초';
     }
     paint(); tick = setInterval(paint, 1000);
-    function done(row){ clearInterval(tick); cb(row); }
-    function look(){
+    function done(x){ clearInterval(tick); cb(x); }
+    function findRow(cb2){
       askCount(FIELD_APP + '?list=projects&all=1' + appTok(), function(d){
         if(d && d.ok){
           var rows = d.rows || [];
           for(var i = 0; i < rows.length; i++){
-            if(String(rows[i].name || '').trim() === name){ done(rows[i]); return; }
+            if(String(rows[i].name || '').trim() === name){ cb2(rows[i]); return; }
           }
         }
-        if(Date.now() - t0 >= LIMIT){ done(null); return; }
+        cb2(null);
+      }, 25000);
+    }
+    function look(){
+      askCount(FIELD_APP + '?action=projMakeResult&name=' + encodeURIComponent(name)
+               + '&since=' + since + appTok(), function(d){
+        if(d && d.ok && d.found && d.result){ done({ result: d.result }); return; }
+        /* 「아직 없음」(found:false)은 새 서버가 «일하는 중»이라는 정상 답이다.
+           그 밖의 답이 «연달아 두 번» 오면 결과 읽기를 모르는 «옛 서버»로 보고 예전 방식으로 돌아간다
+           (한 번만 늦은 것으로 옛 방식에 갇히지 않게 두 번을 본다). */
+        if(d && d.ok && d.found === false) unk = 0; else unk++;
+        oldSrv = unk >= 2;
+        if(Date.now() - t0 >= LIMIT || oldSrv){
+          findRow(function(row){
+            if(row || Date.now() - t0 >= LIMIT){ done(row ? { row: row } : null); return; }
+            setTimeout(look, STEP);           /* 옛 서버인데 줄도 아직 없다 — 조금 더 본다 */
+          });
+          return;
+        }
         setTimeout(look, STEP);
       }, 25000);
     }
@@ -6876,6 +6906,7 @@
     };
 
     var old = btn.textContent;
+    var tPress = Date.now();       /* ⏱ 2026-10-19 — 「이번에 누른 시각」. 늦은 답을 기다릴 때 «옛 결과»와 섞이지 않게 서버에 보낸다 */
     btn.disabled = true; btn.textContent = '만드는 중… (폴더·그랜터 태그까지 보통 30초~1분)';
 
     /* 🔴 2026-08-26 — fetch 로는 «못» 부른다. 대표님 화면에 「Failed to fetch」가 떴다.
@@ -6917,7 +6948,22 @@
            🔴 두 번 만들어지지 않게 — 확인하는 동안 버튼을 잠가 두고, 서버의 «같은 이름 이미 있음» 검사가 마지막 안전판이다.
            되돌리기 = "새 프로젝트 응답 늦음 확인 빼줘" (백업 hub_index_261013_새프로젝트응답늦음전.html) */
         if(!d){
-          pjNewVerify(name, btn, function(row){
+          pjNewVerify(name, btn, tPress, function(got){
+            /* ⏱ 2026-10-19 — 서버가 끝낸 «진짜 결과»가 왔다 = 확인 못 한 것이 없다. 된 것·안 된 것을 그대로 보여준다. */
+            if(got && got.result){
+              var sr = got.result;
+              if(!sr.ok){
+                btn.disabled = false; btn.textContent = old;
+                alert('만들지 못했습니다.\n\n' + (sr.error || '서버가 이유를 말하지 않았습니다.')
+                      + '\n\n🔴 만들어졌을 수도 있으니 목록을 새로고침해 확인해 주세요.');
+                return;
+              }
+              sr.slow = true;               /* 오래 걸렸다 — 걸린 시간 줄을 결과창에 붙인다 */
+              btn.textContent = '노션 페이지 만드는 중…';
+              pjNewNotion(sr.name || name, function(nd){ pjNewResult(sr, nd, btn, old, false); });
+              return;
+            }
+            var row = got && got.row;
             if(row){
               var dl = { ok:true, name:name, no:(row.no || ''), folder:'', late:true,
                 done:['프로젝트목록에 줄' + (row.no ? ' · 번호 ' + row.no : '')],
