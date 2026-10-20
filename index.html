@@ -819,6 +819,13 @@
     .padw .it small{display:block; font-size:10px; color:#8593aa; margin-top:1px}
     .padw .it.now small{color:#5b6472}
     .padw .bgl{float:right; font-size:9.5px; opacity:.65; letter-spacing:-1px}
+    /* ↕ 2026-10-20 띠 순서 바꾸기 */
+    .padw .ordl{float:right; font-size:11px; color:#9fb4d6; cursor:pointer; text-decoration:underline; padding:2px 4px}
+    .padw .ordbar{margin:0 0 6px; padding:7px 8px; border-radius:8px; background:rgba(255,255,255,.08); font-size:11.5px; color:#cfd8dc; line-height:1.5}
+    .padw .ordbar b{cursor:pointer; display:inline-block; margin:4px 6px 0 0; padding:4px 9px; border-radius:7px; background:rgba(255,255,255,.16); font-weight:700}
+    .padw .ordbar b.ok{background:#e8f1ff; color:#1c2330}
+    .padw .ordb{float:right; white-space:nowrap}
+    .padw .ordb b{display:inline-block; min-width:34px; text-align:center; padding:5px 0; margin-left:3px; border-radius:7px; background:rgba(255,255,255,.18); cursor:pointer; font-size:12px}
     @media(max-width:520px){ .padw{width:100%} }
     /* ⬆️ 2026-09-15 대표 지시 — *"모든 어플 및 페이지 모바일로 볼때 하단 띠 상단으로 올려줘"*
        🔴 [바뀐 것] 폰에서도 띠가 맨 «위»다 — 넓은 화면과 «같아졌다»(.patop 의 sticky top:0).
@@ -3590,7 +3597,7 @@
             PJ_CACHE = d.rows || []; PJ_AT = Date.now(); pjRoleSet_(d.role);  /* 🔑 2026-09-14 — 빈 값으로 덮지 않는다(§1) */
             PJ_MINE = !!d.mine;
             pjLsSave(PJ_CACHE, PJ_ROLE, PJ_MINE);
-            try { navPjIncoming(d.pj); } catch(ePJ){}   /* 🧭 다른 앱에서 바꾼 프로젝트 (2026-09-10) */
+            try { navPjIncoming(d.pj); } catch(ePJ){} try { paOrdIncoming_(d.ord); } catch(eOR){}   /* 🧭 다른 앱에서 바꾼 프로젝트 (2026-09-10) */
             try { pjWarmOnes_(); } catch(eW){}          /* ⚡ 2026-10-11 자주 여는 프로젝트 정보 미리 받기 */
           }
           /* 🔴 실패해도 아무것도 안 한다 — 대표는 이게 도는 줄도 모르셔야 한다 */
@@ -3854,7 +3861,7 @@
       }
       PJ_CACHE = d.rows || []; PJ_AT = Date.now(); pjRoleSet_(d.role);  /* 🔑 2026-09-14 — 빈 값으로 덮지 않는다(§1) */
       PJ_MINE = !!d.mine;               /* 👤 서버가 「내가 낀 것만」으로 걸렀나 */
-      try { navPjIncoming(d.pj); } catch(ePJ){}   /* 🧭 다른 앱에서 바꾼 프로젝트 (2026-09-10) */
+      try { navPjIncoming(d.pj); } catch(ePJ){} try { paOrdIncoming_(d.ord); } catch(eOR){}   /* 🧭 다른 앱에서 바꾼 프로젝트 (2026-09-10) */
       /* ✅ 2026-09-13 — 🔴 「끝난 것도 보기」 목록은 «서랍에 안 담는다».
          담으면 다음에 허브를 열 때 끝난 프로젝트가 «기본으로» 뜬다 —
          그건 대표가 고르신 것이 아니라 지난번에 한 번 눌렀던 흔적일 뿐이다. */
@@ -11624,7 +11631,7 @@
         PJ_CACHE = d.rows || []; PJ_AT = Date.now();
         /* 🔑 2026-09-14 — 등급이 «이제» 왔으면 보고 있는 프로젝트 화면을 다시 그린다(§1 · pjRoleSet_ 한 곳) */
         pjRoleSet_(d.role);
-        try { navPjIncoming(d.pj); } catch(ePJ){}   /* 🧭 다른 앱에서 바꾼 프로젝트 (2026-09-10) */
+        try { navPjIncoming(d.pj); } catch(ePJ){} try { paOrdIncoming_(d.ord); } catch(eOR){}   /* 🧭 다른 앱에서 바꾼 프로젝트 (2026-09-10) */
       }
       after();
     });
@@ -12774,6 +12781,76 @@
     catch(e){ return ''; }
   }
 
+  /* ↕ ═══ 띠 순서 바꾸기 (2026-10-20 대표 지시 *"띠 순서 내가 바꿀 수도 있게 해줘"*) ═══════
+     🔴 [원본은 서버] 장비앱 AppNav.js 의 navOrdSet — 사람마다 따로. 허브·장비앱·견적서가 «같은 순서»를 읽는다.
+        여기 localStorage 는 «빨리 그리려는 사본»일 뿐이다 — 목록(list=projects)과 «같이 오는» 값(d.ord)이 이긴다(왕복 0).
+     🔴 [정산앱은 못 따라온다] 서버가 달라 읽지 못한다 → 정산앱 띠는 기본 순서.
+     🔴 [로그인 전엔 바꾸기 단추가 없다] 저장할 곳이 없다.
+     🔴 [안 보이는 앱은 제자리] 등급이 낮아 안 보이는 줄은 목록에 남고, 보이는 줄끼리만 자리를 바꾼다.
+     되돌리기 = "띠 순서 바꾸기 빼줘" */
+  var PA_ORD_KEY = 'pa_ord_v1', PA_ORD = [], PA_ORD_EDIT = false, PA_ORD_T = null, PA_ORD_DIRTY = false, PA_ORD_ST = '';
+  try { var _o = JSON.parse(localStorage.getItem(PA_ORD_KEY) || '[]'); if(Array.isArray(_o)) PA_ORD = _o.filter(function(k){ return /^[a-z]{2,10}$/.test(k); }); } catch(eOr){}
+  function paAppsOrdered_(){
+    var rest = PA_APPS.slice(), out = [];
+    PA_ORD.forEach(function(k){
+      for(var i = 0; i < rest.length; i++) if(rest[i].k === k){ out.push(rest[i]); rest.splice(i, 1); break; }
+    });
+    return out.concat(rest);              /* 순서에 없는 «새 앱»은 맨 뒤에 */
+  }
+  function paOrdKeys_(){ return paAppsOrdered_().map(function(x){ return x.k; }); }
+  function paOrdIncoming_(ord){
+    if(!Array.isArray(ord)) return;       /* 옛 서버 · 로그인 전 — 아무것도 안 한다 */
+    if(PA_ORD_DIRTY || PA_ORD_EDIT) return;   /* 지금 바꾸는 중이면 서버 값이 덮지 않는다 */
+    ord = ord.filter(function(k){ return /^[a-z]{2,10}$/.test(k); });
+    if(ord.join() === PA_ORD.join()) return;
+    PA_ORD = ord;
+    try { localStorage.setItem(PA_ORD_KEY, JSON.stringify(PA_ORD)); } catch(e){}
+    try { paStripPaint(); paDrawerPaint(); } catch(e){}
+  }
+  function paOrdSay_(t){ PA_ORD_ST = t || ''; var e = document.getElementById('paOrdSt'); if(e) e.textContent = PA_ORD_ST; }
+  function paOrdSave_(){
+    paOrdSay_('⏳ 저장 중…'); PA_ORD_DIRTY = true;
+    try { localStorage.setItem(PA_ORD_KEY, JSON.stringify(PA_ORD)); } catch(e){}
+    if(PA_ORD_T) clearTimeout(PA_ORD_T);
+    PA_ORD_T = setTimeout(function(){
+      PA_ORD_T = null;
+      var csv = PA_ORD.join(',');
+      try {
+        askCount(FIELD_APP + '?action=navPj&ord=' + encodeURIComponent(csv) + appTok(), function(d){
+          PA_ORD_DIRTY = !!PA_ORD_T;
+          paOrdSay_(d && d.ok ? '✓ 저장됨 — 다른 앱에도 같이 적용됩니다' : '⚠ 저장 못 했습니다 (로그인을 확인해 주세요)');
+        });
+      } catch(e){ PA_ORD_DIRTY = false; paOrdSay_('⚠ 저장 못 했습니다'); }
+    }, 500);
+  }
+  function paOrdRedraw_(){
+    var dw = document.getElementById('paDw'), top = dw ? dw.scrollTop : 0;
+    paStripPaint(); paDrawerPaint();
+    if(dw) dw.scrollTop = top;
+    paOrdSay_(PA_ORD_ST);
+  }
+  function paOrdMove_(k, dir){
+    var all = paAppsOrdered_(), vis = all.filter(function(x){ return paCan(paCard(x)); }), i = -1;
+    vis.forEach(function(x, n){ if(x.k === k) i = n; });
+    var j = i + dir;
+    if(i < 0 || j < 0 || j >= vis.length) return;
+    var ia = all.indexOf(vis[i]), ib = all.indexOf(vis[j]), t = all[ia]; all[ia] = all[ib]; all[ib] = t;
+    PA_ORD = all.map(function(x){ return x.k; });
+    paOrdRedraw_(); paOrdSave_();
+  }
+  function paOrdReset_(){ PA_ORD = []; paOrdRedraw_(); paOrdSave_(); }
+  function paOrdBar_(){
+    if(!canApp()) return '';
+    if(!PA_ORD_EDIT) return '<div style="text-align:right;padding:0 0 4px"><span class="ordl" data-pa="ordon">↕ 순서 바꾸기</span></div>';
+    return '<div class="ordbar">줄 오른쪽 ▲ ▼ 로 자리를 바꾸세요. 위쪽이 띠 왼쪽입니다.<br>'
+         + '<b class="ok" data-pa="ordoff">완료</b><b data-pa="ordreset">기본 순서로</b>'
+         + '<br><span id="paOrdSt">' + pjEsc(PA_ORD_ST) + '</span></div>';
+  }
+  function paOrdBtns_(x){
+    if(!PA_ORD_EDIT) return '';
+    return '<span class="ordb"><b data-pa="ordup" data-pak="' + x.k + '">▲</b><b data-pa="orddn" data-pak="' + x.k + '">▼</b></span>';
+  }
+
   /* ── 띠 그리기 ── */
   function paStripPaint(){
     var el = document.getElementById('paStrip');
@@ -12803,7 +12880,7 @@
           + '<button class="bell" type="button" data-pa="bell" title="오늘 할 일">🔔</button>'
           + '<span class="sep"></span>';
     var paHere = paHereKey_();
-    PA_APPS.forEach(function(x){
+    paAppsOrdered_().forEach(function(x){
       var c = paCard(x);
       if(!paCan(c)) return;
       var b = paBadge(c);
@@ -12819,13 +12896,14 @@
     var dw = document.getElementById('paDw');
     if(!dw) return;
     var h = '<button class="cls" type="button" data-pa="close">✕ 닫기</button>'
-          + '<div class="gt">📁 이 프로젝트에서</div>';
+          + '<div class="gt">📁 이 프로젝트에서</div>'
+          + paOrdBar_();            /* ↕ 순서 바꾸기 (2026-10-20) */
     var paHere = paHereKey_();
-    PA_APPS.forEach(function(x){
+    paAppsOrdered_().forEach(function(x){
       var c = paCard(x); if(!paCan(c)) return;
       var b = paBadge(c);
-      h += '<button class="it' + (x.k === paHere ? ' now' : '') + '" type="button" data-pa="go" data-pak="'
-         + x.k + '">' + (b ? '<span class="bgl">' + b + '</span>' : '') + x.ico + ' ' + pjEsc(x.n) + '</button>';
+      h += '<button class="it' + (x.k === paHere ? ' now' : '') + '" type="button" data-pa="' + (PA_ORD_EDIT ? 'ordrow' : 'go') + '" data-pak="'
+         + x.k + '">' + paOrdBtns_(x) + (b ? '<span class="bgl">' + b + '</span>' : '') + x.ico + ' ' + pjEsc(x.n) + '</button>';
     });
     h += '<div class="gt">🗂 그 밖에 (프로젝트와 상관없이)</div>';
     PA_PAGES.forEach(function(x, i){
@@ -12852,6 +12930,7 @@
     var dw = document.getElementById('paDw'), mk = document.getElementById('paDwMask');
     if(!dw) return;
     if(on === undefined) on = dw.hidden;
+    if(!on){ PA_ORD_EDIT = false; PA_ORD_ST = ''; }   /* ↕ 닫으면 순서 바꾸기도 끝 (2026-10-20) */
     if(on) paDrawerPaint();
     dw.hidden = !on; if(mk) mk.hidden = !on;
     paPick(false);
@@ -12994,6 +13073,13 @@
                           var ob = document.getElementById('pfOut'); if(ob) ob.click(); return; }
     if(act === 'close') { paDrawer(false); return; }
     if(act === 'pick')  { paPick(); return; }
+    /* ↕ 띠 순서 바꾸기 (2026-10-20) — 편집 중에는 줄을 눌러도 앱으로 떠나지 않는다 */
+    if(act === 'ordon')    { PA_ORD_EDIT = true;  PA_ORD_ST = ''; paOrdRedraw_(); return; }
+    if(act === 'ordoff')   { PA_ORD_EDIT = false; paOrdRedraw_(); return; }
+    if(act === 'ordrow')   { return; }
+    if(act === 'ordup')    { paOrdMove_(el.getAttribute('data-pak'), -1); return; }
+    if(act === 'orddn')    { paOrdMove_(el.getAttribute('data-pak'), 1); return; }
+    if(act === 'ordreset') { paOrdReset_(); return; }
     if(act === 'go')    { paGoApp(el.getAttribute('data-pak')); return; }
     if(act === 'list')  { paPick(false); paDrawer(false); pjEditLeave(); location.hash = '#p'; return; }
     if(act === 'pj')    { paPick(false); pjEditLeave();
