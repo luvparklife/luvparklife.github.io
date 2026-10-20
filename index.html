@@ -11695,6 +11695,7 @@
     if(w){
       var t = hubCardScreen() ? '로그인이 필요합니다' : '📁 프로젝트 목록';
       if(h === '#p') t = '📁 프로젝트 목록';
+      else if(h === '#t' || h.indexOf('#t/') === 0) t = '👥 팀 일정';
       else if(h.indexOf('#p/') === 0){
         try{ t = '📁 ' + pjClean_(decodeURIComponent(h.slice(3))); }catch(e){ t = '📁 ' + pjClean_(h.slice(3)); }
       }
@@ -12670,6 +12671,10 @@
      되돌리기 = "허브 띠 빼줘" */
   var PA_APPS = [
     { k:'proj',  ico:'📁', n:'프로젝트', id:'cardProj' },
+    /* 👥 2026-10-21 대표 신고 *"팀일정 띠에 안보이는데"* — 팀 일정 화면(#t)을 만들 때 홈 카드만 넣고 «띠·사이드바»를 빼먹었다
+       (위 PA_PAGES 주석의 «같은 함정» 네 번째). 지금 보던 프로젝트를 «데리고» 간다(paGoApp). id 는 홈 카드 #cardTeam.
+       🔴 장비앱·정산앱의 AppNav.js 에도 «같은 줄»이 있어야 앱 안의 띠에서도 보인다(셋이 같아야 한다). */
+    { k:'team',  ico:'👥', n:'팀일정',   id:'cardTeam' },
     { k:'quote', ico:'🧾', n:'견적서',  t:'견적서' },
     { k:'field', ico:'🎬', n:'장비앱',  t:'현장 장비앱' },
     { k:'pay',   ico:'💰', n:'정산',    t:'정산앱' },
@@ -12762,6 +12767,8 @@
     var r = roleOf(loadUser());
     return r === 'owner' ? '대표' : r === 'admin' ? '관리' : r === 'team' ? '팀원' : '손님';
   }
+  /* 「지금 어느 화면인가」 — 띠·사이드바의 켜진 단추를 정한다. 팀 일정(#t)이면 'team', 아니면 'proj' */
+  function paHereKey_(){ var h = location.hash || ''; return (h === '#t' || h.indexOf('#t/') === 0) ? 'team' : 'proj'; }
   function paProjNow(){
     try { return (typeof PJ_NOW === 'string' && PJ_NOW) ? PJ_NOW : (pjLastGet() || pjNearest() || ''); }
     catch(e){ return ''; }
@@ -12795,11 +12802,12 @@
           + pjEsc(nm || '프로젝트 고르기') + ' ▾</button>'
           + '<button class="bell" type="button" data-pa="bell" title="오늘 할 일">🔔</button>'
           + '<span class="sep"></span>';
+    var paHere = paHereKey_();
     PA_APPS.forEach(function(x){
       var c = paCard(x);
       if(!paCan(c)) return;
       var b = paBadge(c);
-      h += '<button class="s' + (x.k === 'proj' ? ' now' : '') + '" type="button" data-pa="go" data-pak="'
+      h += '<button class="s' + (x.k === paHere ? ' now' : '') + '" type="button" data-pa="go" data-pak="'
          + x.k + '">' + x.ico + ' ' + pjEsc(x.n) + (b ? '<span class="bg">' + b + '</span>' : '') + '</button>';
     });
     el.innerHTML = h;
@@ -12812,10 +12820,11 @@
     if(!dw) return;
     var h = '<button class="cls" type="button" data-pa="close">✕ 닫기</button>'
           + '<div class="gt">📁 이 프로젝트에서</div>';
+    var paHere = paHereKey_();
     PA_APPS.forEach(function(x){
       var c = paCard(x); if(!paCan(c)) return;
       var b = paBadge(c);
-      h += '<button class="it' + (x.k === 'proj' ? ' now' : '') + '" type="button" data-pa="go" data-pak="'
+      h += '<button class="it' + (x.k === paHere ? ' now' : '') + '" type="button" data-pa="go" data-pak="'
          + x.k + '">' + (b ? '<span class="bgl">' + b + '</span>' : '') + x.ico + ' ' + pjEsc(x.n) + '</button>';
     });
     h += '<div class="gt">🗂 그 밖에 (프로젝트와 상관없이)</div>';
@@ -12930,6 +12939,7 @@
     paDrawer(false);
     var n = paProjNow();
     if(k === 'proj'){ location.hash = n ? '#p/' + encodeURIComponent(n) : '#p'; return; }
+    if(k === 'team'){ location.hash = n ? '#t/' + encodeURIComponent(n) : '#t'; return; }   /* 👥 팀 일정(2026-10-21) */
     /* 🔴 앱을 여는 규칙을 다시 안 짠다 — 프로젝트 화면 바로가기가 쓰는 그 함수를 그대로 부른다.
        띠에서 누를 때만 «같은 창»으로 간다(깃발을 세웠다 바로 내린다 — 다른 곳은 예전 그대로). */
     PA_SAME_NOW = true;
