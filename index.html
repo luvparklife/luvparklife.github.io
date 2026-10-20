@@ -1283,6 +1283,36 @@
     #vTeam .tpgh.today{background:#fff3cd;color:#664d03} #vTeam .tpgh.today b{color:#664d03}
     #vTeam .tpgh.hot{box-shadow:inset 0 0 0 100px #ffec9955}
     #vTeam .tpgc.hot{box-shadow:inset 0 0 0 100px #ffec9933}
+    /* 👥 2026-10-21 여러 프로젝트를 함께 볼 때 — 편집 대상이 «아닌» 고른 프로젝트의 촬영일(더 옅은 노랑 · 눌러도 수정 안 됨) */
+    #vTeam .tpgh.hot2{box-shadow:inset 0 0 0 100px #ffec9933}
+    #vTeam .tpgc.hot2{box-shadow:inset 0 0 0 100px #ffec9922}
+    #vTeam .tppj.tg{box-shadow:0 0 0 3px var(--ink)}
+    #vTeam .tpsp{margin-right:14px;display:inline-block}
+    #vTeam .tpmulti{font-size:12px;color:var(--sub);margin:-2px 0 8px}
+    /* 👥 2026-10-21 필요 인원 대비 진행 · 사람 순서 · 날짜별 확정 · 개인 일정 */
+    #vTeam .tpprogs{display:flex;flex-direction:column;gap:6px;margin:0 0 8px}
+    #vTeam .tpprog{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12.5px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+    #vTeam .tpprog.cur{border-color:var(--ink)}
+    #vTeam .tpprog.done{background:#eaf7ee;border-color:#9ad3ad}
+    #vTeam .tpbar{display:inline-flex;width:130px;height:10px;border-radius:6px;background:#e7eaf0;overflow:hidden}
+    #vTeam .tpbar i{display:block;height:100%}
+    #vTeam .tpbar i.c{background:var(--team,#2f7d4f)}
+    #vTeam .tpbar i.p{background:repeating-linear-gradient(45deg,#8fb99f 0 4px,#fff 4px 8px)}
+    #vTeam .tprl{white-space:nowrap}
+    #vTeam .tprl b.ok{color:var(--team,#2f7d4f)}
+    #vTeam .tprl b.lack{color:#b45309}
+    #vTeam input.tpneed{width:40px;font:inherit;font-size:12px;padding:1px 3px;border:1px solid var(--line);border-radius:6px;text-align:center}
+    #vTeam .tpbd{font-size:10.5px;padding:0 5px;border-radius:8px;background:#fde8c8;color:#92400e;font-weight:800}
+    #vTeam .tpbd.ok{background:#d9f2e0;color:#1f6b3a}
+    #vTeam .tpmv{display:inline-flex;gap:2px;margin-left:4px}
+    #vTeam .tpmv button{border:1px solid var(--line);background:var(--card);border-radius:5px;font-size:9px;line-height:1;padding:2px 4px;cursor:pointer;color:var(--sub)}
+    #vTeam .tpmv button:disabled{opacity:.25;cursor:default}
+    #vTeam .tpmode{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0}
+    #vTeam .tpmb{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:3px 11px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+    #vTeam .tpmb.on{border-color:var(--ink);background:var(--ink);color:var(--card)}
+    #vTeam .tpmh{font-size:12px;color:var(--sub)}
+    #vTeam .tppart2{font-size:10px;font-weight:800;color:#b45309;background:#fff4dc;border-radius:6px;padding:0 4px;margin-left:3px}
+    #vTeam .tpseg.bz{--pc:#6b7280;background:repeating-linear-gradient(135deg,#d6d9df 0 4px,#eceef2 4px 8px);color:#4b5563;border-color:#b6bcc6}
     #vTeam .tpgl{padding:3px 8px;font-size:12px;display:flex;flex-direction:column;justify-content:center;min-width:0;background:var(--card);position:sticky;left:0;z-index:2;border-right:1px solid var(--line)}
     #vTeam .tpgl b{font-size:13px}
     #vTeam .tpgl .sub{font-size:10.5px;color:var(--faint);white-space:nowrap}
@@ -11852,7 +11882,7 @@
   var TP_DAYS = 21;
   var TP_COLORS = ['#0f766e','#d97706','#2563eb','#db2777','#7c3aed','#0891b2','#65a30d','#dc2626'];
   var TP_WN = ['일','월','화','수','목','금','토'];
-  var TPS = { d:null, S:{}, roster:[], projects:[], crew:[], db:[], edit:false, me:'', today:'', cur:'', want:'', from:'',
+  var TPS = { d:null, S:{}, roster:[], projects:[], crew:[], db:[], edit:false, me:'', today:'', cur:'', sel:[], need:{}, bz:{}, cmode:'avail', want:'', from:'',
               loaded:false, loading:false, q:[], busy:false, drag:null, armed:'', armTimer:0, msg:null, timer:0, shown:false,
               mut:0, dirty:'', tok:'' };
 
@@ -11871,12 +11901,12 @@
   /* ── 상태 (프로젝트 → 이름 → {st, off}) ── */
   function tpIngestRows(rows){
     TPS.S = {};
-    (rows||[]).forEach(function(r){ (TPS.S[r.pj] = TPS.S[r.pj] || {})[r.n] = { st:r.st, off:(r.off||[]).slice() }; });
+    (rows||[]).forEach(function(r){ (TPS.S[r.pj] = TPS.S[r.pj] || {})[r.n] = { st:r.st, off:(r.off||[]).slice(), cf:(r.cf||[]).slice() }; });
   }
   function tpIngest(d){
     TPS.d = d; TPS.edit = !!d.edit; TPS.me = d.me || ''; TPS.today = d.today || TPS.today;
     TPS.projects = d.projects || []; TPS.roster = (d.roster||[]).slice(); TPS.crew = d.crew || []; TPS.db = d.db || []; TPS.note = d.note || '';
-    tpIngestRows(d.rows);
+    tpIngestRows(d.rows); TPS.need = d.need || {}; TPS.bz = d.busy || {};
     if(!TPS.from) TPS.from = TPS.today;
     TPS.loaded = true;
   }
@@ -11885,7 +11915,29 @@
     return p.dates.filter(function(d){ return e.off.indexOf(d) < 0; });
   }
   function tpStOf(pk, n){ var e = (TPS.S[pk]||{})[n]; return e ? e.st : ''; }
-  function tpConfNames(pk){ var o = TPS.S[pk] || {}; return Object.keys(o).filter(function(n){ return o[n].st === '확정'; }); }
+  /* 👥 2026-10-21 「한 날짜만 확정」 — 줄의 «날짜별 상태». 확정이면 가능한 모든 날이 확정, 섭외중이면 cf(확정날짜)에 든 날만 확정 */
+  function tpIsConfE(e){ return !!e && (e.st === '확정' || (e.cf||[]).length > 0); }
+  function tpDayConf(e, d){ return !!e && (e.st === '확정' || (e.cf||[]).indexOf(d) >= 0); }
+  function tpNormE(e, P){
+    if(e.st === '확정'){ e.cf = []; return; }
+    var on = P.dates.filter(function(x){ return e.off.indexOf(x) < 0; });
+    e.cf = (e.cf||[]).filter(function(x){ return on.indexOf(x) >= 0; });
+    if(on.length && e.cf.length === on.length){ e.st = '확정'; e.cf = []; }
+  }
+  function tpJosa(list){ var l = list.length ? list[list.length-1] : ''; return /일정$/.test(l) ? '과' : '와'; }
+  function tpConfNames(pk){ var o = TPS.S[pk] || {}; return Object.keys(o).filter(function(n){ return tpIsConfE(o[n]); }); }
+  /* 필요 인원 대비 */
+  function tpNeedTot(pk){ var o = TPS.need[pk] || {}; return (o.PA||0) + (o['조명']||0) + (o.DIT||0); }
+  function tpCountRole(pk, r){
+    var o = TPS.S[pk] || {}, c = 0, p = 0;
+    Object.keys(o).forEach(function(n){ if(tpRoleOf(n) !== r) return; if(tpIsConfE(o[n])) c++; else p++; });
+    return { c:c, p:p };
+  }
+  function tpFilled(pk){
+    var need = TPS.need[pk] || {}, f = 0;
+    TP_ROLES.forEach(function(r){ f += Math.min(tpCountRole(pk, r).c, need[r]||0); });
+    return f;
+  }
   function tpClashes(n, pk){
     var out = [], mine = tpOnDays(pk, n); if(!mine.length) return out;
     TPS.projects.forEach(function(P){
@@ -11893,11 +11945,14 @@
       var th = tpOnDays(P.name, n);
       if(mine.some(function(d){ return th.indexOf(d) >= 0; }) && out.indexOf(P.name) < 0) out.push(P.name);
     });
+    var bz = (TPS.bz||{})[n] || [];
+    if(bz.length && mine.some(function(d){ return bz.indexOf(d) >= 0; })) out.push('개인 일정');   /* 👥 알바 등 개인 일정과 겹침 */
     return out;
   }
   function tpDaysTxt(pk, n){
-    var on = tpOnDays(pk, n), p = tpProj(pk);
-    return (p && on.length && on.length < p.dates.length) ? ' <span style="color:var(--sub)">('+on.map(tpMD).join(', ')+'만)</span>' : '';
+    var e = (TPS.S[pk]||{})[n], p = tpProj(pk); if(!e || !p) return '';
+    var days = (e.st === '확정') ? tpOnDays(pk, n) : (e.cf||[]).slice().sort();   /* 부분 확정이면 «확정된 날»만 */
+    return (days.length && days.length < p.dates.length) ? ' <span style="color:var(--sub)">('+days.map(tpMD).join(', ')+'만)</span>' : '';
   }
 
   /* ── 서버로 ── */
@@ -11941,7 +11996,7 @@
       }
       else if(!TPS.q.length && !TPS.drag && d.rows){
         /* 대기가 비었을 때만 «서버가 아는 값»으로 맞춘다 — 다른 관리자가 동시에 바꾼 것도 이때 반영된다 */
-        tpIngestRows(d.rows); if(d.roster) TPS.roster = d.roster; tpRender();
+        tpIngestRows(d.rows); if(d.roster) TPS.roster = d.roster; if(d.need) TPS.need = d.need; if(d.busy) TPS.bz = d.busy; tpRender();
       }
       if(!TPS.q.length){
         var bk = it.des ? (d.bk || '') : '';
@@ -11978,19 +12033,46 @@
   }
 
   /* ── 바꾸기 (화면 먼저 · 서버는 뒤에서) ── */
+  /* 👥 날짜 칸을 누르거나 끌 때 «무엇을 바꾸나» — 모드 3개(2026-10-21)
+     avail = 프로젝트에 가능한 날 ↔ ✕ · conf = 그 날만 확정 ↔ 섭외중 · busy = 프로젝트와 상관없는 «개인 일정»(알바 등) */
   function tpApplyDay(n, d, mode){
+    var cm = TPS.cmode || 'avail';
+    if(cm === 'busy'){
+      var bz = (TPS.bz[n] = TPS.bz[n] || []), k = bz.indexOf(d);
+      if(mode === 'on'){ if(k >= 0) return ''; bz.push(d); bz.sort(); return 'bon'; }
+      if(k < 0) return ''; bz.splice(k, 1); if(!bz.length) delete TPS.bz[n]; return 'boff';
+    }
     var pk = TPS.cur, P = tpProj(pk); if(!P || P.dates.indexOf(d) < 0) return '';
     var o = (TPS.S[pk] = TPS.S[pk] || {}), e = o[n];
+    if(cm === 'conf'){
+      if(mode === 'conf'){
+        if(!e){ e = o[n] = { st:'섭외중', cf:[d], off:P.dates.filter(function(x){ return x !== d; }) }; tpNormE(e, P); return 'cadd'; }
+        if(e.off.indexOf(d) >= 0 || tpDayConf(e, d)) return '';
+        e.cf = (e.cf||[]).concat([d]); tpNormE(e, P); return 'conf';
+      }
+      if(!e || e.off.indexOf(d) >= 0) return '';
+      if(e.st === '확정'){ e.st = '섭외중'; e.cf = tpOnDays(pk, n).filter(function(x){ return x !== d; }); return 'pend'; }
+      var kc = (e.cf||[]).indexOf(d); if(kc < 0) return ''; e.cf.splice(kc, 1); return 'pend';
+    }
     if(mode === 'on'){
-      if(!e){ o[n] = { st:'섭외중', off:P.dates.filter(function(x){ return x !== d; }) }; return 'add'; }
-      var i = e.off.indexOf(d); if(i >= 0){ e.off.splice(i,1); return 'on'; }
+      if(!e){ o[n] = { st:'섭외중', cf:[], off:P.dates.filter(function(x){ return x !== d; }) }; return 'add'; }
+      var i = e.off.indexOf(d); if(i >= 0){ e.off.splice(i,1); tpNormE(e, P); return 'on'; }
       return '';
     }
     if(!e || e.off.indexOf(d) >= 0) return '';
     if(tpOnDays(pk, n).length <= 1){ delete o[n]; return 'remove'; }
-    e.off.push(d); return 'off';
+    e.off.push(d);
+    if(e.st !== '확정') e.cf = (e.cf||[]).filter(function(x){ return x !== d; });
+    tpNormE(e, P);
+    return 'off';
   }
-  function tpDayMode(n, d){ var e = (TPS.S[TPS.cur]||{})[n]; return (!e || e.off.indexOf(d) >= 0) ? 'on' : 'off'; }
+  function tpDayMode(n, d){
+    var cm = TPS.cmode || 'avail';
+    if(cm === 'busy') return ((TPS.bz[n]||[]).indexOf(d) >= 0) ? 'off' : 'on';
+    var e = (TPS.S[TPS.cur]||{})[n];
+    if(cm === 'conf') return (e && e.off.indexOf(d) < 0 && tpDayConf(e, d)) ? 'pend' : 'conf';
+    return (!e || e.off.indexOf(d) >= 0) ? 'on' : 'off';
+  }
   function tpDragStep(n, d){
     var key = n + '|' + d; if(TPS.drag.last === key) return; TPS.drag.last = key;
     var r = tpApplyDay(n, d, TPS.drag.mode); if(!r) return;
@@ -11999,17 +12081,22 @@
   }
   function tpDragEnd(){
     if(!TPS.drag) return;
-    var ch = TPS.drag.ch, mode = TPS.drag.mode, short = tpShort(TPS.cur); TPS.drag = null;
+    var ch = TPS.drag.ch, mode = TPS.drag.mode, short = tpShort(TPS.cur), cm = TPS.cmode || 'avail'; TPS.drag = null;
     if(!ch.length) return;
-    var msg;
-    if(ch.length === 1){
+    var msg, nm = []; ch.forEach(function(x){ if(nm.indexOf(x.n) < 0) nm.push(x.n); });
+    if(cm === 'busy'){
+      msg = ch.length === 1 ? ch[0].n + ' ' + tpMD(ch[0].d) + (mode === 'on' ? ' 개인 일정' : ' 개인 일정 지움')
+                            : ch.length + '칸을 개인 일정 ' + (mode === 'on' ? '으로' : '에서 지움') + ' (' + nm.join(', ') + ')';
+    } else if(cm === 'conf'){
+      msg = ch.length === 1 ? ch[0].n + ' ' + tpMD(ch[0].d) + (mode === 'conf' ? ' 확정' : ' 섭외중으로') + ' (' + short + ')'
+                            : ch.length + '칸을 ' + (mode === 'conf' ? '확정' : '섭외중') + '으로 (' + nm.join(', ') + ' · ' + short + ')';
+    } else if(ch.length === 1){
       var c = ch[0], P = tpProj(TPS.cur);
       msg = c.r === 'add' ? c.n + ' → 섭외중' + (P && P.dates.length > 1 ? ', ' + tpMD(c.d) + '만 가능' : '') + ' (' + short + ')'
           : c.r === 'on' ? c.n + ' ' + tpMD(c.d) + ' 가능 (' + short + ')'
           : c.r === 'off' ? c.n + ' ' + tpMD(c.d) + ' 안 됨 (' + short + ')'
           : c.n + ' → 뺌 — 가능한 날이 없어서 (' + short + ')';
     } else {
-      var nm = []; ch.forEach(function(x){ if(nm.indexOf(x.n) < 0) nm.push(x.n); });
       msg = ch.length + '칸을 ' + (mode === 'on' ? '가능' : '안 됨') + '으로 (' + nm.join(', ') + ' · ' + short + ')';
     }
     /* 한 번에 40칸씩 나눠 보낸다(주소 길이 한도) */
@@ -12021,13 +12108,59 @@
     });
     if(curG.length) groups.push(curG);
     groups.forEach(function(g, gi){
-      tpEnqueue({ act:'cells', proj:TPS.cur, mode:mode, cells:g.join(',') }, gi === groups.length - 1 ? msg : '');
+      var prm = cm === 'busy' ? { act:'busy', mode:mode, cells:g.join(',') }
+              : cm === 'conf' ? { act:'conf', proj:TPS.cur, mode:mode, cells:g.join(',') }
+              : { act:'cells', proj:TPS.cur, mode:mode, cells:g.join(',') };
+      tpEnqueue(prm, gi === groups.length - 1 ? msg : '');
     });
+  }
+  /* 필요 인원 */
+  function tpSetNeed(pk, r, v){
+    v = parseInt(v, 10); if(!isFinite(v) || v < 0) v = 0; if(v > 30) v = 30;
+    var o = (TPS.need[pk] = TPS.need[pk] || {});
+    if((o[r]||0) === v) return;
+    if(v > 0) o[r] = v; else delete o[r];
+    if(!Object.keys(o).length) delete TPS.need[pk];
+    tpRender();
+    tpEnqueue({ act:'need', proj:pk, r:r, n:v }, tpShort(pk) + ' ' + r + ' 필요 ' + v + '명');
+  }
+  /* 사람 순서 — 화면에 «보이는 같은 역할 이웃»과 자리를 맞바꾼다 */
+  function tpMove(n, dir){
+    var role = tpRoleOf(n); if(!role) return;
+    var sel = TPS.sel || [];
+    var vis = TPS.roster.filter(function(x){ return x.r === role && sel.some(function(pk){ return !!(TPS.S[pk]||{})[x.n]; }); });
+    var i = -1; vis.forEach(function(x, k){ if(x.n === n) i = k; });
+    var j = i + dir; if(i < 0 || j < 0 || j >= vis.length) return;
+    var other = vis[j].n, ia = -1, ib = -1;
+    TPS.roster.forEach(function(x, k){ if(x.n === n) ia = k; if(x.n === other) ib = k; });
+    var t = TPS.roster[ia]; TPS.roster[ia] = TPS.roster[ib]; TPS.roster[ib] = t;
+    tpRender();
+    tpEnqueue({ act:'move', n:n, o:other }, n + ' 순서 바꿈');
+  }
+  /* 한 프로젝트의 «필요 인원 대비» 카드 */
+  function tpProgHtml(pk, editable){
+    var need = TPS.need[pk] || {}, tot = tpNeedTot(pk), filled = tpFilled(pk), pendFill = 0, roles = '', extra = 0;
+    TP_ROLES.forEach(function(r){
+      var k = tpCountRole(pk, r), nd = need[r] || 0;
+      if(k.c > nd && nd > 0) extra += k.c - nd;
+      pendFill += Math.min(k.p, Math.max(0, nd - Math.min(k.c, nd)));
+      var ok = nd > 0 && k.c >= nd;
+      roles += '<span class="tprl">' + r + ' <b class="' + (ok ? 'ok' : (nd > 0 ? 'lack' : '')) + '">' + k.c + '</b>' +
+               (editable ? '/<input class="tpneed" type="number" min="0" max="30" data-p="' + tpEsc(pk) + '" data-r="' + r + '" value="' + (nd || '') + '" placeholder="필요" title="' + r + ' 필요 인원(비우면 안 정함)">'
+                         : (nd ? '/' + nd : '')) +
+               (k.p ? ' <span style="color:var(--sub)">(+섭외중 ' + k.p + ')</span>' : '') + '</span>';
+    });
+    var pc = tot ? Math.round(100 * filled / tot) : 0, pp = tot ? Math.min(100 - pc, Math.round(100 * pendFill / tot)) : 0;
+    var head = tot ? '<b>' + filled + '/' + tot + '명</b> 확정' + (filled >= tot ? ' ✅ 다 구했습니다' : ' · <b style="color:#b45309">' + (tot - filled) + '명 더 필요</b>') + (extra ? ' <span style="color:var(--sub)">(+' + extra + ' 초과)</span>' : '')
+                    : '<span style="color:var(--sub)">' + (editable ? '필요 인원을 적으면 «얼마 구했나»가 보입니다 →' : '필요 인원 안 정함') + '</span>';
+    return '<div class="tpprog' + (tot && filled >= tot ? ' done' : '') + (editable && (TPS.sel||[]).length > 1 ? ' cur' : '') + '"><b>' + tpEsc(tpShort(pk)) + '</b>' +
+           (tot ? '<span class="tpbar"><i class="c" style="width:' + pc + '%"></i><i class="p" style="width:' + pp + '%"></i></span>' : '') +
+           head + roles + '</div>';
   }
   function tpSetState(n, val){
     var o = (TPS.S[TPS.cur] = TPS.S[TPS.cur] || {});
     if(tpStOf(TPS.cur, n) === val) return;
-    if(!val) delete o[n]; else if(o[n]) o[n].st = val; else o[n] = { st:val, off:[] };
+    if(!val) delete o[n]; else if(o[n]){ o[n].st = val; o[n].cf = []; } else o[n] = { st:val, off:[], cf:[] };
     tpRender();
     tpEnqueue({ act:'state', proj:TPS.cur, n:n, st:val }, n + ' → ' + (val || '뺌') + ' (' + tpShort(TPS.cur) + ')');
   }
@@ -12039,7 +12172,7 @@
     if(o[name]){ tpSay('bad', '⚠ ' + name + '은 이미 ' + tpShort(TPS.cur) + '에 있습니다(' + o[name].st + ').'); return; }
     var inpEl = document.querySelector('#tpBody input.tpaddp[data-r="'+role+'"]'); if(inpEl) inpEl.value = '';   /* 🔴 다시 그릴 때 «쓰던 글자»를 되살리므로 먼저 비운다 */
     if(!ex) TPS.roster.push({ n:name, r:role });
-    o[name] = { st:'섭외중', off:[] };
+    o[name] = { st:'섭외중', off:[], cf:[] };
     tpRender();
     var inDb = TPS.db.some(function(x){ return x.n === name; });
     tpEnqueue({ act:'addp', n:name, r:ex || role, proj:TPS.cur },
@@ -12071,51 +12204,82 @@
   }
 
   /* ── 그리기 ── */
+  /* 👥 2026-10-21 대표 지시 «프로젝트는 빠른 순별로» — 첫 촬영일이 빠른 것이 왼쪽. 같은 날이면 이름순 */
+  function tpByDate(a, b){ return a.dates[0] < b.dates[0] ? -1 : (a.dates[0] > b.dates[0] ? 1 : (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0))); }
   function tpVisibleProjects(win){
     var a = win[0], b = win[win.length-1];
-    return TPS.projects.filter(function(P){ return P.dates.some(function(d){ return d >= a && d <= b; }); });
+    return TPS.projects.filter(function(P){ return P.dates.some(function(d){ return d >= a && d <= b; }); }).sort(tpByDate);
+  }
+  /* 👥 2026-10-21 대표 지시 «프로젝트 여러 개 클릭해서 한 번에 볼 수도» — 칩은 «켜고 끄는» 단추다.
+     · 안 고른 칩을 누르면 → 함께 보기에 들어오고 «편집 대상»이 된다(맨 나중에 누른 것)
+     · 고른 칩인데 편집 대상이 아니면 → 편집 대상만 바꾼다(빠지지 않는다)
+     · 편집 대상 칩을 또 누르면 → 빠진다(마지막 하나는 안 빠진다)
+     🔴 수정(드롭다운·날짜 칸·추가)은 «편집 대상»에만 적용된다 — 다른 칩은 «보기만». */
+  function tpPick(name){
+    var sel = (TPS.sel || []).slice(), i = sel.indexOf(name);
+    if(i < 0){ sel.push(name); TPS.cur = name; }
+    else if(name !== TPS.cur){ TPS.cur = name; }
+    else if(sel.length > 1){ sel.splice(i, 1); TPS.cur = sel[sel.length-1]; }
+    TPS.sel = sel; TPS.armed = ''; tpRender();
   }
   function tpRender(){
     var box = document.getElementById('tpBody'); if(!box || !TPS.loaded) return;
     var adm = TPS.edit, win = tpWin(), h = '';
     var vis = tpVisibleProjects(win);
     if(TPS.want){
-      /* #t/프로젝트이름 으로 들어오면 그 프로젝트를 고르고, 촬영일이 보이는 기간이 아니면 기간을 옮긴다 */
+      /* #t/프로젝트이름 으로 들어오면 그 프로젝트 «하나만» 고르고, 촬영일이 보이는 기간이 아니면 기간을 옮긴다 */
       var w = tpProj(TPS.want); TPS.want = '';
-      if(w){ TPS.cur = w.name; if(win.indexOf(w.dates[0]) < 0){ TPS.from = tpAdd(w.dates[0], -3); win = tpWin(); vis = tpVisibleProjects(win); } }
+      if(w){ TPS.cur = w.name; TPS.sel = [w.name]; if(win.indexOf(w.dates[0]) < 0){ TPS.from = tpAdd(w.dates[0], -3); win = tpWin(); vis = tpVisibleProjects(win); } }
     }
-    if(!TPS.cur || !tpProj(TPS.cur) || !vis.some(function(p){ return p.name === TPS.cur; })) TPS.cur = vis.length ? vis[0].name : (TPS.projects[0] ? TPS.projects[0].name : '');
-    var cur = TPS.cur, P0 = tpProj(cur);
+    /* 고른 프로젝트 중 «지금 보이는 기간 밖»으로 나간 것은 뺀다. 다 빠지면 «제일 빠른 프로젝트» 하나 */
+    TPS.sel = (TPS.sel || []).filter(function(n){ return vis.some(function(p){ return p.name === n; }); });
+    if(!TPS.sel.length){ var first = vis.length ? vis[0].name : (TPS.projects[0] ? TPS.projects[0].name : ''); if(first) TPS.sel = [first]; }
+    if(!TPS.cur || TPS.sel.indexOf(TPS.cur) < 0) TPS.cur = TPS.sel.length ? TPS.sel[TPS.sel.length-1] : '';
+    var cur = TPS.cur, P0 = tpProj(cur), sel = TPS.sel, multi = sel.length > 1;
+    var selDates = {}; sel.forEach(function(pk){ var Pk = tpProj(pk); if(Pk) Pk.dates.forEach(function(d){ selDates[d] = 1; }); });
+    function inSel(n){ return sel.some(function(pk){ return !!(TPS.S[pk]||{})[n]; }); }
 
     h += '<div class="tphow">' + (adm
-      ? '프로젝트를 고르고 → 이름 옆 <b>드롭다운</b>(섭외중/확정)이나 <b>노란 날짜 칸을 클릭·드래그</b>하세요. 칸 = 가능, ✕ = 안 되는 날. <b>확정하면 프로젝트 정보 「PA팀」에 들어갑니다.</b> 회색 칸 = 다른 프로젝트 일정, <b>빨간 칸 = 같은 날 두 곳(겹침)</b>.'
+      ? '프로젝트를 고르면 <b>그 프로젝트에 들어간 사람만</b> 보입니다(여러 개를 눌러 함께 볼 수 있고, 맨 나중에 누른 것이 편집 대상). 사람은 아래 <b>＋ 사람 추가</b>로 넣고 → 이름 옆 <b>드롭다운</b>(섭외중/확정/빼기)이나 <b>날짜 칸을 클릭·드래그</b>하세요(위 「날짜 칸을 누르거나 끌면」에서 가능·✕ / 날짜별 확정 / 개인 일정을 고름). <b>필요 인원</b>을 적으면 얼마나 구했는지 막대로 보입니다. <b>확정하면 프로젝트 정보 「PA팀」에 들어갑니다.</b> 회색 칸 = 고르지 않은 프로젝트 일정, <b>빨간 칸 = 같은 날 두 곳(겹침)</b>.'
       : '🔒 <b>내가 확정된 프로젝트</b>만 보입니다. 남의 일정·섭외 현황은 「관리」 이상만 봅니다.'
         + (TPS.note ? '<br>ℹ️ ' + tpEsc(TPS.note) : (!TPS.projects.length ? '<br>ℹ️ 아직 확정된 프로젝트가 없습니다 — 확정되면 여기에 나타납니다.' : ''))) + '</div>';
 
     h += '<div class="tpbar"><span class="tplb">프로젝트</span>';
     vis.forEach(function(P){
-      h += '<button type="button" class="tppj'+(P.name===cur?' on':'')+'" data-tp="pick" data-p="'+tpEsc(P.name)+'" title="'+tpEsc(P.name)+'"><i style="background:'+tpColor(P.name)+'"></i>'+tpEsc(tpShort(P.name))+' <small>'+tpMD(P.dates[0])+(P.dates.length>1?'~'+tpMD(P.dates[P.dates.length-1]):'')+'</small></button>';
+      h += '<button type="button" class="tppj'+(sel.indexOf(P.name)>=0?' on':'')+(multi&&P.name===cur?' tg':'')+'" data-tp="pick" data-p="'+tpEsc(P.name)+'" title="'+tpEsc(P.name)+(multi&&P.name===cur?' (편집 대상)':'')+'"><i style="background:'+tpColor(P.name)+'"></i>'+tpEsc(tpShort(P.name))+' <small>'+tpMD(P.dates[0])+(P.dates.length>1?'~'+tpMD(P.dates[P.dates.length-1]):'')+'</small>'+(adm && tpNeedTot(P.name) ? ' <b class="tpbd'+(tpFilled(P.name)>=tpNeedTot(P.name)?' ok':'')+'" title="확정 / 필요 인원">'+tpFilled(P.name)+'/'+tpNeedTot(P.name)+'</b>' : '')+'</button>';
     });
     if(!vis.length) h += '<span class="tplb">이 기간에 촬영이 잡힌 프로젝트가 없습니다 →</span>';
-    h += '<span style="flex:1"></span><button type="button" class="tpnav" data-tp="nav" data-n="-7">◀ 7일</button><button type="button" class="tpnav" data-tp="nav" data-n="0">오늘</button><button type="button" class="tpnav" data-tp="nav" data-n="7">7일 ▶</button><button type="button" class="tpnav" data-tp="reload" title="최신으로 다시 받기">🔄</button></div>';
+    var multiNote = (multi && adm) ? '<div class="tpmulti">함께 보는 중 — 굵은 테두리 <b>'+tpEsc(tpShort(cur))+'</b> 가 편집 대상입니다. 다른 칩을 한 번 누르면 편집 대상이 바뀌고, 편집 대상을 또 누르면 빠집니다.</div>' : '';
+    h += '<span style="flex:1"></span><button type="button" class="tpnav" data-tp="nav" data-n="-7">◀ 7일</button><button type="button" class="tpnav" data-tp="nav" data-n="0">오늘</button><button type="button" class="tpnav" data-tp="nav" data-n="7">7일 ▶</button><button type="button" class="tpnav" data-tp="reload" title="최신으로 다시 받기">🔄</button></div>' + multiNote;
 
     if(adm && P0){
-      var by = {}; TP_ROLES.forEach(function(r){ by[r] = 0; });
-      var cn = tpConfNames(cur); cn.forEach(function(n){ var r = tpRoleOf(n); by[r] = (by[r]||0) + 1; });
-      h += '<div class="tpsum"><b>'+tpEsc(tpShort(cur))+'</b> 확정 '+cn.length+'명 <span style="color:var(--sub)">('+TP_ROLES.map(function(r){ return r+' '+(by[r]||0); }).join(' · ')+')</span>'+
+      h += '<div class="tpsum">' + sel.map(function(pk){
+        var by = {}; TP_ROLES.forEach(function(r){ by[r] = 0; });
+        var cn = tpConfNames(pk); cn.forEach(function(n){ var r = tpRoleOf(n); by[r] = (by[r]||0) + 1; });
+        return '<span class="tpsp"><b>'+tpEsc(tpShort(pk))+'</b> 확정 '+cn.length+'명 <span style="color:var(--sub)">('+TP_ROLES.map(function(r){ return r+' '+(by[r]||0); }).join(' · ')+')</span></span>';
+      }).join('') +
            '<button type="button" class="tpclr'+(TPS.armed==='proj'?' armed':'')+'" data-tp="clearproj">'+(TPS.armed==='proj'?'⚠ 한 번 더 누르면 '+tpEsc(tpShort(cur))+' 비움':'🧹 '+tpEsc(tpShort(cur))+' 비우기')+'</button>'+
            '<button type="button" class="tpclr'+(TPS.armed==='all'?' armed':'')+'" data-tp="clearall">'+(TPS.armed==='all'?'⚠ 한 번 더 누르면 전부 비웁니다':'🧹 전체 비우기 (이름만 남김)')+'</button></div>';
       h += '<div class="tplink"><b>🔗 확정하면 프로젝트 정보 「PA팀」에 들어갑니다</b> <span style="color:var(--sub)">(견적서 금액은 안 바뀜)</span><br>'+
-           (cn.length ? cn.map(function(n){ return tpEsc(n)+' <span style="color:var(--sub)">'+tpEsc(tpRoleOf(n))+'</span>'+tpDaysTxt(cur,n); }).join(' · ') : '<span style="color:var(--sub)">(아직 확정된 사람 없음)</span>')+'</div>';
-      var cl = [];
-      TPS.roster.forEach(function(x){ var c = tpClashes(x.n, cur); if(c.length) cl.push(x.n+' — '+c.map(function(o){ return tpShort(o); }).join('·')+'와 겹침'); });
+           sel.map(function(pk){
+             var cn = tpConfNames(pk);
+             return (multi ? '<b>'+tpEsc(tpShort(pk))+'</b> ' : '') + (cn.length ? cn.map(function(n){ return tpEsc(n)+' <span style="color:var(--sub)">'+tpEsc(tpRoleOf(n))+'</span>'+tpDaysTxt(pk,n); }).join(' · ') : '<span style="color:var(--sub)">(아직 확정된 사람 없음)</span>');
+           }).join('<br>')+'</div>';
+      var cl = [], clSeen = {};
+      sel.forEach(function(pk){
+        TPS.roster.forEach(function(x){ var c = tpClashes(x.n, pk); if(c.length){ var t = x.n+' — '+c.map(function(o){ return tpShort(o); }).join('·')+tpJosa(c)+' 겹침'; if(!clSeen[t]){ clSeen[t] = 1; cl.push(t); } } });
+      });
       if(cl.length) h += '<div class="tpclash">🔴 '+tpEsc(cl.join(' · '))+'</div>';
+      h += '<div class="tpprogs">' + sel.map(function(pk){ return tpProgHtml(pk, pk === cur); }).join('') + '</div>';
     } else if(!adm && P0){
-      var crew = TPS.crew.filter(function(c){ return c.pj === cur; });
-      var mine = TPS.me ? [{ n:TPS.me, r:tpRoleOf(TPS.me) }] : [];
-      h += '<div class="tpcrew"><span style="color:var(--sub)">'+tpEsc(tpShort(cur))+' 확정된 팀</span> '+
-           mine.concat(crew).map(function(c){ var off = (c.n===TPS.me) ? (((TPS.S[cur]||{})[c.n]||{}).off||[]) : (c.off||[]); var on = P0.dates.filter(function(d){ return off.indexOf(d) < 0; });
-             return '<span class="n">'+tpEsc(c.n)+' · '+tpEsc(c.r||'')+(on.length<P0.dates.length?' ('+on.map(tpMD).join(', ')+'만)':'')+'</span>'; }).join('')+'</div>';
+      sel.forEach(function(pk){
+        var Pk = tpProj(pk); if(!Pk) return;
+        var crew = TPS.crew.filter(function(c){ return c.pj === pk; });
+        var mine = TPS.me ? [{ n:TPS.me, r:tpRoleOf(TPS.me) }] : [];
+        h += '<div class="tpcrew"><span style="color:var(--sub)">'+tpEsc(tpShort(pk))+' 확정된 팀</span> '+
+             mine.concat(crew).map(function(c){ var off = (c.n===TPS.me) ? (((TPS.S[pk]||{})[c.n]||{}).off||[]) : (c.off||[]); var on = Pk.dates.filter(function(d){ return off.indexOf(d) < 0; });
+               return '<span class="n">'+tpEsc(c.n)+' · '+tpEsc(c.r||'')+(on.length<Pk.dates.length?' ('+on.map(tpMD).join(', ')+'만)':'')+'</span>'; }).join('')+'</div>';
+      });
     }
     /* 👥 2026-10-21 대표 지시 «처음은 아무도 없는걸로» — 명단이 비어 있을 때 «무엇을 하면 되나»를 한 줄로 */
     if(adm && !TPS.roster.length) h += '<div class="tpcrew" style="color:var(--sub)">아직 아무도 없습니다 — 아래 PA·조명·DIT 칸에서 이름을 골라 <b>＋ 사람 추가</b> 하세요. (목록에 없으면 직접 입력)</div>';
@@ -12126,45 +12290,60 @@
     var g = '<div class="tprow"><div class="tpgl"><span class="sub">사람 \\ 날짜</span></div>';
     win.forEach(function(d, i){
       var wd = tpD(d).getDay(), parts = d.split('-');
-      g += '<div class="tpgh'+((wd===0||wd===6)?' we':'')+(d===TPS.today?' today':'')+(curDates.indexOf(d)>=0?' hot':'')+'"><b>'+((i===0||parts[2]==='01')?tpMD(d):String(+parts[2]))+'</b>'+TP_WN[wd]+'</div>';
+      g += '<div class="tpgh'+((wd===0||wd===6)?' we':'')+(d===TPS.today?' today':'')+(curDates.indexOf(d)>=0?' hot':(selDates[d]?' hot2':''))+'"><b>'+((i===0||parts[2]==='01')?tpMD(d):String(+parts[2]))+'</b>'+TP_WN[wd]+'</div>';
     });
     g += '</div>';
     var roles = adm ? TP_ROLES : (TPS.me && tpRoleOf(TPS.me) ? [tpRoleOf(TPS.me)] : []);
     roles.forEach(function(r){
       if(adm){
-        var opts = TPS.db.filter(function(x){ return x.r === r && !tpRoleOf(x.n); }).map(function(x){ return '<option value="'+tpEsc(x.n)+'">'; }).join('');
+        var haveCur = TPS.S[cur] || {};
+        var opts = TPS.db.filter(function(x){ return x.r === r && !tpRoleOf(x.n); }).map(function(x){ return x.n; })
+                     .concat(TPS.roster.filter(function(x){ return x.r === r && !haveCur[x.n]; }).map(function(x){ return x.n; }))
+                     .map(function(n){ return '<option value="'+tpEsc(n)+'">'; }).join('');
         g += '<div class="tphead"><b>'+r+'</b><span class="tpaddw"><input class="tpaddp" data-r="'+r+'" list="tpdl-'+r+'" placeholder="＋ 사람 추가 — 목록에서 고르거나 직접 입력" autocomplete="off"><datalist id="tpdl-'+r+'">'+opts+'</datalist><button type="button" class="tpaddb" data-tp="addp" data-r="'+r+'">추가</button></span></div>';
       }
-      TPS.roster.filter(function(x){ return x.r === r && (adm || x.n === TPS.me); }).forEach(function(x){
+      var rowsR = TPS.roster.filter(function(x){ return x.r === r && (adm ? inSel(x.n) : x.n === TPS.me); });
+      rowsR.forEach(function(x, ix){
         var n = x.n, st = tpStOf(cur, n), cl2 = tpClashes(n, cur), ee = (TPS.S[cur]||{})[n];
         var part = (ee && ee.off.length && P0) ? '<span class="tppart" title="'+tpEsc(tpOnDays(cur,n).map(tpMD).join(', ')+'만 가능')+'">'+tpOnDays(cur,n).length+'/'+P0.dates.length+'일</span>' : '';
-        var ctl = adm ? '<select class="tpsel'+(st==='확정'?' k':(st==='섭외중'?' s':''))+'" data-tp="sel" data-n="'+tpEsc(n)+'"><option value=""'+(st===''?' selected':'')+'>—</option><option'+(st==='섭외중'?' selected':'')+'>섭외중</option><option'+(st==='확정'?' selected':'')+'>확정</option></select>'
+        var ctl = adm ? '<select class="tpsel'+(st==='확정'?' k':(st==='섭외중'?' s':''))+'" data-tp="sel" data-n="'+tpEsc(n)+'"><option value=""'+(st===''?' selected':'')+'>— 빼기</option><option'+(st==='섭외중'?' selected':'')+'>섭외중</option><option'+(st==='확정'?' selected':'')+'>확정</option></select>'
                       : (st==='확정' ? '<span class="sub" style="color:var(--team);font-weight:800">✓ 확정</span>' : '');
-        g += '<div class="tprow" data-n="'+tpEsc(n)+'"><div class="tpgl"><div class="top"><b>'+tpEsc(n)+'</b>'+part+(cl2.length?'<span class="tpclb" title="'+tpEsc(cl2.map(tpShort).join('·')+'와 같은 날 겹침')+'">⚠ 겹침</span>':'')+
+        g += '<div class="tprow" data-n="'+tpEsc(n)+'"><div class="tpgl"><div class="top"><b>'+tpEsc(n)+'</b>'+part+((ee && ee.st !== '확정' && (ee.cf||[]).length) ? '<span class="tppart2" title="이 날만 확정 · 나머지는 섭외중">⚑ '+tpEsc(ee.cf.slice().sort().map(tpMD).join(','))+' 확정</span>' : '')+(cl2.length?'<span class="tpclb" title="'+tpEsc(cl2.map(tpShort).join('·')+tpJosa(cl2)+' 같은 날 겹침')+'">⚠ 겹침</span>':'')+
+             (adm?'<span class="tpmv"><button type="button" data-tp="mvup" data-n="'+tpEsc(n)+'" title="위로"'+(ix===0?' disabled':'')+'>▲</button><button type="button" data-tp="mvdn" data-n="'+tpEsc(n)+'" title="아래로"'+(ix===rowsR.length-1?' disabled':'')+'>▼</button></span>':'')+
              (adm?'<button type="button" class="tpdel'+(TPS.armed==='p:'+n?' armed':'')+'" data-tp="delp" data-n="'+tpEsc(n)+'" title="간트 명단에서 이 사람 삭제">'+(TPS.armed==='p:'+n?'⚠ 삭제?':'🗑')+'</button>':'')+'</div>'+ctl+'</div>';
         win.forEach(function(d, i){
-          var inner = '', curOn = false, otherOn = false, tip = [];
+          var inner = '', selOn = false, onN = 0, tip = [];
           TPS.projects.forEach(function(P){
             var e = (TPS.S[P.name]||{})[n]; if(!e || P.dates.indexOf(d) < 0) return;
             var isOff = e.off.indexOf(d) >= 0;
             if(!adm && e.st !== '확정') return;
-            if(P.name === cur){
+            if(sel.indexOf(P.name) >= 0){
               if(isOff){ inner += '<div class="tpseg offd" title="이 날은 안 됨">✕</div>'; tip.push(tpShort(P.name)+' — 이 날은 안 됨'); return; }
-              curOn = true; inner += '<div class="tpseg'+(e.st==='섭외중'?' s':'')+'" style="--pc:'+tpColor(P.name)+'">'+tpEsc(tpShort(P.name))+'</div>';
+              selOn = true; onN++; inner += '<div class="tpseg'+(tpDayConf(e,d)?'':' s')+'" style="--pc:'+tpColor(P.name)+'">'+tpEsc(tpShort(P.name))+'</div>';
             } else {
               if(isOff) return;
-              otherOn = true; inner += '<div class="tpseg o'+(e.st==='섭외중'?' s':'')+'">'+tpEsc(tpShort(P.name))+'</div>';
+              onN++; inner += '<div class="tpseg o'+(tpDayConf(e,d)?'':' s')+'">'+tpEsc(tpShort(P.name))+'</div>';
             }
             tip.push(P.name+' ('+e.st+')');
           });
-          var wd = tpD(d).getDay(), hot = curDates.indexOf(d) >= 0, bad = curOn && otherOn;
-          g += '<div class="tpgc'+((wd===0||wd===6)?' we':'')+(d===TPS.today?' today':'')+(hot?' hot':'')+(bad?' bad':'')+'"'+(hot&&adm?' data-act="day" data-n="'+tpEsc(n)+'" data-d="'+d+'"':'')+' title="'+tpEsc((bad?'⚠ 같은 날 두 프로젝트에 들어가 있음 — ':'')+n+' · '+tpMD(d)+(tip.length?' · '+tip.join(' / '):' · 비어 있음'))+'">'+inner+'</div>';
+          var isBusy = adm && ((TPS.bz||{})[n]||[]).indexOf(d) >= 0;
+          if(isBusy){ inner += '<div class="tpseg bz" title="개인 일정(알바 등)">개인</div>'; tip.push('개인 일정'); }
+          var wd = tpD(d).getDay(), hot = curDates.indexOf(d) >= 0, hot2 = !hot && !!selDates[d], bad = selOn && (onN > 1 || isBusy);
+          var cmN = TPS.cmode || 'avail', canClick = adm && (cmN === 'busy' || hot);
+          g += '<div class="tpgc'+((wd===0||wd===6)?' we':'')+(d===TPS.today?' today':'')+(hot?' hot':'')+(hot2?' hot2':'')+(bad?' bad':'')+'"'+(canClick?' data-act="day" data-n="'+tpEsc(n)+'" data-d="'+d+'"':'')+' title="'+tpEsc((bad?'⚠ 같은 날 두 프로젝트에 들어가 있음 — ':'')+n+' · '+tpMD(d)+(tip.length?' · '+tip.join(' / '):' · 비어 있음'))+'">'+inner+'</div>';
         });
         g += '</div>';
       });
     });
+    if(adm){
+      var cm0 = TPS.cmode || 'avail';
+      var hints = { avail:'노란 칸 = 가능한 날, ✕ = 안 되는 날(눌러서 켜고 끔)', conf:'노란 칸을 눌러 «그 날만 확정»(진한 색) · 다시 누르면 섭외중(빗금)', busy:'프로젝트와 상관없이 «아무 날이나» 눌러 그 사람의 개인 일정(회색 「개인」: 알바 등)을 표시 — 프로젝트 날과 겹치면 빨간 칸' };
+      h += '<div class="tpmode"><span class="tplb">날짜 칸을 누르거나 끌면</span>' +
+           [['avail','가능 ↔ ✕'],['conf','확정 ↔ 섭외중'],['busy','개인 일정(알바 등)']].map(function(m){ return '<button type="button" class="tpmb'+(cm0===m[0]?' on':'')+'" data-tp="cmode" data-m="'+m[0]+'">'+m[1]+'</button>'; }).join('') +
+           '<span class="tpmh">'+hints[cm0]+'</span></div>';
+    }
     h += '<div class="tpscroll">' + g + '</div>';
-    h += '<div class="tplegend"><span><span class="k"></span>확정</span><span><span class="k v"></span>섭외중</span><span><span class="k g"></span>다른 프로젝트 일정</span><span><span class="k r"></span>겹침</span><span>✕ = 그 날은 안 됨</span><span>노란 칠 = 고른 프로젝트 촬영일</span></div>';
+    h += '<div class="tplegend"><span><span class="k"></span>확정</span><span><span class="k v"></span>섭외중</span><span><span class="k g"></span>다른 프로젝트 일정</span><span><span class="k r"></span>겹침</span><span>진한 색 = 확정 · 빗금 = 섭외중(날짜별)</span><span><span class="k" style="background:repeating-linear-gradient(135deg,#d6d9df 0 3px,#eceef2 3px 6px)"></span>개인 일정(알바 등)</span><span>✕ = 그 날은 안 됨</span><span>노란 칠 = 고른 프로젝트 촬영일(진한 칠 = 편집 대상)</span></div>';
     /* 다시 그려도 «쓰던 입력칸 글자·커서»를 잃지 않게 — 입력 중이면 값만 옮긴다 */
     var act = document.activeElement, keepV = '', keepR = '';
     if(act && act.classList && act.classList.contains('tpaddp')){ keepV = act.value; keepR = act.getAttribute('data-r'); }
@@ -12185,7 +12364,7 @@
     TPS.shown = true; if(want) TPS.want = want;
     /* 🔴 다른 사람으로 로그인했거나 로그아웃했다면, 앞 사람의 데이터를 «잠깐이라도» 보여주지 않는다 */
     var tk = appTok();
-    if(TPS.tok !== tk){ TPS.loaded = false; TPS.d = null; TPS.S = {}; TPS.roster = []; TPS.projects = []; TPS.crew = []; TPS.db = []; TPS.q = []; TPS.msg = null; TPS.dirty = ''; TPS.cur = ''; TPS.from = ''; TPS.tok = tk; TPS.mut++; }
+    if(TPS.tok !== tk){ TPS.loaded = false; TPS.d = null; TPS.S = {}; TPS.roster = []; TPS.projects = []; TPS.crew = []; TPS.db = []; TPS.q = []; TPS.msg = null; TPS.dirty = ''; TPS.cur = ''; TPS.sel = []; TPS.need = {}; TPS.bz = {}; TPS.from = ''; TPS.tok = tk; TPS.mut++; }
     if(TPS.loaded){ tpRender(); tpLoad(true, true); } else tpLoad(false);
     clearInterval(TPS.timer);
     TPS.timer = setInterval(function(){
@@ -12204,7 +12383,9 @@
     root.addEventListener('click', function(e){
       var b = e.target.closest ? e.target.closest('[data-tp]') : null; if(!b) return;
       var a = b.getAttribute('data-tp');
-      if(a === 'pick'){ TPS.cur = b.getAttribute('data-p'); TPS.armed = ''; tpRender(); return; }
+      if(a === 'pick'){ tpPick(b.getAttribute('data-p')); return; }
+      if(a === 'cmode'){ TPS.cmode = b.getAttribute('data-m') || 'avail'; tpRender(); return; }
+      if(a === 'mvup' || a === 'mvdn'){ if(TPS.edit && !b.disabled) tpMove(b.getAttribute('data-n'), a === 'mvup' ? -1 : 1); return; }
       if(a === 'nav'){
         var n = +b.getAttribute('data-n'); TPS.from = n === 0 ? TPS.today : tpAdd(TPS.from || TPS.today, n); tpRender(); return;
       }
@@ -12218,6 +12399,7 @@
     });
     root.addEventListener('change', function(e){
       var t = e.target; if(t.matches && t.matches('select[data-tp="sel"]') && TPS.edit) tpSetState(t.getAttribute('data-n'), t.value);
+      if(t.matches && t.matches('input.tpneed') && TPS.edit) tpSetNeed(t.getAttribute('data-p'), t.getAttribute('data-r'), t.value);
     });
     root.addEventListener('mousedown', function(e){
       if(!TPS.edit || e.button !== 0) return;
