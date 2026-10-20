@@ -12117,6 +12117,8 @@
            mine.concat(crew).map(function(c){ var off = (c.n===TPS.me) ? (((TPS.S[cur]||{})[c.n]||{}).off||[]) : (c.off||[]); var on = P0.dates.filter(function(d){ return off.indexOf(d) < 0; });
              return '<span class="n">'+tpEsc(c.n)+' · '+tpEsc(c.r||'')+(on.length<P0.dates.length?' ('+on.map(tpMD).join(', ')+'만)':'')+'</span>'; }).join('')+'</div>';
     }
+    /* 👥 2026-10-21 대표 지시 «처음은 아무도 없는걸로» — 명단이 비어 있을 때 «무엇을 하면 되나»를 한 줄로 */
+    if(adm && !TPS.roster.length) h += '<div class="tpcrew" style="color:var(--sub)">아직 아무도 없습니다 — 아래 PA·조명·DIT 칸에서 이름을 골라 <b>＋ 사람 추가</b> 하세요. (목록에 없으면 직접 입력)</div>';
     h += '<div class="tpstat" id="tpStat"></div>';
 
     /* 겹침 계산 + 간트 */
