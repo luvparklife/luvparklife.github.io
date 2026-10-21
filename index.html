@@ -11886,7 +11886,7 @@
   var TP_DAYS = 21;
   var TP_COLORS = ['#0f766e','#d97706','#2563eb','#db2777','#7c3aed','#0891b2','#65a30d','#dc2626'];
   var TP_WN = ['일','월','화','수','목','금','토'];
-  var TPS = { d:null, S:{}, roster:[], projects:[], crew:[], db:[], edit:false, me:'', today:'', cur:'', sel:[], need:{}, bz:{}, cmode:'avail', want:'', from:'',
+  var TPS = { d:null, S:{}, roster:[], projects:[], crew:[], db:[], edit:false, me:'', today:'', cur:'', sel:[], allm:true, need:{}, bz:{}, cmode:'avail', want:'', from:'',
               loaded:false, loading:false, q:[], busy:false, drag:null, armed:'', armTimer:0, msg:null, timer:0, shown:false,
               mut:0, dirty:'', tok:'' };
 
@@ -11909,7 +11909,9 @@
   }
   function tpIngest(d){
     TPS.d = d; TPS.edit = !!d.edit; TPS.me = d.me || ''; TPS.today = d.today || TPS.today;
-    TPS.projects = d.projects || []; TPS.roster = (d.roster||[]).slice(); TPS.crew = d.crew || []; TPS.db = d.db || []; TPS.note = d.note || '';
+    /* 👥 2026-10-21 대표 지시 «지난 촬영은 필요없어» — 마지막 촬영일이 오늘 «전»이면 뺀다(칩·간트·겹침 계산 모두). 서버는 그대로 보내고 «보이는 쪽»에서 거른다 */
+    TPS.projects = (d.projects || []).filter(function(P){ return !P.dates || !P.dates.length || P.dates[P.dates.length-1] >= (d.today || TPS.today || ''); });
+    TPS.roster = (d.roster||[]).slice(); TPS.crew = d.crew || []; TPS.db = d.db || []; TPS.note = d.note || '';
     tpIngestRows(d.rows); TPS.need = d.need || {}; TPS.bz = d.busy || {};
     if(!TPS.from) TPS.from = TPS.today;
     TPS.loaded = true;
@@ -12222,11 +12224,12 @@
   function tpPickAll(){
     var vis = tpVisibleProjects(tpWin()).map(function(P){ return P.name; }), sel = TPS.sel || [];
     var all = vis.length > 0 && vis.every(function(n){ return sel.indexOf(n) >= 0; });
-    TPS.sel = all ? [TPS.cur] : vis;        /* 전체 켜짐 → 편집 대상 하나만 · 아니면 → 전체 켜기 */
+    TPS.sel = all ? [TPS.cur] : vis; TPS.allm = !all;        /* 전체 켜짐 → 편집 대상 하나만 · 아니면 → 전체 켜기 */
     TPS.armed = ''; tpRender();
   }
   function tpPick(name){
     var sel = (TPS.sel || []).slice(), i = sel.indexOf(name);
+    TPS.allm = false;                        /* 칩을 직접 누르면 「전체」 상태에서 나온다 */
     if(i < 0){ sel.push(name); TPS.cur = name; }
     else if(name !== TPS.cur){ TPS.cur = name; }
     else if(sel.length > 1){ sel.splice(i, 1); TPS.cur = sel[sel.length-1]; }
@@ -12239,11 +12242,12 @@
     if(TPS.want){
       /* #t/프로젝트이름 으로 들어오면 그 프로젝트 «하나만» 고르고, 촬영일이 보이는 기간이 아니면 기간을 옮긴다 */
       var w = tpProj(TPS.want); TPS.want = '';
-      if(w){ TPS.cur = w.name; TPS.sel = []; if(win.indexOf(w.dates[0]) < 0){ TPS.from = tpAdd(w.dates[0], -3); win = tpWin(); vis = tpVisibleProjects(win); } }
+      if(w){ TPS.cur = w.name; TPS.sel = []; TPS.allm = true; if(win.indexOf(w.dates[0]) < 0){ TPS.from = tpAdd(w.dates[0], -3); win = tpWin(); vis = tpVisibleProjects(win); } }
     }
     /* 고른 프로젝트 중 «지금 보이는 기간 밖»으로 나간 것은 뺀다. 다 빠지면 «제일 빠른 프로젝트» 하나 */
     TPS.sel = (TPS.sel || []).filter(function(n){ return vis.some(function(p){ return p.name === n; }); });
     /* 👥 2026-10-21 대표 지시 «어디서 들어오든 전체가 먼저» — 고른 게 없으면 «보이는 프로젝트 전부». 들어온 프로젝트(#t/이름)는 편집 대상만 정한다 */
+    if(TPS.allm !== false && vis.length) TPS.sel = vis.map(function(P){ return P.name; });   /* 「전체」 상태면 기간을 옮겨 새로 보이게 된 프로젝트도 켠다 */
     if(!TPS.sel.length){ if(vis.length) TPS.sel = vis.map(function(P){ return P.name; }); else if(TPS.projects[0]) TPS.sel = [TPS.projects[0].name]; }
     if(!TPS.cur || TPS.sel.indexOf(TPS.cur) < 0) TPS.cur = TPS.sel.length ? TPS.sel[0] : '';
     var cur = TPS.cur, P0 = tpProj(cur), sel = TPS.sel, multi = sel.length > 1;
@@ -12376,7 +12380,7 @@
     TPS.shown = true; if(want) TPS.want = want;
     /* 🔴 다른 사람으로 로그인했거나 로그아웃했다면, 앞 사람의 데이터를 «잠깐이라도» 보여주지 않는다 */
     var tk = appTok();
-    if(TPS.tok !== tk){ TPS.loaded = false; TPS.d = null; TPS.S = {}; TPS.roster = []; TPS.projects = []; TPS.crew = []; TPS.db = []; TPS.q = []; TPS.msg = null; TPS.dirty = ''; TPS.cur = ''; TPS.sel = []; TPS.need = {}; TPS.bz = {}; TPS.from = ''; TPS.tok = tk; TPS.mut++; }
+    if(TPS.tok !== tk){ TPS.loaded = false; TPS.d = null; TPS.S = {}; TPS.roster = []; TPS.projects = []; TPS.crew = []; TPS.db = []; TPS.q = []; TPS.msg = null; TPS.dirty = ''; TPS.cur = ''; TPS.sel = []; TPS.allm = true; TPS.need = {}; TPS.bz = {}; TPS.from = ''; TPS.tok = tk; TPS.mut++; }
     if(TPS.loaded){ tpRender(); tpLoad(true, true); } else tpLoad(false);
     clearInterval(TPS.timer);
     TPS.timer = setInterval(function(){
