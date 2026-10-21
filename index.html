@@ -1305,7 +1305,7 @@
     #vTeam .tprl{white-space:nowrap}
     #vTeam .tprl b.ok{color:var(--team,#2f7d4f)}
     #vTeam .tprl b.lack{color:#b45309}
-    #vTeam input.tpneed{width:40px;font:inherit;font-size:12px;padding:1px 3px;border:1px solid var(--line);border-radius:6px;text-align:center}
+    #vTeam select.tpneed{font:inherit;font-size:12px;padding:1px 2px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
     #vTeam .tpbd{font-size:10.5px;padding:0 5px;border-radius:8px;background:#fde8c8;color:#92400e;font-weight:800}
     #vTeam .tpbd.ok{background:#d9f2e0;color:#1f6b3a}
     #vTeam .tpmv{display:inline-flex;gap:2px;margin-left:4px}
@@ -12143,6 +12143,13 @@
     tpRender();
     tpEnqueue({ act:'move', n:n, o:other }, n + ' 순서 바꿈');
   }
+  /* 필요 인원 «고르기» — 안 정함 · 1~20명 */
+  function tpNeedSel(pk, r, nd){
+    var o = '<option value=""' + (nd ? '' : ' selected') + '>안 정함</option>';
+    for(var i = 1; i <= 20; i++) o += '<option value="' + i + '"' + (i === nd ? ' selected' : '') + '>' + i + '명</option>';
+    if(nd > 20) o += '<option value="' + nd + '" selected>' + nd + '명</option>';
+    return '<select class="tpneed" data-p="' + tpEsc(pk) + '" data-r="' + r + '" title="' + tpEsc(tpShort(pk)) + ' · ' + r + ' 몇 명을 구해야 하나">' + o + '</select>';
+  }
   /* 한 프로젝트의 «필요 인원 대비» 카드 */
   function tpProgHtml(pk, editable){
     var need = TPS.need[pk] || {}, tot = tpNeedTot(pk), filled = tpFilled(pk), pendFill = 0, roles = '', extra = 0;
@@ -12152,14 +12159,14 @@
       pendFill += Math.min(k.p, Math.max(0, nd - Math.min(k.c, nd)));
       var ok = nd > 0 && k.c >= nd;
       roles += '<span class="tprl">' + r + ' <b class="' + (ok ? 'ok' : (nd > 0 ? 'lack' : '')) + '">' + k.c + '</b>' +
-               (editable ? '/<input class="tpneed" type="number" min="0" max="30" data-p="' + tpEsc(pk) + '" data-r="' + r + '" value="' + (nd || '') + '" placeholder="필요" title="' + r + ' 필요 인원(비우면 안 정함)">'
-                         : (nd ? '/' + nd : '')) +
+               ' / 필요 ' + tpNeedSel(pk, r, nd) +
                (k.p ? ' <span style="color:var(--sub)">(+섭외중 ' + k.p + ')</span>' : '') + '</span>';
     });
+    editable = true;   /* 👥 2026-10-21 — 모든 프로젝트 카드에서 바로 고른다(전에는 편집 대상 카드만) */
     var pc = tot ? Math.round(100 * filled / tot) : 0, pp = tot ? Math.min(100 - pc, Math.round(100 * pendFill / tot)) : 0;
     var head = tot ? '<b>' + filled + '/' + tot + '명</b> 확정' + (filled >= tot ? ' ✅ 다 구했습니다' : ' · <b style="color:#b45309">' + (tot - filled) + '명 더 필요</b>') + (extra ? ' <span style="color:var(--sub)">(+' + extra + ' 초과)</span>' : '')
-                    : '<span style="color:var(--sub)">' + (editable ? '필요 인원을 적으면 «얼마 구했나»가 보입니다 →' : '필요 인원 안 정함') + '</span>';
-    return '<div class="tpprog' + (tot && filled >= tot ? ' done' : '') + (editable && (TPS.sel||[]).length > 1 ? ' cur' : '') + '"><b>' + tpEsc(tpShort(pk)) + '</b>' +
+                    : '<span style="color:var(--sub)">' + '필요 인원을 «고르면» 얼마 구했나가 보입니다 →' + '</span>';
+    return '<div class="tpprog' + (tot && filled >= tot ? ' done' : '') + (pk === TPS.cur && (TPS.sel||[]).length > 1 ? ' cur' : '') + '"><b>' + tpEsc(tpShort(pk)) + '</b>' +
            (tot ? '<span class="tpmeter"><i class="c" style="width:' + pc + '%"></i><i class="p" style="width:' + pp + '%"></i></span>' : '') +
            head + roles + '</div>';
   }
@@ -12286,7 +12293,7 @@
         TPS.roster.forEach(function(x){ var c = tpClashes(x.n, pk); if(c.length){ var t = x.n+' — '+c.map(function(o){ return tpShort(o); }).join('·')+tpJosa(c)+' 겹침'; if(!clSeen[t]){ clSeen[t] = 1; cl.push(t); } } });
       });
       if(cl.length) h += '<div class="tpclash">🔴 '+tpEsc(cl.join(' · '))+'</div>';
-      h += '<div class="tpprogs">' + sel.map(function(pk){ return tpProgHtml(pk, pk === cur); }).join('') + '</div>';
+      h += '<div class="tpprogs">' + sel.map(function(pk){ return tpProgHtml(pk); }).join('') + '</div>';
     } else if(!adm && P0){
       sel.forEach(function(pk){
         var Pk = tpProj(pk); if(!Pk) return;
@@ -12416,7 +12423,7 @@
     });
     root.addEventListener('change', function(e){
       var t = e.target; if(t.matches && t.matches('select[data-tp="sel"]') && TPS.edit) tpSetState(t.getAttribute('data-n'), t.value);
-      if(t.matches && t.matches('input.tpneed') && TPS.edit) tpSetNeed(t.getAttribute('data-p'), t.getAttribute('data-r'), t.value);
+      if(t.matches && t.matches('.tpneed') && TPS.edit) tpSetNeed(t.getAttribute('data-p'), t.getAttribute('data-r'), t.value);
     });
     root.addEventListener('mousedown', function(e){
       if(!TPS.edit || e.button !== 0) return;
