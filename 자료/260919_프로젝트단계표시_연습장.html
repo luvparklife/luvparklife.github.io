@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로젝트 진행 체크리스트 — 연습장 (직접 만져보세요)</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#fff; --ink:#1c2330; --sub:#5b6472; --line:#e5e8ee;
+    --accent:#3b6cff; --soft:#eaf0ff; --ok-bg:#e9f8ee; --ok-ink:#1e6b3a; --ok-line:#8fd6a6;
+    --warn-bg:#fff6e6; --warn-ink:#7a5200; --warn-line:#f2c56b;
+    --chip:#eef1f6; --grid:#c9cfda;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif;
+       font-size:14px;line-height:1.6}
+  .demo{background:#7a5200;color:#fff;padding:7px 14px;font-size:13px;text-align:center}
+  .demo b{color:#ffd479}
+  .bar{background:#263238;color:#fff;padding:9px 14px;display:flex;align-items:center;
+       gap:9px;flex-wrap:wrap;position:sticky;top:0;z-index:9}
+  .bar .lg{font-weight:800;letter-spacing:.04em;font-size:15px}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px 12px 90px}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:11px}
+  .sec h3{margin:0;padding:10px 13px;font-size:13.5px;background:var(--chip);
+          border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .sec h3 .sp{margin-left:auto;font-weight:400;color:var(--sub);font-size:12px}
+  .sec .in{padding:14px 15px}
+  input,select{border:1px solid var(--grid);border-radius:6px;padding:5px 8px;font-size:13px;
+               font-family:inherit;background:#fff;color:var(--ink);max-width:100%}
+  .hint{color:var(--sub);font-size:12px;margin:4px 0 0}
+  .note{border-radius:9px;padding:10px 12px;font-size:12.5px;margin:8px 0 0}
+  .note.w{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-ink)}
+  .note.o{background:var(--ok-bg);border:1px solid var(--ok-line);color:var(--ok-ink)}
+
+  /* ── 체크리스트 (조작 패널) ── */
+  .grp{margin:12px 0 4px;font-size:11.5px;font-weight:800;color:var(--sub);letter-spacing:.3px;
+       text-transform:uppercase;border-top:1px solid var(--line);padding-top:10px}
+  .grp:first-of-type{border-top:none;margin-top:0;padding-top:0}
+  .cki{display:flex;align-items:flex-start;gap:8px;padding:6px 4px;border-radius:8px}
+  .cki:hover{background:var(--bg)}
+  .cki input{margin-top:3px}
+  .cki label{cursor:pointer}
+  .cki .sub{display:block;color:var(--sub);font-size:11.5px;margin-top:1px}
+
+  /* ── 진행률 바 (공용) ── */
+  .pbar-wrap{background:var(--chip);border-radius:999px;height:10px;overflow:hidden;flex:1}
+  .pbar-fill{height:100%;background:#2f8f5b;border-radius:999px;transition:width .2s}
+
+  /* ── 안 A: 실제 이동 띠 재현 (AppNavUI.html 색·구조 그대로) ── */
+  /* 🔴 2차 피드백으로 고침 — 전엔 .navdemo에 overflow:hidden이 걸려 있어서
+     펼침창(.pa-pop)이 이 상자 바깥으로 나가는 순간 통째로 잘렸다("클릭하면 짤려").
+     테두리 둥근 모서리는 .pa-tape 자체에 주고, 바깥 wrapper는 클리핑을 안 하게 뺐다. */
+  .navdemo{border:1px solid #14181f;border-radius:10px;position:relative}
+  .pa-tape{background:#20293a;color:#cfd8dc;font-size:12.5px;display:flex;align-items:center;
+    gap:7px;padding:8px 10px;flex-wrap:wrap;position:relative;border-radius:10px}
+  .pa-tape .nb{font-size:12px;font-weight:600;line-height:1;color:#fff;cursor:default;
+    background:rgba(255,255,255,.16);border:0;border-radius:6px;padding:7px 9px;white-space:nowrap}
+  .pa-tape .pjb{background:#2f8f5b;color:#fff;border:none;font-weight:700;
+    border-radius:7px;padding:6px 11px;white-space:nowrap}
+  /* 원형 진행률 링 — conic-gradient로 퍼센트만큼 채운다(직관성 개선) */
+  .ring{width:18px;height:18px;border-radius:50%;flex-shrink:0;
+    background:conic-gradient(#fff var(--pct,0%), rgba(255,255,255,.28) 0)}
+  .pa-tape .badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 12px 5px 6px;
+    font-weight:800;font-size:12px;color:#fff;white-space:nowrap;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);cursor:pointer;border:none;font-family:inherit}
+  .pa-tape .badge:hover{box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}
+  .pa-tape .sep{width:1px;height:17px;background:rgba(255,255,255,.25)}
+  /* 펼침창 — .navdemo(overflow 안 걸림) 기준으로 절대배치. z-index를 높여 다른 섹션 위로 뜨게 */
+  .pa-pop{position:absolute;top:calc(100% + 6px);left:10px;z-index:50;background:#fff;color:var(--ink);
+    border-radius:12px;box-shadow:0 14px 34px rgba(20,28,44,.32);padding:0;width:300px;
+    max-width:calc(100vw - 40px);max-height:360px;overflow:hidden;font-size:12.5px;
+    display:flex;flex-direction:column}
+  .pa-pop[hidden]{display:none}
+  .pa-pop .hd{font-weight:800;padding:12px 14px 10px;display:flex;flex-direction:column;gap:8px;
+    border-bottom:1px solid var(--line);background:var(--chip)}
+  .pa-pop .hd .tt{display:flex;align-items:center;justify-content:space-between}
+  .pa-pop .hd .x{cursor:pointer;color:var(--sub);font-weight:400;font-size:16px;line-height:1}
+  .pa-pop .list{overflow-y:auto;padding:6px 6px}
+  .pa-pop .row{display:flex;gap:8px;align-items:flex-start;padding:7px 8px;border-radius:8px;font-size:12.5px}
+  .pa-pop .row.done{color:var(--sub)}
+  .pa-pop .row:not(.done):hover{background:var(--soft)}
+
+  /* ── 안 B: 페이지 상단 큰 표시 ── */
+  .pagehead{background:#fff;border-radius:10px;padding:18px 20px;border:1px solid var(--line)}
+  .pagehead h2{margin:0 0 4px;font-size:19px}
+  .pagehead .sub{color:var(--sub);font-size:13px;margin-bottom:10px}
+  .phead-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .phead-num{font-weight:800;font-size:15px;white-space:nowrap}
+  .checklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
+  .cl-item{display:flex;gap:7px;align-items:flex-start;font-size:12.5px;padding:6px 8px;
+    border-radius:8px;background:var(--bg);border:1px solid var(--line)}
+  .cl-item.done{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-ink)}
+  .cl-item .ic{flex-shrink:0}
+
+  .pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:700}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:6px 12px;
+       font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .btn.o{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
+  .btn.d{background:var(--chip);color:var(--sub);border:1px solid var(--line)}
+  .savebar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+           padding:9px 14px;display:flex;gap:9px;align-items:center;z-index:8;
+           box-shadow:0 -2px 10px rgba(20,30,60,.06);font-size:13px}
+  .savebar .st{color:var(--sub);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .savebar .fbcnt{font-size:12.5px;color:var(--sub);white-space:nowrap}
+  .savebar .fbcnt b{color:var(--accent)}
+  @media(max-width:700px){ .savebar{flex-wrap:wrap} .savebar .st{width:100%} }
+  .fb{border-top:1px dashed var(--line);padding:10px 13px 12px;background:#fcfcfd}
+  .fb label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin-bottom:5px;position:relative}
+  .fb textarea{width:100%;min-height:50px;resize:vertical;background:var(--bg);
+    border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:13.5px;
+    color:var(--ink);font-family:inherit;line-height:1.6}
+  .fb textarea::placeholder{color:var(--sub);opacity:.6}
+  .fb textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  .fb textarea.has{border-color:var(--accent);background:var(--soft)}
+  .fbtools{float:right;display:inline-flex;gap:4px}
+  .fbtools button{font:inherit;font-size:11px;font-weight:700;cursor:pointer;border-radius:6px;
+    padding:1px 7px;border:1px solid var(--line);background:var(--card);color:var(--sub)}
+  .fbtools button:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="demo">🧪 <b>연습장입니다(2차 — 피드백 반영판)</b> — 아직 <b>아무것도 만들지 않은 기능</b>입니다. 실제 허브·앱은 하나도 안 바뀝니다.
+  왼쪽 체크박스를 누르면 아래 두 안이 실시간으로 바뀝니다.</div>
+
+<div class="bar">
+  <span class="lg">📁 프로젝트 진행 체크리스트</span>
+  <select id="presetSel" onchange="pickPreset()"></select>
+</div>
+
+<div class="wrap">
+
+  <div class="note w" style="margin:12px 0"><b>🔄 1차 피드백 반영 — 뭐가 바뀌었나</b>
+    ①"지금 몇 단계"라는 단일 배지를 버리고 <b>13개 체크리스트</b>로 바꿨습니다(소싱 4단계 세분화 + 부족수량/팀공유 확인 + 가견적·최종견적 분리 + 반납·정산·계산서·입금 4단계 추가).
+    ②안 A(띠)도 "현재 단계"가 아니라 <b>"몇 개 남았는지"</b>를 보여주고, 누르면 남은 항목 목록이 펼쳐지게 바꿨습니다.
+  </div>
+
+  <div class="sec">
+    <h3>1. 체크리스트 만들기 <span class="sp">지금 이 프로젝트가 어디까지 됐다면?</span></h3>
+    <div class="in">
+      <p class="hint">아래 13개는 실제 있는 신호(소싱시트 STATUS·부족수량·견적서 차수·촬영일·반납상태·정산앱·계산서·입금기록)로 <b>자동 감지</b>할 수 있는 것과, 사람이 확인 도장을 찍어야 하는 것이 섞여 있습니다. 지금은 연습장이라 직접 체크해 보세요.</p>
+
+      <div class="grp">🔵 소싱</div>
+      <div class="cki"><input type="checkbox" id="c1" checked onchange="recalc()"><label for="c1">소싱시트 채우기 시작 <span class="sub">이제 막 시작 — 요청 항목이 소싱시트에 들어감</span></label></div>
+      <div class="cki"><input type="checkbox" id="c2" checked onchange="recalc()"><label for="c2">업체 찾는 중 <span class="sub">부족한 만큼 조달업체를 서칭 중(STATUS sourcing)</span></label></div>
+      <div class="cki"><input type="checkbox" id="c3" onchange="recalc()"><label for="c3">부족수량 확인 완료 <span class="sub">부족분 숫자가 맞는지 사람이 확인함</span></label></div>
+      <div class="cki"><input type="checkbox" id="c4" onchange="recalc()"><label for="c4">부족분 팀원 공유 확인 <span class="sub">해외팀·조명팀 등에 실제로 전달됐는지 확인함</span></label></div>
+      <div class="cki"><input type="checkbox" id="c5" onchange="recalc()"><label for="c5">업체 확정 <span class="sub">조달업체가 정해짐(STATUS confirm/alt) — 부족수량 0</span></label></div>
+      <div class="cki"><input type="checkbox" id="c6" onchange="recalc()"><label for="c6">업체 견적서 업로드 <span class="sub">받은 견적서를 프로젝트 폴더에 올림</span></label></div>
+
+      <div class="grp">🟣 견적 (대표 전용)</div>
+      <div class="cki"><input type="checkbox" id="c7" onchange="recalc()"><label for="c7">가견적 발송</label></div>
+      <div class="cki"><input type="checkbox" id="c8" onchange="recalc()"><label for="c8">최종견적 발송</label></div>
+
+      <div class="grp">🔴 촬영 이후</div>
+      <div class="cki"><input type="checkbox" id="c9" onchange="recalc()"><label for="c9">촬영 완료</label></div>
+      <div class="cki"><input type="checkbox" id="c10" onchange="recalc()"><label for="c10">반납 처리 완료</label></div>
+      <div class="cki"><input type="checkbox" id="c11" onchange="recalc()"><label for="c11">정산 처리 완료</label></div>
+      <div class="cki"><input type="checkbox" id="c12" onchange="recalc()"><label for="c12">세금계산서 처리 완료</label></div>
+      <div class="cki"><input type="checkbox" id="c13" onchange="recalc()"><label for="c13">입금 확인 완료</label></div>
+
+      <p class="hint">📁 위(상단) 드롭다운에서 실제 프로젝트 이름을 골라도 됩니다 — <b>이름만 빌려온 것</b>이고 진짜 그 프로젝트의 지금 상태는 아닙니다.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>2. 안 A — 이동 띠에 "몇 개 남았는지"로 <span class="sp">AppNavUI.html 실제 색·모양 그대로</span></h3>
+    <div class="in">
+      <p class="hint">배지를 <b>누르면</b> 아래처럼 남은 항목이 펼쳐집니다 — 지금 있는 🏠 사이드바와 같은 방식입니다.</p>
+      <div class="navdemo">
+        <div class="pa-tape">
+          <button class="nb">🏠</button>
+          <button class="pjb" id="navProjName">📁 260919_H&amp;M ▾</button>
+          <button class="badge" id="navBadge" onclick="togglePop()">
+            <span class="ring" id="navRing"></span><span id="navBadgeTxt">8/13</span>
+          </button>
+          <span class="sep"></span>
+          <button class="nb">🎬 장비관리</button>
+          <button class="nb">📄 견적서</button>
+          <button class="nb">💰 정산</button>
+          <div class="pa-pop" id="pop" hidden>
+            <div class="hd">
+              <div class="tt"><span id="popTitle">남은 것 5개</span><span class="x" onclick="togglePop()">✕</span></div>
+              <div class="fl" style="gap:8px"><div class="pbar-wrap"><div class="pbar-fill" id="popBar" style="width:0%"></div></div><b id="popPct" style="font-size:12px">0%</b></div>
+            </div>
+            <div class="list" id="popList"></div>
+          </div>
+        </div>
+      </div>
+      <div class="note o" style="margin-top:10px"><b>✅ 장점</b> — "지금 뭐가 남았는지"가 클릭 한 번으로 바로 보입니다. 어느 화면에 있든 항상 보임.</div>
+      <div class="note w"><b>⚠️ 걸리는 것</b> — 이 띠는 코드가 <b>두 벌</b>(장비앱용·정산앱용)이라 같이 고쳐야 하고, 항목이 13개나 되어 폰 화면에서는 펼침 목록이 화면의 절반 이상을 덮을 수 있습니다.</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>3. 안 B — 페이지 상단에 13개 전부 <span class="sp">허브 「프로젝트 정보」 화면 맨 위</span></h3>
+    <div class="in">
+      <div class="pagehead">
+        <h2 id="pageProjName">260919_H&amp;M</h2>
+        <div class="sub">허브 · 프로젝트 정보</div>
+        <div class="phead-top">
+          <span class="phead-num" id="pheadNum">8/13</span>
+          <div class="pbar-wrap"><div class="pbar-fill" id="pbarFill" style="width:0%"></div></div>
+        </div>
+        <div class="checklist" id="checklistView"></div>
+      </div>
+      <div class="note o" style="margin-top:10px"><b>✅ 장점</b> — 13개 전부가 항상 펼쳐져 있어 <b>누르지 않아도</b> 뭐가 남았는지 바로 보입니다.</div>
+      <div class="note w"><b>⚠️ 걸리는 것</b> — 앱(장비앱·견적서 등) 안에서 작업 중일 때는 안 보이고, 프로젝트 정보 페이지로 나와야 확인됩니다. 13칸이라 화면이 좀 깁니다.</div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>4. 어느 쪽이 나을까요 <span class="sp">둘 다 켜도 됩니다</span></h3>
+    <div class="in">
+      <p>제 추천은 <b>둘 다</b>입니다 — <b>안 A(띠)</b>는 "일하다가 문득 몇 개 남았는지" 빠르게 보는 용도, <b>안 B(페이지 상단)</b>는 "이 프로젝트 전체를 쭉 훑어볼" 용도로 서로 다릅니다. 띠의 배지를 누르면 그 자리에서 펼쳐지는 대신, 아예 안 B 페이지로 이동시키는 것도 방법입니다 — 어느 쪽이 편하실지 아래에 적어주세요.</p>
+      <p class="hint">13개 항목·순서·이름이 맞는지, 빠진 게 있는지(예: 계약서? 촬영 안내 발송?) 적어주세요. 그리고 "부족수량 확인"·"팀원 공유 확인"처럼 <b>사람이 직접 확인 도장을 찍어야 하는 항목</b>을 실제로 어디서(어떤 버튼으로) 체크하게 할지도 궁금합니다.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="savebar">
+  <span class="st" id="saveSt">🧪 연습장 — 저장 버튼은 눌러도 아무 일 없습니다</span>
+  <span class="fbcnt" id="fbCnt"></span>
+  <button class="btn" id="fbSave">💾 피드백 저장</button>
+  <button class="btn o" id="fbCopy">📋 복사</button>
+  <button class="btn d" id="fbClr">🗑</button>
+</div>
+
+<script>
+var ITEMS = [
+  {id:'c1',  label:'소싱시트 채우기 시작'},
+  {id:'c2',  label:'업체 찾는 중'},
+  {id:'c3',  label:'부족수량 확인 완료'},
+  {id:'c4',  label:'부족분 팀원 공유 확인'},
+  {id:'c5',  label:'업체 확정'},
+  {id:'c6',  label:'업체 견적서 업로드'},
+  {id:'c7',  label:'가견적 발송'},
+  {id:'c8',  label:'최종견적 발송'},
+  {id:'c9',  label:'촬영 완료'},
+  {id:'c10', label:'반납 처리 완료'},
+  {id:'c11', label:'정산 처리 완료'},
+  {id:'c12', label:'세금계산서 처리 완료'},
+  {id:'c13', label:'입금 확인 완료'}
+];
+
+var PRESETS = ['260919_H&M(예시)', '260902_GRAFF', '260803_스톤아일랜드', '마르코_GMOTA', 'UGG'];
+
+function popOpen(){ return !document.getElementById('pop').hidden; }
+function togglePop(){ var p = document.getElementById('pop'); p.hidden = !p.hidden; }
+
+function recalc(){
+  var done = 0;
+  ITEMS.forEach(function(x){ if (document.getElementById(x.id).checked) done++; });
+  var total = ITEMS.length;
+  var pct = Math.round(done/total*100);
+
+  /* 원형 링 + 배지 색 — 진행률에 따라 빨강(시작)→주황(절반)→초록(다 됨)으로,
+     숫자만 읽지 않아도 색으로 "얼마나 남았나"가 바로 잡히게(직관성 2차 개선) */
+  var color = pct >= 100 ? '#2f8f5b' : pct >= 60 ? '#c67c1e' : '#c0392b';
+  document.getElementById('navRing').style.setProperty('--pct', pct + '%');
+  document.getElementById('navBadgeTxt').textContent = done + '/' + total;
+  document.getElementById('navBadge').style.background = color;
+  document.getElementById('popBar').style.width = pct + '%';
+  document.getElementById('popBar').style.background = color;
+  document.getElementById('popPct').textContent = pct + '%';
+  document.getElementById('popTitle').textContent = (total - done) ? ('남은 것 ' + (total - done) + '개') : '전부 끝났습니다 🎉';
+
+  var pl = document.getElementById('popList');
+  pl.innerHTML = ITEMS.map(function(x){
+    var on = document.getElementById(x.id).checked;
+    return '<div class="row' + (on?' done':'') + '">' + (on?'✅':'⬜') + ' ' + x.label + '</div>';
+  }).join('');
+
+  document.getElementById('pheadNum').textContent = done + '/' + total;
+  document.getElementById('pbarFill').style.width = Math.round(done/total*100) + '%';
+  var cl = document.getElementById('checklistView');
+  cl.innerHTML = ITEMS.map(function(x){
+    var on = document.getElementById(x.id).checked;
+    return '<div class="cl-item' + (on?' done':'') + '"><span class="ic">' + (on?'✅':'⬜') + '</span>' + x.label + '</div>';
+  }).join('');
+
+  var pn = document.getElementById('presetSel').value || '260919_H&M(예시)';
+  document.getElementById('navProjName').textContent = '📁 ' + pn.replace('(예시)','') + ' ▾';
+  document.getElementById('pageProjName').textContent = pn.replace('(예시)','');
+}
+
+function pickPreset(){ recalc(); }
+
+/* 시작 */
+(function(){
+  var sel = document.getElementById('presetSel');
+  PRESETS.forEach(function(k){
+    var o = document.createElement('option'); o.value = k; o.textContent = k;
+    sel.appendChild(o);
+  });
+  document.addEventListener('click', function(ev){
+    if (!popOpen()) return;
+    var t = ev.target, n = 0, pop = document.getElementById('pop'), badge = document.getElementById('navBadge');
+    while (t && n++ < 6) { if (t === pop || t === badge) return; t = t.parentElement; }
+    pop.hidden = true;
+  });
+  recalc();
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   💬 항목마다 피드백 칸 — 회사 표준 방식 그대로(guide 템플릿과 같은 방식)
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  var DOC='프로젝트단계표시_연습장', KEY='fb::'+DOC, store={};
+  try{ store=JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ store={}; }
+  function slug(t){ var h=5381; for(var i=0;i<t.length;i++){ h=((h*33)^t.charCodeAt(i))>>>0; }
+    return 'fb_'+h.toString(36); }
+
+  var live={};
+  Array.prototype.slice.call(document.querySelectorAll('.sec')).forEach(function(s,i){
+    var h3=s.querySelector('h3');
+    var title='항목 '+(i+1);
+    if(h3){
+      var cl=h3.cloneNode(true);
+      var sp=cl.querySelector('.sp'); if(sp) sp.remove();
+      title=cl.textContent.trim();
+    }
+    var id=slug(title); live[id]=1;
+    var wrap=document.createElement('div'); wrap.className='fb';
+    var lab=document.createElement('label');
+    lab.setAttribute('for',id);
+    lab.textContent='💬 「'+title+'」에 대한 피드백 — 고칠 것 · 빠진 것 · 질문';
+    var ta=document.createElement('textarea');
+    ta.id=id; ta.dataset.t=title;
+    ta.placeholder='여기에 한 줄 적어주세요. 자동 저장됩니다.';
+    ta.value=store[id]||'';
+    if(ta.value.trim()) ta.classList.add('has');
+    var _ime = false, _t = null;
+    function _save(){
+      try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){}
+      ta.classList.toggle('has', !!ta.value.trim());
+      fbCount();
+    }
+    ta.addEventListener('compositionstart', function(){ _ime = true; });
+    ta.addEventListener('compositionend', function(){ _ime = false; _save(); });
+    ta.addEventListener('input', function(){
+      store[id] = ta.value;
+      if (_ime) return;
+      if (_t) clearTimeout(_t);
+      _t = setTimeout(_save, 500);
+    });
+    ta.addEventListener('blur', function(){ if (_t) clearTimeout(_t); _save(); });
+    var tools=document.createElement('span'); tools.className='fbtools';
+    var bSel=document.createElement('button'); bSel.type='button';
+    bSel.textContent='전체선택'; bSel.title='이 칸의 글을 모두 선택합니다 (⌘A)';
+    bSel.onclick=function(){ ta.focus(); ta.select(); };
+    var bCp=document.createElement('button'); bCp.type='button';
+    bCp.textContent='복사'; bCp.title='이 칸의 글을 클립보드로 복사합니다';
+    bCp.onclick=function(){
+      ta.focus(); ta.select();
+      var done=function(){ var o=bCp.textContent; bCp.textContent='✅'; setTimeout(function(){ bCp.textContent=o; },1200); };
+      if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(done,function(){ try{document.execCommand('copy');done();}catch(e){} }); }
+      else { try{ document.execCommand('copy'); done(); }catch(e){} }
+    };
+    var bCut=document.createElement('button'); bCut.type='button';
+    bCut.textContent='잘라내기'; bCut.title='이 칸의 글을 복사하고 비웁니다';
+    bCut.onclick=function(){
+      ta.focus(); ta.select();
+      var fin=function(){ ta.value=''; ta.dispatchEvent(new Event('input',{bubbles:true})); ta.blur(); };
+      if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(fin,fin); }
+      else { try{ document.execCommand('copy'); }catch(e){} fin(); }
+    };
+    var bPs=document.createElement('button'); bPs.type='button';
+    bPs.textContent='붙여넣기'; bPs.title='클립보드 내용을 이 칸 끝에 붙입니다';
+    bPs.onclick=function(){
+      function put(t){
+        if(!t) return false;
+        var a=ta.selectionStart, b=ta.selectionEnd;
+        ta.value = ta.value.slice(0,a) + t + ta.value.slice(b);
+        ta.dispatchEvent(new Event('input',{bubbles:true}));
+        ta.focus(); var pos=a+t.length; ta.setSelectionRange(pos,pos);
+        return true;
+      }
+      if(navigator.clipboard&&navigator.clipboard.readText){
+        navigator.clipboard.readText().then(function(t){
+          if(!put(t)) alert('클립보드가 비어 있습니다.');
+        },function(){
+          alert('이 창은 붙여넣기를 막고 있습니다.\n\n크롬에서 열면 ⌘V 가 그대로 됩니다.\n(VS Code 오른쪽 미리보기의 제한입니다)');
+        });
+      } else {
+        alert('이 창은 붙여넣기를 막고 있습니다.\n\n크롬에서 열면 ⌘V 가 그대로 됩니다.');
+      }
+    };
+    tools.appendChild(bSel); tools.appendChild(bCp); tools.appendChild(bPs); tools.appendChild(bCut);
+    lab.appendChild(tools);
+    ta.addEventListener('keydown', function(e){
+      if((e.metaKey||e.ctrlKey) && (e.key==='a'||e.key==='A')){ e.preventDefault(); e.stopPropagation(); ta.select(); }
+    });
+    wrap.appendChild(lab); wrap.appendChild(ta); s.appendChild(wrap);
+  });
+  var dirty=false;
+  Object.keys(store).forEach(function(k){ if(!live[k]){ delete store[k]; dirty=true; } });
+  if(dirty){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} }
+
+  function filled(){ return Array.prototype.slice.call(document.querySelectorAll('.fb textarea'))
+    .filter(function(t){ return t.value.trim(); }); }
+  window.fbCount=function(){
+    var n=filled().length;
+    document.getElementById('fbCnt').innerHTML =
+      n ? '피드백 <b>'+n+'개</b>' : '항목마다 피드백을 남길 수 있습니다';
+  };
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function build(){
+    var f=filled(); if(!f.length) return null;
+    var d=new Date();
+    var ts=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+    var md='# 피드백 — 프로젝트 진행 체크리스트 연습장\n\n작성: '+ts+'\n원본: 260919_프로젝트단계표시_연습장.html\n\n---\n\n';
+    f.forEach(function(t){ md+='## '+t.dataset.t+'\n\n'+t.value.trim()+'\n\n'; });
+    return md;
+  }
+  document.getElementById('fbSave').onclick=function(){
+    var md=build(); if(!md){ alert('작성된 피드백이 없습니다.'); return; }
+    var d=new Date(), stamp=String(d.getFullYear()).slice(2)+pad(d.getMonth()+1)+pad(d.getDate());
+    var a=document.createElement('a');
+    var url=URL.createObjectURL(new Blob([md],{type:'text/markdown;charset=utf-8'}));
+    a.href=url; a.download='피드백_프로젝트단계표시연습장_'+stamp+'.md';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+    var b=this, o=b.textContent;
+    b.textContent='✅ 저장됨 — "피드백 반영해줘"';
+    setTimeout(function(){ b.textContent=o; },3000);
+  };
+  document.getElementById('fbCopy').onclick=function(){
+    var md=build(); if(!md){ alert('작성된 피드백이 없습니다.'); return; }
+    var b=this, o=b.textContent;
+    var done=function(){ b.textContent='✅ 복사됨'; setTimeout(function(){ b.textContent=o; },1500); };
+    if(navigator.clipboard) navigator.clipboard.writeText(md).then(done,done);
+    else { var t=document.createElement('textarea'); t.value=md; document.body.appendChild(t);
+           t.select(); document.execCommand('copy'); t.remove(); done(); }
+  };
+  document.getElementById('fbClr').onclick=function(){
+    if(!confirm('작성한 피드백을 전부 지울까요?')) return;
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    store={};
+    document.querySelectorAll('.fb textarea').forEach(function(t){ t.value=''; t.classList.remove('has'); });
+    fbCount();
+  };
+  fbCount();
+})();
+</script>
+</body>
+</html>
