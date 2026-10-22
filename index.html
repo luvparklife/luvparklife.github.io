@@ -6872,6 +6872,10 @@
       /* 🔴 여러 명·여러 곳을 그대로 보낸다. 포토그래퍼(대표 한 명)도 참여인원에 같이 넣는다 —
          노션에는 「포토그래퍼」 칸이 따로 없고 「참여 인력」 하나다(2026-08-22 대표 확정). */
       people:    ids([PJ_NEW.pho].concat(PJ_NEW.people || [])),
+      /* 🔗 2026-10-23 — 노션 「포토그래퍼」 칸(양방향)도 채운다. 그래야 그 사람 페이지에 이 프로젝트가 뜬다.
+         담당자는 화면이 «이름»만 갖고 있어 이름을 보내고, 서버가 노션에서 «딱 한 명»일 때만 잇는다. */
+      photoId:   (PJ_NEW.pho && PJ_NEW.pho.id) || '',
+      mgr:       PJ_NEW.mgr || '',
       /* 🔴 로케이션은 «회차에서» 모은다 — 따로 적어두면 두 군데가 되어 어긋난다(§1)
          🔴 2026-09-01 — 한 회차에 여러 곳일 수 있어 «회차마다 로케 전부»를 편다.
             전에는 d.locId·d.loc 하나만 봐서 «둘째 로케부터 노션에 안 이어졌다». */
@@ -11509,6 +11513,14 @@
        빈 글자를 그대로 넘기면 «시트엔 없고 노션엔 있던» 브랜드가
        폼을 열고 저장만 해도 조용히 지워진다(검산에서 잡았다). 서버에서도 한 번 더 막는다. */
     if(info.brand)    payload.brand    = info.brand;
+    /* 🔗 2026-10-23 — 담당자·로케이션도 노션 연결로 보낸다(전엔 「자리가 없다」고 안 보냈다 — 지금은 칸이 있다).
+       🔴 서버는 참여 인력·로케이션을 «더하기»만 한다(빼지 않는다). 담당자는 이름이 노션에 딱 하나일 때만 잇는다. */
+    if(info.mgr)      payload.mgr      = info.mgr;
+    var locIds = [];
+    (info.days || []).forEach(function(d){
+      pjLocsOf(d).forEach(function(x){ if(x && x.id && locIds.indexOf(x.id) < 0) locIds.push(x.id); });
+    });
+    if(locIds.length) payload.locations = locIds;
 
     /* 손으로 친 것(=노션 id 가 없는 것)을 모아 둔다 — 화면에 그대로 알린다 */
     var typed = [];
@@ -11516,7 +11528,6 @@
     if(info.photo  && !info.photoId)  typed.push('포토그래퍼');
 
     var note = '';
-    if(info.mgr) note = '\n🔴 담당자는 노션에 «자리가 없어» 시트에만 저장됩니다.';
     if(typed.length) note += '\n🔴 ' + typed.join(' · ') + ' — 노션 후보에서 «고르지» 않아 노션에는 안 갔습니다.'
                           + '\n   (그 칸을 다시 눌러 목록에서 고르시면 노션에도 들어갑니다)';
 
