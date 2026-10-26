@@ -406,6 +406,15 @@
                    font-family:inherit; line-height:1; white-space:nowrap}
     .kvpop .tmchip:hover{border-color:#9db6ff; background:#f7f9ff}
     .kvpop .tmchip.on{border-color:#3b6cff; background:#3b6cff; color:#fff; font-weight:700}
+    /* 🔁 2026-10-26 같이 바꿀 회차 고르기 (pjDayPickBlock_) */
+    .kvpop .dpk,.kvpop .dpkall{border:1px solid var(--line2); background:#fff; border-radius:8px;
+                   padding:6px 10px; font-size:12px; color:#3d4757; cursor:pointer;
+                   font-family:inherit; line-height:1.15; white-space:nowrap}
+    .kvpop .dpk i{font-style:normal; font-size:10.5px; color:#9aa3b2; margin-left:3px}
+    .kvpop .dpk.on{border-color:#3b6cff; background:#eef3ff; color:#2f4fa8; font-weight:700}
+    .kvpop .dpk.on::before{content:'✓ '}
+    .kvpop .dpk.me{cursor:default}
+    .kvpop .dpkall{border-style:dashed; color:#5b6472}
     .kvpop .tmset input[type="time"],
     .kvpop .tmset input[type="date"]{width:auto; min-width:126px; padding:6px 9px; font-size:12.5px}
     /* 🔴 직접입력은 «항상 새 줄» — 폰(390px)에서 칩 사이에 끼면 줄이 4줄로 늘어난다(실측) */
@@ -4573,6 +4582,86 @@
     call: ['06:00','07:00','08:00','09:00','10:00','13:00'],
     wrap: ['17:00','18:00','19:00','20:00','21:00','22:00']
   };
+  /* 🔁 2026-10-26 대표 지시 — *"여러 회차면 일괄 시간, 로케 수정할 수 있게 해줘.
+        하나 바꾸고 저장하고 다른 하나 바꾸고 저장하고 불편해"*
+     🔴 [창을 새로 안 만든다] 「시간」·「로케」 창에 «같이 바꿀 회차» 줄만 붙인다(§4-1).
+     🔴 [연 회차는 항상 켜져 있다] 끄면 「눌렀는데 저장이 안 됐다」가 된다.
+     🔴 [저장은 pjDaysSend 한 길] 회차 전체를 보내는 규칙이 그대로다 — 고른 줄만 값이 바뀐다.
+     회차가 하나면 아무것도 안 그린다(고를 것이 없다). 되돌리기 = "회차 일괄수정 빼줘" */
+  function pjDayPickBlock_(rows, idx, label, hint){
+    if(!rows || rows.length < 2) return '';
+    return '<div class="tmset dpkset"><p class="tmlab">' + (label || '🔁 같이 바꿀 회차')
+      + ' <i>' + (hint || '고른 회차에 똑같이 들어갑니다') + '</i></p>'
+      + '<div class="tmrow">'
+      + rows.map(function(r, i){
+          return '<button type="button" class="dpk' + (i === idx ? ' on me' : '') + '" data-di="' + i + '"'
+               + (i === idx ? ' title="지금 연 회차입니다"' : '') + '>'
+               + pjEsc(r.no + '회차') + (r.date ? '<i>' + pjEsc(String(r.date).slice(5)) + '</i>' : '') + '</button>';
+        }).join('')
+      + '<button type="button" class="dpkall">전체</button>'
+      + '</div></div>';
+  }
+  function pjDayPicked_(pop, idx){
+    var out = [];
+    [].forEach.call(pop.querySelectorAll('.dpk.on'), function(x){ out.push(+x.getAttribute('data-di')); });
+    if(out.indexOf(idx) < 0) out.push(idx);
+    return out.sort(function(a, b){ return a - b; });
+  }
+  function pjDayPickWire_(pop, idx){
+    var ok = pop.querySelector('.ok');
+    function count(){
+      var n = pjDayPicked_(pop, idx).length;
+      if(ok && !ok.disabled) ok.textContent = n > 1 ? ('저장 · ' + n + '회차') : '저장';
+    }
+    pop.addEventListener('click', function(e){
+      var b = e.target;
+      while(b && b !== pop && !(b.classList && (b.classList.contains('dpk') || b.classList.contains('dpkall')))) b = b.parentElement;
+      if(!b || b === pop) return;
+      e.preventDefault();
+      var all = pop.querySelectorAll('.dpk');
+      if(b.classList.contains('dpkall')){
+        /* 다 켜져 있으면 «연 회차만» 남기고, 아니면 다 켠다 */
+        var every = [].every.call(all, function(x){ return x.classList.contains('on'); });
+        [].forEach.call(all, function(x){
+          if(every && +x.getAttribute('data-di') !== idx) x.classList.remove('on'); else x.classList.add('on');
+        });
+      } else if(+b.getAttribute('data-di') !== idx){
+        b.classList.toggle('on');
+      }
+      count();
+    });
+  }
+  function pjDayNos_(rows, ids){
+    return ids.map(function(i){ return rows[i] ? rows[i].no : ''; }).filter(function(x){ return x !== ''; }).join('·');
+  }
+  /* 📅 두 날짜(YYYY-MM-DD) 사이 날수 — 날짜 «한꺼번에 밀기»에 쓴다. 못 읽으면 null */
+  function pjYmdDiff_(a, b){
+    var x = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(a || '')), y = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(b || ''));
+    if(!x || !y) return null;
+    return Math.round((Date.UTC(+y[1], +y[2] - 1, +y[3]) - Date.UTC(+x[1], +x[2] - 1, +x[3])) / 86400000);
+  }
+  /* ↩️ 2026-10-26 대표 승인 — 여러 회차를 한 번에 바꾼 뒤 «방금 것 되돌리기».
+     🔴 [바꾸기 «전» 회차 전체를 그대로 다시 보낸다] 서버가 회차를 통째로 갈아끼우므로 그게 곧 되돌리기다.
+     🔴 [10초만 띄운다] 오래 두면 그 사이 다른 데서 고친 것까지 옛 값으로 덮는다.
+     🔴 [pjToast 를 안 고친다] 다른 곳 수십 군데가 쓴다 — 같은 상자만 빌려 쓴다. */
+  function pjDayUndoToast_(word, proj, before){
+    pjToast(word);
+    var t = document.getElementById('pjToast'); if(!t || !before) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = '↩️ 되돌리기';
+    b.style.cssText = 'margin-left:10px;border:1px solid #6b7690;background:transparent;color:#fff;'
+                    + 'border-radius:7px;padding:3px 9px;font:inherit;font-size:12px;cursor:pointer';
+    t.appendChild(b);
+    clearTimeout(t.__h); t.__h = setTimeout(function(){ t.style.display = 'none'; }, 10000);
+    b.addEventListener('click', function(){
+      b.disabled = true; b.textContent = '되돌리는 중…';
+      clearTimeout(t.__h);
+      pjDaysSend(proj, before, function(r){
+        pjToast(r && r.ok ? '↩️ 되돌렸습니다' : '🔴 못 되돌렸습니다 — ' + ((r && r.error) || '답이 없습니다'));
+      });
+    });
+  }
+
   function pjTmBlock(which, label, hint, val){
     var v = pjHm(val) || '';
     return '<div class="tmset" data-tm="' + which + '">'
@@ -4777,11 +4866,15 @@
                + '<div class="tmdur none"></div>';
     var body =
       (kind === 'time')
-        ? timeUI
+        ? timeUI + pjDayPickBlock_(rows, idx)          /* 🔁 2026-10-26 같이 바꿀 회차 */
         : '<div class="tmset"><p class="tmlab">📅 ' + (kind === 'add' ? '시작 날짜' : '촬영 날짜') + ' <i>'
           + (kind === 'add' ? '꼭 넣어주세요' : '비우면 이 회차가 사라집니다') + '</i></p>'
           + '<div class="tmrow"><input type="date" id="pdDate" value="'
           + pjEsc((kind === 'add') ? '' : (r.date || '')) + '"></div></div>'
+          /* 📅 2026-10-26 대표 승인 — 날짜 «한꺼번에 밀기». 이 회차를 +N일 옮기면 고른 회차도 +N일.
+             🔴 [같은 날짜로 «덮지» 않는다] 회차마다 날짜가 달라 «같은 값»을 넣으면 다 한 날이 된다. */
+          + ((kind === 'date' && r.date)
+              ? pjDayPickBlock_(rows, idx, '🔁 같이 밀 회차', '이 회차를 옮긴 날수만큼 같이 옮겨집니다') : '')
           + (kind === 'add'
               ? '<div class="tmset"><p class="tmlab">🔢 몇 회차 <i>연속된 날짜로 만들어지고, 아래에서 날짜·로케를 고칠 수 있습니다</i></p>'
                 + '<div class="pdcnt"><button type="button" id="pdCm">－</button>'
@@ -4804,13 +4897,14 @@
     pop.querySelector('.no').addEventListener('click', pjDayPopClose);
     pjTmWire(pop);
     if(kind === 'add') pjDayAddWire_(pop, rows);      /* 📅 2026-10-04 R-0020 — 한 번에 여러 회차 */
+    if(kind === 'time' || kind === 'date') pjDayPickWire_(pop, idx);     /* 🔁 2026-10-26 같이 바꿀 회차 */
     /* 🔴 시간 창에서는 커서를 «안» 준다 — 눌러서 고르는 화면인데 칸에 커서가 가면
        「여기에 쳐야 하나」로 읽힌다. 날짜 창·추가 창은 날짜부터 넣는 것이 맞다. */
     if(kind !== 'time') setTimeout(function(){
       try{ var d0 = pop.querySelector('#pdDate'); if(d0) d0.focus(); }catch(e){}
     }, 30);
 
-    function send(next, word){
+    function send(next, word, undo){
       btnOk.disabled = true; btnOk.textContent = '저장 중…'; msg.textContent = '';
       pjDaysSend(proj, next, function(res){
         if(!res || !res.ok){
@@ -4819,7 +4913,8 @@
           return;
         }
         pjDayPopClose();
-        pjToast('✅ ' + word);
+        if(undo) pjDayUndoToast_('✅ ' + word, proj, rows);   /* ↩️ 여러 회차를 바꿨을 때만 */
+        else pjToast('✅ ' + word);
       });
     }
 
@@ -4843,15 +4938,31 @@
                                     : ((rows.length + 1) + '~' + (rows.length + plan.length) + '회차 ' + plan.length + '개를 만들었습니다'));
         return;
       }
+      /* 🔁 2026-10-26 — 시간은 «고른 회차 전부»에 같은 콜·랩을 넣는다.
+         날짜는 «같은 값»이 아니라 «같은 날수만큼» 민다(회차마다 날짜가 다르다). */
+      var hitIdx = pjDayPicked_(pop, idx);
+      var newDate = String((dEl && dEl.value) || '').trim();
+      if(kind === 'date' && !newDate){ msg.textContent = '🔴 날짜를 비우면 이 회차가 사라집니다 — 지우시려면 「이 회차 삭제」'; return; }
+      var shift = (kind === 'date') ? pjYmdDiff_(r.date, newDate) : null;
+      /* 🔴 옮긴 날수를 못 재면(원래 날짜가 비었던 경우 등) 이 회차만 고친다 — 다른 회차를 엉뚱하게 옮기지 않게 */
+      if(kind === 'date' && shift === null) hitIdx = [idx];
+      var moved = 0;
       var next = rows.map(function(x, i){
-        if(i !== idx) return x;
+        if(hitIdx.indexOf(i) < 0) return x;
         var c = { no: x.no, date: x.date, call: x.call, wrap: x.wrap, locs: x.locs, loc: x.loc, locId: x.locId };
-        if(kind === 'date') c.date = String((dEl && dEl.value) || '').trim();
+        if(kind === 'date'){
+          if(i === idx) c.date = newDate;
+          else if(x.date){ var nd = pjYmdAdd_(String(x.date).slice(0, 10), shift); if(nd){ c.date = nd; moved++; } }
+        }
         else { c.call = String((cEl && cEl.value) || ''); c.wrap = String((wEl && wEl.value) || ''); }
         return c;
       });
-      if(kind === 'date' && !next[idx].date){ msg.textContent = '🔴 날짜를 비우면 이 회차가 사라집니다 — 지우시려면 「이 회차 삭제」'; return; }
-      send(next, r.no + '회차 ' + (kind === 'date' ? '날짜를' : '시간을') + ' 고쳤습니다');
+      var many2 = (kind === 'date') ? moved > 0 : hitIdx.length > 1;
+      send(next, (many2 ? pjDayNos_(rows, hitIdx) : r.no) + '회차 '
+                 + (kind === 'date'
+                     ? ('날짜를 ' + (many2 ? ((shift > 0 ? '+' : '') + shift + '일 옮겼습니다') : '고쳤습니다'))
+                     : '시간을 고쳤습니다'),
+           many2);
     });
 
     var del = pop.querySelector('.del');
@@ -10958,10 +11069,13 @@
              + '</div>'
            : '<input type="text" placeholder="' + pjEsc(key) + ' 이름">')
       + '<div class="hits"></div>'
+      /* 🔁 2026-10-26 — 로케도 «같이 바꿀 회차»를 고른다. 🔴 입력칸 «뒤»에 둔다(아래 querySelector('input') 가 첫 칸을 집는다) */
+      + (day ? '<div style="height:8px"></div>' + pjDayPickBlock_(day.rows, day.idx) : '')
       + '<div class="row"><span class="msg"></span>'
       +   '<button class="no">닫기</button><button class="ok">저장</button></div>';
     kv.parentNode.insertBefore(pop, kv.nextSibling);
     KVPOP = pop;
+    if(day) pjDayPickWire_(pop, day.idx);
 
     var inp  = pop.querySelector('input');
     var hits = pop.querySelector('.hits');
@@ -10987,6 +11101,15 @@
       picks = cur.split(',').map(function(x){ return { id:'', name:String(x).trim() }; })
                  .filter(function(x){ return x.name; });
       inp.value = '';           /* 칩으로 옮겼으니 칸은 비운다 */
+    }
+    /* 🔁 2026-10-26 — 회차 로케는 «글자»가 아니라 서버가 준 locs(이름+노션 id)로 칩을 만든다.
+       🔴 [왜] 글자(r.loc = 「A · B」)를 쉼표로 쪼개면 칩이 「A · B」 하나가 되고 노션 id 가 빠져,
+          그대로 저장하면 노션 연결이 끊긴다 — 여러 회차에 복사하면 그 피해가 회차 수만큼 커진다. */
+    var _dr = day && day.rows && day.rows[day.idx];
+    if(many && _dr && _dr.locs && _dr.locs.length){
+      picks = _dr.locs.map(function(x){ return { id: x.id || '', name: String(x.n || '').trim() }; })
+                      .filter(function(x){ return x.name; });
+      inp.value = '';
     }
     function drawChips(){
       if(!many) return;
@@ -11269,11 +11392,13 @@
       if(day){
         /* 🔴 그 회차의 로케만 바꾸고 «전체»를 보낸다.
            보내는 규칙(필드 채우기)은 pjDaysSend 한 곳에서만 정한다 — 두 곳이면 어긋난다(§1). */
+        var hitIdx = pjDayPicked_(pop, day.idx);    /* 🔁 2026-10-26 같이 바꿀 회차 */
         var allRows = (day.rows || []).map(function(r, i){
-          if(i !== day.idx) return r;               /* 다른 회차는 받은 그대로 */
+          if(hitIdx.indexOf(i) < 0) return r;       /* 안 고른 회차는 받은 그대로 */
           return { no: r.no, date: r.date, call: r.call, wrap: r.wrap,
                    locs: picks.map(function(x){ return { n: x.name, id: x.id || '' }; }) };
         });
+        var dayWord = hitIdx.length > 1 ? pjDayNos_(day.rows, hitIdx) : day.no;
         var nLoc = picks.length, nNotion = picks.filter(function(x){ return x.id; }).length;
         btnOk.disabled = true; btnOk.textContent = '저장 중…';
         msg.textContent = '';
@@ -11286,10 +11411,13 @@
           kvPopClose();
           /* 🔴 «노션에 든 것»과 «시트에만 있는 것»을 나눠 말해준다 —
              안 나누면 「노션에도 들어갔겠지」로 아시게 된다(§3-5 ⑤). */
-          pjToast(nLoc
-            ? ('✅ ' + day.no + '회차 로케 ' + nLoc + '곳 저장'
+          var locWord = nLoc
+            ? ('✅ ' + dayWord + '회차 로케 ' + nLoc + '곳 저장'
                + (nNotion ? ' · 그중 ' + nNotion + '곳은 노션에도 연결' : ' · 시트에만(노션 연결 없음)'))
-            : ('✅ ' + day.no + '회차 로케를 비웠습니다'));
+            : ('✅ ' + dayWord + '회차 로케를 비웠습니다');
+          /* ↩️ 여러 회차를 한 번에 바꿨을 때만 «되돌리기»를 붙인다 */
+          if(hitIdx.length > 1) pjDayUndoToast_(locWord, proj, day.rows);
+          else pjToast(locWord);
         });
         return;
       }
