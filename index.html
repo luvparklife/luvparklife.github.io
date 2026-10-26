@@ -1834,7 +1834,10 @@
            프로젝트 정보가 나오고"*. 누르면 «마지막에 보던 프로젝트»로 바로 간다.
            🔴 href 는 `#p` 그대로 둔다 — 기억이 없거나 JS 가 막히면 «예전처럼» 목록으로 간다(길을 안 없앤다).
            🔴 `#p` 에서 «되돌리는» 방식을 안 썼다 — 그러면 뒤로가기가 튕긴다(`#p/A` → 뒤로 → `#p` → 또 앞으로). -->
-      <a class="card" href="#p" id="cardProj" onclick="return pjCardGo(event)">
+      <!-- 🙈 2026-10-27 대표 확정 「모두에게서 없앤다」 — 「진행 중 프로젝트」 칸·위 띠 「📁 프로젝트」 탭과 겹친다.
+           🔴 «지우지 않고 숨긴다» — 띠 탭(PA_APPS id:'cardProj')이 이 카드를 «대신 눌러» 움직인다.
+              지우면 띠 탭까지 같이 사라진다. 되돌리기 = "허브 프로젝트 카드 다시 보이게" (아래 style 빼기) -->
+      <a class="card" href="#p" id="cardProj" onclick="return pjCardGo(event)" style="display:none">
         <div class="row">
           <div class="icon">📁</div>
           <div class="body">
@@ -3143,7 +3146,7 @@
      🔴 [회고 판정은 pjRevTag_ 한 곳에서] 따로 적으면 화면 태그와 숫자가 어긋난다(§1). */
   function stFromPj(){
     if(!PJ_CACHE || !PJ_CACHE.length) return null;      /* 아직 모른다 — 0 이 아니다 */
-    var rev = 0, soon = 0, dated = 0, shoot = 0, rent = 0;
+    var rev = 0, soon = 0, dated = 0, shoot = 0, rent = 0, mon = 0;
     var t0 = new Date(); t0.setHours(0, 0, 0, 0);
     var t7 = new Date(t0.getTime() + 7 * 86400000);
     for(var i = 0; i < PJ_CACHE.length; i++){
@@ -3154,10 +3157,13 @@
       if(d){
         dated++;
         if(d >= t0 && d <= t7){ soon++; if(stIsRent(p)) rent++; else shoot++; }
+        /* 🗓 2026-10-27 대표 지시 — 진행 중 프로젝트 중 «이번 달» 것 (시작일 기준, 없으면 끝난 날) */
+        if(d.getFullYear() === t0.getFullYear() && d.getMonth() === t0.getMonth()) mon++;
       }
     }
     return { pj: PJ_CACHE.length, rev: rev, soon: dated ? soon : null,
-             shoot: dated ? shoot : null, rent: dated ? rent : null };
+             shoot: dated ? shoot : null, rent: dated ? rent : null,
+             mon: dated ? mon : null };
   }
   /* 🚚 «렌탈인가» — 2026-09-20 대표 확정 이름 규칙 `YYMMDD_렌탈_사람이름_프로젝트명` 을 읽는다.
      🔴 [판정은 여기 «한 곳»에만] 여러 군데서 각자 가리면 화면과 숫자가 어긋난다(§1).
@@ -3214,6 +3220,16 @@
       + '<div class="stspb"><span class="i">🚚</span><span class="n">' + (stIsNum(rent)  ? rent  : '—') + '</span><span class="t">렌탈</span></div>'
       + '</div>';
   }
+  /* 🗓 2026-10-27 대표 지시 — *"진행중 프로젝트에서는 이번달 몇개 인지도 나눠줘."*
+     stSplit(위)과 «같은 모양»을 쓴다(§4-1). 「그 밖」 = 다른 달 + 날짜를 모르는 것.
+     🔴 [날짜를 아는 프로젝트가 없으면 «안 그린다»] 0 으로 쓰면 거짓말이 된다(stFromPj 와 같은 규칙). */
+  function stSplitPJ(mon, all){
+    if(!stIsNum(mon) || !stIsNum(all)) return '';
+    return '<div class="stsp" id="stsp_pj">'
+      + '<div class="stspb"><span class="i">🗓</span><span class="n">' + mon + '</span><span class="t">이번 달</span></div>'
+      + '<div class="stspb"><span class="i">📁</span><span class="n">' + Math.max(0, all - mon) + '</span><span class="t">그 밖</span></div>'
+      + '</div>';
+  }
   /* 🆕 2026-09-24 대표 피드백 — 반납만 따로 있던 것을 준비·랩업·반납 «세 갈래」로.
      stSplit(위)과 같은 모양을 셋으로 늘린 것뿐이다(새 패턴 발명 안 함). */
   /* 📨🧾 2026-09-28 제보 R-0017 (대표 확정 3번안) — 견적·계산서를 «한 칸 안에» 나란히.
@@ -3263,7 +3279,7 @@
     b.innerHTML = '<div class="stgrid">'
       + stTile('pay',  '💰', '정산 승인 대기',  d.pay,  '건', stSt(d.pay), '', 'owner')
       + stTile('soon', '📅', '다가오는 일정',   d.soon, '건', 'good', stSplit(d.shoot, d.rent), 'admin')
-      + stTile('pj',   '📁', '진행 중 프로젝트', d.pj,   '건', 'good', '', 'admin')
+      + stTile('pj',   '📁', '진행 중 프로젝트', d.pj,   '건', 'good', stSplitPJ(d.pjMon, d.pj), 'admin')
       + stTile('rev',  '📝', '회고 안 쓴 것',   d.rev,  '건', stSt(d.rev), '', 'admin')
       /* 📨🧾 2026-09-28 R-0017 — 「견적 미발송」+「계산서 미발행」 두 칸을 «한 칸»으로 묶었다.
          큰 숫자는 «안» 만들고(noBig), 안에서 각각 제 앱으로 간다. 옛 두 줄은 이 한 줄이 대신한다. */
@@ -3348,6 +3364,7 @@
               shoot: live ? live.shoot : (stIsNum(last.shoot) ? last.shoot : null),
               rent:  live ? live.rent  : (stIsNum(last.rent)  ? last.rent  : null),
               pj:    live ? live.pj    : (stIsNum(last.pj)    ? last.pj    : null),
+              pjMon: live ? live.mon   : (stIsNum(last.pjMon) ? last.pjMon : null),
               rev:   live ? live.rev   : (stIsNum(last.rev)   ? last.rev   : null),
               /* 🆕 2026-09-23·24 — 전부 지난번 값으로 먼저 그리고, 아래 askDash()/askInvoice() 가 뒤에서 갱신 */
               quote:  stIsNum(last.quote)  ? last.quote  : null,
@@ -3368,7 +3385,11 @@
     var got = { at: Date.now() };
     function applyLivePj(l){
       got.pj = l.pj; got.rev = l.rev; got.soon = l.soon;
-      got.shoot = l.shoot; got.rent = l.rent;
+      got.shoot = l.shoot; got.rent = l.rent; got.pjMon = l.mon;
+      /* 🗓 이번 달 갈래도 같이 갈아끼운다 (2026-10-27) */
+      var nwP = stSplitPJ(l.mon, l.pj), spP = document.getElementById('stsp_pj');
+      if(spP && nwP){ if(spP.outerHTML !== nwP) spP.outerHTML = nwP; }
+      else if(nwP){ var vP = document.getElementById('stv_pj'); if(vP) vP.insertAdjacentHTML('afterend', nwP); }
       stBump('pj', l.pj, 'good'); stBump('soon', l.soon, 'good'); stBump('rev', l.rev);
       /* 📅 큰 숫자만 바꾸면 «촬영/렌탈 갈래»가 옛 값으로 남는다 — 같이 갈아끼운다 */
       var nw = stSplit(l.shoot, l.rent);
