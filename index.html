@@ -397,9 +397,9 @@
           촬영 콜·랩은 대개 정시라 «자주 쓰는 시각»을 눌러 끝내고, 어중간한 것만 직접 친다.
        🔴 칸(input)을 없애지 않는다 — 07:20 같은 것을 넣을 길이 사라지면 안 된다. */
     .kvpop .tmset{margin:0 0 11px}
-    .kvpop .tmlab{display:flex; align-items:baseline; gap:6px; font-size:12px;
+    .kvpop .tmlab,#dayBulk .tmlab{display:flex; align-items:baseline; gap:6px; font-size:12px;
                   color:#1c2330; font-weight:700; margin:0 0 6px}
-    .kvpop .tmlab i{font-style:normal; font-weight:400; font-size:11px; color:#9aa3b2}
+    .kvpop .tmlab i,#dayBulk .tmlab i{font-style:normal; font-weight:400; font-size:11px; color:#9aa3b2}
     .kvpop .tmrow{display:flex; flex-wrap:wrap; gap:5px; align-items:center}
     .kvpop .tmchip{border:1px solid var(--line2); background:#fff; border-radius:999px;
                    padding:7px 13px; font-size:12.5px; color:#3d4757; cursor:pointer;
@@ -407,14 +407,14 @@
     .kvpop .tmchip:hover{border-color:#9db6ff; background:#f7f9ff}
     .kvpop .tmchip.on{border-color:#3b6cff; background:#3b6cff; color:#fff; font-weight:700}
     /* 🔁 2026-10-26 같이 바꿀 회차 고르기 (pjDayPickBlock_) */
-    .kvpop .dpk,.kvpop .dpkall{border:1px solid var(--line2); background:#fff; border-radius:8px;
+    .kvpop .dpk,.kvpop .dpkall,#dayBulk .dpk,#dayBulk .dpkall{border:1px solid var(--line2); background:#fff; border-radius:8px;
                    padding:6px 10px; font-size:12px; color:#3d4757; cursor:pointer;
                    font-family:inherit; line-height:1.15; white-space:nowrap}
-    .kvpop .dpk i{font-style:normal; font-size:10.5px; color:#9aa3b2; margin-left:3px}
-    .kvpop .dpk.on{border-color:#3b6cff; background:#eef3ff; color:#2f4fa8; font-weight:700}
-    .kvpop .dpk.on::before{content:'✓ '}
+    .kvpop .dpk i,#dayBulk .dpk i{font-style:normal; font-size:10.5px; color:#9aa3b2; margin-left:3px}
+    .kvpop .dpk.on,#dayBulk .dpk.on{border-color:#3b6cff; background:#eef3ff; color:#2f4fa8; font-weight:700}
+    .kvpop .dpk.on::before,#dayBulk .dpk.on::before{content:'✓ '}
     .kvpop .dpk.me{cursor:default}
-    .kvpop .dpkall{border-style:dashed; color:#5b6472}
+    .kvpop .dpkall,#dayBulk .dpkall{border-style:dashed; color:#5b6472}
     .kvpop .tmset input[type="time"],
     .kvpop .tmset input[type="date"]{width:auto; min-width:126px; padding:6px 9px; font-size:12.5px}
     /* 🔴 직접입력은 «항상 새 줄» — 폰(390px)에서 칩 사이에 끼면 줄이 4줄로 늘어난다(실측) */
@@ -738,6 +738,16 @@
     .dayrow .locbit input[list]{flex:1;min-width:110px}
     .dayrow .lx{border:none;background:none;color:#b23b3b;font-size:14px;cursor:pointer;padding:0 2px}
     .dayrow .la{padding:2px 7px;font-size:11.5px;white-space:nowrap}
+    /* 🔁 2026-10-27 정보 폼 «여러 회차 한 번에» */
+    #dayBulk .dbk{border:1px dashed #c9d1e0;border-radius:10px;padding:8px 10px;margin-bottom:8px;background:rgba(120,140,180,.06)}
+    #dayBulk .dbkpick{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0 6px}
+    #dayBulk .dbkin{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    #dayBulk .dbkin label{display:inline-flex;align-items:center;gap:3px;font-size:13px}
+    #dayBulk .dbkin input[type=time]{width:96px}
+    #dayBulk .dbkin input.bd{width:64px}
+    #dayBulk .dbkin .bl{flex:1;min-width:160px}
+    #dayBulk .dbkin .bl input{flex:1;min-width:120px}
+    #dayBulk .dbkmsg{display:block;font-size:12px;margin-top:4px;color:var(--sub,#5b6472)}
     button.mini{font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border-radius:7px;
       padding:5px 11px;border:1.5px solid var(--accent,#3b6cff);background:#fff;color:var(--accent,#3b6cff)}
     .chips .chip.ro{background:var(--chip,#eef1f6);color:var(--sub,#5b6472);padding:3px 11px}
@@ -6123,7 +6133,79 @@
         + '</div>';
     }).join('');
     pjLocChips();
+    pjDayBulkDraw();
   }
+  /* 🔁 2026-10-27 대표 지시 — *"프로젝트 정보 회차 수정할때 일괄 수정 가능하게"*
+     어제(10/26)는 회차 «줄» 팝업에만 붙였고, 「✏️ 정보 수정」·「＋ 새 프로젝트」 폼 회차 칸에는 없었다.
+     🔴 [같은 모양] 팝업과 같은 «회차 고르기 + 전체» 단추(.dpk/.dpkall 모양)를 쓴다(§4-1).
+     🔴 [빈 칸은 안 건드린다] 콜만 넣으면 콜만 바뀐다 — 비워 둔 칸이 회차 값을 지우지 않는다.
+     🔴 [날짜는 «같은 값»이 아니라 «±N일 밀기»] 회차마다 날짜가 달라서(팝업과 같은 규칙).
+     🔴 [저장은 그대로] 폼 값(PJ_NEW.days)만 바꾼다 — 「저장」을 눌러야 나간다. 그래서 되돌리기 = 저장 안 하고 닫기.
+     🔴 [입력칸은 다시 안 그린다] 회차 수가 바뀔 때 «고르기 단추»만 새로 그린다(한글 조합 · §3-5 ⑧).
+     회차가 하나면 안 그린다. 되돌리기 = "정보폼 회차일괄 빼줘" */
+  function pjDayBulkDraw(){
+    var box = document.getElementById('dayBulk'); if(!box || !PJ_NEW) return;
+    var ds = PJ_NEW.days || [];
+    if(ds.length < 2){ box.innerHTML = ''; box.__n = 0; return; }
+    if(!box.querySelector('.dbk')){
+      box.innerHTML = '<div class="dbk"><p class="tmlab">🔁 여러 회차 한 번에 <i>채운 칸만 고른 회차에 들어갑니다 · 「저장」을 눌러야 반영됩니다</i></p>'
+        + '<div class="dbkpick"></div>'
+        + '<div class="dbkin">'
+        +   '<label>🎬<input type="time" class="bc" title="콜"></label>'
+        +   '<label>🏁<input type="time" class="bw" title="랩"></label>'
+        +   '<label class="bl">📍<input list="locList" class="bloc" placeholder="로케이션 (그 회차 로케를 이걸로 바꿉니다)"></label>'
+        +   '<label>📅<input type="number" class="bd" placeholder="±일" title="날짜를 이만큼 밀기 (예: 1 · -2)"></label>'
+        +   '<button type="button" class="mini dbkgo">고른 회차에 넣기</button>'
+        + '</div><span class="dbkmsg"></span></div>';
+    }
+    if(box.__n !== ds.length){                      /* 회차 수가 바뀌면 고르기 단추만 다시 (기본 = 전부 켜짐) */
+      box.__n = ds.length;
+      box.querySelector('.dbkpick').innerHTML = ds.map(function(d, i){
+        return '<button type="button" class="dpk on" data-bi="' + i + '">' + (i + 1) + '회차'
+             + (d.date ? '<i>' + pjEsc(String(d.date).slice(5)) + '</i>' : '') + '</button>';
+      }).join('') + '<button type="button" class="dpkall" data-ball="1">전체</button>';
+    }
+  }
+  function pjDayBulkApply_(box){
+    var ds = PJ_NEW && PJ_NEW.days; if(!ds) return;
+    var msg = box.querySelector('.dbkmsg');
+    var hit = [].map.call(box.querySelectorAll('.dpk.on'), function(x){ return +x.getAttribute('data-bi'); });
+    var c = box.querySelector('.bc').value, w = box.querySelector('.bw').value;
+    var loc = String(box.querySelector('.bloc').value || '').trim();
+    var sh = parseInt(box.querySelector('.bd').value, 10); if(isNaN(sh)) sh = 0;
+    if(!hit.length){ msg.textContent = '🔴 회차를 하나 이상 골라주세요'; return; }
+    if(!c && !w && !loc && !sh){ msg.textContent = '🔴 넣을 값을 하나 이상 채워주세요'; return; }
+    var lid = '';
+    for(var k = 0; k < (PJ_LOCS || []).length; k++){ if(PJ_LOCS[k].name === loc){ lid = PJ_LOCS[k].id; break; } }
+    hit.forEach(function(i){
+      var d = ds[i]; if(!d) return;
+      if(c) d.call = c;
+      if(w) d.wrap = w;
+      if(loc){ d.locs = [{ n: loc, id: lid }]; pjLocSync(d); }
+      if(sh && d.date){ var nd = pjYmdAdd_(String(d.date).slice(0, 10), sh); if(nd) d.date = nd; }
+    });
+    box.__n = -1;                                    /* 날짜가 바뀌었을 수 있다 — 단추 날짜도 새로 */
+    var keep = hit.slice();
+    pjDaysDraw(); pjDraftTouch();
+    [].forEach.call(box.querySelectorAll('.dpk'), function(x){   /* 고른 것은 그대로 남긴다 */
+      if(keep.indexOf(+x.getAttribute('data-bi')) < 0) x.classList.remove('on');
+    });
+    var m2 = box.querySelector('.dbkmsg');
+    if(m2) m2.textContent = '✅ ' + hit.length + '개 회차에 넣었습니다 — 아래 「저장」을 눌러야 반영됩니다';
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target; if(!b || !b.closest) return;
+    var box = b.closest('#dayBulk'); if(!box) return;
+    var k = b.closest('.dpk, .dpkall, .dbkgo'); if(!k) return;
+    e.preventDefault();
+    if(k.classList.contains('dbkgo')){ pjDayBulkApply_(box); return; }
+    var all = box.querySelectorAll('.dpk');
+    if(k.classList.contains('dpkall')){
+      var every = [].every.call(all, function(x){ return x.classList.contains('on'); });
+      [].forEach.call(all, function(x){ if(every) x.classList.remove('on'); else x.classList.add('on'); });
+    } else k.classList.toggle('on');
+    box.querySelector('.dbkmsg').textContent = '';
+  });
   /* 회차에서 로케를 모아 보여준다 — 읽기만 (여기서 못 지운다. 회차에서 지운다) */
   function pjLocChips(){
     var box = document.getElementById('chLoc'); if(!box || !PJ_NEW) return;
@@ -6308,6 +6390,7 @@
       +     '<option value="렌탈">렌탈</option>'
       +   '</select></div>'
       + '<div class="nf"><label>📅 촬영 회차 <span class="opt">— 회차마다 로케이션·시간이 달라도 됩니다</span></label>'
+      +   '<div id="dayBulk"></div>'      /* 🔁 2026-10-27 여러 회차 한 번에 (pjDayBulkDraw) */
       +   '<div id="dayRows"></div>'
       +   '<button type="button" class="mini" id="nDayAdd">＋ 회차 추가</button>'
       +   '<div class="hint">🔴 로케이션은 <b>회차에서 고르시면</b> 아래에 저절로 모입니다 — 따로 안 적으셔도 됩니다.</div>'
