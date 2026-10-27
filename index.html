@@ -1441,6 +1441,71 @@
     #vTeam .tpcrew span.n{background:var(--team-bg);color:var(--team);border:1px solid var(--team-line);border-radius:999px;padding:0 9px;font-weight:700;margin-right:4px}
     #vTeam .tpskel{height:16px;border-radius:6px;background:var(--line2);margin:9px 0}
     #vTeam .tphead2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px}
+    /* ═══ 👥 2026-10-27 A안 — 사람×날짜 한 장 (한 칸 = 한 사람의 그 날) ═══ */
+    #vTeam .tparow{display:grid;grid-template-columns:150px repeat(21,54px);min-width:1284px;border-top:1px solid var(--line2)}
+    #vTeam .tparow:first-child{border-top:0}
+    #vTeam .tpal{padding:3px 8px;font-size:12px;display:flex;align-items:center;min-width:0;background:var(--card);position:sticky;left:0;z-index:2;border-right:1px solid var(--line)}
+    #vTeam .tpal .sub{font-size:10.5px;color:var(--faint);white-space:nowrap}
+    #vTeam .tpal .cvl{font-weight:800;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #vTeam .tpal .cvl i,#vTeam .tppop h5 i,#vTeam .tppop .grp i,#vTeam .tpnb .pj i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+    #vTeam .tpnm{border:0;background:none;font:inherit;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;padding:2px 4px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:left}
+    #vTeam .tpnm span{font-size:10px;color:var(--faint)}
+    #vTeam .tpnm:hover{background:var(--bg)}
+    #vTeam .tpah{font-size:11px;text-align:center;color:var(--sub);line-height:1.15;padding:4px 0;border-left:1px solid var(--line2);background:var(--bg)}
+    #vTeam .tpah b{display:block;font-size:12.5px;color:var(--ink)}
+    #vTeam .tpah.we{color:var(--faint)}
+    #vTeam .tpah.today{background:#fff3cd;color:#664d03} #vTeam .tpah.today b{color:#664d03}
+    #vTeam .tpah.sh{box-shadow:inset 0 -3px 0 #e0a80066}
+    #vTeam .tpah.hot{box-shadow:inset 0 0 0 100px #ffec9966}
+    #vTeam .tpacov .tpcv{cursor:pointer}
+    #vTeam .tpacov .tpcv.off{cursor:default}
+    #vTeam .tpacov .tpcv:not(.off):hover{outline:2px solid #f5b400;outline-offset:-2px}
+    #vTeam .tpac{border-left:1px solid var(--line2);min-height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:800;line-height:1.15;margin:2px;border-radius:6px;overflow:hidden;white-space:nowrap}
+    #vTeam .tpac[data-cell]{cursor:pointer}
+    #vTeam .tpac[data-cell]:hover{box-shadow:inset 0 0 0 100px #00000010}
+    #vTeam .tpac.we{background:var(--bg)}
+    #vTeam .tpac.today{border-left:2px solid #e0a800}
+    #vTeam .tpac.hot{box-shadow:inset 0 0 0 100px #ffec9933}
+    #vTeam .tpac .nm{max-width:50px;overflow:hidden;text-overflow:ellipsis;font-size:10.5px}
+    #vTeam .tpac .mk{font-size:10px;font-weight:900}
+    #vTeam .tpac.k{background:var(--pc);color:#fff;border:1.5px solid var(--pc)}
+    #vTeam .tpac.s{background:var(--card);color:var(--pc);border:2px dashed var(--pc)}
+    #vTeam .tpac.b{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pc) 22%,#fff) 0 5px,#fff 5px 10px);color:var(--pc);border:2px solid var(--pc)}
+    #vTeam .tpac.x{background:#fde7e5;color:#b42318;font-size:14px}
+    #vTeam .tpac.bz{background:repeating-linear-gradient(135deg,#d6d9df 0 4px,#eceef2 4px 8px);color:#4b5563}
+    #vTeam .tpac.av{color:#2f8a52;font-size:16px;font-weight:900}
+    #vTeam .tpac.none{background:transparent}
+    #vTeam .tpac.dim{opacity:.25}
+    #vTeam .tpac.bad{outline:2px solid #c0392b;outline-offset:-2px}
+    #vTeam .tpac.tpsel{outline:3px solid #f5b400;outline-offset:-1px;opacity:1}
+    #vTeam .tplegend .k.bk{background:repeating-linear-gradient(135deg,#bfe0dc 0 4px,#fff 4px 8px);border:2px solid #0f766e}
+    #vTeam .tplegend .k.v{background:#fff;border:2px dashed #0f766e}
+    #vTeam .tplegend .k.xx{background:#fde7e5;border-color:#f3c3be}
+    #vTeam .tppop{position:fixed;z-index:60;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.2);padding:9px;width:268px;max-height:72vh;overflow:auto;font-size:13px}
+    #vTeam .tppop h5{margin:0 0 6px;font-size:13px;font-weight:800}
+    #vTeam .tppop h5 span{color:var(--sub);font-weight:600}
+    #vTeam .tppop .grp{font-size:11.5px;color:var(--sub);font-weight:800;margin:8px 0 3px}
+    #vTeam .tppop .grp small{font-weight:600}
+    #vTeam .tppop .row3{display:flex;gap:4px;flex-wrap:wrap}
+    #vTeam .tppop .row3 button{flex:1;min-width:58px}
+    #vTeam .tppop button{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 9px;margin:2px 0;cursor:pointer;font:inherit;font-size:13px;font-weight:700}
+    #vTeam .tppop .row3 button{width:auto;text-align:center;border-color:var(--pc,var(--line))}
+    #vTeam .tppop button:hover{filter:brightness(.95)}
+    #vTeam .tppop button.cur{outline:2px solid var(--ink)}
+    #vTeam .tppop button.armed{background:#c0392b;color:#fff;border-color:#c0392b}
+    #vTeam .tppop button small{font-weight:500;color:var(--sub)}
+    #vTeam .tppop button em{font-style:normal;font-size:10.5px;color:#86480a;background:#fff1d9;border-radius:999px;padding:0 6px;margin-left:4px}
+    #vTeam .tppop button em.go{float:right;color:var(--team);background:var(--team-bg)}
+    #vTeam .tppop .hint{font-size:11.5px;color:var(--sub);margin:6px 0 0;line-height:1.5}
+    #vTeam .tpneedbox{font-size:12.5px;margin:0 0 8px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--card)}
+    #vTeam .tpneedbox summary{cursor:pointer;font-weight:800}
+    #vTeam .tpneedbox summary .lack{color:#a35400;font-weight:700}
+    #vTeam .tpnb{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:6px 0;border-top:1px solid var(--line2)}
+    #vTeam .tpnb .pj{font-weight:800;min-width:120px}
+    #vTeam .tpnb .cf{color:var(--sub);flex:1;min-width:200px}
+    #vTeam .tppromo{font-size:13px;background:#eef4ff;border:1px solid #c9d8f5;border-radius:10px;padding:7px 11px;margin:0 0 8px}
+    #vTeam .tppromo button{margin-left:6px;border:1px solid var(--team);background:var(--card);color:var(--team);border-radius:999px;padding:1px 12px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
+    #vTeam .tppromo button:first-of-type{background:var(--team);color:#fff}
     </style>
 </head>
 <body>
@@ -12287,7 +12352,7 @@
   var TP_DAYS = 21;
   var TP_COLORS = ['#0f766e','#d97706','#2563eb','#db2777','#7c3aed','#0891b2','#65a30d','#dc2626'];
   var TP_WN = ['일','월','화','수','목','금','토'];
-  var TPS = { d:null, S:{}, roster:[], projects:[], crew:[], db:[], edit:false, me:'', today:'', cur:'', sel:[], allm:true, need:{}, bz:{}, cmode:'normal', want:'', from:'',
+  var TPS = { d:null, S:{}, roster:[], projects:[], crew:[], db:[], edit:false, me:'', today:'', focus:'', need:{}, bz:{}, no:{}, promo:null, pop:null, needRender:false, nbSeen:false, want:'', from:'',
               loaded:false, loading:false, q:[], busy:false, drag:null, armed:'', armTimer:0, msg:null, timer:0, shown:false,
               mut:0, dirty:'', tok:'' };
 
@@ -12303,44 +12368,48 @@
   function tpRoleOf(n){ for(var i=0;i<TPS.roster.length;i++) if(TPS.roster[i].n === n) return TPS.roster[i].r; return ''; }
   function tpEsc(s){ return pjEsc(s); }
 
-  /* ── 상태 (프로젝트 → 이름 → {st, off}) ── */
+  /* ── 상태 (프로젝트 → 이름 → {st, off, cf, bk}) · 사람 → ✕ 날(no) · 개인 일정(bz) ──
+     👥 2026-10-27 대표 확정 «A안 — 사람×날짜 한 장» (연습장 1_장비시스템/261027_팀일정_개선안_연습장.html)
+     · 한 칸 = 한 사람의 그 날 · 칸을 누르면(끌면 여러 칸) «이 날 어디로?» — 확정 / 섭외중 / 백업 / ✕ / 개인 / 비움
+     · 🔴 하루에 한 곳 — 다른 프로젝트로 보내면 원래 프로젝트의 그 날은 빠진다(서버 act=set 이 같은 규칙)
+     · 🔴 «안 되는 날(✕)»은 사람에게 붙는다(모든 프로젝트) · 줄의 off 는 «그 날은 이 프로젝트에 안 들어감»일 뿐
+     · 칩 = 전체 ↔ 프로젝트 하나(나머지는 흐리게 · 흐린 칸도 고칠 수 있다) — «편집 대상»은 없앴다
+     · 편의 3개(대표 확정): 충원 칸 → 그날 비는 사람 · 이름 → 전체 날 한 번에 · 확정자를 보낼 때 백업 올리기
+     되돌리기 = "팀일정 A안 되돌려줘" (백업 ~/.claude/backups/hub_index_261027_팀일정A전.html) */
   function tpIngestRows(rows){
     TPS.S = {};
-    (rows||[]).forEach(function(r){ (TPS.S[r.pj] = TPS.S[r.pj] || {})[r.n] = { st:r.st, off:(r.off||[]).slice(), cf:(r.cf||[]).slice() }; });
+    (rows||[]).forEach(function(r){ (TPS.S[r.pj] = TPS.S[r.pj] || {})[r.n] = { st:r.st, off:(r.off||[]).slice(), cf:(r.cf||[]).slice(), bk:(r.bk||[]).slice() }; });
   }
   function tpIngest(d){
     TPS.d = d; TPS.edit = !!d.edit; TPS.me = d.me || ''; TPS.today = d.today || TPS.today;
-    /* 👥 2026-10-21 대표 지시 «지난 촬영은 필요없어» — 마지막 촬영일이 오늘 «전»이면 뺀다(칩·간트·겹침 계산 모두). 서버는 그대로 보내고 «보이는 쪽»에서 거른다 */
+    /* 👥 2026-10-21 대표 지시 «지난 촬영은 필요없어» — 마지막 촬영일이 오늘 «전»이면 뺀다. 서버는 그대로 보내고 «보이는 쪽»에서 거른다 */
     TPS.projects = (d.projects || []).filter(function(P){ return !P.dates || !P.dates.length || P.dates[P.dates.length-1] >= (d.today || TPS.today || ''); });
     TPS.roster = (d.roster||[]).slice(); TPS.crew = d.crew || []; TPS.db = d.db || []; TPS.note = d.note || '';
-    tpIngestRows(d.rows); TPS.need = d.need || {}; TPS.bz = d.busy || {};
+    tpIngestRows(d.rows); TPS.need = d.need || {}; TPS.bz = d.busy || {}; TPS.no = d.no || {};
     if(!TPS.from) TPS.from = TPS.today;
     TPS.loaded = true;
   }
+  function tpOnDaysE(e, P){ return P.dates.filter(function(d){ return e.off.indexOf(d) < 0; }); }
   function tpOnDays(pk, n){
     var e = (TPS.S[pk]||{})[n], p = tpProj(pk); if(!e || !p) return [];
-    return p.dates.filter(function(d){ return e.off.indexOf(d) < 0; });
+    return tpOnDaysE(e, p);
   }
-  function tpStOf(pk, n){ var e = (TPS.S[pk]||{})[n]; return e ? e.st : ''; }
-  /* 👥 2026-10-21 「한 날짜만 확정」 — 줄의 «날짜별 상태». 확정이면 가능한 모든 날이 확정, 섭외중이면 cf(확정날짜)에 든 날만 확정 */
+  /* 줄의 «날짜별 상태» — 확정이면 가능한 모든 날이 확정, 섭외중이면 cf(확정날짜)에 든 날만. 백업(bk)인 날은 확정이 아니다 */
   function tpIsConfE(e){ return !!e && (e.st === '확정' || (e.cf||[]).length > 0); }
-  function tpDayConf(e, d){ return !!e && (e.st === '확정' || (e.cf||[]).indexOf(d) >= 0); }
+  function tpDayConf(e, d){ return !!e && (e.bk||[]).indexOf(d) < 0 && (e.st === '확정' || (e.cf||[]).indexOf(d) >= 0); }
+  function tpUniqA(a){ return a.filter(function(x, i){ return a.indexOf(x) === i; }); }
   function tpNormE(e, P){
-    if(e.st === '확정'){ e.cf = []; return; }
-    var on = P.dates.filter(function(x){ return e.off.indexOf(x) < 0; });
-    e.cf = (e.cf||[]).filter(function(x){ return on.indexOf(x) >= 0; });
-    if(on.length && e.cf.length === on.length){ e.st = '확정'; e.cf = []; }
+    if(e.st === '확정'){ e.cf = []; e.bk = []; return; }
+    var on = tpOnDaysE(e, P);
+    e.bk = tpUniqA((e.bk||[]).filter(function(x){ return on.indexOf(x) >= 0; }));
+    e.cf = tpUniqA((e.cf||[]).filter(function(x){ return on.indexOf(x) >= 0 && e.bk.indexOf(x) < 0; }));
+    if(on.length && !e.bk.length && e.cf.length === on.length){ e.st = '확정'; e.cf = []; }
   }
-  function tpJosa(list){ var l = list.length ? list[list.length-1] : ''; return /일정$/.test(l) ? '과' : '와'; }
+  function tpUnpackE(e, P){ if(e.st !== '확정') return; e.st = '섭외중'; e.bk = []; e.cf = tpOnDaysE(e, P); }
   function tpConfNames(pk){ var o = TPS.S[pk] || {}; return Object.keys(o).filter(function(n){ return tpIsConfE(o[n]); }); }
   /* 필요 인원 대비 */
   function tpNeedTot(pk){ var o = TPS.need[pk] || {}; return (o.PA||0) + (o['조명']||0) + (o.DIT||0); }
-  function tpCountRole(pk, r){
-    var o = TPS.S[pk] || {}, c = 0, p = 0;
-    Object.keys(o).forEach(function(n){ if(tpRoleOf(n) !== r) return; if(tpIsConfE(o[n])) c++; else p++; });
-    return { c:c, p:p };
-  }
-  /* 👥 2026-10-21 v7 — «날짜마다» 충원 현황. 한 날의 충원 = 역할별 «그 날 확정된 사람 수» 대 «필요 인원» */
+  /* «날짜마다» 충원 현황 — 역할별 «그 날 확정된 사람 수» 대 «필요 인원» */
   function tpDayCov(pk, d){
     var need = TPS.need[pk] || {}, o = TPS.S[pk] || {}, tot = 0, fill = 0, lack = [], by = {}, any = 0;
     TP_ROLES.forEach(function(r){
@@ -12356,26 +12425,54 @@
     if(P) P.dates.forEach(function(d){ var cv = tpDayCov(pk, d); if(cv.st === 'full') full.push(d); else if(cv.st !== 'unset') lack.push({ d:d, cv:cv }); });
     return { n:P ? P.dates.length : 0, full:full, lack:lack };
   }
-  function tpFilled(pk){
-    var need = TPS.need[pk] || {}, f = 0;
-    TP_ROLES.forEach(function(r){ f += Math.min(tpCountRole(pk, r).c, need[r]||0); });
-    return f;
-  }
-  function tpClashes(n, pk){
-    var out = [], mine = tpOnDays(pk, n); if(!mine.length) return out;
-    TPS.projects.forEach(function(P){
-      if(P.name === pk || !(TPS.S[P.name]||{})[n]) return;
-      var th = tpOnDays(P.name, n);
-      if(mine.some(function(d){ return th.indexOf(d) >= 0; }) && out.indexOf(P.name) < 0) out.push(P.name);
-    });
-    var bz = (TPS.bz||{})[n] || [];
-    if(bz.length && mine.some(function(d){ return bz.indexOf(d) >= 0; })) out.push('개인 일정');   /* 👥 알바 등 개인 일정과 겹침 */
-    return out;
-  }
   function tpDaysTxt(pk, n){
     var e = (TPS.S[pk]||{})[n], p = tpProj(pk); if(!e || !p) return '';
-    var days = (e.st === '확정') ? tpOnDays(pk, n) : (e.cf||[]).slice().sort();   /* 부분 확정이면 «확정된 날»만 */
+    var days = p.dates.filter(function(d){ return e.off.indexOf(d) < 0 && tpDayConf(e, d); });   /* 부분 확정이면 «확정된 날»만 */
     return (days.length && days.length < p.dates.length) ? ' <span style="color:var(--sub)">('+days.map(tpMD).join(', ')+'만)</span>' : '';
+  }
+  /* 한 칸 = 한 사람의 그 날 — {t:'as', pk, k:'확정'|'섭외중'|'백업', more:[…]} · {t:'x'} · {t:'bz'} · null */
+  function tpCell(n, d){
+    var hits = [];
+    TPS.projects.forEach(function(P){
+      var e = (TPS.S[P.name]||{})[n]; if(!e || P.dates.indexOf(d) < 0 || e.off.indexOf(d) >= 0) return;
+      hits.push({ pk:P.name, k: (e.bk||[]).indexOf(d) >= 0 ? '백업' : (tpDayConf(e, d) ? '확정' : '섭외중') });
+    });
+    if(hits.length){ hits.sort(function(a, b){ return (a.k === '확정' ? 0 : 1) - (b.k === '확정' ? 0 : 1); }); return { t:'as', pk:hits[0].pk, k:hits[0].k, more:hits.slice(1) }; }
+    if(((TPS.no||{})[n]||[]).indexOf(d) >= 0) return { t:'x' };
+    if(((TPS.bz||{})[n]||[]).indexOf(d) >= 0) return { t:'bz' };
+    return null;
+  }
+  function tpProjsOn(d){ return TPS.projects.filter(function(P){ return P.dates.indexOf(d) >= 0; }).sort(tpByDate); }
+  /* 화면 먼저 — 서버 tpSetDay_ 와 «같은 규칙». v = {t:'as', pk, k} · {t:'x'} · {t:'bz'} · null(비움). 바뀌면 true */
+  function tpSetLocal(n, d, v){
+    if(v && v.t === 'as'){ var Pt = tpProj(v.pk); if(!Pt || Pt.dates.indexOf(d) < 0) return false; }
+    TPS.projects.forEach(function(P){
+      var o = TPS.S[P.name], e = o && o[n]; if(!e) return;
+      if(v && v.t === 'as' && P.name === v.pk) return;
+      if(P.dates.indexOf(d) < 0 || e.off.indexOf(d) >= 0) return;
+      tpUnpackE(e, P);
+      e.off.push(d); e.cf = e.cf.filter(function(x){ return x !== d; }); e.bk = (e.bk||[]).filter(function(x){ return x !== d; });
+      if(!tpOnDaysE(e, P).length) delete o[n]; else tpNormE(e, P);
+    });
+    TPS.bz = TPS.bz || {}; TPS.no = TPS.no || {};
+    [TPS.bz, TPS.no].forEach(function(m){ var l = m[n]; if(!l) return; var j = l.indexOf(d); if(j >= 0) l.splice(j, 1); if(!l.length) delete m[n]; });
+    if(!v) return true;
+    if(v.t === 'x' || v.t === 'bz'){ var m2 = v.t === 'x' ? TPS.no : TPS.bz; (m2[n] = m2[n] || []).push(d); m2[n].sort(); return true; }
+    var P2 = tpProj(v.pk), o2 = (TPS.S[v.pk] = TPS.S[v.pk] || {}), e2 = o2[n];
+    if(!e2) e2 = o2[n] = { st:'섭외중', cf:[], bk:[], off:P2.dates.filter(function(x){ return x !== d; }) };
+    else { tpUnpackE(e2, P2); var k = e2.off.indexOf(d); if(k >= 0) e2.off.splice(k, 1); }
+    e2.cf = e2.cf.filter(function(x){ return x !== d; }); e2.bk = (e2.bk||[]).filter(function(x){ return x !== d; });
+    if(v.k === '확정') e2.cf.push(d); else if(v.k === '백업') e2.bk.push(d);
+    tpNormE(e2, P2);
+    return true;
+  }
+  /* 하루에 두 곳(옛 자료) — 이름 · 날짜 · 프로젝트들 */
+  function tpClashList(){
+    var out = [];
+    TPS.roster.forEach(function(x){
+      tpWin().forEach(function(d){ var c = tpCell(x.n, d); if(c && c.t === 'as' && c.more.length) out.push(x.n + ' ' + tpMD(d) + ' (' + [c.pk].concat(c.more.map(function(m){ return m.pk; })).map(tpShort).join('·') + ')'); });
+    });
+    return out;
   }
 
   /* ── 서버로 ── */
@@ -12413,17 +12510,16 @@
         return;
       }
       if(it.p.act === 'restore'){
-        /* 되돌린 값은 «지금 내가 만지는 중이 아닐 때만» 화면에 얹는다 — 만지는 중이면 서버에서 다시 받는다 */
-        if(d.rows && !TPS.drag && !TPS.q.length){ tpIngestRows(d.rows); if(d.roster) TPS.roster = d.roster; tpRender(); }
-        else { TPS.mut++; tpLoad(true, true, true); }
+        /* 되돌린 값은 «지금 내가 만지는 중이 아닐 때만» 화면에 얹는다 — 아니면 서버에서 다시 받는다(✕·개인까지 다시) */
+        TPS.mut++; tpLoad(true, true, true);
       }
       else if(!TPS.q.length && !TPS.drag && d.rows){
         /* 대기가 비었을 때만 «서버가 아는 값»으로 맞춘다 — 다른 관리자가 동시에 바꾼 것도 이때 반영된다 */
-        tpIngestRows(d.rows); if(d.roster) TPS.roster = d.roster; if(d.need) TPS.need = d.need; if(d.busy) TPS.bz = d.busy; tpRender();
+        tpIngestRows(d.rows); if(d.roster) TPS.roster = d.roster; if(d.need) TPS.need = d.need; if(d.busy) TPS.bz = d.busy; if(d.no) TPS.no = d.no; tpRender();
       }
       if(!TPS.q.length){
         var bk = it.des ? (d.bk || '') : '';
-        var part = (d.skipped > 0) ? ' · ⚠ ' + d.skipped + '칸은 서버가 받지 않았습니다(촬영일이 바뀌었거나 명단에 없음)' : '';
+        var part = (d.skipped > 0) ? ' · ⚠ ' + d.skipped + '칸은 건너뛰었습니다(그 날 촬영이 없거나 · 다른 프로젝트·✕·개인인 날)' : '';
         tpSay(part ? 'bad' : 'ok', '✓ 저장됨 · ' + it.ok + part + (it.des && !bk ? ' (되돌리기 자료를 못 남겼습니다)' : ''), bk);
       } else tpPump();
     }, 25000);
@@ -12437,7 +12533,7 @@
     if(box && !TPS.loaded && !silent) box.innerHTML = '<p class="foot">⏳ 팀 일정을 불러오는 중…</p><div class="tpskel"></div><div class="tpskel" style="width:80%"></div><div class="tpskel" style="width:90%"></div>';
     askCount(tpUrl({ act:'load' }), function(d, why){
       /* 🔴 내가 «그 뒤에» 바꿨다면 이 답은 옛 값이다 — 버린다(안 버리면 방금 저장한 것이 사라져 보인다) */
-      if(gen !== TPS.mut){ if(must) TPS.loading = false; else TPS.loading = false; if(TPS.dirty) tpLoad(true, true, true); return; }
+      if(gen !== TPS.mut){ TPS.loading = false; if(TPS.dirty) tpLoad(true, true, true); return; }
       TPS.loading = false;
       if(!d || !d.ok){
         var why2 = (d && d.error) || (why === 'timeout' ? '25초 안에 답이 없음' : '서버에 닿지 못함');
@@ -12456,101 +12552,56 @@
   }
 
   /* ── 바꾸기 (화면 먼저 · 서버는 뒤에서) ── */
-  /* 👥 2026-10-21 v7 — 칸을 누르거나 끌 때 «무엇을 바꾸나»
-     · 왼쪽 클릭 = 그 날 «확정 ↔ 섭외중»   · 오른쪽 클릭(또는 ⌃클릭·「✕ 모드」) = 그 날 «가능 ↔ ✕(안 됨)»
-     · 「개인 일정 모드」 = 프로젝트와 상관없는 개인 일정(알바 등) 찍기
-     · 끌면 «처음 누른 칸이 바뀌는 쪽»으로 지나간 칸을 같이 바꾼다.
-     🔴 어느 프로젝트의 칸인가 = 그 날짜를 가진 «고른 프로젝트»(편집 대상이 그 날짜를 가지면 편집 대상, 아니면 제일 빨리 시작하는 것) */
-  function tpProjAt(d){
-    var sel = TPS.sel || [], c = tpProj(TPS.cur);
-    if(c && sel.indexOf(c.name) >= 0 && c.dates.indexOf(d) >= 0) return c.name;
-    var best = '', bs = '';
-    sel.forEach(function(pk){ var P = tpProj(pk); if(P && P.dates.indexOf(d) >= 0 && (!best || P.dates[0] < bs)){ best = pk; bs = P.dates[0]; } });
-    return best;
-  }
-  /* 처음 누른 칸이 «무엇으로 바뀌나» — {t:'conf'|'avail'|'busy', m:…} 또는 null(할 일 없음) */
-  function tpKindAt(right, n, d){
-    var cm = TPS.cmode || 'normal';
-    if(cm === 'busy') return { t:'busy', m: ((TPS.bz[n]||[]).indexOf(d) >= 0) ? 'off' : 'on' };
-    var pk = tpProjAt(d); if(!pk) return null;
-    var e = (TPS.S[pk]||{})[n];
-    if(right || cm === 'x'){
-      if(!e) return null;
-      return { t:'avail', m: e.off.indexOf(d) >= 0 ? 'on' : 'off' };
-    }
-    if(!e) return { t:'conf', m:'conf' };
-    if(e.off.indexOf(d) >= 0) return { t:'avail', m:'on' };
-    return { t:'conf', m: tpDayConf(e, d) ? 'pend' : 'conf' };
-  }
-  function tpApplyCell(k, pk, n, d){
-    if(k.t === 'busy'){
-      var bz = (TPS.bz[n] = TPS.bz[n] || []), i0 = bz.indexOf(d);
-      if(k.m === 'on'){ if(i0 >= 0) return ''; bz.push(d); bz.sort(); return 'bon'; }
-      if(i0 < 0) return ''; bz.splice(i0, 1); if(!bz.length) delete TPS.bz[n]; return 'boff';
-    }
-    var P = tpProj(pk); if(!P || P.dates.indexOf(d) < 0) return '';
-    var o = (TPS.S[pk] = TPS.S[pk] || {}), e = o[n];
-    if(k.t === 'conf'){
-      if(k.m === 'conf'){
-        if(!e){ e = o[n] = { st:'섭외중', cf:[d], off:[] }; tpNormE(e, P); return 'cadd'; }
-        if(e.off.indexOf(d) >= 0 || tpDayConf(e, d)) return '';
-        e.cf = (e.cf||[]).concat([d]); tpNormE(e, P); return 'conf';
-      }
-      if(!e || e.off.indexOf(d) >= 0) return '';
-      if(e.st === '확정'){ e.st = '섭외중'; e.cf = tpOnDays(pk, n).filter(function(x){ return x !== d; }); return 'pend'; }
-      var kc = (e.cf||[]).indexOf(d); if(kc < 0) return ''; e.cf.splice(kc, 1); return 'pend';
-    }
-    /* avail */
-    if(!e) return '';
-    if(k.m === 'on'){
-      var i = e.off.indexOf(d); if(i < 0) return ''; e.off.splice(i, 1); tpNormE(e, P); return 'on';
-    }
-    if(e.off.indexOf(d) >= 0) return '';
-    if(tpOnDays(pk, n).length <= 1){ delete o[n]; return 'remove'; }
-    e.off.push(d);
-    if(e.st !== '확정') e.cf = (e.cf||[]).filter(function(x){ return x !== d; });
-    tpNormE(e, P);
-    return 'off';
-  }
-  function tpDragStep(n, d){
-    var key = n + '|' + d; if(TPS.drag.last === key) return; TPS.drag.last = key;
-    var k = TPS.drag.k, pk = (k.t === 'busy') ? '' : tpProjAt(d);
-    if(k.t !== 'busy' && !pk) return;
-    var r = tpApplyCell(k, pk, n, d); if(!r) return;
-    TPS.mut++;
-    TPS.drag.ch.push({ n:n, d:d, pk:pk, r:r }); tpRender();
-  }
-  function tpDragEnd(){
-    if(!TPS.drag) return;
-    var ch = TPS.drag.ch, k = TPS.drag.k; TPS.drag = null;
-    if(!ch.length) return;
-    var nm = []; ch.forEach(function(x){ if(nm.indexOf(x.n) < 0) nm.push(x.n); });
-    var what = k.t === 'busy' ? (k.m === 'on' ? '개인 일정' : '개인 일정 지움')
-             : k.t === 'conf' ? (k.m === 'conf' ? '확정' : '섭외중으로')
-             : (k.m === 'on' ? '가능' : '안 됨(✕)');
-    var pks = []; ch.forEach(function(x){ if(x.pk && pks.indexOf(x.pk) < 0) pks.push(x.pk); });
-    var where = pks.length ? ' (' + pks.map(tpShort).join('·') + ')' : '';
-    var msg = ch.length === 1 ? ch[0].n + ' ' + tpMD(ch[0].d) + ' ' + what + where
-                              : ch.length + '칸을 ' + what + ' (' + nm.join(', ') + ')' + where;
-    /* 프로젝트별로 나눠 보내고, 한 번에 60칸·주소 길이 한도로 쪼갠다 */
-    var by = {}, order = [];
-    ch.forEach(function(x){ var key = x.pk || ''; if(!by[key]){ by[key] = []; order.push(key); } by[key].push(x.n + '|' + x.d); });
-    var jobs = [];
-    order.forEach(function(key){
-      var groups = [], curG = [], len = 0;
-      by[key].forEach(function(c){
-        var l = encodeURIComponent(c).length + 3;
-        if(curG.length && (len + l > 3200 || curG.length >= 60)){ groups.push(curG); curG = []; len = 0; }
-        curG.push(c); len += l;
-      });
-      if(curG.length) groups.push(curG);
-      groups.forEach(function(g){
-        jobs.push(k.t === 'busy' ? { act:'busy', mode:k.m, cells:g.join(',') }
-                : k.t === 'conf' ? { act:'conf', proj:key, mode:k.m, cells:g.join(',') }
-                : { act:'cells', proj:key, mode:k.m, cells:g.join(',') });
-      });
+  function tpKindName(v){ return !v ? '비움(가능)' : v.t === 'x' ? '✕ 안 되는 날' : v.t === 'bz' ? '개인 일정' : tpShort(v.pk) + ' ' + v.k; }
+  /* 칸 여러 개를 «한 가지»로 — 화면 먼저 바꾸고, 주소 길이·60칸씩 나눠 보낸다 */
+  function tpChoose(cells, v){
+    tpClosePop();
+    var done = [], prev = [];
+    cells.forEach(function(c){
+      var a = c.split('|'), before = tpCell(a[0], a[1]);
+      if(tpSetLocal(a[0], a[1], v)){ done.push(c); prev.push({ n:a[0], d:a[1], b:before }); }
     });
-    jobs.forEach(function(prm, ji){ tpEnqueue(prm, ji === jobs.length - 1 ? msg : ''); });
+    if(!done.length){ tpSay('bad', '⚠ 바꿀 칸이 없습니다 — 그 프로젝트는 그 날 촬영이 없습니다.'); return; }
+    TPS.mut++;
+    /* 편의 ③ «확정자를 보낼 때 백업 올리기» — 원래 프로젝트에 그 날 백업이 있으면 묻는다(한 칸일 때) */
+    TPS.promo = null;
+    if(prev.length === 1){
+      var p0 = prev[0];
+      if(p0.b && p0.b.t === 'as' && p0.b.k === '확정' && !(v && v.t === 'as' && v.pk === p0.b.pk && v.k === '확정')){
+        var o = TPS.S[p0.b.pk] || {}, role = tpRoleOf(p0.n), cand = '';
+        Object.keys(o).forEach(function(x){ if(!cand && x !== p0.n && (o[x].bk||[]).indexOf(p0.d) >= 0 && tpRoleOf(x) === role) cand = x; });
+        if(!cand) Object.keys(o).forEach(function(x){ if(!cand && x !== p0.n && (o[x].bk||[]).indexOf(p0.d) >= 0) cand = x; });
+        if(cand) TPS.promo = { pk:p0.b.pk, d:p0.d, n:cand, from:p0.n };
+      }
+    }
+    tpRender();
+    var nm = []; done.forEach(function(c){ var x = c.split('|')[0]; if(nm.indexOf(x) < 0) nm.push(x); });
+    var msg = done.length === 1 ? done[0].split('|')[0] + ' ' + tpMD(done[0].split('|')[1]) + ' → ' + tpKindName(v)
+                                : done.length + '칸 → ' + tpKindName(v) + ' (' + nm.join(', ') + ')';
+    var groups = [], curG = [], len = 0;
+    done.forEach(function(c){
+      var l = encodeURIComponent(c).length + 3;
+      if(curG.length && (len + l > 3000 || curG.length >= 60)){ groups.push(curG); curG = []; len = 0; }
+      curG.push(c); len += l;
+    });
+    if(curG.length) groups.push(curG);
+    groups.forEach(function(g, gi){
+      tpEnqueue({ act:'set', cells:g.join(','), v: v ? (v.t === 'as' ? 'as' : v.t) : '', proj: v && v.t === 'as' ? v.pk : '', k: v && v.t === 'as' ? v.k : '' }, gi === groups.length - 1 ? msg : '');
+    });
+  }
+  /* 편의 ② «이름 → 전체 날 한 번에» — k='' 면 이 프로젝트에서 빼기. 남의 자리(다른 프로젝트·✕·개인인 날)는 안 뺏는다 */
+  function tpSetAll(n, pk, k){
+    tpClosePop();
+    var P = tpProj(pk); if(!P) return;
+    var ch = 0, sk = 0;
+    P.dates.forEach(function(d){
+      var c = tpCell(n, d);
+      if(!k){ if(c && c.t === 'as' && (c.pk === pk || c.more.some(function(m){ return m.pk === pk; }))){ var e = (TPS.S[pk]||{})[n]; if(e && e.off.indexOf(d) < 0){ tpSetLocal(n, d, null); ch++; } } return; }
+      if(c && (c.t === 'x' || c.t === 'bz' || (c.t === 'as' && c.pk !== pk))){ sk++; return; }
+      tpSetLocal(n, d, { t:'as', pk:pk, k:k }); ch++;
+    });
+    TPS.mut++; tpRender();
+    tpEnqueue({ act:'setall', n:n, proj:pk, k:k }, n + ' · ' + tpShort(pk) + ' 전체 날 → ' + (k || '빼기') + (sk ? ' (' + sk + '일은 다른 데·✕·개인이라 건너뜀)' : ''));
   }
   /* 필요 인원 */
   function tpSetNeed(pk, r, v){
@@ -12562,11 +12613,11 @@
     tpRender();
     tpEnqueue({ act:'need', proj:pk, r:r, n:v }, tpShort(pk) + ' ' + r + ' 필요 ' + v + '명');
   }
-  /* 사람 순서 — 화면에 «보이는 같은 역할 이웃»과 자리를 맞바꾼다 */
+  /* 사람 순서 — 같은 역할 이웃과 자리를 맞바꾼다 */
   function tpMove(n, dir){
+    tpClosePop();
     var role = tpRoleOf(n); if(!role) return;
-    var sel = TPS.sel || [];
-    var vis = TPS.roster.filter(function(x){ return x.r === role && sel.some(function(pk){ return !!(TPS.S[pk]||{})[x.n]; }); });
+    var vis = TPS.roster.filter(function(x){ return x.r === role; });
     var i = -1; vis.forEach(function(x, k){ if(x.n === n) i = k; });
     var j = i + dir; if(i < 0 || j < 0 || j >= vis.length) return;
     var other = vis[j].n, ia = -1, ib = -1;
@@ -12575,82 +12626,35 @@
     tpRender();
     tpEnqueue({ act:'move', n:n, o:other }, n + ' 순서 바꿈');
   }
-  /* 필요 인원 «고르기» — 안 정함 · 1~20명 */
   function tpNeedSel(pk, r, nd){
     var o = '<option value=""' + (nd ? '' : ' selected') + '>안 정함</option>';
     for(var i = 1; i <= 20; i++) o += '<option value="' + i + '"' + (i === nd ? ' selected' : '') + '>' + i + '명</option>';
     if(nd > 20) o += '<option value="' + nd + '" selected>' + nd + '명</option>';
     return '<select class="tpneed" data-p="' + tpEsc(pk) + '" data-r="' + r + '" title="' + tpEsc(tpShort(pk)) + ' · ' + r + ' 몇 명을 구해야 하나">' + o + '</select>';
   }
-  /* 한 프로젝트 «카드» — 필요 인원 고르기 + 날짜별 충원(다 찬 날 · 부족한 날) + 확정자 */
-  function tpCardHtml(pk, hint){
-    var P = tpProj(pk); if(!P) return '';
-    var tot = tpNeedTot(pk), sm = tpProjSummary(pk), isCur = pk === TPS.cur && (TPS.sel||[]).length > 1;
-    var rng = tpMD(P.dates[0]) + (P.dates.length > 1 ? '~' + tpMD(P.dates[P.dates.length-1]) : '');
-    var h = '<div class="tpcard' + (isCur ? ' cur' : '') + (tot && !sm.lack.length ? ' done' : '') + '">';
-    h += '<div class="tpch"><i style="background:' + tpColor(pk) + '"></i><b>' + tpEsc(tpShort(pk)) + '</b><span class="sub">' + rng + ' · ' + P.dates.length + '일</span>' + (isCur ? '<span class="tpcur">편집 대상</span>' : '') +
-         '<span class="tpneedrow"><span class="lb">필요 인원</span>' + TP_ROLES.map(function(r){ var nd = (TPS.need[pk]||{})[r] || 0; return '<span>' + r + ' ' + tpNeedSel(pk, r, nd) + '</span>'; }).join('') + (hint ? '<span class="lb" style="font-weight:600">← 고르면 날짜마다 다 찼는지·부족한지가 색으로 보입니다</span>' : '') + '</span></div>';
-    h += '<div class="tpdays">' + P.dates.map(function(d){
-      var cv = tpDayCov(pk, d);
-      var big = cv.st === 'unset' ? ('확정 ' + cv.any + '명') : (cv.fill + '/' + cv.tot);
-      var small = cv.st === 'full' ? '✅ 다 참' : (cv.st === 'unset' ? '' : '⚠ ' + tpLackTxt(cv));
-      return '<span class="tpdc ' + cv.st + '" title="' + tpEsc(tpMD(d) + ' · ' + TP_ROLES.map(function(r){ var x = cv.by[r]; return x.n ? r + ' ' + x.c + '/' + x.n : ''; }).filter(Boolean).join(' · ')) + '"><b>' + tpMD(d) + '</b><span>' + big + '</span><small>' + small + '</small></span>';
-    }).join('') + '</div>';
-    if(tot){
-      h += '<div class="tpdsum">' + (sm.full.length ? '<span class="ok">✅ 다 찬 날 ' + sm.full.length + '일</span> (' + sm.full.map(tpMD).join(', ') + ')' : '') +
-           (sm.full.length && sm.lack.length ? ' · ' : '') +
-           (sm.lack.length ? '<span class="lack">⚠ 부족한 날 ' + sm.lack.length + '일</span> — ' + sm.lack.map(function(x){ return tpMD(x.d) + ' ' + tpLackTxt(x.cv); }).join(' · ') : '') + '</div>';
-    }
-    var cn = tpConfNames(pk);
-    h += '<details class="tpconf"><summary>🔗 프로젝트 정보 「PA팀」에 들어갈 확정자 ' + cn.length + '명 <span style="font-weight:500">(견적서 금액은 안 바뀜)</span></summary><div style="padding:4px 2px">' +
-         (cn.length ? cn.map(function(n){ return tpEsc(n) + ' <span style="color:var(--sub)">' + tpEsc(tpRoleOf(n)) + '</span>' + tpDaysTxt(pk, n); }).join(' · ') : '<span style="color:var(--sub)">(아직 확정된 사람 없음)</span>') + '</div></details>';
-    return h + '</div>';
-  }
-  /* 이름 아래 «상태 단추» — 드롭다운을 없앴다. 누르면 «전체 확정 ↔ 전체 섭외중»(날짜별은 칸을 누른다) */
-  function tpPillOf(n){
-    var pk = TPS.cur, e = (TPS.S[pk]||{})[n], P = tpProj(pk), short = tpShort(pk);
-    if(!e) return { k:'a', st:'', t:'＋ ' + short + '에 넣기', tip:'눌러서 ' + short + '에 «섭외중»으로 넣습니다' };
-    if(e.st === '확정') return { k:'k', st:'확정', t:'확정', tip:'가능한 모든 날이 확정입니다 — 누르면 전부 섭외중으로(날짜별은 칸을 누르세요)' };
-    var on = P ? tpOnDays(pk, n).length : 0, cf = (e.cf||[]).length;
-    if(cf) return { k:'h', st:'부분', t:'일부 확정 ' + cf + '/' + on + '일', tip:'누르면 가능한 모든 날을 확정으로' };
-    return { k:'p', st:'섭외중', t:'섭외중', tip:'누르면 가능한 모든 날을 확정으로(날짜별은 칸을 누르세요)' };
-  }
-  function tpPill(n){
-    var pk = TPS.cur, e = (TPS.S[pk]||{})[n];
-    if(!e){ tpAddPerson(tpRoleOf(n), n); return; }
-    tpSetState(n, e.st === '확정' ? '섭외중' : '확정');
-  }
-  function tpSetState(n, val){
-    var o = (TPS.S[TPS.cur] = TPS.S[TPS.cur] || {});
-    if(tpStOf(TPS.cur, n) === val) return;
-    if(!val) delete o[n]; else if(o[n]){ o[n].st = val; o[n].cf = []; } else o[n] = { st:val, off:[], cf:[] };
-    tpRender();
-    tpEnqueue({ act:'state', proj:TPS.cur, n:n, st:val }, n + ' → ' + (val || '뺌') + ' (' + tpShort(TPS.cur) + ')');
-  }
   function tpAddPerson(role, name){
     name = String(name||'').replace(/[<>|,\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim();
     if(!name){ tpSay('bad', '⚠ 이름을 먼저 적거나 고르세요.'); return; }
     if(name.length > 30){ tpSay('bad', '⚠ 이름이 너무 깁니다(30자까지).'); return; }
-    var ex = tpRoleOf(name), o = (TPS.S[TPS.cur] = TPS.S[TPS.cur] || {});
-    if(o[name]){ tpSay('bad', '⚠ ' + name + '은 이미 ' + tpShort(TPS.cur) + '에 있습니다(' + o[name].st + ').'); return; }
+    var ex = tpRoleOf(name);
+    if(ex){ tpSay('bad', '⚠ ' + name + '은 이미 명단에 있습니다(' + ex + ').'); return; }
     var inpEl = document.querySelector('#tpBody input.tpaddp[data-r="'+role+'"]'); if(inpEl) inpEl.value = '';   /* 🔴 다시 그릴 때 «쓰던 글자»를 되살리므로 먼저 비운다 */
-    if(!ex) TPS.roster.push({ n:name, r:role });
-    o[name] = { st:'섭외중', off:[], cf:[] };
+    TPS.roster.push({ n:name, r:role });
     tpRender();
     var inDb = TPS.db.some(function(x){ return x.n === name; });
-    tpEnqueue({ act:'addp', n:name, r:ex || role, proj:TPS.cur },
-              name + (ex ? '' : ' 추가') + ' → 섭외중 (' + tpShort(TPS.cur) + ')' + (!ex && !inDb ? ' · 직접 입력한 이름 — 인적자원 DB 등록이 필요합니다' : ''));
+    tpEnqueue({ act:'addp', n:name, r:role }, name + ' 추가 — 칸을 눌러 배정하세요' + (!inDb ? ' · 직접 입력한 이름 — 인적자원 DB 등록이 필요합니다' : ''));
     var again = document.querySelector('#tpBody input.tpaddp[data-r="'+role+'"]'); if(again) again.focus();
   }
   function tpDelPerson(n){
-    TPS.armed = ''; var k = 0;
+    tpClosePop(); TPS.armed = ''; var k = 0;
     TPS.projects.forEach(function(P){ if((TPS.S[P.name]||{})[n]){ delete TPS.S[P.name][n]; k++; } });
+    delete (TPS.no||{})[n]; delete (TPS.bz||{})[n];
     TPS.roster = TPS.roster.filter(function(x){ return x.n !== n; });
     tpRender();
     tpEnqueue({ act:'delp', n:n }, n + ' 삭제 — 간트 명단에서 뺐습니다' + (k ? '(스케줄 ' + k + '건도 같이 지움)' : '') + '. 인적자원 DB의 사람은 그대로입니다.', true);
   }
-  function tpClearProj(){
-    TPS.armed = ''; var pk = TPS.cur, n = Object.keys(TPS.S[pk]||{}).length;
+  function tpClearProj(pk){
+    TPS.armed = ''; var n = Object.keys(TPS.S[pk]||{}).length;
     TPS.S[pk] = {}; tpRender();
     tpEnqueue({ act:'clearproj', proj:pk }, tpShort(pk) + ' 비움 — ' + n + '명의 스케줄을 지우고 이름은 남겼습니다.', true);
   }
@@ -12658,12 +12662,111 @@
     TPS.armed = ''; var n = 0;
     Object.keys(TPS.S).forEach(function(k){ n += Object.keys(TPS.S[k]).length; });
     TPS.S = {}; tpRender();
-    tpEnqueue({ act:'clearall' }, '전체 비움 — 스케줄 ' + n + '건을 지우고 이름 ' + TPS.roster.length + '명만 남겼습니다.', true);
+    tpEnqueue({ act:'clearall' }, '전체 비움 — 스케줄 ' + n + '건을 지우고 이름 ' + TPS.roster.length + '명만 남겼습니다(✕·개인 일정은 그대로).', true);
   }
   function tpArm(kind){
     TPS.armed = kind; clearTimeout(TPS.armTimer);
     TPS.armTimer = setTimeout(function(){ TPS.armed = ''; tpRender(); }, 4000);
     tpRender();
+  }
+
+  /* ── 작은 창(이 날 어디로? · 그날 비는 사람 · 이름 메뉴) ── */
+  function tpPopEl(){
+    var el = document.getElementById('tpPop');
+    if(!el){ el = document.createElement('div'); el.id = 'tpPop'; el.className = 'tppop'; el.hidden = true; document.getElementById('vTeam').appendChild(el); }
+    return el;
+  }
+  function tpClosePop(){
+    var el = document.getElementById('tpPop'); if(el){ el.hidden = true; el.innerHTML = ''; }
+    var had = !!TPS.pop; TPS.pop = null;
+    [].forEach.call(document.querySelectorAll('#vTeam .tpac.tpsel'), function(x){ x.classList.remove('tpsel'); });
+    if(had && TPS.needRender){ TPS.needRender = false; tpRender(); }
+  }
+  function tpPlacePop(el, anchor){
+    el.hidden = false;
+    var b = anchor.getBoundingClientRect(), w = el.offsetWidth || 240, h = el.offsetHeight || 200;
+    var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    var left = Math.max(8, Math.min(b.left, vw - w - 8)), top = b.bottom + 4;
+    if(top + h > vh - 8) top = Math.max(8, b.top - h - 4);
+    el.style.left = left + 'px'; el.style.top = top + 'px';
+  }
+  function tpOptBtn(v, label, cur, extra){
+    var enc = !v ? '' : (v.t === 'as' ? 'as|' + v.k + '|' + v.pk : v.t);
+    return '<button type="button" data-tp="popv" data-v="' + tpEsc(enc) + '" class="' + (cur ? 'cur' : '') + '"' + (v && v.t === 'as' ? ' style="--pc:' + tpColor(v.pk) + '"' : '') + '>' + label + (extra || '') + '</button>';
+  }
+  function tpOpenPop(cells, anchor){
+    var el = tpPopEl(), one = cells.length === 1, h = '';
+    var n0 = cells[0].split('|')[0], d0 = cells[0].split('|')[1], role = tpRoleOf(n0);
+    var days = []; cells.forEach(function(c){ var d = c.split('|')[1]; if(days.indexOf(d) < 0) days.push(d); });
+    var names = []; cells.forEach(function(c){ var x = c.split('|')[0]; if(names.indexOf(x) < 0) names.push(x); });
+    var c0 = one ? tpCell(n0, d0) : null;
+    h += '<h5>' + (one ? tpEsc(n0) + ' <span>' + tpEsc(role) + '</span> · ' + tpMD(d0) + ' ' + TP_WN[tpD(d0).getDay()] + ' — 어디로?'
+                       : cells.length + '칸 한 번에 <span>(' + tpEsc(names.join(', ')) + ' · ' + days.map(tpMD).join(', ') + ')</span>') + '</h5>';
+    var projs = TPS.projects.filter(function(P){ return days.some(function(d){ return P.dates.indexOf(d) >= 0; }); }).sort(tpByDate);
+    projs.forEach(function(P){
+      var lk = '';
+      if(one){ var cv = tpDayCov(P.name, d0), nd = (TPS.need[P.name]||{})[role] || 0; if(nd && cv.by[role].c < nd) lk = '<em>' + tpEsc(role) + ' 부족</em>'; }
+      h += '<div class="grp"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + '</div><div class="row3">';
+      ['확정','섭외중','백업'].forEach(function(k){
+        var cur = c0 && c0.t === 'as' && c0.pk === P.name && c0.k === k;
+        h += tpOptBtn({ t:'as', pk:P.name, k:k }, k, cur, k === '확정' ? lk : '');
+      });
+      h += '</div>';
+    });
+    if(!projs.length) h += '<div class="grp" style="font-weight:600">이 날은 촬영이 없습니다</div>';
+    if(!one && projs.length) h += '<div class="hint">그 프로젝트 촬영일이 아닌 칸은 건너뜁니다</div>';
+    h += '<div class="grp">사람</div>' +
+         tpOptBtn({ t:'x' }, '✕ 안 되는 날 <small>(모든 프로젝트)</small>', c0 && c0.t === 'x') +
+         tpOptBtn({ t:'bz' }, '📌 개인 일정', c0 && c0.t === 'bz') +
+         tpOptBtn(null, '비우기 <small>(가능)</small>', one && !c0);
+    el.innerHTML = h; TPS.pop = { cells:cells };
+    tpPlacePop(el, anchor);
+  }
+  /* 편의 ① «충원 칸 → 그날 비는 사람» — 부족한 역할(필요 인원을 안 정했으면 모든 역할)의 사람을 «비어 있음 → 이 프로젝트 섭외중·백업 → 다른 곳 섭외중·백업» 순으로 */
+  function tpOpenCov(pk, d, anchor){
+    var el = tpPopEl(), cv = tpDayCov(pk, d), need = TPS.need[pk] || {};
+    var roles = cv.lack.length ? cv.lack.map(function(x){ return x.r; }) : TP_ROLES.filter(function(r){ return !need[r] || cv.by[r].c < need[r]; });
+    if(!roles.length) roles = TP_ROLES.slice();
+    var h = '<h5><i style="background:' + tpColor(pk) + '"></i>' + tpEsc(tpShort(pk)) + ' · ' + tpMD(d) + ' ' + TP_WN[tpD(d).getDay()] + ' — ' + (cv.st === 'unset' ? '확정 ' + cv.any + '명' : cv.fill + '/' + cv.tot + (cv.lack.length ? ' · ' + tpLackTxt(cv) : ' ✓ 다 참')) + '</h5>';
+    var any = false;
+    roles.forEach(function(r){
+      var free = [], here = [], other = [];
+      TPS.roster.forEach(function(x){
+        if(x.r !== r) return;
+        var c = tpCell(x.n, d);
+        if(!c) free.push({ n:x.n, t:'' });
+        else if(c.t === 'as' && c.k !== '확정'){ if(c.pk === pk) here.push({ n:x.n, t:c.k }); else other.push({ n:x.n, t:tpShort(c.pk) + ' ' + c.k }); }
+      });
+      var list = free.concat(here, other);
+      h += '<div class="grp">' + r + (need[r] ? ' <small>' + cv.by[r].c + '/' + need[r] + '</small>' : '') + '</div>';
+      if(!list.length){ h += '<div class="hint">그날 확정할 수 있는 ' + r + '가 없습니다 (모두 확정·✕·개인)</div>'; return; }
+      any = true;
+      list.forEach(function(x){
+        h += '<button type="button" data-tp="covpick" data-n="' + tpEsc(x.n) + '" data-p="' + tpEsc(pk) + '" data-d="' + d + '">' + tpEsc(x.n) + ' <small>' + (x.t ? '(' + tpEsc(x.t) + ')' : '· 비어 있음') + '</small><em class="go">확정 →</em></button>';
+      });
+    });
+    if(any) h += '<div class="hint">누르면 ' + tpEsc(tpShort(pk)) + ' ' + tpMD(d) + ' 확정 · 다른 곳에서 오면 거기서는 빠집니다</div>';
+    el.innerHTML = h; TPS.pop = { cov:pk + '|' + d };
+    tpPlacePop(el, anchor);
+  }
+  /* 편의 ② 이름 메뉴 — 프로젝트별 «전체 날» + 순서 + 삭제 */
+  function tpOpenName(n, anchor){
+    var el = tpPopEl(), win = tpWin();
+    var projs = TPS.focus ? [tpProj(TPS.focus)].filter(Boolean) : tpVisibleProjects(win);
+    var h = '<h5>' + tpEsc(n) + ' <span>' + tpEsc(tpRoleOf(n)) + '</span></h5>';
+    projs.forEach(function(P){
+      var e = (TPS.S[P.name]||{})[n];
+      h += '<div class="grp"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + ' <small>전체 ' + P.dates.length + '일 한 번에</small></div><div class="row3">' +
+           ['확정','섭외중','백업'].map(function(k){ return '<button type="button" data-tp="setall" data-n="' + tpEsc(n) + '" data-p="' + tpEsc(P.name) + '" data-k="' + k + '" style="--pc:' + tpColor(P.name) + '">' + k + '</button>'; }).join('') +
+           (e ? '<button type="button" data-tp="setall" data-n="' + tpEsc(n) + '" data-p="' + tpEsc(P.name) + '" data-k="">빼기</button>' : '') + '</div>';
+    });
+    if(!projs.length) h += '<div class="hint">이 기간에 촬영이 잡힌 프로젝트가 없습니다</div>';
+    var armed = TPS.armed === 'p:' + n;
+    h += '<div class="grp">명단</div><div class="row3"><button type="button" data-tp="mvup" data-n="' + tpEsc(n) + '">▲ 위로</button><button type="button" data-tp="mvdn" data-n="' + tpEsc(n) + '">▼ 아래로</button>' +
+         '<button type="button" data-tp="delp" data-n="' + tpEsc(n) + '" class="' + (armed ? 'armed' : '') + '">' + (armed ? '⚠ 한 번 더 = 삭제' : '🗑 명단에서 삭제') + '</button></div>' +
+         '<div class="hint">다른 곳에 들어간 날·✕·개인인 날은 건너뜁니다 · 삭제해도 인적자원 DB는 그대로</div>';
+    el.innerHTML = h; TPS.pop = { name:n };
+    tpPlacePop(el, anchor);
   }
 
   /* ── 그리기 ── */
@@ -12673,170 +12776,141 @@
     var a = win[0], b = win[win.length-1];
     return TPS.projects.filter(function(P){ return P.dates.some(function(d){ return d >= a && d <= b; }); }).sort(tpByDate);
   }
-  /* 👥 2026-10-21 대표 지시 «프로젝트 여러 개 클릭해서 한 번에 볼 수도» — 칩은 «켜고 끄는» 단추다.
-     · 안 고른 칩을 누르면 → 함께 보기에 들어오고 «편집 대상»이 된다(맨 나중에 누른 것)
-     · 고른 칩인데 편집 대상이 아니면 → 편집 대상만 바꾼다(빠지지 않는다)
-     · 편집 대상 칩을 또 누르면 → 빠진다(마지막 하나는 안 빠진다)
-     🔴 수정(드롭다운·날짜 칸·추가)은 «편집 대상»에만 적용된다 — 다른 칩은 «보기만». */
-  function tpPickAll(){
-    var vis = tpVisibleProjects(tpWin()).map(function(P){ return P.name; }), sel = TPS.sel || [];
-    var all = vis.length > 0 && vis.every(function(n){ return sel.indexOf(n) >= 0; });
-    TPS.sel = all ? [TPS.cur] : vis; TPS.allm = !all;        /* 전체 켜짐 → 편집 대상 하나만 · 아니면 → 전체 켜기 */
-    TPS.armed = ''; tpRender();
-  }
-  function tpPick(name){
-    var sel = (TPS.sel || []).slice(), i = sel.indexOf(name);
-    TPS.allm = false;                        /* 칩을 직접 누르면 「전체」 상태에서 나온다 */
-    if(i < 0){ sel.push(name); TPS.cur = name; }
-    else if(name !== TPS.cur){ TPS.cur = name; }
-    else if(sel.length > 1){ sel.splice(i, 1); TPS.cur = sel[sel.length-1]; }
-    TPS.sel = sel; TPS.armed = ''; tpRender();
+  function tpCellHtml(n, d, adm, f){
+    var c = tpCell(n, d), shoot = tpProjsOn(d).length > 0, wd = tpD(d).getDay();
+    var cls = 'tpac' + ((wd===0||wd===6) ? ' we' : '') + (d === TPS.today ? ' today' : ''), st = '', txt = '', tip = n + ' · ' + tpMD(d);
+    if(!adm && !(c && c.t === 'as' && c.k === '확정')) c = null;                  /* 팀은 확정만(서버도 그것만 보낸다) */
+    if(c && c.t === 'as'){
+      var col = tpColor(c.pk);
+      cls += c.k === '확정' ? ' k' : (c.k === '백업' ? ' b' : ' s');
+      st = '--pc:' + col;
+      txt = '<span class="nm">' + tpEsc(tpShort(c.pk)) + '</span><span class="mk">' + (c.k === '확정' ? '✓' : c.k === '백업' ? '백업' : '?') + '</span>';
+      tip += ' · ' + tpShort(c.pk) + ' ' + c.k;
+      if(c.more.length){ cls += ' bad'; tip += ' · ⚠ 같은 날 ' + c.more.map(function(m){ return tpShort(m.pk) + ' ' + m.k; }).join('·') + '에도 들어가 있음 — 눌러서 한 곳을 고르세요'; }
+      if(f && c.pk !== f) cls += ' dim';
+    } else if(c && c.t === 'x'){ cls += ' x'; txt = '✕'; tip += ' · 안 되는 날(모든 프로젝트)'; }
+    else if(c && c.t === 'bz'){ cls += ' bz'; txt = '개인'; tip += ' · 개인 일정'; }
+    else if(shoot){ cls += ' av'; txt = adm ? '·' : ''; tip += ' · 비어 있음(가능)'; }
+    else cls += ' none';
+    if(f && tpProj(f) && tpProj(f).dates.indexOf(d) >= 0) cls += ' hot';
+    return '<div class="' + cls + '"' + (adm ? ' data-cell="' + tpEsc(n) + '|' + d + '"' : '') + (st ? ' style="' + st + '"' : '') + ' title="' + tpEsc(tip) + '">' + txt + '</div>';
   }
   function tpRender(){
     var box = document.getElementById('tpBody'); if(!box || !TPS.loaded) return;
+    /* 🔴 작은 창이 열려 있으면 다시 그리지 않는다(서버 답·90초 새로고침이 «고르는 중인 창»을 닫아 버린다) — 창을 닫을 때 그린다 */
+    if(TPS.pop){ TPS.needRender = true; return; }
     var adm = TPS.edit, win = tpWin(), h = '';
     var vis = tpVisibleProjects(win);
     if(TPS.want){
-      /* #t/프로젝트이름 으로 들어오면 그 프로젝트가 «편집 대상»(전체는 그대로 켜짐). 촬영일이 보이는 기간이 아니면 기간을 옮긴다 */
+      /* #t/프로젝트이름 으로 들어오면 그 프로젝트만 진하게(나머지 흐리게). 촬영일이 보이는 기간이 아니면 기간을 옮긴다 */
       var w = tpProj(TPS.want); TPS.want = '';
-      if(w){ TPS.cur = w.name; TPS.sel = []; TPS.allm = true; if(win.indexOf(w.dates[0]) < 0){ TPS.from = tpAdd(w.dates[0], -3); win = tpWin(); vis = tpVisibleProjects(win); } }
+      if(w){ TPS.focus = w.name; if(win.indexOf(w.dates[0]) < 0){ TPS.from = tpAdd(w.dates[0], -3); win = tpWin(); vis = tpVisibleProjects(win); } }
     }
-    /* 고른 프로젝트 중 «지금 보이는 기간 밖»으로 나간 것은 뺀다. 「전체」 상태면 보이는 프로젝트를 전부 켠다 */
-    TPS.sel = (TPS.sel || []).filter(function(n){ return vis.some(function(p){ return p.name === n; }); });
-    if(TPS.allm !== false && vis.length) TPS.sel = vis.map(function(P){ return P.name; });
-    if(!TPS.sel.length){ if(vis.length) TPS.sel = vis.map(function(P){ return P.name; }); else if(TPS.projects[0]) TPS.sel = [TPS.projects[0].name]; }
-    if(!TPS.cur || TPS.sel.indexOf(TPS.cur) < 0) TPS.cur = TPS.sel.length ? TPS.sel[0] : '';
-    var cur = TPS.cur, P0 = tpProj(cur), sel = TPS.sel, multi = sel.length > 1;
-    var selDates = {}; sel.forEach(function(pk){ var Pk = tpProj(pk); if(Pk) Pk.dates.forEach(function(d){ selDates[d] = 1; }); });
-    function inSel(n){ return sel.some(function(pk){ return !!(TPS.S[pk]||{})[n]; }); }
+    if(TPS.focus && !vis.some(function(P){ return P.name === TPS.focus; })) TPS.focus = '';
+    var f = TPS.focus, P0 = f ? tpProj(f) : null;
 
     /* ── 사용법(접어 둔다) ── */
     if(adm){
       h += '<details class="tphelp"><summary>ℹ️ 사용법</summary><div class="hb">' +
-           '① 위에서 <b>프로젝트 칩</b>을 눌러 함께 볼 프로젝트를 고릅니다(굵은 테두리 = 편집 대상). 보이는 사람은 그 프로젝트에 <b>들어간 사람</b>뿐입니다.<br>' +
-           '② 사람은 간트의 <b>＋ 사람 추가</b>로 넣습니다(목록에서 고르거나 직접 입력).<br>' +
-           '③ 이름 아래 단추 = <b>전체 확정 ↔ 섭외중</b>. <b>날짜 칸을 왼쪽 클릭 = 그 날만 확정 ↔ 섭외중</b>, <b>오른쪽 클릭 = 그 날은 안 되는 날(✕)</b> — 끌면 여러 칸이 같이 바뀝니다(폰은 위 「✕ 모드」).<br>' +
-           '④ 카드에서 <b>필요 인원</b>을 고르면 <b>날짜마다</b> 다 찼는지·부족한지가 색으로 보입니다(간트 위 「충원」 줄에도).<br>' +
-           '⑤ 확정하면 프로젝트 정보 「PA팀」에 들어갑니다. 회색 칸 = 고르지 않은 프로젝트, 빨간 칸 = 같은 날 두 곳(겹침).</div></details>';
+           '① <b>한 칸 = 한 사람의 그 날.</b> 칸을 누르면 «이 날 어디로?» — 프로젝트 <b>확정 · 섭외중 · 백업</b>, <b>✕ 안 되는 날</b>(모든 프로젝트), <b>개인 일정</b>, <b>비우기</b>.<br>' +
+           '② <b>끌면 여러 칸</b>을 한 번에 고릅니다. <b>오른쪽 클릭</b> = 바로 ✕ ↔ 비움.<br>' +
+           '③ 한 사람은 <b>하루에 한 곳</b> — 다른 프로젝트를 고르면 <b>그쪽으로 옮겨집니다</b>. 확정자를 옮길 때 원래 프로젝트에 그날 백업이 있으면 «백업을 확정으로 올릴까요?»를 묻습니다.<br>' +
+           '④ 위 <b>칩</b> = 전체 ↔ 프로젝트 하나(나머지 흐리게 · 흐린 칸도 눌러서 고칠 수 있습니다).<br>' +
+           '⑤ <b>충원 줄 칸</b>을 누르면 그날 <b>비는 사람</b>이 뜨고 눌러서 바로 확정 · <b>이름</b>을 누르면 그 프로젝트 <b>전체 날 한 번에</b>.<br>' +
+           '⑥ 확정하면 프로젝트 정보 「PA팀」에 들어갑니다(백업·섭외중은 안 들어감).</div></details>';
     } else {
       h += '<div class="tphow">🔒 <b>내가 확정된 프로젝트</b>만 보입니다. 남의 일정·섭외 현황은 「관리」 이상만 봅니다.' +
            (TPS.note ? '<br>ℹ️ ' + tpEsc(TPS.note) : (!TPS.projects.length ? '<br>ℹ️ 아직 확정된 프로젝트가 없습니다 — 확정되면 여기에 나타납니다.' : '')) + '</div>';
     }
 
-    /* ── 프로젝트 칩 줄 ── */
-    h += '<div class="tpbar"><span class="tplb">프로젝트</span>';
-    if(vis.length > 1) h += '<button type="button" class="tpallb'+(sel.length >= vis.length ? ' on' : '')+'" data-tp="pickall" title="보이는 프로젝트를 전부 켜고 끕니다">전체 <small>'+vis.length+'</small></button>';
+    /* ── 칩 줄: 전체 ↔ 프로젝트 하나 ── */
+    h += '<div class="tpbar"><span class="tplb">보기</span>';
+    h += '<button type="button" class="tpallb' + (!f ? ' on' : '') + '" data-tp="focus" data-p="">전체 <small>' + vis.length + '</small></button>';
     vis.forEach(function(P){
-      h += '<button type="button" class="tppj'+(sel.indexOf(P.name)>=0?' on':'')+(multi&&P.name===cur?' tg':'')+'" data-tp="pick" data-p="'+tpEsc(P.name)+'" title="'+tpEsc(P.name)+(multi&&P.name===cur?' (편집 대상)':'')+'"><i style="background:'+tpColor(P.name)+'"></i>'+tpEsc(tpShort(P.name))+' <small>'+tpMD(P.dates[0])+(P.dates.length>1?'~'+tpMD(P.dates[P.dates.length-1]):'')+'</small>'+(adm && tpNeedTot(P.name) ? (function(){ var sm = tpProjSummary(P.name); return ' <b class="tpbd'+(sm.full.length>=sm.n?' ok':'')+'" title="필요 인원이 다 찬 날 / 촬영일">'+sm.full.length+'/'+sm.n+'일</b>'; })() : '')+'</button>';
+      var badge = '';
+      if(adm && tpNeedTot(P.name)){ var sm = tpProjSummary(P.name); badge = ' <b class="tpbd' + (sm.full.length >= sm.n ? ' ok' : '') + '" title="필요 인원이 다 찬 날 / 촬영일">' + sm.full.length + '/' + sm.n + '일</b>'; }
+      h += '<button type="button" class="tppj' + (f === P.name ? ' on' : '') + '" data-tp="focus" data-p="' + tpEsc(P.name) + '" title="' + tpEsc(P.name) + ' — 누르면 이 프로젝트만 진하게"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + ' <small>' + tpMD(P.dates[0]) + (P.dates.length > 1 ? '~' + tpMD(P.dates[P.dates.length-1]) : '') + '</small>' + badge + '</button>';
     });
     if(!vis.length) h += '<span class="tplb">이 기간에 촬영이 잡힌 프로젝트가 없습니다 →</span>';
     h += '<span style="flex:1"></span><button type="button" class="tpnav" data-tp="nav" data-n="-7">◀ 7일</button><button type="button" class="tpnav" data-tp="nav" data-n="0">오늘</button><button type="button" class="tpnav" data-tp="nav" data-n="7">7일 ▶</button><button type="button" class="tpnav" data-tp="reload" title="최신으로 다시 받기">🔄</button></div>';
-    if(multi && adm) h += '<div class="tpmulti">함께 보는 중 — 굵은 테두리 <b>'+tpEsc(tpShort(cur))+'</b> 가 편집 대상입니다(+사람 추가·이름 아래 단추·비우기는 여기에 적용 · 날짜 칸은 그 날짜의 프로젝트에 적용). 다른 칩을 누르면 편집 대상이 바뀌고, 편집 대상을 또 누르면 빠집니다.</div>';
 
-    /* ── 관리: 프로젝트 카드 · 도구줄 · 겹침 ── */
-    if(adm && P0){
-      var hintDone = false;
-      h += '<div class="tpcards">' + sel.map(function(pk){ var hi = !hintDone && !tpNeedTot(pk); if(hi) hintDone = true; return tpCardHtml(pk, hi); }).join('') + '</div>';
-      var cm0 = TPS.cmode || 'normal';
-      h += '<div class="tptool">' +
-           '<button type="button" class="tpmb'+(cm0==='x'?' on':'')+'" data-tp="cmode" data-m="x" title="오른쪽 클릭이 없는 폰·터치용 — 켜면 왼쪽 클릭이 «가능↔✕» 로 바뀝니다">✕ 모드</button>' +
-           '<button type="button" class="tpmb'+(cm0==='busy'?' on':'')+'" data-tp="cmode" data-m="busy" title="프로젝트와 상관없는 개인 일정(알바 등)을 아무 날에나 찍습니다">📌 개인 일정 모드</button>' +
-           '<span class="tpmh">' + (cm0 === 'busy' ? '<b>개인 일정 모드</b> — 아무 날이나 눌러 그 사람의 «개인 일정»(회색 「개인」)을 켜고 끕니다. 프로젝트 날과 겹치면 빨간 칸. 끝나면 버튼을 다시 누르세요.'
-              : cm0 === 'x' ? '<b>✕ 모드</b> — 칸을 누르면 그 날이 «가능 ↔ ✕(안 됨)» 로 바뀝니다. 끝나면 버튼을 다시 누르세요.'
-              : '칸 <b>왼쪽 클릭</b> = 그 날 <b>확정 ↔ 섭외중</b> · <b>오른쪽 클릭</b> = 그 날 <b>✕(안 되는 날) ↔ 가능</b> · 끌면 여러 칸') + '</span>' +
-           '<button type="button" class="tpclr'+(TPS.armed==='proj'?' armed':'')+'" data-tp="clearproj">'+(TPS.armed==='proj'?'⚠ 한 번 더 누르면 '+tpEsc(tpShort(cur))+' 비움':'🧹 '+tpEsc(tpShort(cur))+' 비우기')+'</button>'+
-           '<button type="button" class="tpclr'+(TPS.armed==='all'?' armed':'')+'" data-tp="clearall">'+(TPS.armed==='all'?'⚠ 한 번 더 누르면 전부 비웁니다':'🧹 전체 비우기 (이름만 남김)')+'</button></div>';
-      var cl = [], clSeen = {};
-      sel.forEach(function(pk){
-        TPS.roster.forEach(function(x){ var c = tpClashes(x.n, pk); if(c.length){ var t = x.n+' — '+c.map(function(o){ return tpShort(o); }).join('·')+tpJosa(c)+' 겹침'; if(!clSeen[t]){ clSeen[t] = 1; cl.push(t); } } });
-      });
-      if(cl.length) h += '<div class="tpclash">🔴 '+tpEsc(cl.join(' · '))+'</div>';
-    } else if(!adm && P0){
-      sel.forEach(function(pk){
-        var Pk = tpProj(pk); if(!Pk) return;
-        var crew = TPS.crew.filter(function(c){ return c.pj === pk; });
+    if(adm){
+      /* ── 필요 인원 · PA팀 확정자 (접어 둔다 — 안 정한 프로젝트가 있으면 펼쳐 둔다) ── */
+      var showP = P0 ? [P0] : vis, unset = showP.some(function(P){ return !tpNeedTot(P.name); });
+      if(showP.length){
+        h += '<details class="tpneedbox"' + (unset && !TPS.nbSeen ? ' open' : '') + '><summary>👥 필요 인원 · PA팀 확정자' + (unset ? ' <span class="lack">— 필요 인원을 안 정한 프로젝트가 있습니다</span>' : '') + '</summary>';
+        showP.forEach(function(P){
+          var cn = tpConfNames(P.name), arm = TPS.armed === 'proj:' + P.name;
+          h += '<div class="tpnb"><span class="pj"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + '</span>' +
+               TP_ROLES.map(function(r){ return '<span>' + r + ' ' + tpNeedSel(P.name, r, (TPS.need[P.name]||{})[r] || 0) + '</span>'; }).join('') +
+               '<span class="cf" title="프로젝트 정보 「PA팀」에 들어갈 확정자(견적서 금액은 안 바뀜)">PA팀 확정 ' + cn.length + '명' + (cn.length ? ': ' + cn.map(function(n){ return tpEsc(n) + tpDaysTxt(P.name, n); }).join(' · ') : '') + '</span>' +
+               '<button type="button" class="tpclr' + (arm ? ' armed' : '') + '" data-tp="clearproj" data-p="' + tpEsc(P.name) + '">' + (arm ? '⚠ 한 번 더 = 비움' : '🧹 비우기') + '</button></div>';
+        });
+        h += '<div class="tpnb"><button type="button" class="tpclr' + (TPS.armed === 'all' ? ' armed' : '') + '" data-tp="clearall">' + (TPS.armed === 'all' ? '⚠ 한 번 더 누르면 모든 프로젝트를 비웁니다' : '🧹 전체 비우기 (이름·✕·개인 일정은 남김)') + '</button></div></details>';
+      }
+      /* 편의 ③ — 백업 올리기 묻기 */
+      if(TPS.promo){
+        var pr = TPS.promo;
+        h += '<div class="tppromo">⬆ <b>' + tpEsc(tpShort(pr.pk)) + ' ' + tpMD(pr.d) + '</b> — ' + tpEsc(pr.from) + '이(가) 빠졌습니다. 백업 <b>' + tpEsc(pr.n) + '</b>을(를) 확정으로 올릴까요? ' +
+             '<button type="button" data-tp="promo" data-ok="1">올리기</button><button type="button" data-tp="promo" data-ok="">그대로</button></div>';
+      }
+      var cl = tpClashList();
+      if(cl.length) h += '<div class="tpclash">🔴 하루에 두 곳 — ' + tpEsc(cl.join(' · ')) + ' · 칸을 눌러 한 곳을 고르세요</div>';
+    } else if(TPS.projects.length){
+      TPS.projects.forEach(function(Pk){
+        var crew = TPS.crew.filter(function(c){ return c.pj === Pk.name; });
         var mine = TPS.me ? [{ n:TPS.me, r:tpRoleOf(TPS.me) }] : [];
-        h += '<div class="tpcrew"><span style="color:var(--sub)">'+tpEsc(tpShort(pk))+' 확정된 팀</span> '+
-             mine.concat(crew).map(function(c){ var off = (c.n===TPS.me) ? (((TPS.S[pk]||{})[c.n]||{}).off||[]) : (c.off||[]); var on = Pk.dates.filter(function(d){ return off.indexOf(d) < 0; });
-               return '<span class="n">'+tpEsc(c.n)+' · '+tpEsc(c.r||'')+(on.length<Pk.dates.length?' ('+on.map(tpMD).join(', ')+'만)':'')+'</span>'; }).join('')+'</div>';
+        h += '<div class="tpcrew"><span style="color:var(--sub)">' + tpEsc(tpShort(Pk.name)) + ' 확정된 팀</span> ' +
+             mine.concat(crew).map(function(c){ var off = (c.n === TPS.me) ? (((TPS.S[Pk.name]||{})[c.n]||{}).off||[]) : (c.off||[]); var on = Pk.dates.filter(function(d){ return off.indexOf(d) < 0; });
+               return '<span class="n">' + tpEsc(c.n) + ' · ' + tpEsc(c.r||'') + (on.length < Pk.dates.length ? ' (' + on.map(tpMD).join(', ') + '만)' : '') + '</span>'; }).join('') + '</div>';
       });
     }
-    /* 👥 2026-10-21 대표 지시 «처음은 아무도 없는걸로» — 명단이 비어 있을 때 «무엇을 하면 되나»를 한 줄로 */
     if(adm && !TPS.roster.length) h += '<div class="tpcrew" style="color:var(--sub)">아직 아무도 없습니다 — 아래 PA·조명·DIT 칸에서 이름을 골라 <b>＋ 사람 추가</b> 하세요. (목록에 없으면 직접 입력)</div>';
     h += '<div class="tpstat" id="tpStat"></div>';
+    TPS.nbSeen = true;                                  /* 필요 인원 칸은 «처음 한 번만» 저절로 펼친다 — 그 뒤엔 접은 채로 둔다 */
 
-    /* ── 간트 ── */
-    var curDates = P0 ? P0.dates : [];
-    var g = '<div class="tprow"><div class="tpgl"><span class="sub">사람 \\ 날짜</span></div>';
+    /* ── 사람 × 날짜 한 장 ── */
+    var g = '<div class="tparow tpahead"><div class="tpal"><span class="sub">사람 \\ 날짜</span></div>';
     win.forEach(function(d, i){
-      var wd = tpD(d).getDay(), parts = d.split('-');
-      g += '<div class="tpgh'+((wd===0||wd===6)?' we':'')+(d===TPS.today?' today':'')+(curDates.indexOf(d)>=0?' hot':(selDates[d]?' hot2':''))+'"><b>'+((i===0||parts[2]==='01')?tpMD(d):String(+parts[2]))+'</b>'+TP_WN[wd]+'</div>';
+      var wd = tpD(d).getDay(), parts = d.split('-'), shoot = tpProjsOn(d).length > 0;
+      g += '<div class="tpah' + ((wd===0||wd===6) ? ' we' : '') + (d === TPS.today ? ' today' : '') + (P0 && P0.dates.indexOf(d) >= 0 ? ' hot' : (shoot ? ' sh' : '')) + '"><b>' + ((i===0||parts[2]==='01') ? tpMD(d) : String(+parts[2])) + '</b>' + TP_WN[wd] + '</div>';
     });
     g += '</div>';
-    /* 날짜마다 «충원» 줄 — 필요 인원을 정한 프로젝트만 */
-    if(adm) sel.forEach(function(pk){
-      var Pk = tpProj(pk); if(!Pk || !tpNeedTot(pk)) return;
-      g += '<div class="tprow tpcov"><div class="tpgl"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+tpColor(pk)+';margin-right:5px"></i>'+tpEsc(tpShort(pk))+' 충원</span></div>';
+    if(adm) (P0 ? [P0] : vis).forEach(function(Pk){
+      g += '<div class="tparow tpacov"><div class="tpal"><span class="cvl"><i style="background:' + tpColor(Pk.name) + '"></i>' + tpEsc(tpShort(Pk.name)) + ' 충원</span></div>';
       win.forEach(function(d){
         if(Pk.dates.indexOf(d) < 0){ g += '<div class="tpcv off"></div>'; return; }
-        var cv = tpDayCov(pk, d);
-        g += '<div class="tpcv '+cv.st+'" title="'+tpEsc(tpShort(pk)+' '+tpMD(d)+' · '+TP_ROLES.map(function(r){ var x = cv.by[r]; return x.n ? r+' '+x.c+'/'+x.n : ''; }).filter(Boolean).join(' · ')+(cv.lack.length ? ' · 부족: '+tpLackTxt(cv) : ' · 다 참'))+'">'+cv.fill+'/'+cv.tot+(cv.lack.length ? '<small>−'+cv.lack.reduce(function(a, x){ return a + x.k; }, 0)+'</small>' : '<small>✓</small>')+'</div>';
+        var cv = tpDayCov(Pk.name, d);
+        var big = cv.st === 'unset' ? '확정' + cv.any : cv.fill + '/' + cv.tot;
+        var small = cv.st === 'unset' ? '' : (cv.lack.length ? '−' + cv.lack.reduce(function(a, x){ return a + x.k; }, 0) : '✓');
+        g += '<div class="tpcv ' + cv.st + '" data-tp="cov" data-p="' + tpEsc(Pk.name) + '" data-d="' + d + '" title="' + tpEsc(tpShort(Pk.name) + ' ' + tpMD(d) + ' · ' + (cv.st === 'unset' ? '필요 인원 안 정함 · 확정 ' + cv.any + '명' : TP_ROLES.map(function(r){ var x = cv.by[r]; return x.n ? r + ' ' + x.c + '/' + x.n : ''; }).filter(Boolean).join(' · ') + (cv.lack.length ? ' · 부족: ' + tpLackTxt(cv) : ' · 다 참')) + ' — 누르면 그날 비는 사람') + '">' + big + (small ? '<small>' + small + '</small>' : '') + '</div>';
       });
       g += '</div>';
     });
     var roles = adm ? TP_ROLES : (TPS.me && tpRoleOf(TPS.me) ? [tpRoleOf(TPS.me)] : []);
     roles.forEach(function(r){
       if(adm){
-        var haveCur = TPS.S[cur] || {};
-        var opts = TPS.db.filter(function(x){ return x.r === r && !tpRoleOf(x.n); }).map(function(x){ return x.n; })
-                     .concat(TPS.roster.filter(function(x){ return x.r === r && !haveCur[x.n]; }).map(function(x){ return x.n; }))
-                     .map(function(n){ return '<option value="'+tpEsc(n)+'">'; }).join('');
-        g += '<div class="tphead"><b>'+r+'</b><span class="tpaddw"><input class="tpaddp" data-r="'+r+'" list="tpdl-'+r+'" placeholder="＋ 사람 추가 — 목록에서 고르거나 직접 입력" autocomplete="off"><datalist id="tpdl-'+r+'">'+opts+'</datalist><button type="button" class="tpaddb" data-tp="addp" data-r="'+r+'">추가</button></span></div>';
+        var opts = TPS.db.filter(function(x){ return x.r === r && !tpRoleOf(x.n); }).map(function(x){ return '<option value="' + tpEsc(x.n) + '">'; }).join('');
+        g += '<div class="tphead"><b>' + r + '</b><span class="tpaddw"><input class="tpaddp" data-r="' + r + '" list="tpdl-' + r + '" placeholder="＋ 사람 추가 — 목록에서 고르거나 직접 입력" autocomplete="off"><datalist id="tpdl-' + r + '">' + opts + '</datalist><button type="button" class="tpaddb" data-tp="addp" data-r="' + r + '">추가</button></span></div>';
       }
-      var rowsR = TPS.roster.filter(function(x){ return x.r === r && (adm ? inSel(x.n) : x.n === TPS.me); });
-      rowsR.forEach(function(x, ix){
-        var n = x.n, st = tpStOf(cur, n), cl2 = tpClashes(n, cur), ee = (TPS.S[cur]||{})[n];
-        var ctl = '';
-        if(adm){ var pl = tpPillOf(n); ctl = '<button type="button" class="tppill '+pl.k+'" data-tp="pill" data-n="'+tpEsc(n)+'" data-st="'+pl.st+'" title="'+tpEsc(pl.tip)+'">'+tpEsc(pl.t)+'</button>'; }
-        else if(st === '확정') ctl = '<span class="sub" style="color:var(--team);font-weight:800">✓ 확정</span>';
-        var mvH = adm?'<span class="tpmv"><button type="button" data-tp="mvup" data-n="'+tpEsc(n)+'" title="위로"'+(ix===0?' disabled':'')+'>▲</button><button type="button" data-tp="mvdn" data-n="'+tpEsc(n)+'" title="아래로"'+(ix===rowsR.length-1?' disabled':'')+'>▼</button></span>':'';
-        var rmH = (adm && ee)?'<button type="button" class="tprm'+(TPS.armed==='r:'+n?' armed':'')+'" data-tp="rmp" data-n="'+tpEsc(n)+'" title="'+tpEsc(tpShort(cur))+'에서 이 사람 빼기(명단엔 남음)">'+(TPS.armed==='r:'+n?'⚠ 뺄까요?':'빼기')+'</button>':'';
-        var delH = adm?'<button type="button" class="tpdel'+(TPS.armed==='p:'+n?' armed':'')+'" data-tp="delp" data-n="'+tpEsc(n)+'" title="간트 명단에서 이 사람을 아예 삭제">'+(TPS.armed==='p:'+n?'⚠ 삭제?':'🗑')+'</button>':'';
-        g += '<div class="tprow" data-n="'+tpEsc(n)+'"><div class="tpgl"><div class="top"><b>'+tpEsc(n)+'</b>'+(cl2.length?'<span class="tpclb" title="'+tpEsc(cl2.map(tpShort).join('·')+tpJosa(cl2)+' 같은 날 겹침')+'">⚠ 겹침</span>':'')+'</div>'+
-             '<div class="tpctl">'+ctl+(adm?'<span class="tpicons">'+mvH+rmH+delH+'</span>':'')+'</div></div>';
-        win.forEach(function(d, i){
-          var inner = '', selOn = false, onN = 0, tip = [];
-          TPS.projects.forEach(function(P){
-            var e = (TPS.S[P.name]||{})[n]; if(!e || P.dates.indexOf(d) < 0) return;
-            var isOff = e.off.indexOf(d) >= 0;
-            if(!adm && e.st !== '확정') return;
-            var dc = tpDayConf(e, d);
-            if(sel.indexOf(P.name) >= 0){
-              if(isOff){ inner += '<div class="tpseg offd" title="이 날은 안 됨">✕</div>'; tip.push(tpShort(P.name)+' — 이 날은 안 됨'); return; }
-              selOn = true; onN++; inner += '<div class="tpseg'+(dc?' c':' s')+'" style="--pc:'+tpColor(P.name)+'">'+tpEsc(tpShort(P.name))+'</div>';
-            } else {
-              if(isOff) return;
-              onN++; inner += '<div class="tpseg o'+(dc?' c':' s')+'">'+tpEsc(tpShort(P.name))+'</div>';
-            }
-            tip.push(P.name+' ('+(dc?'확정':'섭외중')+')');
-          });
-          var isBusy = adm && ((TPS.bz||{})[n]||[]).indexOf(d) >= 0;
-          if(isBusy){ inner += '<div class="tpseg bz" title="개인 일정(알바 등)">개인</div>'; tip.push('개인 일정'); }
-          var wd = tpD(d).getDay(), hot = curDates.indexOf(d) >= 0, hot2 = !hot && !!selDates[d], bad = selOn && (onN > 1 || isBusy);
-          var cmN = TPS.cmode || 'normal', canClick = adm && (cmN === 'busy' || !!tpProjAt(d));
-          g += '<div class="tpgc'+((wd===0||wd===6)?' we':'')+(d===TPS.today?' today':'')+(hot?' hot':'')+(hot2?' hot2':'')+(bad?' bad':'')+'"'+(canClick?' data-act="day" data-n="'+tpEsc(n)+'" data-d="'+d+'"':'')+' title="'+tpEsc((bad?'⚠ 같은 날 두 곳에 들어가 있음 — ':'')+n+' · '+tpMD(d)+(tip.length?' · '+tip.join(' / '):' · 비어 있음'))+'">'+inner+'</div>';
-        });
+      TPS.roster.filter(function(x){ return x.r === r && (adm || x.n === TPS.me); }).forEach(function(x){
+        g += '<div class="tparow"><div class="tpal">' + (adm ? '<button type="button" class="tpnm" data-tp="name" data-n="' + tpEsc(x.n) + '" title="누르면 전체 날 한 번에 · 순서 · 삭제">' + tpEsc(x.n) + ' <span>▾</span></button>' : '<b>' + tpEsc(x.n) + '</b>') + '</div>';
+        win.forEach(function(d){ g += tpCellHtml(x.n, d, adm, f); });
         g += '</div>';
       });
     });
     h += '<div class="tpscroll">' + g + '</div>';
-    h += '<div class="tplegend"><span><span class="k"></span>확정(✓)</span><span><span class="k v"></span>섭외중(?)</span><span>✕ 안 되는 날</span><span><span class="k g"></span>고르지 않은 프로젝트</span><span><span class="k r"></span>겹침</span><span><span class="k" style="background:repeating-linear-gradient(135deg,#d6d9df 0 3px,#eceef2 3px 6px)"></span>개인 일정</span><span>충원 줄: <b style="color:#14603a">초록=다 참</b> · <b style="color:#86480a">주황=부족</b> · <b style="color:#a01a1a">빨강=0명</b></span></div>';
+    h += '<div class="tplegend"><span><span class="k"></span>확정 ✓</span><span><span class="k v"></span>섭외중 ?</span><span><span class="k bk"></span>백업</span><span><span class="k xx"></span>✕ 안 되는 날(사람)</span><span><span class="k" style="background:repeating-linear-gradient(135deg,#d6d9df 0 3px,#eceef2 3px 6px)"></span>개인 일정</span><span>· = 촬영 날인데 비어 있음</span><span><span class="k r"></span>하루에 두 곳</span><span>충원: <b style="color:#14603a">초록=다 참</b> · <b style="color:#86480a">주황=부족</b> · <b style="color:#a01a1a">빨강=0명</b></span></div>';
     /* 다시 그려도 «쓰던 입력칸 글자·커서»를 잃지 않게 — 입력 중이면 값만 옮긴다 */
     var act = document.activeElement, keepV = '', keepR = '';
     if(act && act.classList && act.classList.contains('tpaddp')){ keepV = act.value; keepR = act.getAttribute('data-r'); }
     var wasOpen = []; [].slice.call(box.querySelectorAll('details')).forEach(function(d0, i0){ if(d0.open) wasOpen.push(i0); });   /* 접어 둔 칸을 다시 그려도 «펼친 채» 유지 */
+    var firstNb = !box.querySelector('details.tpneedbox');
+    var sx = 0; var sc0 = box.querySelector('.tpscroll'); if(sc0) sx = sc0.scrollLeft;          /* 옆으로 민 자리도 유지 */
     box.innerHTML = h;
+    if(!firstNb) [].slice.call(box.querySelectorAll('details')).forEach(function(d1){ d1.open = false; });
     wasOpen.forEach(function(i0){ var d1 = box.querySelectorAll('details')[i0]; if(d1) d1.open = true; });
+    var sc1 = box.querySelector('.tpscroll'); if(sc1 && sx) sc1.scrollLeft = sx;
     tpPaintStat();
     if(keepR){ var ni = box.querySelector('input.tpaddp[data-r="'+keepR+'"]'); if(ni){ ni.value = keepV; ni.focus(); } }
   }
@@ -12853,7 +12927,7 @@
     TPS.shown = true; if(want) TPS.want = want;
     /* 🔴 다른 사람으로 로그인했거나 로그아웃했다면, 앞 사람의 데이터를 «잠깐이라도» 보여주지 않는다 */
     var tk = appTok();
-    if(TPS.tok !== tk){ TPS.loaded = false; TPS.d = null; TPS.S = {}; TPS.roster = []; TPS.projects = []; TPS.crew = []; TPS.db = []; TPS.q = []; TPS.msg = null; TPS.dirty = ''; TPS.cur = ''; TPS.sel = []; TPS.allm = true; TPS.need = {}; TPS.bz = {}; TPS.from = ''; TPS.tok = tk; TPS.mut++; }
+    if(TPS.tok !== tk){ TPS.loaded = false; TPS.d = null; TPS.S = {}; TPS.roster = []; TPS.projects = []; TPS.crew = []; TPS.db = []; TPS.q = []; TPS.msg = null; TPS.dirty = ''; TPS.need = {}; TPS.bz = {}; TPS.no = {}; TPS.focus = ''; TPS.promo = null; TPS.pop = null; TPS.nbSeen = false; TPS.from = ''; TPS.tok = tk; TPS.mut++; }
     if(TPS.loaded){ tpRender(); tpLoad(true, true); } else tpLoad(false);
     clearInterval(TPS.timer);
     TPS.timer = setInterval(function(){
@@ -12866,53 +12940,85 @@
     var t = document.getElementById('vTeam'); if(t) t.hidden = true;
   }
 
-  /* ── 눌림 ── */
+  /* ── 눌림 (👥 2026-10-27 A안) ──
+     · 칸 누름 = «이 날 어디로?» 작은 창 · 끌면 여러 칸을 고른 뒤 한 번에 · 오른쪽 클릭 = 바로 ✕ ↔ 비움
+     · 충원 칸 = 그날 비는 사람 · 이름 = 전체 날 한 번에 · 바깥을 누르거나 Esc = 작은 창 닫기 */
   (function(){
     var root = document.getElementById('vTeam'); if(!root) return;
+    function decV(s){
+      if(!s) return null;
+      if(s === 'x' || s === 'bz') return { t:s };
+      var a = s.split('|'); return { t:'as', k:a[1], pk:a.slice(2).join('|') };
+    }
     root.addEventListener('click', function(e){
       var b = e.target.closest ? e.target.closest('[data-tp]') : null; if(!b) return;
       var a = b.getAttribute('data-tp');
-      if(a === 'pick'){ tpPick(b.getAttribute('data-p')); return; }
-      if(a === 'pickall'){ tpPickAll(); return; }
-      if(a === 'cmode'){ var m0 = b.getAttribute('data-m') || 'normal'; TPS.cmode = (TPS.cmode === m0) ? 'normal' : m0; tpRender(); return; }
-      if(a === 'pill'){ if(TPS.edit) tpPill(b.getAttribute('data-n')); return; }
-      if(a === 'rmp'){ if(!TPS.edit) return; var rn = b.getAttribute('data-n'); if(TPS.armed === 'r:'+rn) tpSetState(rn, ''); else tpArm('r:'+rn); return; }
-      if(a === 'mvup' || a === 'mvdn'){ if(TPS.edit && !b.disabled) tpMove(b.getAttribute('data-n'), a === 'mvup' ? -1 : 1); return; }
-      if(a === 'nav'){
-        var n = +b.getAttribute('data-n'); TPS.from = n === 0 ? TPS.today : tpAdd(TPS.from || TPS.today, n); tpRender(); return;
-      }
-      if(a === 'reload'){ e.preventDefault(); TPS.loaded = TPS.loaded; tpLoad(true, true); return; }
+      if(a === 'focus'){ tpClosePop(); TPS.focus = b.getAttribute('data-p') || ''; tpRender(); return; }
+      if(a === 'nav'){ tpClosePop(); var n = +b.getAttribute('data-n'); TPS.from = n === 0 ? TPS.today : tpAdd(TPS.from || TPS.today, n); tpRender(); return; }
+      if(a === 'reload'){ e.preventDefault(); tpClosePop(); tpLoad(true, true); return; }
       if(!TPS.edit && a !== 'undo') return;
-      if(a === 'clearproj'){ if(TPS.armed === 'proj') tpClearProj(); else tpArm('proj'); return; }
+      if(a === 'popv'){ var pc = TPS.pop && TPS.pop.cells; if(pc) tpChoose(pc, decV(b.getAttribute('data-v'))); return; }
+      if(a === 'cov'){ tpClosePop(); tpOpenCov(b.getAttribute('data-p'), b.getAttribute('data-d'), b); return; }
+      if(a === 'covpick'){ tpChoose([b.getAttribute('data-n') + '|' + b.getAttribute('data-d')], { t:'as', pk:b.getAttribute('data-p'), k:'확정' }); return; }
+      if(a === 'name'){ var wasN = TPS.pop && TPS.pop.name === b.getAttribute('data-n'); tpClosePop(); if(!wasN) tpOpenName(b.getAttribute('data-n'), b); return; }
+      if(a === 'setall'){ tpSetAll(b.getAttribute('data-n'), b.getAttribute('data-p'), b.getAttribute('data-k') || ''); return; }
+      if(a === 'mvup' || a === 'mvdn'){ tpMove(b.getAttribute('data-n'), a === 'mvup' ? -1 : 1); return; }
+      if(a === 'delp'){
+        var dn = b.getAttribute('data-n');
+        if(TPS.armed === 'p:' + dn){ tpDelPerson(dn); return; }
+        TPS.armed = 'p:' + dn; b.classList.add('armed'); b.textContent = '⚠ 한 번 더 = 삭제';
+        clearTimeout(TPS.armTimer); TPS.armTimer = setTimeout(function(){ TPS.armed = ''; if(b.isConnected){ b.classList.remove('armed'); b.textContent = '🗑 명단에서 삭제'; } }, 4000);
+        return;
+      }
+      if(a === 'promo'){
+        var pr = TPS.promo; TPS.promo = null;
+        if(pr && b.getAttribute('data-ok')) tpChoose([pr.n + '|' + pr.d], { t:'as', pk:pr.pk, k:'확정' });
+        else tpRender();
+        return;
+      }
+      if(a === 'clearproj'){ var cp = b.getAttribute('data-p'); if(TPS.armed === 'proj:' + cp) tpClearProj(cp); else tpArm('proj:' + cp); return; }
       if(a === 'clearall'){ if(TPS.armed === 'all') tpClearAll(); else tpArm('all'); return; }
-      if(a === 'delp'){ var dn = b.getAttribute('data-n'); if(TPS.armed === 'p:'+dn) tpDelPerson(dn); else tpArm('p:'+dn); return; }
       if(a === 'addp'){ var r0 = b.getAttribute('data-r'), inp = root.querySelector('input.tpaddp[data-r="'+r0+'"]'); tpAddPerson(r0, inp ? inp.value : ''); return; }
       if(a === 'undo'){ TPS.armed = ''; tpEnqueue({ act:'restore', bk:b.getAttribute('data-bk') }, '되돌렸습니다.'); return; }
     });
     root.addEventListener('change', function(e){
-      var t = e.target; if(t.matches && t.matches('select[data-tp="sel"]') && TPS.edit) tpSetState(t.getAttribute('data-n'), t.value);
+      var t = e.target;
       if(t.matches && t.matches('.tpneed') && TPS.edit) tpSetNeed(t.getAttribute('data-p'), t.getAttribute('data-r'), t.value);
     });
+    /* 칸 고르기 — 누르고(끌면 여러 칸) 떼면 작은 창 */
     root.addEventListener('mousedown', function(e){
-      if(!TPS.edit || (e.button !== 0 && e.button !== 2)) return;
-      var c = e.target.closest ? e.target.closest('.tpgc[data-act="day"]') : null; if(!c) return;
+      var pop = document.getElementById('tpPop');
+      if(pop && !pop.hidden && !pop.contains(e.target) && !(e.target.closest && e.target.closest('[data-tp="name"],[data-tp="cov"]'))) tpClosePop();
+      if(!TPS.edit || e.button !== 0 || e.ctrlKey) return;
+      var c = e.target.closest ? e.target.closest('.tpac[data-cell]') : null; if(!c) return;
       e.preventDefault();
-      var n = c.getAttribute('data-n'), d = c.getAttribute('data-d');
-      var right = (e.button === 2) || (e.button === 0 && e.ctrlKey);      /* 맥은 ⌃클릭 = 오른쪽 클릭 */
-      var k = tpKindAt(right, n, d); if(!k) return;
-      TPS.drag = { k:k, last:'', ch:[] };
-      tpDragStep(n, d);
-    });
-    root.addEventListener('contextmenu', function(e){
-      var c = e.target.closest ? e.target.closest('.tpgc[data-act="day"]') : null;
-      if(TPS.edit && c) e.preventDefault();           /* 칸 위의 오른쪽 클릭은 «메뉴» 대신 ✕ 로 쓴다 */
+      tpClosePop();
+      TPS.drag = { cells:[c.getAttribute('data-cell')], last:c };
+      c.classList.add('tpsel');
     });
     root.addEventListener('mouseover', function(e){
       if(!TPS.drag) return;
-      var c = e.target.closest ? e.target.closest('.tpgc[data-act="day"]') : null; if(!c) return;
-      tpDragStep(c.getAttribute('data-n'), c.getAttribute('data-d'));
+      var c = e.target.closest ? e.target.closest('.tpac[data-cell]') : null; if(!c) return;
+      var k = c.getAttribute('data-cell'); if(TPS.drag.cells.indexOf(k) >= 0) return;
+      if(TPS.drag.cells.length >= 150) return;
+      TPS.drag.cells.push(k); TPS.drag.last = c; c.classList.add('tpsel');
     });
-    document.addEventListener('mouseup', tpDragEnd);
+    document.addEventListener('mouseup', function(){
+      if(!TPS.drag) return;
+      var dr = TPS.drag; TPS.drag = null;
+      tpOpenPop(dr.cells, dr.last);
+      dr.cells.forEach(function(k){ var el = root.querySelector('.tpac[data-cell="' + k.replace(/"/g, '\\"') + '"]'); if(el) el.classList.add('tpsel'); });
+    });
+    /* 오른쪽 클릭(맥 ⌃클릭) = 바로 ✕ ↔ 비움 */
+    root.addEventListener('contextmenu', function(e){
+      var c = e.target.closest ? e.target.closest('.tpac[data-cell]') : null;
+      if(!TPS.edit || !c) return;
+      e.preventDefault();
+      var k = c.getAttribute('data-cell'), a = k.split('|'), cur = tpCell(a[0], a[1]);
+      tpChoose([k], (cur && cur.t === 'x') ? null : { t:'x' });
+    });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && TPS.pop) tpClosePop(); });
+    window.addEventListener('scroll', function(e){ var tg = e.target; if(TPS.pop && !(tg && tg.closest && tg.closest('#tpPop'))) tpClosePop(); }, true);
     root.addEventListener('keydown', function(e){
       if(e.key === 'Enter' && !e.isComposing && e.target.classList && e.target.classList.contains('tpaddp')){
         e.preventDefault(); tpAddPerson(e.target.getAttribute('data-r'), e.target.value);
