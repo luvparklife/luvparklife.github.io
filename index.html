@@ -11713,6 +11713,19 @@
           /* ↩️ 여러 회차를 한 번에 바꿨을 때만 «되돌리기»를 붙인다 */
           if(hitIdx.length > 1) pjDayUndoToast_(locWord, proj, day.rows);
           else pjToast(locWord);
+          /* 📍 2026-10-28 대표 신고 *"로케이션 노션 저장하고 위치도 저장했는데 위치는 회차 로케 정보에 안뜨는데"*
+             [원인] 회차 줄 주소는 노션을 «바로» 안 읽는다 — 노션 「위치」 → 정산앱 → 시트 「_네트워크캐시」 를 거치고,
+                    그 캐시는 새벽 5시 또는 「🔄 다시 불러오기」 때만 새로 받는다. 방금 등록한 곳은 캐시에 없다.
+             [고침] 이 창에서 노션에 «새로 등록»한 로케를 저장했으면 「🔄 다시 불러오기」와 «같은 길»을 저절로 한 번 돈다(§4-1 — 새 길 안 만듦).
+             되돌리기 = "로케 등록 뒤 자동 불러오기 빼줘" */
+          if(KV_NOTION_DONE && key === '로케이션'){
+            KV_NOTION_DONE = '';
+            var _sy = document.getElementById('pjSync');
+            /* 🔴 여러 회차를 바꿨으면 «↩️ 되돌리기»(10초) 알림을 덮지 않게 그 뒤에 돈다 */
+            var _many = hitIdx.length > 1;
+            if(_sy) setTimeout(function(){ if(!_many) pjToast('📍 노션에서 주소를 받아오는 중… (몇 초)'); _sy.click(); },
+                               _many ? 10500 : 1200);
+          }
         });
         return;
       }
