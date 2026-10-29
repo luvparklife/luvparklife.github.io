@@ -1495,6 +1495,10 @@
     #vTeam .tpacov .tpcv.full{background:#e4f5ea;color:#14603a}
     #vTeam .tpacov .tpcv.unset{background:#f3f4f6;color:var(--sub)}
     #vTeam .tpah .tplk{display:inline-block;margin-top:2px;background:#d93025;color:#fff;font-style:normal;font-size:10.5px;font-weight:900;border-radius:9px;padding:0 6px}
+    #vTeam .tppop .tpdn{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12.5px;background:#f3f6ff;border:1px solid #d6e0ff;border-radius:8px;padding:6px 8px;margin:0 0 8px}
+    #vTeam .tppop .tpdn b{font-size:12px;color:#2346a0}
+    #vTeam .tppop .tpdn .h{flex-basis:100%;font-size:11px;color:var(--sub)}
+    #vTeam .tpacov .tpcv .od{font-size:9.5px;font-weight:800;color:#2346a0;background:#e3ebff;border-radius:6px;padding:0 4px}
     #vTeam .tpah .tpok{display:inline-block;margin-top:2px;color:#14603a;font-style:normal;font-size:10.5px;font-weight:900}
     #vTeam .tpacov .tpcv.off{cursor:default}
     #vTeam .tpacov .tpcv:not(.off):hover{outline:2px solid #f5b400;outline-offset:-2px}
@@ -12664,18 +12668,21 @@
   function tpUnpackE(e, P){ if(e.st !== '확정') return; e.st = '섭외중'; e.bk = []; e.cf = tpOnDaysE(e, P); }
   function tpConfNames(pk){ var o = TPS.S[pk] || {}; return Object.keys(o).filter(function(n){ return tpIsConfE(o[n]); }); }
   /* 필요 인원 대비 */
-  function tpNeedTot(pk){ var o = TPS.need[pk] || {}; return (o.PA||0) + (o['조명']||0) + (o.DIT||0); }
+  function tpNeedTot(pk){ var o = TPS.need[pk] || {}, s = (o.PA||0) + (o['조명']||0) + (o.DIT||0); if(!s && o._d) Object.keys(o._d).forEach(function(d){ TP_ROLES.forEach(function(r){ s += o._d[d][r] || 0; }); }); return s; }
+  /* 👥 2026-10-29 촬영일마다 필요 인원이 다를 수 있다 — 그날만 정한 값이 있으면 그것, 없으면 프로젝트 기본값 */
+  function tpNeedOn(pk, d, r){ var o = TPS.need[pk] || {}, od = o._d && o._d[d]; return (od && od[r] != null) ? od[r] : (o[r] || 0); }
+  function tpNeedOv(pk, d){ var o = TPS.need[pk] || {}; return !!(o._d && o._d[d] && Object.keys(o._d[d]).length); }
   /* «날짜마다» 충원 현황 — 역할별 «그 날 확정된 사람 수» 대 «필요 인원» */
   function tpDayCov(pk, d){
-    var need = TPS.need[pk] || {}, o = TPS.S[pk] || {}, tot = 0, fill = 0, lack = [], by = {}, any = 0;
+    var o = TPS.S[pk] || {}, tot = 0, fill = 0, lack = [], by = {}, any = 0;
     TP_ROLES.forEach(function(r){
-      var nd = need[r] || 0, c = 0;
+      var nd = tpNeedOn(pk, d, r), c = 0;
       Object.keys(o).forEach(function(n){ if(tpRoleOf(n) !== r) return; var e = o[n]; if(e.off.indexOf(d) < 0 && tpDayConf(e, d)) c++; });
       any += c; by[r] = { c:c, n:nd }; tot += nd; fill += Math.min(c, nd); if(nd > c) lack.push({ r:r, k:nd - c });
     });
     return { tot:tot, fill:fill, lack:lack, by:by, any:any, st: !tot ? 'unset' : (!lack.length ? 'full' : (fill === 0 ? 'none' : 'part')) };
   }
-  function tpFreeBack(pk, d){ var o = TPS.S[pk] || {}, k = 0; Object.keys(o).forEach(function(n){ if(tpInProj(pk, n, d) && !tpDayConf(o[n], d) && !tpConfOn(n, d)) k++; }); return k; }
+  function tpFreeBack(pk, d, roles){ var o = TPS.S[pk] || {}, k = 0; Object.keys(o).forEach(function(n){ if((!roles || roles.indexOf(tpRoleOf(n)) >= 0) && tpInProj(pk, n, d) && !tpDayConf(o[n], d) && !tpConfOn(n, d)) k++; }); return k; }   /* 모자란 역할의 백업만 센다 */
   function tpLackSum(cv){ return cv.lack.reduce(function(a, x){ return a + x.k; }, 0); }
   function tpLackTxt(cv){ return cv.lack.map(function(x){ return x.r + ' −' + x.k; }).join(' · '); }
   function tpProjSummary(pk){
@@ -12883,6 +12890,16 @@
     tpRender();
     tpEnqueue({ act:'need', proj:pk, r:r, n:v }, tpShort(pk) + ' ' + r + ' 필요 ' + v + '명');
   }
+  function tpSetNeedDay(pk, d, r, v){
+    var o = (TPS.need[pk] = TPS.need[pk] || {}), clr = (v === '' || v == null);
+    if(!clr){ v = parseInt(v, 10); if(!isFinite(v) || v < 0) v = 0; if(v > 30) v = 30; }
+    o._d = o._d || {}; var od = o._d[d] = o._d[d] || {};
+    if(clr) delete od[r]; else od[r] = v;
+    if(!Object.keys(od).length) delete o._d[d]; if(!Object.keys(o._d).length) delete o._d; if(!Object.keys(o).length) delete TPS.need[pk];
+    var anc = TPS.pop && TPS.pop.anc; if(TPS.pop && TPS.pop.cov === pk + '|' + d) tpOpenCov(pk, d, anc);
+    TPS.needRender = true;
+    tpEnqueue({ act:'need', proj:pk, r:r, n:clr ? '' : v, d:d }, tpShort(pk) + ' ' + tpMD(d) + ' ' + r + (clr ? ' 기본값으로' : ' 이날 ' + v + '명'));
+  }
   /* 사람 순서 — 같은 역할 이웃과 자리를 맞바꾼다 */
   function tpMove(n, dir){
     tpClosePop();
@@ -12990,7 +13007,7 @@
     var projs = TPS.projects.filter(function(P){ return days.some(function(d){ return P.dates.indexOf(d) >= 0; }); }).sort(tpByDate);
     projs.forEach(function(P){
       var lk = '';
-      if(one){ var cv = tpDayCov(P.name, d0), nd = (TPS.need[P.name]||{})[role] || 0; if(nd && cv.by[role].c < nd) lk = '<em>' + tpEsc(role) + ' 부족</em>'; }
+      if(one){ var cv = tpDayCov(P.name, d0), nd = tpNeedOn(P.name, d0, role); if(nd && cv.by[role].c < nd) lk = '<em>' + tpEsc(role) + ' 부족</em>'; }
       var inP = one && tpInProj(P.name, n0, d0), isC = inP && tpDayConf(TPS.S[P.name][n0], d0);
       h += '<div class="grp"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + (inP ? ' <small>— 지금 ' + (isC ? '확정' : '백업') + '</small>' : '') + '</div><div class="row3">';
       h += tpOptBtn({ t:'as', pk:P.name, k:'확정' }, '확정', isC, lk);
@@ -13010,10 +13027,16 @@
   /* 편의 ① «충원 칸 → 그날 비는 사람» — 부족한 역할(필요 인원을 안 정했으면 모든 역할)의 사람을
      «비어 있음 → 이 프로젝트 백업 → 다른 곳 백업 → 다른 곳 확정(옮기기)» 순으로. 누르면 이 프로젝트 확정 */
   function tpOpenCov(pk, d, anchor){
-    var el = tpPopEl(), cv = tpDayCov(pk, d), need = TPS.need[pk] || {};
+    var el = tpPopEl(), cv = tpDayCov(pk, d), need = {}, base = TPS.need[pk] || {}, od = (base._d && base._d[d]) || {};
+    TP_ROLES.forEach(function(r){ need[r] = tpNeedOn(pk, d, r); });
     var roles = cv.lack.length ? cv.lack.map(function(x){ return x.r; }) : TP_ROLES.filter(function(r){ return !need[r] || cv.by[r].c < need[r]; });
     if(!roles.length) roles = TP_ROLES.slice();
     var h = '<h5><i style="background:' + tpColor(pk) + '"></i>' + tpEsc(tpShort(pk)) + ' · ' + tpMD(d) + ' ' + TP_WN[tpD(d).getDay()] + ' — ' + (cv.st === 'unset' ? '확정 ' + cv.any + '명' : cv.fill + '/' + cv.tot + (cv.lack.length ? ' · ' + tpLackTxt(cv) : ' ✓ 다 참')) + '</h5>';
+    h += '<div class="tpdn"><b>이날 필요 인원</b>' + TP_ROLES.map(function(r){
+      var o = '<option value=""' + (od[r] == null ? ' selected' : '') + '>기본 ' + (base[r] || 0) + '명</option>';
+      for(var i = 0; i <= 20; i++) o += '<option value="' + i + '"' + (od[r] === i ? ' selected' : '') + '>이날 ' + i + '명</option>';
+      return '<span>' + r + ' <select class="tpneed tpneedd" data-p="' + tpEsc(pk) + '" data-d="' + d + '" data-r="' + r + '">' + o + '</select></span>';
+    }).join('') + '<span class="h">«기본» = 위 «필요 인원»에 적은 프로젝트 전체 숫자 · 이 날만 다르면 여기서 고르세요</span></div>';
     var any = false;
     roles.forEach(function(r){
       var free = [], here = [], otherB = [], otherC = [];
@@ -13036,7 +13059,7 @@
       });
     });
     if(any) h += '<div class="hint">누르면 ' + tpEsc(tpShort(pk)) + ' ' + tpMD(d) + ' 확정 · 다른 곳 «확정»에서 오면 거기서는 빠지고, 그쪽 백업을 올릴지 묻습니다</div>';
-    el.innerHTML = h; TPS.pop = { cov:pk + '|' + d };
+    el.innerHTML = h; TPS.pop = { cov:pk + '|' + d, anc:anchor };
     tpPlacePop(el, anchor);
   }
   /* 편의 ② 이름 메뉴 — 프로젝트별 «전체 날» + 순서 + 삭제 */
@@ -13138,7 +13161,7 @@
       /* ── 필요 인원 · PA팀 확정자 (접어 둔다 — 안 정한 프로젝트가 있으면 펼쳐 둔다) ── */
       var showP = P0 ? [P0] : vis, unset = showP.some(function(P){ return !tpNeedTot(P.name); });
       if(showP.length){
-        h += '<details class="tpneedbox"' + (unset && !TPS.nbSeen ? ' open' : '') + '><summary>👥 필요 인원 · PA팀 확정자' + (unset ? ' <span class="lack">— 필요 인원을 안 정한 프로젝트가 있습니다</span>' : '') + '</summary>';
+        h += '<details class="tpneedbox"' + (unset && !TPS.nbSeen ? ' open' : '') + '><summary>👥 필요 인원 · PA팀 확정자' + (unset ? ' <span class="lack">— 필요 인원을 안 정한 프로젝트가 있습니다</span>' : '') + '</summary><div class="hint" style="font-size:11.5px;color:var(--sub);margin:2px 0 4px">여기는 프로젝트 «기본» 숫자입니다 · 날마다 다르면 아래 «충원» 칸을 눌러 «이날 필요 인원»을 고르세요</div>';
         showP.forEach(function(P){
           var cn = tpConfNames(P.name), arm = TPS.armed === 'proj:' + P.name;
           h += '<div class="tpnb"><span class="pj"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + '</span>' +
@@ -13183,9 +13206,10 @@
       win.forEach(function(d){
         if(Pk.dates.indexOf(d) < 0){ g += '<div class="tpcv off"></div>'; return; }
         var cv = tpDayCov(Pk.name, d);
-        var fb = cv.lack.length ? tpFreeBack(Pk.name, d) : 0;
+        var fb = cv.lack.length ? tpFreeBack(Pk.name, d, cv.lack.map(function(x){ return x.r; })) : 0;
         var big = cv.st === 'unset' ? '<span class="rl">인원 미정</span>' : cv.lack.length ? '<span class="lk">' + tpLackSum(cv) + '명 부족</span>' : '<span class="lk">✓ 다 참</span>';
         var small = cv.st === 'unset' ? '<span class="rl">확정 ' + cv.any + '명</span>' : cv.lack.length ? '<span class="rl">' + cv.lack.map(function(x){ return x.r + ' ' + x.k; }).join(' · ') + '</span>' + (fb ? '<span class="bk">백업 ' + fb + '명 있음</span>' : '') : '<span class="rl">' + cv.fill + '명</span>';
+        if(tpNeedOv(Pk.name, d)) small += '<span class="od">이날만</span>';
         g += '<div class="tpcv ' + cv.st + '" data-tp="cov" data-p="' + tpEsc(Pk.name) + '" data-d="' + d + '" title="' + tpEsc(tpShort(Pk.name) + ' ' + tpMD(d) + ' · ' + (cv.st === 'unset' ? '필요 인원 안 정함 · 확정 ' + cv.any + '명' : TP_ROLES.map(function(r){ var x = cv.by[r]; return x.n ? r + ' ' + x.c + '/' + x.n : ''; }).filter(Boolean).join(' · ') + (cv.lack.length ? ' · 부족: ' + tpLackTxt(cv) : ' · 다 참')) + ' — 누르면 그날 비는 사람') + '">' + big + small + '</div>';
       });
       g += '</div>';
@@ -13287,6 +13311,7 @@
     });
     root.addEventListener('change', function(e){
       var t = e.target;
+      if(t.matches && t.matches('.tpneedd') && TPS.edit){ tpSetNeedDay(t.getAttribute('data-p'), t.getAttribute('data-d'), t.getAttribute('data-r'), t.value); return; }
       if(t.matches && t.matches('.tpneed') && TPS.edit) tpSetNeed(t.getAttribute('data-p'), t.getAttribute('data-r'), t.value);
     });
     /* 칸 고르기 — 누르고(끌면 여러 칸) 떼면 작은 창 */
