@@ -1452,7 +1452,7 @@
     #vTeam .tpskel{height:16px;border-radius:6px;background:var(--line2);margin:9px 0}
     #vTeam .tphead2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px}
     /* ═══ 👥 2026-10-27 A안 — 사람×날짜 한 장 (한 칸 = 한 사람의 그 날) ═══ */
-    #vTeam .tparow{display:grid;grid-template-columns:150px repeat(21,54px);min-width:1284px;border-top:1px solid var(--line2)}
+    #vTeam .tparow{display:grid;grid-template-columns:140px repeat(21,74px);min-width:1694px;border-top:1px solid var(--line2)}
     #vTeam .tparow:first-child{border-top:0}
     #vTeam .tpal{padding:3px 8px;font-size:12px;display:flex;align-items:center;min-width:0;background:var(--card);position:sticky;left:0;z-index:2;border-right:1px solid var(--line)}
     #vTeam .tpal .sub{font-size:10.5px;color:var(--faint);white-space:nowrap}
@@ -1470,20 +1470,27 @@
     #vTeam .tpacov .tpcv{cursor:pointer}
     #vTeam .tpacov .tpcv.off{cursor:default}
     #vTeam .tpacov .tpcv:not(.off):hover{outline:2px solid #f5b400;outline-offset:-2px}
-    #vTeam .tpac{border-left:1px solid var(--line2);min-height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:800;line-height:1.15;margin:2px;border-radius:6px;overflow:hidden;white-space:nowrap}
+    #vTeam .tpac{border-left:1px solid var(--line2);min-height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:800;line-height:1.15;margin:2px;border-radius:6px;overflow:hidden;white-space:nowrap}
     #vTeam .tpac[data-cell]{cursor:pointer}
     #vTeam .tpac[data-cell]:hover{box-shadow:inset 0 0 0 100px #00000010}
     #vTeam .tpac.we{background:var(--bg)}
     #vTeam .tpac.today{border-left:2px solid #e0a800}
     #vTeam .tpac.hot{box-shadow:inset 0 0 0 100px #ffec9933}
-    #vTeam .tpac .nm{max-width:50px;overflow:hidden;text-overflow:ellipsis;font-size:10.5px}
-    #vTeam .tpac .mk{font-size:10px;font-weight:900}
+    #vTeam .tpac .ln{display:flex;align-items:baseline;gap:3px;max-width:100%;padding:0 3px}
+    #vTeam .tpac .nm{overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:800}
+    #vTeam .tpac .mk{font-size:11.5px;font-weight:900;flex:none}
+    /* 🔴 2026-10-28 — 칸을 넓히자 옆으로 밀면 «＋ 사람 추가» 칸이 화면 밖으로 밀려 나갔다. 줄은 표 폭만큼, 안쪽 글자만 왼쪽에 붙어 있게 */
+    #vTeam .tphead.tpahd{position:static;min-width:1694px;display:block;padding:5px 8px}
+    #vTeam .tpscroll{padding-bottom:16px}       /* 마지막 줄(사람이 없는 역할의 «＋ 사람 추가»)이 가로 스크롤바에 가리지 않게 */
+    #vTeam .tphead.tpahd .tphw{position:sticky;left:8px;display:inline-flex;align-items:center;gap:10px}
+    #vTeam .tpac.b .ln{flex-direction:column;align-items:center;gap:0;line-height:1.1}
+    #vTeam .tpac.b .mk{font-size:10.5px}
     #vTeam .tpac.k{background:var(--pc);color:#fff;border:1.5px solid var(--pc)}
     #vTeam .tpac.s{background:var(--card);color:var(--pc);border:2px dashed var(--pc)}
     #vTeam .tpac.b{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pc) 22%,#fff) 0 5px,#fff 5px 10px);color:var(--pc);border:2px solid var(--pc)}
     #vTeam .tpac.x{background:#fde7e5;color:#b42318;font-size:14px}
     #vTeam .tpac.bz{background:repeating-linear-gradient(135deg,#d6d9df 0 4px,#eceef2 4px 8px);color:#4b5563}
-    #vTeam .tpac.av{color:#2f8a52;font-size:16px;font-weight:900}
+    #vTeam .tpac.av{color:#2f8a52;font-size:11.5px;font-weight:700}
     #vTeam .tpac.none{background:transparent}
     #vTeam .tpac.dim{opacity:.25}
     #vTeam .tpac.bad{outline:2px solid #c0392b;outline-offset:-2px}
@@ -12501,7 +12508,15 @@
   function tpAdd(iso, n){ var d = tpD(iso); if(!d) return iso; d.setDate(d.getDate()+n); return tpIso(d); }
   function tpMD(iso){ var d = tpD(iso); return d ? (d.getMonth()+1)+'/'+d.getDate() : iso; }
   function tpWin(){ var a = [], f = TPS.from || TPS.today; for(var i=0;i<TP_DAYS;i++) a.push(tpAdd(f,i)); return a; }
-  function tpColor(name){ var h = 0, s = String(name); for(var i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0; return TP_COLORS[h % TP_COLORS.length]; }
+  /* 👥 2026-10-28 대표 지적 «레이아웃이 안 바뀐 것 같은데» — 이름으로 색을 뽑으면 COACH·N사처럼 «비슷한 청록»이 겹쳤다.
+     → 촬영일 순서대로 «확실히 다른 색»을 하나씩 준다(팔레트가 모자라면 그때만 이름으로) */
+  var TP_PAL = ['#2f6fdb','#8a3fd1','#d23f31','#e08a00','#0f8a6a','#d6337f','#5f8f00','#4b5563'];
+  function tpColor(name){
+    var i = (TPS.colorIx || {})[name]; if(i != null) return TP_PAL[i % TP_PAL.length];
+    var h = 0, s = String(name); for(var k=0;k<s.length;k++) h = (h*31 + s.charCodeAt(k)) >>> 0; return TP_COLORS[h % TP_COLORS.length];
+  }
+  /* 칸에 들어갈 «짧은 이름» — 날짜 접두어·(예시) 를 떼고 첫 덩어리만(COACH_Elaine… → COACH) */
+  function tpTiny(name){ var s = tpShort(String(name).replace(/^\([^)]*\)\s*/, '')).replace(/^\d{6}_/, ''); var f = s.split('_').filter(Boolean)[0] || s; return f.length > 8 ? f.slice(0, 7) + '…' : f; }
   function tpShort(n){ return String(n).replace(/^\d{6}_/, '') || String(n); }
   function tpProj(name){ for(var i=0;i<TPS.projects.length;i++) if(TPS.projects[i].name === name) return TPS.projects[i]; return null; }
   function tpRoleOf(n){ for(var i=0;i<TPS.roster.length;i++) if(TPS.roster[i].n === n) return TPS.roster[i].r; return ''; }
@@ -12525,6 +12540,7 @@
     TPS.projects = (d.projects || []).filter(function(P){ return !P.dates || !P.dates.length || P.dates[P.dates.length-1] >= (d.today || TPS.today || ''); });
     TPS.roster = (d.roster||[]).slice(); TPS.crew = d.crew || []; TPS.db = d.db || []; TPS.note = d.note || '';
     tpIngestRows(d.rows); TPS.need = d.need || {}; TPS.bz = d.busy || {}; TPS.no = d.no || {};
+    TPS.colorIx = {}; TPS.projects.slice().sort(tpByDate).forEach(function(P, i){ TPS.colorIx[P.name] = i; });
     if(!TPS.from) TPS.from = TPS.today;
     TPS.loaded = true;
   }
@@ -12940,7 +12956,7 @@
       var col = tpColor(c.pk);
       cls += c.k === '확정' ? ' k' : ' b';
       st = '--pc:' + col;
-      txt = '<span class="nm">' + tpEsc(tpShort(c.pk)) + '</span><span class="mk">' + (c.k === '확정' ? '✓' : '백업') + '</span>';
+      txt = '<span class="ln"><span class="nm">' + tpEsc(tpTiny(c.pk)) + '</span><span class="mk">' + (c.k === '확정' ? '✓' : '백업') + '</span></span>';
       tip += ' · ' + tpShort(c.pk) + ' ' + c.k;
       if(adm && c.bk && c.bk.length){
         txt += '<span class="bks">' + c.bk.map(function(x){ return '<i style="background:' + tpColor(x) + '"></i>'; }).join('') + '<b>+백업' + (c.bk.length > 1 ? c.bk.length : '') + '</b></span>';
@@ -12951,7 +12967,7 @@
       if(f && c.pk !== f) cls += ' dim';
     } else if(c && c.t === 'x'){ cls += ' x'; txt = '✕'; tip += ' · 안 되는 날(모든 프로젝트)'; }
     else if(c && c.t === 'bz'){ cls += ' bz'; txt = '개인'; tip += ' · 개인 일정'; }
-    else if(shoot){ cls += ' av'; txt = adm ? '·' : ''; tip += ' · 비어 있음(가능)'; }
+    else if(shoot){ cls += ' av'; txt = adm ? '· 가능' : ''; tip += ' · 비어 있음(가능)'; }
     else cls += ' none';
     if(f && tpProj(f) && tpProj(f).dates.indexOf(d) >= 0) cls += ' hot';
     return '<div class="' + cls + '"' + (adm ? ' data-cell="' + tpEsc(n) + '|' + d + '"' : '') + (st ? ' style="' + st + '"' : '') + ' title="' + tpEsc(tip) + '">' + txt + '</div>';
@@ -13052,7 +13068,7 @@
     roles.forEach(function(r){
       if(adm){
         var opts = TPS.db.filter(function(x){ return x.r === r && !tpRoleOf(x.n); }).map(function(x){ return '<option value="' + tpEsc(x.n) + '">'; }).join('');
-        g += '<div class="tphead"><b>' + r + '</b><span class="tpaddw"><input class="tpaddp" data-r="' + r + '" list="tpdl-' + r + '" placeholder="＋ 사람 추가 — 목록에서 고르거나 직접 입력" autocomplete="off"><datalist id="tpdl-' + r + '">' + opts + '</datalist><button type="button" class="tpaddb" data-tp="addp" data-r="' + r + '">추가</button></span></div>';
+        g += '<div class="tphead tpahd"><span class="tphw"><b>' + r + '</b><span class="tpaddw"><input class="tpaddp" data-r="' + r + '" list="tpdl-' + r + '" placeholder="＋ 사람 추가 — 목록에서 고르거나 직접 입력" autocomplete="off"><datalist id="tpdl-' + r + '">' + opts + '</datalist><button type="button" class="tpaddb" data-tp="addp" data-r="' + r + '">추가</button></span></span></div>';
       }
       TPS.roster.filter(function(x){ return x.r === r && (adm || x.n === TPS.me); }).forEach(function(x){
         g += '<div class="tparow"><div class="tpal">' + (adm ? '<button type="button" class="tpnm" data-tp="name" data-n="' + tpEsc(x.n) + '" title="누르면 전체 날 한 번에 · 순서 · 삭제">' + tpEsc(x.n) + ' <span>▾</span></button>' : '<b>' + tpEsc(x.n) + '</b>') + '</div>';
