@@ -73,6 +73,12 @@ p{margin:7px 0}
   font:inherit; font-size:11.5px; font-weight:800; line-height:1.25; text-align:center}
 #mini button small{display:block; font-weight:600; font-size:9.5px; opacity:.82}
 #mini .mdel{grid-column:1/-1; background:#fff!important; color:var(--warn)!important; border-style:dashed!important}
+/* 📋 2026-10-30 — 복사·붙여넣기 버튼 줄 + 잠깐 뜨는 안내(저장 상태 칸은 2초 타이머가 덮어서 따로 둔다) */
+#mini .mclipRow{grid-column:1/-1; display:flex; gap:5px}
+#mini .mclipRow button{flex:1; background:#f4f4f6!important; color:var(--ink)!important}
+#tsToast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:200; background:#222; color:#fff;
+  font-size:13px; font-weight:700; padding:9px 16px; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.25);
+  display:none; max-width:calc(100% - 32px); text-align:center}
 #mini button.hover{border-color:var(--ink); border-width:2px; transform:scale(1.06);
   box-shadow:0 3px 10px rgba(0,0,0,.28); z-index:1}
 .grp{margin-top:9px}
@@ -254,9 +260,11 @@ p{margin:7px 0}
   </div>
 </div>
 <div id="mini"><div class="mhead" id="miniHead"></div><div class="mrow" id="miniRow"></div></div>
+<div id="tsToast"></div>
 
 <div class="note" style="margin-top:8px">
   <span id="pickHow">🅐 칸을 누르면 즉시 색판이 뜹니다. 누른 채 밀어서 원하는 색 위에서 손을 떼면 그 색이 골라집니다.</span>
+  <br><span>📋 드래그로 고르고 <b>⌘C</b> → 붙일 칸(또는 여러 날)을 누르거나 드래그하고 <b>⌘V</b> · 잘못 붙였으면 <b>⌘Z</b> · 노션·구글시트에도 그대로 붙습니다</span>
 </div>
 <div id="brushPal" hidden>
   <div class="favrow" id="fav"></div>
@@ -792,6 +800,19 @@ p{margin:7px 0}
       var t=btn(CMAP[brush]); t.style.gridColumn='1/-1'; row.appendChild(t);
     }
     usedTop().forEach(function(id){ if(id!==brush) row.appendChild(btn(CMAP[id])); });
+    /* 📋 2026-10-30 — 키보드(⌘C·⌘V) 말고 눌러서도 되게. 붙여넣기는 이 화면 안에서 복사한 것만(버튼은
+       맥 클립보드를 못 읽는다 — 읽으려면 브라우저가 매번 허락을 묻는다) */
+    var cr=document.createElement('div'); cr.className='mclipRow';
+    var cp=document.createElement('button'); cp.type='button';
+    cp.textContent = '📋 복사'+(targets.length>1?' ('+targets.length+'칸)':'');
+    cp.onclick=function(e){ e.stopPropagation(); copyTargets_(targets, true); miniClose(); clearSelectionVisual(); selection=[]; };
+    cr.appendChild(cp);
+    if(CLIP){
+      var ps=document.createElement('button'); ps.type='button'; ps.textContent='📥 붙여넣기';
+      ps.onclick=function(e){ e.stopPropagation(); pasteInto_(targets, CLIP); miniClose(); clearSelectionVisual(); selection=[]; };
+      cr.appendChild(ps);
+    }
+    row.appendChild(cr);
     var del=document.createElement('button'); del.type='button'; del.className='mdel';
     del.textContent = targets.length>1 ? '× 이 '+targets.length+'칸 비우기' : '× 이 칸 비우기';
     del.onclick=function(e){
@@ -828,6 +849,197 @@ p{margin:7px 0}
     if(!m || m.style.display!=='block') return;
     if(m.__opened && Date.now()-m.__opened < 350) return;
     if(!m.contains(e.target)){ miniClose(); clearSelectionVisual(); selection=[]; }
+  });
+
+  /* ══════════ 복사·붙여넣기·되돌리기 (2026-10-30 대표 지시) ══════════
+     대표 원문: "시간표 기록에서 드래그해서 복사 붙혀넣기 가능하게" + 같이 넣을 것 3개 모두 선택
+     (⌘Z 되돌리기 · 노션·시트로 글자 복사 · 여러 날 반복 붙이기).
+     · 복사 = 고른 칸의 «색+글자»를 CLIP 에 담고, 맥 클립보드에는 «글자만» 탭/줄바꿈 표(TSV)로 넣는다
+       → 노션·구글시트에 붙이면 표가 된다. 시간표에 다시 붙일 때 클립보드 글자가 CLIP 과 같으면 색까지 옮긴다.
+     · 붙여넣기 = 고른 칸의 «왼쪽 위»부터 붙는다. 고른 범위가 복사한 것보다 크면 반복해서 채운다
+       (하루치 복사 → 여러 날 드래그 → ⌘V = 고른 날 전부에 같은 하루).
+     · 📗 에버노트 원본 날은 건너뛴다 — 손대면 그 날 원본이 통째로 새 체계로 바뀌고 되돌릴 수 없어서.
+     · 되돌리기 = 붙여넣기 «만» 되돌린다(최근 20번). 칠하기·글자치기는 원래대로 되돌리기 없음. */
+  var CLIP=null, UNDO=[];
+  function toast_(msg){
+    var t=document.getElementById('tsToast'); if(!t) return;
+    t.textContent=msg; t.style.display='block';
+    clearTimeout(toast_.tm); toast_.tm=setTimeout(function(){ t.style.display='none'; }, 2600);
+  }
+  function normClipText_(s){ return String(s||'').replace(/\r\n?/g,'\n').replace(/\n$/,''); }
+  function box_(targets){
+    var b={r0:1e9, r1:-1, i0:1e9, i1:-1};
+    targets.forEach(function(t){
+      var r=(ROWIDX[t.d]!=null)?ROWIDX[t.d]:0;
+      if(r<b.r0) b.r0=r; if(r>b.r1) b.r1=r;
+      if(t.i<b.i0) b.i0=t.i; if(t.i>b.i1) b.i1=t.i;
+    });
+    return b;
+  }
+  /* 지금 «고른 것» — 색판이 떠 있으면 그 칸들, 아니면 드래그 선택, 아니면 커서가 든 칸 하나 */
+  function currentTargets_(){
+    var m=document.getElementById('mini');
+    if(m.style.display==='block' && m.__targets && m.__targets.length) return m.__targets;
+    if(selection.length) return selection;
+    var a=document.activeElement;
+    if(a && a.__di) return [a.__di];
+    return null;
+  }
+  function copyTargets_(targets, viaButton){
+    if(!targets || !targets.length) return null;
+    var b=box_(targets), rows=[];
+    for(var r=b.r0; r<=b.r1; r++){
+      var d=ROWORDER[r]; if(d==null) continue;
+      var row=[];
+      for(var i=b.i0; i<=b.i1; i++){
+        var cell=data[d][i];
+        /* 원본 날의 색은 옛 색표(hex)라 지금 색으로 못 옮긴다 — 글자만 가져간다 */
+        row.push({c: cell.past ? null : cell.c, t: cell.t||''});
+      }
+      rows.push(row);
+    }
+    var text=rows.map(function(row){
+      return row.map(function(x){ return x.t.replace(/[\t\r\n]+/g,' '); }).join('\t');
+    }).join('\n');
+    CLIP={rows:rows, text:normClipText_(text)};
+    if(viaButton){
+      try{ navigator.clipboard.writeText(text).catch(function(){}); }catch(e){}
+    }
+    var n=rows.length*(rows[0]?rows[0].length:0);
+    toast_('📋 '+n+'칸 복사했습니다'+(rows.length>1?' ('+rows.length+'일)':'')+' — 붙일 칸을 누르고 ⌘V');
+    return text;
+  }
+  /* 클립보드 글자 → 붙일 내용. null = 이 앱이 안 받고 «보통 글자 붙여넣기»로 둔다 */
+  function clipFromText_(txt, inCell){
+    var s=normClipText_(txt);
+    if(CLIP && (s===CLIP.text || s==='')) return CLIP;   /* 이 화면에서 복사한 것 → 색까지 */
+    if(!s) return null;
+    if(s.indexOf('\t')<0 && s.indexOf('\n')<0){
+      if(inCell) return null;                            /* 칸 안에서 한 줄 붙이기는 원래 동작 그대로 */
+      return {rows:[[{t:s.trim(), ext:true}]]};
+    }
+    /* 노션·구글시트에서 복사한 표 → 글자만 붙인다(색은 그 칸 색 유지 + 비어 있으면 자동 색) */
+    return {rows: s.split('\n').map(function(l){
+      return l.split('\t').map(function(t){ return {t:t.trim(), ext:true}; });
+    })};
+  }
+  function pasteInto_(targets, src){
+    if(!targets || !targets.length || !src || !src.rows.length) return;
+    if(!canEdit_()) return;   /* 🚨 2026-09-29 — 서버에서 못 읽었으면 쓰지 않는다 */
+    try{ document.activeElement.blur(); }catch(e){}
+    var b=box_(targets);
+    var h=src.rows.length, w=src.rows[0].length;
+    if(!w) return;
+    /* 고른 범위가 복사한 것보다 크면 그만큼 반복, 작으면(칸 하나) 복사한 크기 그대로 */
+    var H=Math.max(b.r1-b.r0+1, h), W=Math.max(b.i1-b.i0+1, w);
+    var snap={}, touched=0, skippedPast=0;
+    for(var r=0; r<H; r++){
+      var d=ROWORDER[b.r0+r]; if(d==null) break;
+      if(DAY_PAST[d]){ skippedPast++; continue; }
+      for(var k=0; k<W; k++){
+        var i=b.i0+k; if(i>=HOURS.length) break;
+        var s=src.rows[r%h][k%w]; if(!s) continue;
+        if(!snap[d]) snap[d]=cellsForDay(d);
+        var cell=data[d][i];
+        cell.t=s.t;
+        if(s.ext){ autoColor(cell); }
+        else { cell.c=s.c; if(cell.t.trim() && cell.c) memory[key(cell.t)]=cell.c; }
+        if(cell.inp) cell.inp.value=cell.t;
+        if(cell.inp2){ cell.inp2.value=cell.t; fitTA_(cell.inp2); }
+        refreshCell(d,i);
+        touched++;
+      }
+    }
+    var days=Object.keys(snap);
+    days.forEach(function(dk){
+      var d=Number(dk);
+      if(!dayFilled_(cellsForDay(d))) allowEmptySave_(d);   /* 빈 칸을 붙여 하루가 비면 «일부러» 비운 것 */
+      markDirty(d);
+    });
+    totals();
+    if(touched){
+      UNDO.push(snap); if(UNDO.length>20) UNDO.shift();
+      toast_('📥 '+touched+'칸 붙였습니다'+(days.length>1?' ('+days.length+'일)':'')+' — 잘못이면 ⌘Z');
+    } else if(skippedPast){
+      toast_('📗 에버노트 원본 날에는 붙이지 않습니다');
+    }
+  }
+  function undoPaste_(){
+    var snap=UNDO.pop();
+    if(!snap){ toast_('되돌릴 붙여넣기가 없습니다'); return; }
+    if(!canEdit_()){ UNDO.push(snap); return; }
+    try{ document.activeElement.blur(); }catch(e){}
+    Object.keys(snap).forEach(function(dk){
+      var d=Number(dk), prev=snap[dk];
+      prev.forEach(function(p,i){
+        var cell=data[d][i]; cell.c=p.c; cell.t=p.t;
+        if(cell.inp) cell.inp.value=cell.t;
+        if(cell.inp2){ cell.inp2.value=cell.t; fitTA_(cell.inp2); }
+        refreshCell(d,i);
+      });
+      if(!dayFilled_(prev)) allowEmptySave_(d);   /* 빈 날에 붙였던 것을 되돌리면 다시 빈 날 */
+      markDirty(d);
+    });
+    totals();
+    toast_('↩️ 붙여넣기를 되돌렸습니다');
+  }
+  /* ⌘C — 칸 안 글자를 «긁어» 고른 상태면 보통 복사. 아니면 고른 칸을 복사 */
+  var copyEvtFired=false, pasteEvtFired=false;
+  document.addEventListener('copy', function(e){
+    copyEvtFired=true;
+    var a=document.activeElement;
+    if(a && (a.tagName==='TEXTAREA'||a.tagName==='INPUT') && a.selectionStart!==a.selectionEnd) return;
+    var t=currentTargets_(); if(!t) return;
+    var text=copyTargets_(t, false);
+    if(text==null) return;
+    e.clipboardData.setData('text/plain', text);
+    e.preventDefault();
+    miniClose(); clearSelectionVisual(); selection=[];
+  });
+  document.addEventListener('paste', function(e){
+    pasteEvtFired=true;
+    var a=e.target, txt='';
+    try{ txt=(e.clipboardData||window.clipboardData).getData('text/plain')||''; }catch(err){}
+    var targets, src;
+    if(a && a.__di){
+      src=clipFromText_(txt, true); if(!src) return;
+      targets=[a.__di];
+    } else if(a && (a.tagName==='TEXTAREA'||a.tagName==='INPUT')){
+      return;
+    } else {
+      targets=currentTargets_(); if(!targets) return;
+      src=clipFromText_(txt, false); if(!src) return;
+    }
+    e.preventDefault();
+    pasteInto_(targets, src);
+    miniClose(); clearSelectionVisual(); selection=[];
+  });
+  /* 브라우저에 따라 «글자칸이 아닌 곳»에서는 copy/paste 이벤트가 안 뜰 수 있다(사파리) → 키로 한 번 더 받친다 */
+  document.addEventListener('keydown', function(e){
+    if(!(e.metaKey||e.ctrlKey) || e.altKey) return;
+    var tg=e.target && e.target.tagName;
+    var inField=(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT');
+    var k=(e.key||'').toLowerCase();
+    if(k==='z' && !e.shiftKey && !inField && UNDO.length){ e.preventDefault(); undoPaste_(); return; }
+    if(inField) return;
+    if(k==='c'){
+      var t=currentTargets_(); if(!t) return;
+      copyEvtFired=false;
+      setTimeout(function(){
+        if(copyEvtFired) return;
+        var text=copyTargets_(t, false);
+        try{ navigator.clipboard.writeText(text).catch(function(){}); }catch(err){}
+        miniClose(); clearSelectionVisual(); selection=[];
+      }, 60);
+    } else if(k==='v'){
+      var t2=currentTargets_(); if(!t2 || !CLIP) return;
+      pasteEvtFired=false;
+      setTimeout(function(){
+        if(pasteEvtFired) return;
+        pasteInto_(t2, CLIP);
+        miniClose(); clearSelectionVisual(); selection=[];
+      }, 60);
+    }
   });
 
   /* ══════════ 수면 ══════════ */
@@ -911,6 +1123,7 @@ p{margin:7px 0}
              다음에 열 때 진짜 기록을 덮는다(위 SERVER_LOADED 설명). 읽어오면 buildWeek 가 다시
              돌면서(loadFromServer 의 cb) 저절로 풀린다. */
           var inp=document.createElement('textarea'); inp.rows=1; inp.value=cell.t;
+          inp.__di={d:d, i:i};   /* 📋 2026-10-30 — 붙여넣기가 «어느 칸»인지 알게 */
           inp.readOnly = past || !SERVER_LOADED;
           var ime=false;
           inp.addEventListener('compositionstart',function(){ ime=true; });
@@ -1003,6 +1216,7 @@ p{margin:7px 0}
       var hh=document.createElement('span'); hh.className='hh'; hh.textContent=hlabel(cell.h);
       var bd=document.createElement('div'); bd.className='hbody';
       var inp=document.createElement('textarea'); inp.rows=1; inp.value=cell.t;
+      inp.__di={d:0, i:i};   /* 📋 2026-10-30 */
       inp.readOnly=!SERVER_LOADED;   /* 🚨 2026-09-29 — 위 2주 그리드와 같은 이유 */
       inp.placeholder=SERVER_LOADED?'한 일을 적으세요':'불러오는 중…';
       var ime=false;
