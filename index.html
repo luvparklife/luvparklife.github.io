@@ -539,6 +539,18 @@
     .pj2 .tkatt:hover{color:#1a56c4}
     .pj2 .tkatt b{font-size:10.5px; font-weight:700}
     .pj2 .tkfiles{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:4px 8px; margin:0 0 3px 22px}
+    /* 💬 2026-10-29 확인할 것 줄마다 «답»(여러 줄) */
+    .pj2 .tkrpb{flex:0 0 auto; cursor:pointer; font-size:11px; color:var(--sub); border:1px dashed var(--line2); border-radius:999px; padding:1px 8px; white-space:nowrap}
+    .pj2 .tkrpb:hover{color:var(--ink); border-color:var(--sub)}
+    .pj2 .tkrp{flex:1 1 100%; margin:2px 0 4px 22px; padding:6px 10px; border-left:3px solid #9fb6e8; background:#f5f8ff; border-radius:0 8px 8px 0; font-size:13px}
+    .pj2 .tkrp .rh{font-size:11px; color:var(--sub); font-weight:700; display:flex; gap:8px; align-items:center}
+    .pj2 .tkrp .rh .rx{cursor:pointer; font-weight:600; color:#1a56c4}
+    .pj2 .tkrp .rt{white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.55; margin-top:2px; color:var(--ink)}
+    .pj2 .tkrp textarea{width:100%; box-sizing:border-box; font:inherit; font-size:13px; border:1px solid #9fb6e8; border-radius:8px; padding:6px 8px; min-height:66px; resize:vertical; background:#fff}
+    .pj2 .tkrp .rb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:5px}
+    .pj2 .tkrp .rb button{border:1px solid var(--line2); background:#fff; border-radius:8px; padding:3px 12px; font:inherit; font-size:12.5px; cursor:pointer}
+    .pj2 .tkrp .rb button.ok{background:#3b5bdb; border-color:#3b5bdb; color:#fff; font-weight:700}
+    .pj2 .tkrp .rb .fn{font-size:11px; color:var(--faint)}
     .pj2 .tkf{font-size:11.5px; color:#1a56c4; text-decoration:none; background:#f4f7ff; border-radius:6px; padding:2px 7px; max-width:100%; overflow-wrap:anywhere}
     .pj2 .tkf i{font-style:normal; color:var(--faint); margin-left:3px}
     .pj2 .tkfdel{cursor:pointer; color:var(--faint); font-size:11px; padding:0 2px}
@@ -10020,7 +10032,7 @@
     if(PJ_NOTE_PROJ && PJ_NOTE_PROJ !== proj){
       try{ pjNoteFlush(); }catch(e){}
     }
-    if(PJ_NOTE_PROJ !== proj){ PJ_TK_EDIT = -1; PJ_TKA_EDIT = -1; }  /* 다른 프로젝트로 넘어가면 고치던 칸을 닫는다 */
+    if(PJ_NOTE_PROJ !== proj){ PJ_TK_EDIT = -1; PJ_TKA_EDIT = -1; PJ_RP_OPEN = -1; PJ_RP_DRAFT = null; }  /* 다른 프로젝트로 넘어가면 고치던 칸을 닫는다 */
     PJ_NOTE_PROJ = proj;
     PJ_NOTE_TXT  = String((d && d.note) || '');
     PJ_TASKS     = pjTasksParse(d && d.tasks);
@@ -10079,7 +10091,7 @@
          + ' oninput="pjNoteGrow(this)"></textarea>'
          + '<button type="button" id="pjTkAdd">＋ 추가</button></div>';
     }else if(canPush){
-      h += '<p class="fn" style="margin:4px 0">👤 글은 읽기만 · <b>확인 상태만</b> 누를 수 있습니다 · 📎 파일은 눌러서 열어 보기만 됩니다</p>';
+      h += '<p class="fn" style="margin:4px 0">👤 글은 읽기만 · <b>확인 상태</b>를 누르고 <b>💬 답</b>을 달 수 있습니다 · 📎 파일은 눌러서 열어 보기만 됩니다</p>';
     }
     if(canEdit){
       h += '<p class="fn" style="margin:4px 0 0">📎 줄 옆 클립으로 파일을 붙입니다(팀공유 폴더에 저장 · 한 개 5MB · PDF·이미지·문서). '
@@ -10321,6 +10333,46 @@
      🔴 [「관리」 이상만] 추가·삭제·담당 정하기와 «같은 급»이다. 서버(projUpdate_)도 같은 기준으로 막는다.
      🔴 [그 줄 글자만 바꾼다] 상태·담당은 그대로 — 배열을 새로 만들어 넘긴다(저장 실패 시 되돌리려고). */
   var PJ_TK_EDIT = -1;
+  /* 💬 2026-10-29 대표 지시 «허브 할일 답장은 줄 변경이 안되네 여러 줄로 쓸 수 있게» — 대표가 «담당자»(20자) 칸에 답을 적고 계셨다.
+     → 담당은 그대로 두고 줄마다 «답»을 따로(여러 줄 · 600자 · 쓴 사람·때). 팀원도 쓴다(대표 확정 · 상태 누르기와 같은 급).
+     서버 = 장비앱 Project.js projTaskReply_(act=taskreply). 되돌리기 = **"확인할것 답 빼줘"** */
+  var PJ_RP_OPEN = -1, PJ_RP_BUSY = false, PJ_RP_DRAFT = null;   /* 🔴 쓰는 중 화면이 다시 그려져도 글이 안 날아가게 — 친 글을 따로 들고 있는다 */
+  function pjTkReplyHtml_(i, t, canPush){
+    var r = String(t.r || '');
+    if(PJ_RP_OPEN === i && canPush){
+      return '<div class="tkrp"><textarea id="pjRpTx" maxlength="600" rows="3" placeholder="답을 적어 주세요 — Enter 로 줄바꿈">' + pjEsc(PJ_RP_DRAFT != null ? PJ_RP_DRAFT : r) + '</textarea>'
+        + '<div class="rb"><button type="button" class="ok" data-pjrpsave="' + i + '">' + (PJ_RP_BUSY ? '⏳ 저장 중…' : '저장') + '</button>'
+        + '<button type="button" data-pjrpcancel="1">취소</button>'
+        + (r ? '<button type="button" data-pjrpdel="' + i + '">답 지우기</button>' : '')
+        + '<span class="fn">Enter = 줄바꿈 · ⌘Enter = 저장 · 600자까지</span></div></div>';
+    }
+    if(!r) return '';
+    return '<div class="tkrp"><span class="rh">💬 답' + (t.rw ? ' · ' + pjEsc(t.rw) : '') + (t.rd ? ' · ' + pjEsc(t.rd) : '')
+      + (canPush ? '<span class="rx" data-pjrpopen="' + i + '">고치기</span>' : '') + '</span>'
+      + '<div class="rt">' + pjEsc(r) + '</div></div>';
+  }
+  function pjTaskReplySave(i, txt){
+    var t = PJ_TASKS[i]; if(!t || !PJ_NOTE_PROJ || PJ_RP_BUSY) return;
+    txt = String(txt || '').replace(/\r\n?/g, '\n');
+    if(txt.length > 600){ pjNoteMsg('🔴 답은 600자까지 쓸 수 있습니다 (지금 ' + txt.length + '자)', 'no'); return; }
+    PJ_RP_BUSY = true;
+    var b = document.querySelector('[data-pjrpsave="' + i + '"]'); if(b) b.textContent = '⏳ 저장 중…';
+    pjNoteMsg('⏳ 답 저장 중…');
+    var proj = PJ_NOTE_PROJ;
+    pjAdmin('taskreply', proj, '&lk=' + encodeURIComponent(t.k || '') + '&idx=' + i + '&lt=' + encodeURIComponent(String(t.t || '')) + '&r=' + encodeURIComponent(txt), function(d){
+      PJ_RP_BUSY = false;
+      if(d && d.ok){
+        PJ_TASKS = pjTasksParse(d.tasks); PJ_RP_OPEN = -1; PJ_RP_DRAFT = null;
+        pj1Drop(proj);
+        pjNotePaint(proj, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+        pjNoteMsg(txt.trim() ? '✓ 답을 저장했습니다' : '✓ 답을 지웠습니다', 'ok');
+      } else {
+        /* 🔴 실패하면 쓰던 글을 «그대로» 둔다 — 창을 닫지 않는다 */
+        var b2 = document.querySelector('[data-pjrpsave="' + i + '"]'); if(b2) b2.textContent = '저장';
+        pjNoteMsg('🔴 답을 못 저장했습니다 — ' + ((d && d.error) || '서버에 닿지 못했습니다') + ' · 쓴 글은 그대로 있습니다', 'no');
+      }
+    });
+  }
   var PJ_TKA_EDIT = -1;   /* 🔒 관리자 전용 할일 — 고치는 중인 줄 */
   function pjTaskEditSave(i){
     var inp = document.getElementById('pjTkEditTx');
@@ -10374,9 +10426,11 @@
       + '<span class="tktx' + (canEdit ? ' canedit' : '') + '"' + (canEdit ? ' data-pjtkedit="' + i + '" title="눌러서 글을 고칩니다"' : '') + '>' + pjEsc(String(t.t || '')) + '</span>'
       + whoTag
       + st
+      + (canPush && !t.r && PJ_RP_OPEN !== i ? '<span class="tkrpb" data-pjrpopen="' + i + '" title="이 줄에 답을 답니다(여러 줄)">💬 답</span>' : '')
       + pjTkAttBtn_(i, t, canEdit)
       + (canEdit ? '<span class="tkdel" data-pjtkdel="' + i + '" title="지웁니다">✕</span>' : '')
       + pjTkFilesHtml_(i, t, canEdit)
+      + pjTkReplyHtml_(i, t, canPush)
       + '</div>'
       + (PJ_WHO_OPEN === i ? pjWhoBox_(i, w) : '');
   }
@@ -10522,6 +10576,12 @@
   /* 글자를 칠 때마다 부른다 — 타이머만 다시 건다(서버를 안 부른다) */
   /* 📏 R-0036 — 글 양에 맞춰 칸 높이를 맞춘다. 🔴 칸 «자기 높이»만 바꾼다(화면을 다시 안 그린다) —
      다시 그리면 한글 조합이 끊긴다(§3-5 ⑧). 숨은 탭이라 scrollHeight 가 0 이면 기본 높이(140px)로 둔다. */
+  document.addEventListener('keydown', function(e){
+    if(!e.target || e.target.id !== 'pjRpTx' || e.isComposing) return;
+    if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); pjTaskReplySave(PJ_RP_OPEN, e.target.value); }
+    else if(e.key === 'Escape' && !PJ_RP_BUSY){ PJ_RP_OPEN = -1; PJ_RP_DRAFT = null; pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) }); }
+  });
+  document.addEventListener('input', function(e){ if(e.target && e.target.id === 'pjRpTx') PJ_RP_DRAFT = e.target.value; });
   function pjNoteGrow(ta){
     if(!ta) return;
     try{
@@ -10659,6 +10719,19 @@
       return;
     }
     /* 📎 2026-10-04 — 확인할 것 줄의 파일 */
+    /* 💬 2026-10-29 — 확인할 것 «답» */
+    var rp1 = el.getAttribute('data-pjrpopen');
+    if(rp1 !== null){
+      e.preventDefault(); if(PJ_RP_BUSY) return; PJ_RP_OPEN = +rp1; PJ_RP_DRAFT = null;
+      pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) });
+      var ta = document.getElementById('pjRpTx'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+      return;
+    }
+    if(el.getAttribute('data-pjrpcancel') !== null){ e.preventDefault(); if(PJ_RP_BUSY) return; PJ_RP_OPEN = -1; PJ_RP_DRAFT = null; pjNotePaint(PJ_NOTE_PROJ, { note: PJ_NOTE_TXT, tasks: JSON.stringify(PJ_TASKS) }); return; }
+    var rp2 = el.getAttribute('data-pjrpsave');
+    if(rp2 !== null){ e.preventDefault(); var tx = document.getElementById('pjRpTx'); pjTaskReplySave(+rp2, tx ? tx.value : ''); return; }
+    var rp3 = el.getAttribute('data-pjrpdel');
+    if(rp3 !== null){ e.preventDefault(); pjTaskReplySave(+rp3, ''); return; }
     var a1 = el.getAttribute('data-pjtkatt');
     if(a1 !== null){ e.preventDefault(); pjTkFileAsk(+a1); return; }
     var a2 = el.getAttribute('data-pjtkfdel');
