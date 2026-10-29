@@ -4635,10 +4635,15 @@
       /* 화면이 들고 있던 옛 값을 «전부» 버린다 — 안 버리면 눌러도 그대로다 */
       PJ_CHK_CACHE = {}; PJ_ONE_CACHE = {}; NET_CACHE = {};
       try{ pj1Clear(); }catch(e2){}
-      try{ pjOneLoad(proj, true); }catch(e2){}          /* 쌓인 정보(담당자·거래처·PA팀·견적서) */
       try{ pjCheck(proj); }catch(e2){}                   /* 지금 할 일 */
+      /* 📍 2026-10-28 대표 신고 *"다시 불러오기 눌러도 밑에 정보만 되지 회차 정보는 새로고침 안되는데"*
+         [원인] pjOne(쌓인 정보)과 projDays(회차)를 «동시에» 불렀다. 주소 목록 기억(QT_CK_PEOPLE)은 projDays fresh 만 버리는데,
+                pjOne 도 회차를 다시 계산해 «회차 칸을 다시 그린다» → 옛 기억으로 만든(주소 없는) 회차가 늦게 도착하면 새 것을 덮었다.
+         [고침] pjOne 을 projDays «다음에» 부른다 — 그때는 주소 기억이 이미 새것이라 둘이 같은 회차를 그린다.
+         되돌리기 = pjOneLoad 줄을 이 위(pj1Clear 다음)로 다시 올리면 예전과 같다 */
       askCount(FIELD_APP + '?action=projDays&fresh=1&proj=' + encodeURIComponent(proj) + appTok(),
                function(r){
+        try{ pjOneLoad(proj, true); }catch(e2){}        /* 쌓인 정보(담당자·거래처·PA팀·견적서) — 회차 «다음» */
         if(r && r.ok && r.rows){
           pjDaysPaint(proj, r.rows);                     /* 회차 칸만 다시 그린다 */
           var na = 0;
