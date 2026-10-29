@@ -1483,6 +1483,13 @@
     #vTeam .tphead.tpahd{position:static;min-width:1694px;display:block;padding:5px 8px}
     #vTeam .tpscroll{padding-bottom:16px}       /* 마지막 줄(사람이 없는 역할의 «＋ 사람 추가»)이 가로 스크롤바에 가리지 않게 */
     #vTeam .tphead.tpahd .tphw{position:sticky;left:8px;display:inline-flex;align-items:center;gap:10px}
+    #vTeam .tpac.multi{padding:2px;gap:2px;justify-content:stretch;align-items:stretch;background:transparent;border:0}
+    #vTeam .tpac .seg{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;border-radius:4px;padding:0 2px;min-height:19px;font-size:11px;line-height:1}
+    #vTeam .tpac .seg .nm{font-size:11px;overflow:hidden;text-overflow:ellipsis}
+    #vTeam .tpac .seg .mk{font-size:10px}
+    #vTeam .tpac .seg.k{background:var(--pc);color:#fff;border:1.5px solid var(--pc)}
+    #vTeam .tpac .seg.b{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pc) 22%,#fff) 0 5px,#fff 5px 10px);color:var(--pc);border:1.5px solid var(--pc)}
+    #vTeam .tpac .seg.dim{opacity:.3}
     #vTeam .tpac.b .ln{flex-direction:column;align-items:center;gap:0;line-height:1.1}
     #vTeam .tpac.b .mk{font-size:10.5px}
     #vTeam .tpac.k{background:var(--pc);color:#fff;border:1.5px solid var(--pc)}
@@ -12914,7 +12921,7 @@
       if(!list.length){ h += '<div class="hint">그날 부를 수 있는 ' + r + '가 없습니다 (모두 ✕·개인)</div>'; return; }
       any = true;
       list.forEach(function(x){
-        h += '<button type="button" data-tp="covpick" data-n="' + tpEsc(x.n) + '" data-p="' + tpEsc(pk) + '" data-d="' + d + '">' + tpEsc(x.n) + ' <small>' + (x.t ? '(' + tpEsc(x.t) + ')' : '· 비어 있음') + '</small><em class="go">확정 →</em></button>';
+        h += '<button type="button" data-tp="covpick" data-n="' + tpEsc(x.n) + '" data-p="' + tpEsc(pk) + '" data-d="' + d + '">' + tpEsc(x.n) + ' <small>' + (x.t ? '(' + tpEsc(x.t) + ')' : '· 아직 안 적음') + '</small><em class="go">확정 →</em></button>';
       });
     });
     if(any) h += '<div class="hint">누르면 ' + tpEsc(tpShort(pk)) + ' ' + tpMD(d) + ' 확정 · 다른 곳 «확정»에서 오면 거기서는 빠지고, 그쪽 백업을 올릴지 묻습니다</div>';
@@ -12948,27 +12955,32 @@
     var a = win[0], b = win[win.length-1];
     return TPS.projects.filter(function(P){ return P.dates.some(function(d){ return d >= a && d <= b; }); }).sort(tpByDate);
   }
+  /* 👥 2026-10-29 대표 지시 — ①빈 칸 기본 = «아직 안 적음»(아무것도 안 보임) · 대표가 확인한 것만 적는다
+     ②«한 날에 두 프로젝트(확정·백업)»면 한 칸에 몰지 말고 «칸을 나눠» 어느 게 확정이고 어느 게 백업인지 보이게 */
+  function tpSegHtml(pk, k, f){
+    return '<span class="seg ' + (k === '확정' ? 'k' : 'b') + (f && pk !== f ? ' dim' : '') + '" style="--pc:' + tpColor(pk) + '"><span class="nm">' + tpEsc(tpTiny(pk)) + '</span><span class="mk">' + (k === '확정' ? '✓' : '백업') + '</span></span>';
+  }
   function tpCellHtml(n, d, adm, f){
-    var c = tpCell(n, d), shoot = tpProjsOn(d).length > 0, wd = tpD(d).getDay();
+    var c = tpCell(n, d), wd = tpD(d).getDay();
     var cls = 'tpac' + ((wd===0||wd===6) ? ' we' : '') + (d === TPS.today ? ' today' : ''), st = '', txt = '', tip = n + ' · ' + tpMD(d);
     if(!adm && !(c && c.t === 'as' && c.k === '확정')) c = null;                  /* 팀은 확정만(서버도 그것만 보낸다) */
     if(c && c.t === 'as'){
-      var col = tpColor(c.pk);
-      cls += c.k === '확정' ? ' k' : ' b';
-      st = '--pc:' + col;
-      txt = '<span class="ln"><span class="nm">' + tpEsc(tpTiny(c.pk)) + '</span><span class="mk">' + (c.k === '확정' ? '✓' : '백업') + '</span></span>';
-      tip += ' · ' + tpShort(c.pk) + ' ' + c.k;
-      if(adm && c.bk && c.bk.length){
-        txt += '<span class="bks">' + c.bk.map(function(x){ return '<i style="background:' + tpColor(x) + '"></i>'; }).join('') + '<b>+백업' + (c.bk.length > 1 ? c.bk.length : '') + '</b></span>';
-        tip += ' · 백업도 걸림: ' + c.bk.map(tpShort).join('·');
-        if(f && c.pk !== f && c.bk.indexOf(f) >= 0) f = '';               /* 보고 있는 프로젝트의 백업이면 흐리게 하지 않는다 */
+      var segs = [{ pk:c.pk, k:c.k }].concat(c.more || []);
+      if(adm) (c.bk || []).forEach(function(x){ segs.push({ pk:x, k:'백업' }); });
+      tip += ' · ' + segs.map(function(s){ return tpShort(s.pk) + ' ' + s.k; }).join(' / ');
+      if(c.more.length){ cls += ' bad'; tip += ' · ⚠ 같은 날 두 곳에 확정 — 눌러서 한 곳을 고르세요'; }
+      if(segs.length === 1){
+        cls += c.k === '확정' ? ' k' : ' b'; st = '--pc:' + tpColor(c.pk);
+        txt = '<span class="ln"><span class="nm">' + tpEsc(tpTiny(c.pk)) + '</span><span class="mk">' + (c.k === '확정' ? '✓' : '백업') + '</span></span>';
+        if(f && c.pk !== f) cls += ' dim';
+      } else {
+        cls += ' multi';                                                        /* 두 칸 이상 — 위에서부터 확정 → 백업 */
+        txt = segs.map(function(s){ return tpSegHtml(s.pk, s.k, f); }).join('');
+        if(f && !segs.some(function(s){ return s.pk === f; })) cls += ' dim';
       }
-      if(c.more.length){ cls += ' bad'; tip += ' · ⚠ 같은 날 ' + c.more.map(function(m){ return tpShort(m.pk) + ' ' + m.k; }).join('·') + '에도 들어가 있음 — 눌러서 한 곳을 고르세요'; }
-      if(f && c.pk !== f) cls += ' dim';
     } else if(c && c.t === 'x'){ cls += ' x'; txt = '✕'; tip += ' · 안 되는 날(모든 프로젝트)'; }
     else if(c && c.t === 'bz'){ cls += ' bz'; txt = '개인'; tip += ' · 개인 일정'; }
-    else if(shoot){ cls += ' av'; txt = adm ? '· 가능' : ''; tip += ' · 비어 있음(가능)'; }
-    else cls += ' none';
+    else { cls += ' none'; tip += ' · 아직 안 적음'; }
     if(f && tpProj(f) && tpProj(f).dates.indexOf(d) >= 0) cls += ' hot';
     return '<div class="' + cls + '"' + (adm ? ' data-cell="' + tpEsc(n) + '|' + d + '"' : '') + (st ? ' style="' + st + '"' : '') + ' title="' + tpEsc(tip) + '">' + txt + '</div>';
   }
@@ -13077,7 +13089,7 @@
       });
     });
     h += '<div class="tpscroll">' + g + '</div>';
-    h += '<div class="tplegend"><span><span class="k"></span>확정 ✓</span><span><span class="k bk"></span>백업</span><span><span class="tpbkdot"></span>+백업 = 다른 프로젝트 백업도 걸림</span><span><span class="k xx"></span>✕ 안 되는 날(사람)</span><span><span class="k" style="background:repeating-linear-gradient(135deg,#d6d9df 0 3px,#eceef2 3px 6px)"></span>개인 일정</span><span>· = 촬영 날인데 비어 있음</span><span><span class="k r"></span>하루에 두 곳</span><span>충원: <b style="color:#14603a">초록=다 참</b> · <b style="color:#86480a">주황=부족</b> · <b style="color:#a01a1a">빨강=0명</b></span></div>';
+    h += '<div class="tplegend"><span><span class="k"></span>확정 ✓</span><span><span class="k bk"></span>백업</span><span>한 날 두 프로젝트 = 칸을 위아래로 나눔(위 확정 · 아래 백업)</span><span><span class="k xx"></span>✕ 안 되는 날(사람)</span><span><span class="k" style="background:repeating-linear-gradient(135deg,#d6d9df 0 3px,#eceef2 3px 6px)"></span>개인 일정</span><span>빈 칸 = 아직 안 적음</span><span><span class="k r"></span>하루에 두 곳</span><span>충원: <b style="color:#14603a">초록=다 참</b> · <b style="color:#86480a">주황=부족</b> · <b style="color:#a01a1a">빨강=0명</b></span></div>';
     /* 다시 그려도 «쓰던 입력칸 글자·커서»를 잃지 않게 — 입력 중이면 값만 옮긴다 */
     var act = document.activeElement, keepV = '', keepR = '';
     if(act && act.classList && act.classList.contains('tpaddp')){ keepV = act.value; keepR = act.getAttribute('data-r'); }
