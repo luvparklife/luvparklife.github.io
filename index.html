@@ -602,6 +602,24 @@
     .pj2 .bzs{width:100%; box-sizing:border-box; border:1px solid var(--line2); border-radius:7px; padding:5px 8px; font:inherit; font-size:12.5px; margin:6px 0 2px}
     .pj2 .fdt{font-size:11.5px; font-weight:800; color:var(--faint); margin:11px 0 5px}
     .pj2 .qk.fdq{margin-top:0}
+    /* 📁 2026-11-03 폴더 안내(ⓘ) — 카드 안 작은 ⓘ + 누르면 뜨는 안내 창 */
+    .pj2 .fdt .fdhelp{margin-left:6px; font-weight:700; color:#1a56c4; text-decoration:none; cursor:pointer}
+    .pj2 .qk a .fdi{display:inline-block; margin-left:5px; width:16px; height:16px; line-height:16px; border-radius:50%;
+      background:#eef3ff; color:#1a56c4; font-size:10.5px; font-weight:800; text-align:center; cursor:pointer; vertical-align:1px}
+    .fdhm{position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; padding:16px}
+    .fdhm .bx{background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:14px; width:min(520px,100%);
+      max-height:84vh; overflow:auto; padding:14px 16px; box-shadow:0 12px 32px rgba(0,0,0,.2); font-size:13px; line-height:1.55}
+    .fdhm .hd{display:flex; align-items:center; justify-content:space-between; font-size:15px; font-weight:800; margin-bottom:4px}
+    .fdhm .hd button{border:none; background:none; font-size:18px; color:var(--sub); cursor:pointer}
+    .fdhm .it{border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin:8px 0}
+    .fdhm .it.on{border-color:#a9c2f5; box-shadow:0 0 0 2px #eef3ff}
+    .fdhm .it b{font-size:13.5px}
+    .fdhm .pt{font-size:11px; color:var(--faint); font-family:ui-monospace,Menlo,monospace}
+    .fdhm .one{margin:3px 0 2px; font-weight:700}
+    .fdhm ul{margin:2px 0 0; padding-left:17px}
+    .fdhm .no{color:#c0392b}
+    .fdhm .au{color:var(--sub); font-size:12px}
+    .fdhm .lk{margin-top:5px; font-size:11.5px; color:var(--adm); background:var(--adm-bg); border:1px solid var(--adm-line); border-radius:7px; padding:4px 7px}
     .pj2 .qk a .cnt{display:block; font-size:10px; color:var(--faint); font-weight:400; margin-top:1px}
     .pj2 .qk a.emp{opacity:.72; border-style:dashed}
     .pj2 .qk a.emp .cnt{color:#c0392b}
@@ -10901,8 +10919,9 @@
     var got = PJ_FOLDERS.filter(function(k){ return by[k]; });
     /* 🔴 하나도 없으면 «자리도 안 만든다» — 빈 소제목만 남으면 「고장났나」로 읽힌다 */
     if(!got.length){ box.innerHTML = ''; return; }
+    PJ_FD_SEEN = got;   /* 📁 폴더 안내(ⓘ)는 «이 사람에게 보이는 카드»만 설명한다 */
     box.innerHTML =
-      '<div class="fdt">📁 폴더</div><div class="qk fdq">'
+      '<div class="fdt">📁 폴더<a href="#" class="fdhelp" data-pjact="fdinfo" data-pjfd="">ⓘ 어디에 뭘 넣나요?</a></div><div class="qk fdq">'
       + got.map(function(k){
           var x = by[k];
           var url = x.link || '';
@@ -10920,10 +10939,73 @@
           var bg  = pjBadge(_nd === 'owner' ? 'own' : _nd === 'mgr' ? 'mgr' : 'team');
           return '<a' + (cls ? ' class="' + cls + '"' : '')
                + (url ? ' href="#" data-pjact="folder" data-pjurl="' + pjEsc(url) + '"' : '')
-               + '>📁 ' + pjEsc(k) + bg + '<span class="cnt">' + pjEsc(txt) + '</span></a>';
+               + '>📁 ' + pjEsc(k) + bg + '<span class="fdi" data-pjact="fdinfo" data-pjfd="' + pjEsc(k) + '" title="이 폴더에 뭘 넣나요?">i</span><span class="cnt">' + pjEsc(txt) + '</span></a>';
         }).join('')
       + '</div>';
   }
+  /* 📁 2026-11-03 폴더 안내 — 대표 지시 *"각 구글 폴더에 어떤 것을 넣어야 할지 관리자들은 몰라"*.
+     내용은 연습장(8_규정_가이드/261103_프로젝트폴더_안내_연습장.html)에서 대표가 적고 고른 것이다.
+     🔴 [이 표가 원본] 폴더 안내는 여기 한 곳에만 적는다(§1).
+     🔴 [보이는 카드만] see = 이 카드가 보여야 그 안내도 보인다 — 팀원은 팀공유만, 견적은 대표만.
+        외부공유는 카드가 없어 «관리 이상»의 표시인 내부폴더를 빌려 쓴다. */
+  var PJ_FD_SEEN = [];
+  var PJ_FD_HELP = [
+    { k:'팀공유폴더', see:'팀공유폴더', path:'0_공유 › 팀공유', link:true,
+      one:'장비 준비 리스트(내부 시트) — 팀원 모두가 봅니다',
+      auto:'장비앱 「🖨 장비준비·내부조명팀」 단추가 「프로젝트명_내부공유」 시트와 장비 준비 PDF를 저절로 넣습니다.',
+      yes:['장비 준비 리스트(내부 시트)'], no:['견적·단가·정산 등 돈 얘기','거래처 연락처'] },
+    { k:'외부공유', see:'내부폴더', path:'0_공유 › 외부공유', link:true,
+      one:'해외팀·외부 스태프에게 «보내는» 것',
+      auto:'장비공유 시트(ALL·PHOTO·GAFFER·PRODUCTION·ART)가 저절로 들어옵니다. 허브 카드는 없습니다.',
+      yes:['해외팀·외부 스태프에게 보내는 장비 리스트','외부와 주고받는 레퍼런스'], no:['우리 팀 내부 메모','돈 관련 파일'] },
+    { k:'견적폴더', see:'견적폴더', path:'1_견적정산 › 견적',
+      one:'보낸 견적서와 받은 견적서',
+      auto:'견적앱이 견적서 PDF를 「보낸견적서」에 저절로 넣습니다.',
+      yes:['보낸견적서 — 우리가 거래처에 준 견적','받은견적서 — 렌탈업체·외주가 우리에게 준 견적'],
+      no:['보낸 것과 받은 것을 한 폴더에 섞기(청구가와 원가가 섞입니다)'] },
+    { k:'정산폴더', see:'정산폴더', path:'1_견적정산 › 정산',
+      one:'영수증과 지급명세서',
+      auto:'프리랜서가 정산앱에 올린 영수증이 「영수증」에 저절로 들어옵니다. 경비정산서 시트도 여기 있습니다.',
+      yes:['회사카드로 쓴 영수증','지급명세서'],
+      no:['신분증·통장사본 — 정산앱이 따로 모읍니다(「1.사업자서류」)'] },
+    { k:'내부폴더', see:'내부폴더', path:'2_준비',
+      one:'촬영 중에 생긴 임시 파일 — 팀공유에 안 올리는 것',
+      yes:['해외팀이 보내온 장비 리스트','테스트컷·현장 메모 같은 중간 파일'],
+      no:['팀원이 봐야 하는 것 → 팀공유','최종본 → 결과물','우리가 해외팀에 «보내는» 장비 리스트 → 외부공유'] },
+    { k:'결과물폴더', see:'결과물폴더', path:'3_결과물',
+      one:'포트폴리오로 쓸 것',
+      yes:['포트폴리오로 쓸 것','라이팅 다이어그램'], no:[] },
+    { k:'BTS', see:'결과물폴더', path:'3_결과물 › BTS',
+      one:'비하인드씬 — 현장 스케치·메이킹',
+      yes:['현장 스케치 사진','메이킹 영상'], no:[] }
+  ];
+  function pjFdInfo(key){
+    var old = document.getElementById('fdhm'); if(old) old.remove();
+    var list = PJ_FD_HELP.filter(function(x){ return PJ_FD_SEEN.indexOf(x.see) >= 0; });
+    var li = function(a, cls){ return a.length ? '<ul' + (cls ? ' class="' + cls + '"' : '') + '>' + a.map(function(s){ return '<li>' + pjEsc(s) + '</li>'; }).join('') + '</ul>' : ''; };
+    var wrap = document.createElement('div');
+    wrap.id = 'fdhm'; wrap.className = 'fdhm';
+    wrap.innerHTML = '<div class="bx" role="dialog" aria-label="폴더 안내"><div class="hd">📁 폴더마다 뭘 넣나요?<button type="button" data-x="1" aria-label="닫기">✕</button></div>'
+      + list.map(function(x){
+          return '<div class="it' + (x.k === key ? ' on' : '') + '" data-k="' + pjEsc(x.k) + '">'
+            + '<b>📁 ' + pjEsc(x.k) + '</b> <span class="pt">' + pjEsc(x.path) + '</span>'
+            + '<div class="one">' + pjEsc(x.one) + '</div>'
+            + (x.yes.length ? '✅ 넣을 것' + li(x.yes) : '')
+            + (x.no.length ? '<div class="no">🚫 넣지 말 것</div>' + li(x.no) : '')
+            + (x.auto ? '<div class="au">🤖 ' + pjEsc(x.auto) + '</div>' : '')
+            + (x.link ? '<div class="lk">🔗 0_공유는 «링크만 알면 누구나 보기»입니다 — 돈·연락처·신분증은 넣지 마세요.</div>' : '')
+            + '</div>';
+        }).join('')
+      + '</div>';
+    wrap.addEventListener('click', function(e){
+      if(e.target === wrap || (e.target.getAttribute && e.target.getAttribute('data-x'))) wrap.remove();
+    });
+    document.body.appendChild(wrap);
+    var on = wrap.querySelector('.it.on'); if(on) on.scrollIntoView({ block:'center' });
+  }
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ var m = document.getElementById('fdhm'); if(m) m.remove(); }
+  });
   /* ═══════════════════════════════════════════════════════════════
      🗑 프로젝트 지우기 · ✏️ 이름 고치기   (2026-08-26 대표 지시)
      ═══════════════════════════════════════════════════════════════
@@ -12339,6 +12421,7 @@
       }
       if(!act) return;
       e.preventDefault();
+      if(act === 'fdinfo'){ pjFdInfo(el.getAttribute('data-pjfd') || ''); return; }
       if(act === 'settle'){ pjSettle(el.getAttribute('data-pjproj') || PJ_NOW); return; }
       /* ✏️ 2026-09-01 — 「그 줄 옆 채우기」는 «그 자리»에서 작은 창으로 연다.
          대표 지시: *"페이지 안넘어가고 그냥 담당자만 선택하거나 추가할 수 있게"*
