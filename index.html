@@ -1071,6 +1071,30 @@
     .rvline .ed{flex:none; border:none; background:none; cursor:pointer; color:#b9c2d0;
       font-size:12px; padding:0 2px; line-height:1.4}
     .rvline .ed:hover{color:#2563eb}
+    /* 📷 2026-11-05 — 회고 시기 고르기 · 사진 여러 장 */
+    .rvline button.ph{border:none; cursor:pointer; font-family:inherit; line-height:inherit}
+    .rvline button.ph .cr{font-size:9px; opacity:.6; margin-left:2px}
+    .rvphpick{display:flex; gap:4px; flex-wrap:wrap; margin-top:5px}
+    .rvphpick button{border:1px solid #dfe4ec; background:#fff; color:#5b6472; font:inherit; font-size:11px;
+      font-weight:700; border-radius:999px; padding:2px 9px; cursor:pointer}
+    .rvphpick button.on{background:#1c2330; border-color:#1c2330; color:#fff}
+    .rvadd button.rvpic{flex:none; background:#fff; color:#2563eb; border:1px solid #b3caf0; white-space:nowrap}
+    .rvpend{display:none; align-items:center; gap:6px; margin:-4px 0 9px; font-size:11.5px; color:#1a56c4}
+    .rvpend.on{display:flex}
+    .rvpend button{border:none; background:none; color:#8a93a3; font:inherit; font-size:11.5px; cursor:pointer; padding:0 3px}
+    .rvfiles{display:flex; flex-wrap:wrap; gap:7px; margin-top:6px; align-items:flex-start}
+    .rvthumb{position:relative; display:inline-block}
+    .rvthumb a{display:block; text-decoration:none}
+    .rvthumb img{display:block; width:76px; height:76px; object-fit:cover; border-radius:8px;
+      border:1px solid #dfe4ec; background:#f4f6fa}
+    .rvthumb .nm{display:none; font-size:11.5px; color:#1a56c4; background:#f4f7ff; border-radius:6px; padding:2px 7px}
+    .rvthumb a.noimg{display:inline-block}
+    .rvthumb a.noimg .nm{display:inline-block}
+    .rvline .kds{flex-wrap:wrap}
+    .rvline .kds .kd{white-space:nowrap}
+    .rvthumb .tkfdel{position:absolute; top:-6px; right:-6px; width:18px; height:18px; line-height:18px; padding:0;
+      text-align:center; border-radius:50%; background:#1c2330; color:#fff; font-size:10px; cursor:pointer}
+    .rvthumb a.noimg + .tkfdel{position:static; display:inline-block; background:none; color:#8a93a3}
     .rvedit{display:flex; flex-direction:column; gap:5px; width:100%}
     .rvedit textarea{width:100%; box-sizing:border-box; min-height:52px; font:inherit; font-size:13px;
       padding:6px 8px; border:1px solid #2563eb; border-radius:7px; resize:vertical; line-height:1.55}
@@ -8315,6 +8339,7 @@
       var g = (x && x.g) || [];
       return Object.prototype.toString.call(g) === '[object Array]' && g.indexOf(f.slice(4)) >= 0;
     }
+    if(f.indexOf('ph:') === 0) return String((x && x.p) || '') === f.slice(3);
     if(f === 'none') return !String((x && x.k) || '');
     return String((x && x.k) || '') === f;
   }
@@ -8371,6 +8396,10 @@
         🔴 문제 = 안 겪게 고친다 · 👍 잘한 점 = «우리가 한 것»을 더 키운다 · 💡 배운 것 = 알게 된 것을 그대로 쓴다
      🔴 [「개선점」을 따로 안 만들었다] 문제를 적으면 개선점이 «그 줄 안에» 딸려 나온다.
         갈라 놓으면 「문제를 적었는데 개선점도 또 적어야 하나」가 되어 결국 둘 다 안 적힌다. */
+  /* 🕘 2026-11-05 대표 지시 — 줄의 시기. 값(pre·mid·end)은 서버 `projReviewSet_` 와 같아야 한다.
+     기본값은 서버가 회차 날짜로 정하고, 늦게 적었으면 딱지를 눌러 고친다. */
+  var PJ_REV_PHN = { pre:'촬영 전', mid:'촬영 중', end:'촬영 후' };
+  var PJ_REV_PHS = ['pre', 'mid', 'end'];
   var PJ_REV_KIND = [
     { k:'bad',   n:'🔴 문제',    tip:'안 좋았던 것 + 어떻게 고칠지 — 다음에 안 겪게' },
     { k:'good',  n:'👍 잘한 점', tip:'우리가 잘한 것 — 다음에 더 키울 것' },
@@ -8476,10 +8505,13 @@
        + 'oninput="pjRevCntUpd_(this,\'pjRevCnt' + sfx + '\')" '
        + 'placeholder="' + (own
            ? '금액·견적·마진도 여기에는 적으셔도 됩니다'
-           : '지금 겪은 것을 한 줄로 — 준비 중에도 · 촬영 중에도') + '">'
+           : '지금 겪은 것을 한 줄로 — 촬영 전에도 · 촬영 중에도') + '">'
        + '<span class="rvcnt" id="pjRevCnt' + sfx + '">0/300</span>'
+       /* 📷 대표 전용 칸엔 없다 — 사진이 가는 팀공유 폴더는 링크를 아는 사람이 누구나 본다 */
+       + (own ? '' : '<button type="button" class="rvpic" id="pjRevPic" title="사진·파일을 여러 개 고릅니다">📷 사진</button>')
        + '<button type="button" id="pjRevAdd' + sfx + '" data-own="' + (own ? '1' : '') + '">'
-       + '＋ 남기기</button></div>';
+       + '＋ 남기기</button></div>'
+       + (own ? '' : pjRevPendHtml_());
     /* ── 쌓인 줄 (최신이 위 — 서버가 unshift 한다) ── */
     if(!L.length){
       h += '<p class="fn" style="margin:2px 0 4px">' + (own
@@ -8508,11 +8540,15 @@
          + (nGood ? _fb('good',  '👍 잘한 점 ' + nGood)  : '')
          + (nLrn  ? _fb('learn', '💡 배운 것 ' + nLrn)   : '')
          + (nNone ? _fb('none',  '아직 안 고른 것 ' + nNone) : '')
+         + PJ_REV_PHS.map(function(k){
+             var c = L.filter(function(x){ return String((x && x.p) || '') === k; }).length;
+             return c ? _fb('ph:' + k, PJ_REV_PHN[k] + ' ' + c) : '';
+           }).join('')
          + '<span class="cnt">' + (pjRevFil_(own) ? '거르는 중 — 다시 누르면 전체' : '') + '</span>'
          + '</div>';
       h += L.map(function(x, i){
         var p = String((x && x.p) || '');
-        var pn = p === 'pre' ? '준비' : (p === 'end' ? '끝난 뒤' : (p === 'mid' ? '촬영 중' : '—'));
+        var pn = PJ_REV_PHN[p] || '—';
         /* 🔴💡 2026-09-13 대표 확정 — 「적고 나서 고르기」
            대표 원문: *"문제를 파악하고 개선할거야. 그리고 배운거는 제대로 배우고 나중에 써먹을거야."*
            🔴 적을 때는 안 묻는다 — 촬영 중에 한 줄씩 적는 자리라 먼저 고르게 하면 안 적게 된다.
@@ -8592,15 +8628,25 @@
           tg += '</div>';
         }
 
+        /* 🕘 2026-11-05 — 시기 딱지를 눌러 고른다(늦게 적은 줄을 겪은 때로 고칠 수 있게) */
+        var phPick = '';
+        if(PJ_REV_PICK === 'p' + key){
+          phPick = '<div class="rvphpick">' + PJ_REV_PHS.map(function(k){
+            return '<button type="button" data-pjrevphv="' + i + '" data-k="' + k + '"' + od
+                 + (k === p ? ' class="on"' : '') + '>' + PJ_REV_PHN[k] + '</button>';
+          }).join('') + '</div>';
+        }
         return '<div class="rvline' + (kd ? ' k-' + kd : '') + '">'
-             + '<span class="ph ' + (p || 'mid') + '">' + pjEsc(pn) + '</span>'
+             + '<button type="button" class="ph ' + (p || 'mid') + '" data-pjrevph="' + i + '"' + od
+             + ' title="눌러서 촬영 전·중·후를 바꿉니다">' + pjEsc(pn) + '<span class="cr">▾</span></button>'
              + '<span class="tx">' + pjEsc(String((x && x.t) || ''))
              + '<span class="wd">' + pjEsc(String((x && x.w) || '—'))
              + ' · ' + pjEsc(String((x && x.d) || ''))
              + '<span class="kds">' + kb + '</span></span>'
-             + tg + '</span>'
+             + phPick + tg
              /* 📎🆕 2026-10-09 — 대표 전용 칸(own)은 안 그린다(§1 — projReviewFileJsonp_ 와 같은 기준) */
              + (!own ? pjRevFilesHtml_(i, x) : '')
+             + '</span>'
              + '<button type="button" class="ed" data-pjrevedit="' + i + '"' + od
              + ' title="고칩니다">✎</button>'
              + (!own ? '<span class="tkatt" data-pjrevatt="' + i + '" title="사진·파일을 붙입니다 (한 개 5MB까지 · 여러 개)">📎'
@@ -8723,11 +8769,12 @@
         「own 이면 무조건 own:1」로 두면 패턴·회고끝이 대표 칸에 따로 쌓여 두 벌이 된다. */
   /* 🆕 2026-09-20 — `edit`(줄 고치기)·`ltag`(줄 태그)도 «칸마다 따로»다.
      🔴 여기 안 넣으면 대표 칸에서 고쳤는데 «관리자 칸» 줄이 바뀐다 — 그대로 새는 사고다. */
-  var PJ_REV_PERTAB = { add:1, del:1, kind:1, edit:1, ltag:1 };
+  var PJ_REV_PERTAB = { add:1, del:1, kind:1, edit:1, ltag:1, phase:1 };
   /* 🔒 `own` = 누른 단추가 「대표 칸 것」이었나(`data-own`). 🔴 «전역 상태»가 아니라
      «누른 그 단추»가 말해준다 — 두 칸이 한 화면에 있으므로 이것만이 정확하다. */
-  function pjRevSend(body, okMsg, own){
+  function pjRevSend(body, okMsg, own, after){
     if(PJ_REV_BUSY){ pjRevMsg('잠시만요…'); return; }
+    PJ_REV_STICK = false;
     if(!PJ_REV_PROJ){ pjRevMsg('프로젝트를 못 찾았습니다', 1); return; }
     /* 🔒 지금 이 저장이 «대표 칸»으로 가나 — 대표가 아니면 어떤 경우에도 안 간다 */
     var toOwn = !!(own && PJ_REV_OWNABLE && PJ_REV_PERTAB[String(body && body.rev || '')]);
@@ -8768,6 +8815,7 @@
          🔴 [대표 칸은 «노션에 안 보낸다»] 노션 프로젝트 DB 는 팀도 연다 —
             금액·견적 얘기가 거기로 가면 «관리자와 공유 금지»를 막은 뜻이 통째로 없어진다. */
       if(!toOwn){ try { pjRevNotionLater_(); } catch(e){} }
+      if(after) after();
     }, 20000);
   }
   /* ═══════════════════════════════════════════════════════════════════════
@@ -8778,24 +8826,45 @@
      🔴 [대표 전용 칸엔 단추가 없다] 렌더 쪽에서 own 일 때 이 단추·목록을 안 그린다 —
         서버도 같은 이유로 own=1 이면 거절한다(projReviewFileJsonp_). */
   var PJ_REVFILE_BUSY = false, PJ_REVFILE_IDX = -1, PJ_REVFILE_PROJ = '', PJ_REVFILE_LT = '';
+  /* 📷 2026-11-05 대표 지시 — 여러 장을 한 번에. PJ_REV_PEND = 입력칸 옆에서 골라 둔 것(남기기를 누르면 그 줄에 붙는다).
+     PJ_REV_STICK = 일부 실패 문구를 노션 결과 문구가 3초 뒤 덮지 않게 잡아 둔다. */
+  var PJ_REV_PEND = null, PJ_REV_STICK = false;
+  var PJ_REV_PER = 10, PJ_REV_LIM = 5 * 1024 * 1024;     /* 서버 PROJ_TKFILE_PER_·MAX_ 와 같은 값 */
+  var PJ_REV_IMG = /\.(jpe?g|png|gif|webp|heic|heif)$/i;
   function pjRevFilesHtml_(i, x){
     var F = (x && x.f && x.f.length) ? x.f : [];
     if(!F.length) return '';
-    return '<span class="tkfiles">' + F.map(function(f, k){
+    return '<span class="rvfiles">' + F.map(function(f, k){
       var u = String(f.u || '');
       if(u.indexOf('https://') !== 0) u = '#';            /* 🔴 http(s) 가 아닌 주소는 열지 않는다 */
-      return '<span><a class="tkf" href="' + pjEsc(u) + '" target="_blank" rel="noopener">📄 ' + pjEsc(f.n || '파일')
-           + (f.s ? '<i>' + pjEsc(f.s) + 'KB</i>' : '') + '</a>'
-           + '<span class="tkfdel" data-pjrevfdel="' + i + ':' + k + '" title="지웁니다(드라이브 휴지통으로)">✕</span>'
-           + '</span>';
+      var del = '<span class="tkfdel" data-pjrevfdel="' + i + ':' + k + '" title="지웁니다(드라이브 휴지통으로)">✕</span>';
+      var id = String(f.id || ''), nm = String(f.n || '파일');
+      /* 🔴 미리보기를 못 불러오면 그 자리에 파일 이름 링크가 나온다 — 빈 네모로 남기지 않는다 */
+      return '<span class="rvthumb"><a href="' + pjEsc(u) + '" target="_blank" rel="noopener" title="' + pjEsc(nm) + '"'
+           + (PJ_REV_IMG.test(nm) && /^[-\w]{20,}$/.test(id) ? '' : ' class="noimg"') + '>'
+           + (PJ_REV_IMG.test(nm) && /^[-\w]{20,}$/.test(id)
+               ? '<img src="https://drive.google.com/thumbnail?id=' + id + '&sz=w240" alt="" loading="lazy"'
+                 + ' onerror="this.parentNode.className=\'noimg\';this.style.display=\'none\'">' : '')
+           + '<span class="nm">📄 ' + pjEsc(nm) + '</span></a>' + del + '</span>';
     }).join('') + '</span>';
+  }
+  function pjRevPendHtml_(){
+    var n = (PJ_REV_PEND && PJ_REV_PEND.proj === PJ_REV_PROJ) ? PJ_REV_PEND.files.length : 0;
+    return '<div class="rvpend' + (n ? ' on' : '') + '" id="pjRevPend">'
+         + (n ? '📷 ' + n + '개 골랐습니다 — 「＋ 남기기」를 누르면 이 줄에 붙습니다'
+              + '<button type="button" data-pjrevpendx="1" title="고른 것을 뺍니다">✕ 빼기</button>' : '')
+         + '</div>';
+  }
+  function pjRevPendPaint_(){
+    var el = document.getElementById('pjRevPend');
+    if(el) el.outerHTML = pjRevPendHtml_();
   }
   /* 파일 고르는 창은 «하나만», 화면 밖에 둔다 — 카드를 다시 그려도 사라지지 않게 */
   function pjRevFileInput_(){
     var el = document.getElementById('pjRevFileIn');
     if(el) return el;
     el = document.createElement('input');
-    el.type = 'file'; el.id = 'pjRevFileIn';
+    el.type = 'file'; el.id = 'pjRevFileIn'; el.multiple = true;
     el.accept = '.pdf,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.txt,.csv,.key,.pages,.numbers,image/*';
     el.style.display = 'none';
     document.body.appendChild(el);
@@ -8807,52 +8876,154 @@
     if(!x){ pjRevMsg('🔴 그 줄을 못 찾았습니다 — 화면을 새로고침해 주세요', 1); return; }
     /* 🔴 [누른 «그 순간»의 프로젝트·줄을 잡아 둔다] 파일 선택창이 떠 있는 사이 다른 프로젝트로
        넘어가거나 줄이 바뀌어도 엉뚱한 곳에 안 올라가게 — 서버도 글자(lt)로 «다시» 줄을 찾는다. */
+    if((x.f || []).length >= PJ_REV_PER){ pjRevMsg('🔴 한 줄에 ' + PJ_REV_PER + '개까지 올릴 수 있습니다 — 안 쓰는 파일을 먼저 지워 주세요', 1); return; }
     PJ_REVFILE_IDX = i; PJ_REVFILE_PROJ = PJ_REV_PROJ; PJ_REVFILE_LT = String(x.t || '');
     var el = pjRevFileInput_(); el.value = '';
     el.click();
   }
-  function pjRevFileSend(file){
-    var i = PJ_REVFILE_IDX, proj = PJ_REVFILE_PROJ;
-    if(!file || i < 0 || !proj) return;
-    var _show = function(m, c){ if(proj === PJ_REV_PROJ) pjRevMsg(m, c); };   /* 다른 프로젝트로 넘어갔으면 그 화면에 안 띄운다 */
-    var nm = String(file.name || '');
-    if(!PJ_TKFILE_EXT.test(nm)){ pjRevMsg('🔴 올릴 수 없는 종류입니다 — PDF·이미지·문서(워드·엑셀·PPT·한글)·텍스트만 됩니다', 1); return; }
-    if(PJ_TKFILE_BAD.test(nm)){ pjRevMsg('🔴 이름에 민감한 말(통장·계좌·신분증·주민·견적서 등)이 있어 멈췄습니다 — 이 폴더는 링크를 아는 사람이 누구나 봅니다', 1); return; }
-    if(file.size > 5 * 1024 * 1024){ pjRevMsg('🔴 5MB를 넘어 올릴 수 없습니다', 1); return; }
-    if(!file.size){ pjRevMsg('🔴 빈 파일입니다', 1); return; }
-    if(!canApp()){ pjRevMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
-    /* 🔒 올릴 «때마다» 확인한다 — 이 폴더는 링크를 아는 사람이 누구나 본다(「확인할 것」과 같은 기준) */
-    if(!confirm('📎 이 파일을 올릴까요?\n\n「' + nm + '」\n\n⚠️ 팀공유 폴더는 «링크를 아는 사람은 누구나» 볼 수 있습니다.\n'
-              + '견적 금액·통장·신분증·주민번호가 들어 있지 않은지 확인하셨습니까?')){
-      pjRevMsg('올리지 않았습니다'); return;
+  /* 📷 입력칸 옆 단추 — 아직 줄이 없으므로 골라만 둔다(PJ_REVFILE_IDX = -2) */
+  function pjRevPicAsk(){
+    if(PJ_REVFILE_BUSY){ pjRevMsg('⏳ 지금 올리는 중입니다 — 끝난 뒤에 다시 눌러 주세요', 1); return; }
+    PJ_REVFILE_IDX = -2; PJ_REVFILE_PROJ = PJ_REV_PROJ; PJ_REVFILE_LT = '';
+    var el = pjRevFileInput_(); el.value = '';
+    el.click();
+  }
+  /* 올리기 전에 «이름만으로» 거른다. 올릴 수 있는 것과, 못 올리는 까닭을 함께 돌려준다 */
+  function pjRevFilesCheck_(list){
+    var ok = [], bad = [];
+    list.forEach(function(f){
+      var nm = String(f.name || '');
+      if(!PJ_TKFILE_EXT.test(nm)) bad.push(nm + ' (올릴 수 없는 종류)');
+      else if(PJ_TKFILE_BAD.test(nm)) bad.push(nm + ' (이름에 민감한 말이 있음)');
+      else if(!f.size) bad.push(nm + ' (빈 파일)');
+      else if(f.size > PJ_REV_LIM && !/\.(jpe?g|png|webp|heic|heif)$/i.test(nm)) bad.push(nm + ' (5MB 초과)');
+      else ok.push(f);
+    });
+    return { ok: ok, bad: bad };
+  }
+  /* 🔒 올릴 «때마다» 확인한다 — 이 폴더는 링크를 아는 사람이 누구나 본다(「확인할 것」과 같은 기준) */
+  function pjRevFilesAsk_(n){
+    return confirm('📎 ' + n + '개를 올릴까요?\n\n⚠️ 팀공유 폴더는 «링크를 아는 사람은 누구나» 볼 수 있습니다.\n'
+                 + '견적 금액·통장·신분증·주민번호가 들어 있지 않은지 확인하셨습니까?');
+  }
+  function pjRevFilesPicked(list){
+    var proj = PJ_REVFILE_PROJ, i = PJ_REVFILE_IDX;
+    if(!list.length || !proj) return;
+    var c = pjRevFilesCheck_(list);
+    PJ_REV_STICK = true;                                    /* 곧 뜰 노션 결과 문구가 아래 안내를 덮지 않게 */
+    if(c.bad.length) pjRevMsg('🔴 못 올리는 것 ' + c.bad.length + '개 — ' + c.bad.join(' · '), 1);
+    if(!c.ok.length) return;
+    if(i === -2){                                           /* 입력칸 옆 — 남기기를 기다린다 */
+      PJ_REV_PEND = { proj: proj, files: c.ok.slice(0, PJ_REV_PER) };
+      pjRevPendPaint_();
+      if(c.ok.length > PJ_REV_PER) pjRevMsg('🔴 한 줄에 ' + PJ_REV_PER + '개까지라 앞의 ' + PJ_REV_PER + '개만 골랐습니다', 1);
+      return;
     }
-    PJ_REVFILE_BUSY = true;
-    pjRevMsg('⏳ 올리는 중… ' + nm);
-    var rd = new FileReader();
-    rd.onerror = function(){ PJ_REVFILE_BUSY = false; _show('🔴 파일을 읽지 못했습니다', 1); };
-    rd.onload = function(){
-      var b64 = String(rd.result || '').split(',')[1] || '';
-      var body = { rep: 'revfile', name: proj, idx: i, lt: PJ_REVFILE_LT, fname: nm, data: b64 };   /* MIME 은 서버가 확장자로 정한다 */
-      var tok = appTokObj(); if(tok.s) body.s = tok.s; if(tok.t) body.t = tok.t;
-      /* 🔴 Content-Type 을 text/plain 으로 — JSON 이라고 적으면 브라우저가 «미리 물어보기»를 하는데 Apps Script 는 못 받는다 */
-      fetch(FIELD_APP, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
-        .then(function(res){ return res.json(); })
-        .then(function(d){
-          PJ_REVFILE_BUSY = false;
-          if(d && d.ok){
-            if(proj === PJ_REV_PROJ){                      /* 그 사이 다른 프로젝트로 넘어갔으면 화면은 안 건드린다 */
-              PJ_REV = pjRevParse(d.review);
-              pjRevDraw();
-              pjRevMsg('✅ 올렸습니다 — ' + nm);
-              try { var c = PJ_CHK_CACHE[proj]; if(c) c.review = d.review; } catch(e5){}
-            }
-          }else{
-            _show('🔴 못 올렸습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다'), 1);
-          }
-        })
-        .catch(function(e){ PJ_REVFILE_BUSY = false; _show('🔴 못 올렸습니다 — ' + e, 1); });
+    if(i < 0) return;
+    var x = (PJ_REV.lines || [])[i];
+    var room = PJ_REV_PER - ((x && x.f) ? x.f.length : 0);
+    if(c.ok.length > room){ pjRevMsg('🔴 이 줄에는 ' + room + '개만 더 올릴 수 있습니다 — ' + c.ok.length + '개를 고르셨습니다', 1); return; }
+    if(!canApp()){ pjRevMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
+    if(!pjRevFilesAsk_(c.ok.length)){ pjRevMsg('올리지 않았습니다'); return; }
+    pjRevFilesGo_(c.ok, proj, PJ_REVFILE_LT, c.bad, i);
+  }
+  /* 5MB 넘는 사진만 화면에서 줄인다 — 그 밑은 원본 그대로 올린다.
+     🔴 브라우저가 못 여는 사진(크롬의 HEIC 등)은 줄이지 못하므로 까닭을 돌려준다. */
+  function pjRevShrink_(file, cb){
+    var nm = String(file.name || '');
+    if(file.size <= PJ_REV_LIM){ cb('', file, nm, false); return; }
+    var url = URL.createObjectURL(file), im = new Image();
+    im.onerror = function(){
+      URL.revokeObjectURL(url);
+      cb('5MB가 넘고 이 브라우저에서 줄일 수 없음 — JPEG로 바꿔 올려 주세요');
     };
-    rd.readAsDataURL(file);
+    im.onload = function(){
+      var steps = [[2560, 0.85], [1920, 0.8], [1600, 0.72]], s = 0;
+      (function tryOne(){
+        if(s >= steps.length){ URL.revokeObjectURL(url); cb('줄여도 5MB가 넘음'); return; }
+        var st = steps[s++], r = Math.min(1, st[0] / Math.max(im.naturalWidth, im.naturalHeight));
+        var cv = document.createElement('canvas');
+        cv.width = Math.round(im.naturalWidth * r); cv.height = Math.round(im.naturalHeight * r);
+        var cx = cv.getContext('2d');
+        cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);   /* 투명 PNG 가 까맣게 되지 않게 */
+        cx.drawImage(im, 0, 0, cv.width, cv.height);
+        cv.toBlob(function(b){
+          if(!b){ URL.revokeObjectURL(url); cb('사진을 줄이지 못함'); return; }
+          if(b.size > PJ_REV_LIM){ tryOne(); return; }
+          URL.revokeObjectURL(url);
+          cb('', b, nm.replace(/\.[^.]+$/, '') + '.jpg', true);
+        }, 'image/jpeg', st[1]);
+      })();
+    };
+    im.src = url;
+  }
+  /* 📷 하나씩 차례로 올린다 — 한꺼번에 보내면 서버가 같은 칸을 동시에 고치다 서로 막힌다.
+     🔴 줄 번호는 올릴 때마다 답에서 다시 찾는다 — 그 사이 다른 분이 줄을 적으면 번호가 밀린다.
+     🔴 몇 개가 실패해도 나머지는 계속 올리고, 끝에 무엇이 안 됐는지 말한다. */
+  function pjRevFilesGo_(files, proj, lt, skipped, hint){
+    var total = files.length, k = 0, okN = 0, small = 0, fail = (skipped || []).slice();
+    var lines = (proj === PJ_REV_PROJ ? PJ_REV.lines : []) || [];
+    var _show = function(m, c){ if(proj === PJ_REV_PROJ) pjRevMsg(m, c); };   /* 다른 프로젝트로 넘어갔으면 그 화면에 안 띄운다 */
+    var idxOf = function(){
+      /* 🔴 글자가 같은 줄이 둘일 수 있다 — 누른 그 줄이 그대로면 그 줄이다 */
+      if(lines[hint] && String(lines[hint].t || '') === lt) return hint;
+      for(var q = 0; q < lines.length; q++){ if(lines[q] && String(lines[q].t || '') === lt) return q; }
+      return -1;
+    };
+    var finish = function(){
+      PJ_REVFILE_BUSY = false;
+      if(okN && proj === PJ_REV_PROJ){ try { pjRevNotionLater_(); } catch(e){} }
+      if(fail.length){
+        PJ_REV_STICK = true;
+        _show('⚠ ' + okN + '개 올렸고 ' + fail.length + '개는 못 올렸습니다 — ' + fail.join(' · '), 1);
+      }else{
+        _show('✅ ' + okN + '개 올렸습니다' + (small ? ' (큰 사진 ' + small + '개는 줄여서 올렸습니다)' : ''));
+      }
+    };
+    var next = function(){
+      if(k >= total){ finish(); return; }
+      var file = files[k++], label = String(file.name || '');
+      _show('⏳ ' + k + '/' + total + ' 올리는 중… ' + label);
+      pjRevShrink_(file, function(err, blob, nm, shrunk){
+        if(err){ fail.push(label + ' (' + err + ')'); next(); return; }
+        var rd = new FileReader();
+        rd.onerror = function(){ fail.push(label + ' (파일을 읽지 못함)'); next(); };
+        rd.onload = function(){
+          var i = idxOf();
+          if(i < 0){ fail.push(label + ' (그 줄을 못 찾음)'); next(); return; }
+          var b64 = String(rd.result || '').split(',')[1] || '';
+          var body = { rep: 'revfile', name: proj, idx: i, lt: lt, fname: nm, data: b64 };   /* MIME 은 서버가 확장자로 정한다 */
+          var tok = appTokObj(); if(tok.s) body.s = tok.s; if(tok.t) body.t = tok.t;
+          /* 🔴 Content-Type 을 text/plain 으로 — JSON 이라고 적으면 브라우저가 «미리 물어보기»를 하는데 Apps Script 는 못 받는다 */
+          fetch(FIELD_APP, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+            .then(function(res){ return res.json(); })
+            .then(function(d){
+              if(d && d.ok){
+                okN++; if(shrunk) small++;
+                var rv = pjRevParse(d.review);
+                lines = rv.lines || [];
+                if(proj === PJ_REV_PROJ){                      /* 그 사이 다른 프로젝트로 넘어갔으면 화면은 안 건드린다 */
+                  /* 🔴 올리는 동안 다음 줄을 적고 있을 수 있다 — 다시 그려도 적던 글이 안 지워지게 */
+                  var tx = document.getElementById('pjRevTx'), keep = tx ? tx.value : '', foc = tx && document.activeElement === tx;
+                  PJ_REV = rv; pjRevDraw();
+                  tx = document.getElementById('pjRevTx');
+                  if(tx && keep){ tx.value = keep; pjRevCntUpd_(tx, 'pjRevCnt'); }
+                  if(tx && foc) tx.focus();
+                }
+                try { var c = PJ_CHK_CACHE[proj]; if(c) c.review = d.review; } catch(e5){}
+              }else{
+                fail.push(label + ' (' + ((d && (d.error || d.why)) || '응답이 없습니다') + ')');
+              }
+              next();
+            })
+            .catch(function(e){ fail.push(label + ' (' + e + ')'); next(); });
+        };
+        rd.readAsDataURL(blob);
+      });
+    };
+    PJ_REVFILE_BUSY = true;
+    PJ_REV_STICK = false;
+    next();
   }
   function pjRevFileDel(i, k){
     var x = (PJ_REV.lines || [])[i], f = x && x.f && x.f[k];
@@ -8868,7 +9039,8 @@
         pjRevDraw();
         try { var c = PJ_CHK_CACHE[proj]; if(c) c.review = d.review; } catch(e5){}
         /* 🔴 드라이브 파일을 못 지웠으면 «성공»이라 하지 않는다 */
-        if(d.warn) pjRevMsg('⚠ ' + d.warn, 1); else pjRevMsg('✅ 지웠습니다');
+        if(d.warn){ PJ_REV_STICK = true; pjRevMsg('⚠ ' + d.warn, 1); } else { PJ_REV_STICK = false; pjRevMsg('✅ 지웠습니다'); }
+        try { pjRevNotionLater_(); } catch(e6){}
       }else{
         pjRevMsg('🔴 못 지웠습니다 — ' + ((d && (d.error || d.why)) || ''), 1);
       }
@@ -8895,12 +9067,18 @@
       /* 🏷 2026-09-20 — 노션 「패턴」 칸에는 «줄에서 모인 것»이 간다(사람이 안 누른다).
          🔴 [옛 프로젝트 태그도 같이 간다] `pjRevRoll_` 이 `rv.tags` 를 합쳐 준다 — 안 버린다.
          🔴 [대표 칸은 여기 없다] 애초에 이 함수는 관리자 칸(`PJ_REV`)만 보낸다. */
-      var snap = { lines: (PJ_REV.lines||[]), rate: PJ_REV.rate||'',
+      /* 📷 2026-11-05 — 이 길은 주소에 담겨 간다. 파일은 드라이브 id 만 보내 주소가 안 길어지게 한다 */
+      var snap = { lines: (PJ_REV.lines||[]).map(function(x){
+                     if(!x || !x.f || !x.f.length) return x;
+                     var c = {}; for(var k in x){ if(Object.prototype.hasOwnProperty.call(x, k)) c[k] = x[k]; }
+                     c.f = x.f.map(function(f){ return String((f && f.id) || ''); }).filter(function(id){ return !!id; });
+                     return c;
+                   }), rate: PJ_REV.rate||'',
                    tags: pjRevRoll_(PJ_REV).map(function(o){ return o.t; }) };
       try {
         pjNotion('review', proj, snap, function(d){
           /* 🔴 그 사이 다른 프로젝트로 넘어갔으면 «말하지 않는다» — 엉뚱한 화면에 뜬다 */
-          if(PJ_REV_PROJ !== proj) return;
+          if(PJ_REV_PROJ !== proj || PJ_REV_STICK) return;
           if(!d || !d.ok){
             /* 🔴 2026-09-20 추가 — 실물로 처음 돌려보니 「못 보냈습니다」만 뜨고 «왜»는
                화면 어디에도 안 남아 알아낼 길이 없었다. 서버가 준 이유(`d.error`)를 그대로 보여준다
@@ -8926,15 +9104,32 @@
     var el = document.getElementById(own ? 'pjRevTxOwn' : 'pjRevTx');
     if(!el) return;
     var t = String(el.value || '').trim();
+    /* 📷 골라 둔 사진이 있으면 글 없이도 남긴다 — "글을 못쓰니 이미지로라도" (2026-10-09) */
+    var pend = (!own && PJ_REV_PEND && PJ_REV_PEND.proj === PJ_REV_PROJ) ? PJ_REV_PEND : null;
+    if(!t && pend) t = '📷 사진';
     if(!t){ pjRevMsg('내용을 적어주세요', 1); el.focus(); return; }
+    if(pend){
+      if(PJ_REVFILE_BUSY){ pjRevMsg('⏳ 지금 올리는 중입니다 — 끝난 뒤에 다시 눌러 주세요', 1); return; }
+      if(!canApp()){ pjRevMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
+      if(!pjRevFilesAsk_(pend.files.length)){ pjRevMsg('올리지 않았습니다'); return; }
+    }
     el.value = '';
-    pjRevSend({ rev: 'add', text: t }, '남겼습니다', own);
+    pjRevSend({ rev: 'add', text: t }, '남겼습니다', own, pend ? function(){
+      PJ_REV_PEND = null;
+      pjRevPendPaint_();
+      pjRevFilesGo_(pend.files, pend.proj, t, [], 0);
+    } : null);
   }
   document.addEventListener('click', function(e){
     var el = e.target, n = 0, hit = null, kind = '', own = false;
     while(el && n++ < 3){
       if(el.getAttribute){
         if(el.id === 'pjRevAdd' || el.id === 'pjRevAddOwn'){ kind = 'add'; hit = '1'; break; }
+        if(el.id === 'pjRevPic'){ kind = 'pic'; hit = '1'; break; }
+        hit = el.getAttribute('data-pjrevpendx'); if(hit !== null){ kind = 'pendx'; break; }
+        hit = el.getAttribute('data-pjrevph');    if(hit !== null){ kind = 'phopen'; break; }
+        hit = el.getAttribute('data-pjrevphv');
+        if(hit !== null){ kind = 'phase'; PJ_REV_KTMP = el.getAttribute('data-k') || ''; break; }
         hit = el.getAttribute('data-pjrevdel');  if(hit !== null){ kind = 'del';  break; }
         hit = el.getAttribute('data-pjrevrate'); if(hit !== null){ kind = 'rate'; break; }
         hit = el.getAttribute('data-pjrevdone'); if(hit !== null){ kind = 'done'; break; }
@@ -8964,6 +9159,19 @@
     own = !!(el && el.getAttribute && el.getAttribute('data-own'));
     e.preventDefault();
     if(kind === 'add')  return pjRevAdd(own);
+    if(kind === 'pic')  return pjRevPicAsk();
+    if(kind === 'pendx'){ PJ_REV_PEND = null; pjRevPendPaint_(); return; }
+    /* 🕘 시기 딱지 — 누르면 셋이 펼쳐지고, 고르면 저장한다 */
+    if(kind === 'phopen'){
+      var _pk = 'p' + pjRevKey_(own, parseInt(hit, 10));
+      PJ_REV_PICK = (PJ_REV_PICK === _pk) ? '' : _pk;
+      PJ_REV_EDIT = -1;
+      pjRevDraw(); return;
+    }
+    if(kind === 'phase'){
+      PJ_REV_PICK = '';
+      return pjRevSend({ rev: 'phase', idx: hit, val: PJ_REV_KTMP }, '시기를 바꿨습니다', own);
+    }
     if(kind === 'del'){
       if(!confirm((own ? '🔒 대표 칸의 ' : '') + '이 줄을 지웁니다. 되돌릴 수 없습니다.')) return;
       return pjRevSend({ rev: 'del', idx: hit }, '지웠습니다', own);
@@ -9519,7 +9727,7 @@
     }else{
       h += LN.map(function(x){
         var p = String((x && x.p) || '');
-        var pn = p === 'pre' ? '준비' : (p === 'end' ? '끝난 뒤' : '촬영 중');
+        var pn = PJ_REV_PHN[p] || '촬영 중';
         return '<div class="ln"><span class="ph">' + pjEsc(pn) + '</span>'
              + pjEsc(String((x && x.t) || ''))
              + '<span class="who">' + pjEsc(String((x && x.w) || '')) + ' · '
@@ -9545,7 +9753,7 @@
     }else{
       h += M.map(function(x){
         var p = String((x && x.p) || '');
-        var pn = p === 'pre' ? '준비' : (p === 'end' ? '끝난 뒤' : '촬영 중');
+        var pn = PJ_REV_PHN[p] || '촬영 중';
         var g = (x && x.g) || [];
         if(Object.prototype.toString.call(g) !== '[object Array]') g = [];
         return '<div class="ln"><span class="ph">' + pjEsc(pn) + '</span>'
@@ -10867,8 +11075,7 @@
   /* 📎 2026-10-09 — 회고 줄 첨부를 골랐다 — 보낸다 */
   document.addEventListener('change', function(e){
     if(!e.target || e.target.id !== 'pjRevFileIn') return;
-    var f = e.target.files && e.target.files[0];
-    if(f) pjRevFileSend(f);
+    pjRevFilesPicked(Array.prototype.slice.call(e.target.files || []));
   });
   /* 🔍 업체 찾기 — 글자를 칠 때마다 «목록 상자만» 다시 그린다 */
   document.addEventListener('input', function(e){
