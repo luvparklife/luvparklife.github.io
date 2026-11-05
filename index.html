@@ -1092,6 +1092,14 @@
     .rvthumb a.noimg .nm{display:inline-block}
     .rvline .kds{flex-wrap:wrap}
     .rvline .kds .kd{white-space:nowrap}
+    .rvpane.team{border-color:#cfe0f5; background:#f7fbff}
+    .rvask{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; color:#7a5a12; cursor:pointer; margin:0 0 7px}
+    .rvasknote{font-size:11.5px; color:#7a5a12; background:#fff7e0; border-radius:7px; padding:4px 8px; margin:0 0 8px}
+    .rvtag{display:inline-block; font-size:10.5px; font-weight:800; border-radius:6px; padding:1px 6px; margin-left:6px; background:#fff0c2; color:#7a5a12}
+    .rvtag.moved{background:#e8f4ee; color:#1c6b46}
+    .rvline .rvmove{flex:none; border:1px solid #dfe4ec; background:#fff; color:#5b6472; font:inherit; font-size:11px; font-weight:700;
+      border-radius:7px; padding:2px 7px; cursor:pointer; white-space:nowrap}
+    .rvline button.ph:disabled{cursor:default}
     .rvzoom{position:fixed; inset:0; z-index:100000; background:rgba(15,20,30,.82); display:flex; align-items:center;
       justify-content:center; padding:16px; cursor:zoom-out}
     .rvzoom img{max-width:100%; max-height:100%; border-radius:8px; background:#fff}
@@ -7906,7 +7914,7 @@
             「팀리뷰」·「퍼포먼스」가 각 19%였다 — 사람 평가가 섞인다.
             그래서 «탭 자체를 안 그린다». 서버(projSeeFilter_)에서도 한 번 더 막는다.
          🔴 [비어 있어도 탭은 있다] 없으면 「없는 기능」으로 읽힌다. */
-      { n: '회고', tab: 'rev', mgr: 1,
+      { n: '회고', tab: 'rev', team: 1,
         html: function(){ return '<div id="pjRev"></div>'; } },
       /* 📋 2026-10-06 대표 지시 — 「보고서 탭을 아예 만들자」. 전의 4개탭 반려(2026-09-20, 폰 너비)는
          탭 이름을 줄여서 해결한다(대표 선택) — 자리는 pjLinks() 끝에 있던 것을 그대로 옮긴다. */
@@ -7942,11 +7950,13 @@
     var PJ_TABS = [
       { k: 'info', n: '📋 정보' },
       { k: 'todo', n: '✔ 할일' },
-      { k: 'rev',  n: '📝 회고', mgr: 1 },
+      { k: 'rev',  n: '📝 회고', team: 1 },
       { k: 'report', n: '📋 보고서', mgr: 1 }
     ];
     var use = PJ_TABS.filter(function(t){
       if(t.mgr && !isMgr) return false;
+      /* 📝 2026-11-05 — 회고는 입력 등급도 쓴다(자기 줄만). 보기·미등록은 탭이 없다 */
+      if(t.team && !isMgr && PJ_ROLE !== '입력') return false;
       return a.some(function(x){ return x.tab === t.k && !(x.mgr && !isMgr); });
     });
     if(!use.length) return '';
@@ -8008,6 +8018,7 @@
     /* 📋 2026-10-06 — 「보고서」 탭은 상자만 있고 내용은 pjRpOpen() 이 채운다.
        탭으로 들어올 때마다 불러준다 — 안 그러면 탭은 열렸는데 안이 비어 보인다. */
     if(k === 'report' && typeof pjRpOpen === 'function'){ pjRpOpen(); }
+    if(k === 'rev' && typeof pjRevMeLoad_ === 'function'){ pjRevMeLoad_(); }
   }
   window.pjTabGo = pjTabGo;
   document.addEventListener('click', function(e){
@@ -8444,7 +8455,7 @@
   var PJ_REV_OUT_HAS = false;              /* 그 항목이 «오기는 했나» (등급·옛 배포와 구별) */
   function pjRevPaint(proj, d, items){
     var box = document.getElementById('pjRev');
-    if(!box) return;                       /* 「관리」 미만이면 탭 자체가 없다 */
+    if(!box) return;                       /* 보기·미등록은 탭 자체가 없다 */
     PJ_REV_PROJ = proj;
     PJ_REV = pjRevParse(d && d.review);
     /* 🔒 2026-09-15 대표 지시 — 「관리자 칸」과 「대표 칸」을 나눈다.
@@ -8454,6 +8465,8 @@
           빈 화면이 된다 — 그때는 관리자 칸으로 되돌린다. */
     PJ_REV_OWNABLE = !!(d && d.canRevOwn);
     PJ_REV_OWN = pjRevParse(d && d.reviewOwn);
+    PJ_REV_CAN = !!(d && d.canRev);
+    if(PJ_REV_ME_ON !== proj){ PJ_REV_ME = { team: [], ask: [] }; PJ_REV_ME_ED = ''; PJ_REV_ME_PICK = ''; }
     /* 🏷 2026-09-20 — 「＋ 기타」로 적힌 태그가 몇 번 쓰였나(서버가 준다).
        🔴 [안 오면 «비운다»] 옛 배포에서는 이 값이 없다 — 그때는 「자주 쓰는 것」 줄이 그냥 안 뜬다.
           지난 값을 남겨 두면 다른 프로젝트의 것이 그대로 보인다. */
@@ -8465,6 +8478,7 @@
     /* 🔴 [프로젝트가 바뀌면 «열어둔 것»을 닫는다] 안 닫으면 다른 프로젝트의 3번 줄이 펼쳐진 채 뜬다 */
     PJ_REV_EDIT = -1; PJ_REV_PICK = ''; PJ_REV_ASK = '';
     PJ_REV_FIL_ = { mgr: '', own: '' };
+    if(pjRevTabOn_()) pjRevMeLoad_();
     /* 📋 2026-09-20 — 보고서도 «같은 응답»에 실려 온다. 여기서 같이 받는다(왕복을 안 늘린다).
        🔴 [프로젝트가 바뀌면 «닫는다»] 안 닫으면 앞 프로젝트 보고서가 펼쳐진 채로 남는다. */
     try {
@@ -8514,9 +8528,12 @@
        + (own ? '' : '<button type="button" class="rvpic" id="pjRevPic" title="사진·파일을 여러 개 고릅니다">📷 사진</button>')
        + '<button type="button" id="pjRevAdd' + sfx + '" data-own="' + (own ? '1' : '') + '">'
        + '＋ 남기기</button></div>'
-       + (own ? '' : pjRevPendHtml_());
+       + (own ? '' : pjRevPendHtml_())
+       + ((!own && !PJ_REV_OWNABLE) ? pjRevAskBox_() : '');
     /* ── 쌓인 줄 (최신이 위 — 서버가 unshift 한다) ── */
-    if(!L.length){
+    if(own && PJ_REV_ME_LOADED !== PJ_REV_PROJ){
+      h += '<p class="fn" style="margin:2px 0 4px">⏳ 불러오는 중…</p>';
+    }else if(!L.length){
       h += '<p class="fn" style="margin:2px 0 4px">' + (own
            ? '아직 없습니다 — 여기 적은 것은 <b>관리자에게 안 갑니다</b>.'
            : '아직 없습니다 — <b>촬영이 끝나기 전에도</b> 적어두시면 그때 무슨 일이었는지 남습니다.')
@@ -8643,6 +8660,7 @@
              + '<button type="button" class="ph ' + (p || 'mid') + '" data-pjrevph="' + i + '"' + od
              + ' title="눌러서 촬영 전·중·후를 바꿉니다">' + pjEsc(pn) + '<span class="cr">▾</span></button>'
              + '<span class="tx">' + pjEsc(String((x && x.t) || ''))
+             + ((x && x.from) ? '<span class="rvtag moved">팀원 줄에서 옮김</span>' : '')
              + '<span class="wd">' + pjEsc(String((x && x.w) || '—'))
              + ' · ' + pjEsc(String((x && x.d) || ''))
              + '<span class="kds">' + kb + '</span></span>'
@@ -8670,6 +8688,12 @@
   function pjRevDraw(){
     var box = document.getElementById('pjRev');
     if(!box) return;
+    /* 📝 팀원은 내 줄만 — 관리자 칸·보고서·회고 끝 체크는 안 그린다 */
+    if(!PJ_REV_CAN){
+      box.innerHTML = '<div class="rvbox">' + pjRevMinePane_() + '<span class="rvmsg" id="pjRevMsg"></span></div>';
+      pjRevThumbs_();
+      return;
+    }
     var h = '<div class="rvbox">';
     /* 🆕 2026-10-06 대표 지시 — 「회고 탭을 보고서로서 사용하게」는 안 하고(결함 8가지로 반려),
        대신 «오가는 길»만 가깝게 둔다. 완전히 합치지 않는 이유 — 둘은 생애주기·강제성·대표전용칸
@@ -8679,7 +8703,9 @@
     h += '<div class="rvtoreport"><button type="button" onclick="pjTabGo(\'report\')">'
        + '📋 이 프로젝트 보고서 보기</button></div>';
     /* 👥 관리자와 함께 — 언제나 있다 */
+    h += pjRevMePanes_();
     h += pjRevPane_(PJ_REV, false);
+    h += pjRevMineAsk_();
     /* 🔒 대표 전용 — 서버가 「대표가 맞다」고 할 때만 그린다.
        🔴 관리자에게는 «있는 줄도 모르게» 한다 — 있는데 못 본다고 알리면
           「거기 뭐가 있나」가 되어 감추려던 것을 오히려 가리킨다. */
@@ -8832,7 +8858,7 @@
   var PJ_REVFILE_BUSY = false, PJ_REVFILE_IDX = -1, PJ_REVFILE_PROJ = '', PJ_REVFILE_LT = '';
   /* 📷 2026-11-05 대표 지시 — 여러 장을 한 번에. PJ_REV_PEND = 입력칸 옆에서 골라 둔 것(남기기를 누르면 그 줄에 붙는다).
      PJ_REV_STICK = 일부 실패 문구를 노션 결과 문구가 3초 뒤 덮지 않게 잡아 둔다. */
-  var PJ_REV_PEND = null, PJ_REV_STICK = false;
+  var PJ_REV_PEND = null, PJ_REV_STICK = false, PJ_REVFILE_ST = null;
   var PJ_REV_PER = 10, PJ_REV_LIM = 5 * 1024 * 1024;     /* 서버 PROJ_TKFILE_PER_·MAX_ 와 같은 값 */
   var PJ_REV_IMG = /\.(jpe?g|png|gif|webp|heic|heif)$/i;
   function pjRevFilesHtml_(i, x){
@@ -8893,7 +8919,9 @@
   /* 누르면 크게 본다. 브라우저가 못 여는 것(문서·HEIC)은 내려받는다 */
   function pjRevOpen_(i, k){
     var x = (PJ_REV.lines || [])[i], f = x && x.f && x.f[k];
-    if(!f) return;
+    if(f) pjRevOpenF_(f);
+  }
+  function pjRevOpenF_(f){
     var nm = String(f.n || '파일'), show = /\.(jpe?g|png|gif|webp)$/i.test(nm), zm = null;
     if(show){
       zm = document.createElement('div'); zm.className = 'rvzoom';
@@ -8982,6 +9010,14 @@
       if(c.ok.length > PJ_REV_PER) pjRevMsg('🔴 한 줄에 ' + PJ_REV_PER + '개까지라 앞의 ' + PJ_REV_PER + '개만 골랐습니다', 1);
       return;
     }
+    if(i === -3){                                           /* 팀 칸·대표에게 줄 */
+      var st = PJ_REVFILE_ST, xs = pjRevMeFind_(st.tab, st.lid);
+      var rm = PJ_REV_PER - ((xs && xs.f) ? xs.f.length : 0);
+      if(c.ok.length > rm){ pjRevMsg('🔴 이 줄에는 ' + rm + '개만 더 올릴 수 있습니다 — ' + c.ok.length + '개를 고르셨습니다', 1); return; }
+      if(!canApp()){ pjRevMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
+      pjRevFilesGo_(c.ok, proj, '', c.bad, 0, st);
+      return;
+    }
     if(i < 0) return;
     var x = (PJ_REV.lines || [])[i];
     var room = PJ_REV_PER - ((x && x.f) ? x.f.length : 0);
@@ -9022,7 +9058,7 @@
   /* 📷 하나씩 차례로 올린다 — 한꺼번에 보내면 서버가 같은 칸을 동시에 고치다 서로 막힌다.
      🔴 줄 번호는 올릴 때마다 답에서 다시 찾는다 — 그 사이 다른 분이 줄을 적으면 번호가 밀린다.
      🔴 몇 개가 실패해도 나머지는 계속 올리고, 끝에 무엇이 안 됐는지 말한다. */
-  function pjRevFilesGo_(files, proj, lt, skipped, hint){
+  function pjRevFilesGo_(files, proj, lt, skipped, hint, st){
     var total = files.length, k = 0, okN = 0, small = 0, fail = (skipped || []).slice();
     var lines = (proj === PJ_REV_PROJ ? PJ_REV.lines : []) || [];
     var _show = function(m, c){ if(proj === PJ_REV_PROJ) pjRevMsg(m, c); };   /* 다른 프로젝트로 넘어갔으면 그 화면에 안 띄운다 */
@@ -9034,7 +9070,7 @@
     };
     var finish = function(){
       PJ_REVFILE_BUSY = false;
-      if(okN && proj === PJ_REV_PROJ){ try { pjRevNotionLater_(); } catch(e){} }
+      if(okN && !st && proj === PJ_REV_PROJ){ try { pjRevNotionLater_(); } catch(e){} }
       if(fail.length){
         PJ_REV_STICK = true;
         _show('⚠ ' + okN + '개 올렸고 ' + fail.length + '개는 못 올렸습니다 — ' + fail.join(' · '), 1);
@@ -9051,16 +9087,20 @@
         var rd = new FileReader();
         rd.onerror = function(){ fail.push(label + ' (파일을 읽지 못함)'); next(); };
         rd.onload = function(){
-          var i = idxOf();
+          var i = st ? 0 : idxOf();
           if(i < 0){ fail.push(label + ' (그 줄을 못 찾음)'); next(); return; }
           var b64 = String(rd.result || '').split(',')[1] || '';
           var body = { rep: 'revfile', name: proj, idx: i, lt: lt, fname: nm, data: b64 };   /* MIME 은 서버가 확장자로 정한다 */
+          if(st){ body.tab = st.tab; body.lid = st.lid; }
           var tok = appTokObj(); if(tok.s) body.s = tok.s; if(tok.t) body.t = tok.t;
           /* 🔴 Content-Type 을 text/plain 으로 — JSON 이라고 적으면 브라우저가 «미리 물어보기»를 하는데 Apps Script 는 못 받는다 */
           fetch(FIELD_APP, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
             .then(function(res){ return res.json(); })
             .then(function(d){
-              if(d && d.ok){
+              if(d && d.ok && st){
+                okN++; if(shrunk) small++;
+                if(proj === PJ_REV_PROJ){ PJ_REV_ME = { team: d.team || [], ask: d.ask || [] }; pjRevDrawKeep_(); }
+              }else if(d && d.ok){
                 okN++; if(shrunk) small++;
                 var rv = pjRevParse(d.review);
                 lines = rv.lines || [];
@@ -9161,6 +9201,195 @@
       } catch(e){}
     }, 3000);
   }
+  /* ═══════════════════════════════════════════════════════════════════════
+     📝 2026-11-05 대표 확정 — 팀 칸 · 🔒 대표에게만 · 대표 칸(별도 파일)
+     ═══════════════════════════════════════════════════════════════════════
+     🔴 [서버가 거른 것만 온다] 여기 있는 줄은 이 사람이 봐도 되는 줄이다(ReviewStore.js revCanSee_).
+     🔴 [회고 탭을 열 때 받는다] 프로젝트를 열 때마다 파일을 하나 더 열면 느려진다.
+     🔴 [줄은 번호표(id)로 찾는다] 사람마다 보이는 줄이 달라 순서로는 못 찾는다. */
+  var PJ_REV_ME = { team: [], ask: [] }, PJ_REV_ME_ON = '', PJ_REV_ME_ED = '', PJ_REV_ME_PICK = '', PJ_REV_CAN = false;
+  function pjRevTabOn_(){
+    var b = document.querySelector('[data-pjtabbody="rev"]');
+    return !!b && !b.hidden;
+  }
+  function pjRevDrawKeep_(){
+    var tx = document.getElementById('pjRevTx'), ck = document.getElementById('pjRevAsk');
+    var keep = tx ? tx.value : '', foc = tx && document.activeElement === tx, on = !!(ck && ck.checked);
+    pjRevDraw();
+    tx = document.getElementById('pjRevTx'); ck = document.getElementById('pjRevAsk');
+    if(tx && keep){ tx.value = keep; pjRevCntUpd_(tx, 'pjRevCnt'); }
+    if(ck) ck.checked = on;
+    if(tx && foc) tx.focus();
+  }
+  function pjRevMeLoad_(){
+    var proj = PJ_REV_PROJ;
+    if(!proj || PJ_REV_ME_ON === proj) return;
+    PJ_REV_ME_ON = proj;
+    pjAdmin('revload', proj, '', function(d){
+      if(proj !== PJ_REV_PROJ) return;
+      if(!d || !d.ok){ PJ_REV_ME_ON = ''; pjRevMsg('🔴 회고를 못 불러왔습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다'), 1); return; }
+      PJ_REV_ME = { team: d.team || [], ask: d.ask || [] };
+      if(d.own !== undefined) PJ_REV_OWN = pjRevParse(d.own);
+      PJ_REV_ME_LOADED = proj;
+      pjRevDrawKeep_();
+    });
+  }
+  var PJ_REV_ME_LOADED = '';
+  function pjRevMeSend_(tab, rev, extra, okMsg, after){
+    var proj = PJ_REV_PROJ;
+    pjRevMsg('저장 중…');
+    pjAdmin('revme', proj, '&tab=' + tab + '&rev=' + rev + (extra || ''), function(d){
+      if(proj !== PJ_REV_PROJ) return;
+      if(!d || !d.ok){ pjRevMsg('🔴 저장 못 했습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다'), 1); return; }
+      PJ_REV_ME = { team: d.team || [], ask: d.ask || [] };
+      pjRevDrawKeep_();
+      pjRevMsg(d.warn ? '⚠ ' + d.warn : (okMsg || '저장됐습니다'), d.warn ? 1 : 0);
+      if(after) after(d);
+    });
+  }
+  function pjRevMeFind_(tab, lid){
+    var L = PJ_REV_ME[tab] || [];
+    for(var i = 0; i < L.length; i++){ if(L[i] && L[i].id === lid) return L[i]; }
+    return null;
+  }
+  function pjRevMeFiles_(tab, x){
+    var F = (x && x.f) || [];
+    if(!F.length) return '';
+    return '<span class="rvfiles">' + F.map(function(f){
+      var id = String(f.id || ''), nm = String(f.n || '파일'), img = PJ_REV_IMG.test(nm) && /^[-\w]{20,}$/.test(id);
+      return '<span class="rvthumb"><a href="#" data-pjrevme="open:' + tab + ':' + pjEsc(x.id) + ':' + pjEsc(id) + '" title="' + pjEsc(nm) + '"'
+           + (img ? '' : ' class="noimg"') + '>'
+           + (img ? '<img data-pjrevfid="' + id + '" alt="">' : '')
+           + '<span class="nm">📄 ' + pjEsc(nm) + '</span></a>'
+           + (x.mine ? '<span class="tkfdel" data-pjrevme="fdel:' + tab + ':' + pjEsc(x.id) + ':' + pjEsc(id) + '" title="지웁니다">✕</span>' : '')
+           + '</span>';
+    }).join('') + '</span>';
+  }
+  function pjRevMeLine_(tab, x){
+    var p = String(x.p || ''), id = pjEsc(x.id), key = tab + ':' + x.id, canPh = x.mine || PJ_REV_OWNABLE;
+    var h = '<div class="rvline">';
+    h += '<button type="button" class="ph ' + (p || 'mid') + '"' + (canPh ? ' data-pjrevme="ph:' + tab + ':' + id + '"' : ' disabled')
+       + ' title="눌러서 촬영 전·중·후를 바꿉니다">' + pjEsc(PJ_REV_PHN[p] || '—') + (canPh ? '<span class="cr">▾</span>' : '') + '</button>';
+    if(PJ_REV_ME_ED === key){
+      h += '<div class="rvedit"><textarea id="pjRevMeEd" maxlength="300">' + pjEsc(x.t || '') + '</textarea><div class="eb">'
+         + '<button type="button" class="pri" data-pjrevme="edok:' + tab + ':' + id + '">저장</button>'
+         + '<button type="button" data-pjrevme="edx:' + tab + ':' + id + '">취소</button></div></div></div>';
+      return h;
+    }
+    h += '<span class="tx">' + pjEsc(x.t || '')
+       + (tab === 'ask' ? '<span class="rvtag">🔒 대표에게만</span>' : '')
+       + (x.moved ? '<span class="rvtag moved">관리자 칸으로 옮김</span>' : '')
+       + '<span class="wd">' + pjEsc(x.w || '—') + ' · ' + pjEsc(x.d || '') + '</span>';
+    if(PJ_REV_ME_PICK === key){
+      h += '<span class="rvphpick">' + PJ_REV_PHS.map(function(k){
+        return '<button type="button" data-pjrevme="pv:' + tab + ':' + id + ':' + k + '"' + (k === p ? ' class="on"' : '') + '>' + PJ_REV_PHN[k] + '</button>';
+      }).join('') + '</span>';
+    }
+    h += pjRevMeFiles_(tab, x) + '</span>';
+    if(x.mine){
+      h += '<button type="button" class="ed" data-pjrevme="ed:' + tab + ':' + id + '" title="고칩니다">✎</button>'
+         + '<span class="tkatt" data-pjrevme="att:' + tab + ':' + id + '" title="사진·파일을 붙입니다">📎'
+         + ((x.f && x.f.length) ? '<b>' + x.f.length + '</b>' : '') + '</span>'
+         + '<button type="button" class="dl" data-pjrevme="del:' + tab + ':' + id + '" title="지웁니다">✕</button>';
+    }
+    if(tab === 'team' && PJ_REV_CAN && !x.moved){
+      h += '<button type="button" class="rvmove" data-pjrevme="move:' + tab + ':' + id + '">↗ 관리자 칸으로</button>';
+    }
+    return h + '</div>';
+  }
+  function pjRevMeRows_(tab, list, none){
+    if(PJ_REV_ME_LOADED !== PJ_REV_PROJ) return '<p class="fn" style="margin:2px 0">⏳ 불러오는 중…</p>';
+    return list.length ? list.map(function(x){ return pjRevMeLine_(x.__t || tab, x); }).join('')
+                       : '<p class="fn" style="margin:2px 0">' + none + '</p>';
+  }
+  function pjRevAskBox_(){
+    return '<label class="rvask"><input type="checkbox" id="pjRevAsk" onchange="pjRevAskNote_(this)"> 🔒 대표에게만 보내기</label>'
+         + '<div class="rvasknote" id="pjRevAskNote" hidden>이 줄은 나와 대표님만 봅니다. 내 이름은 대표님께 보입니다.</div>';
+  }
+  window.pjRevAskNote_ = function(el){
+    var n = document.getElementById('pjRevAskNote');
+    if(n) n.hidden = !el.checked;
+  };
+  /* 팀원 화면 — 내가 적은 줄만 */
+  function pjRevMinePane_(){
+    var L = (PJ_REV_ME.team || []).map(function(x){ x.__t = 'team'; return x; })
+      .concat((PJ_REV_ME.ask || []).map(function(x){ x.__t = 'ask'; return x; }))
+      .sort(function(a, b){ return String(b.d || '').localeCompare(String(a.d || '')); });
+    return '<div class="rvpane team"><div class="rvhd">📝 내 회고'
+         + '<span class="fn">내가 적은 줄만 보입니다. <b>관리자와 대표님이 읽습니다.</b></span></div>'
+         + '<div class="rvadd"><input type="text" id="pjRevTx" maxlength="300" oninput="pjRevCntUpd_(this,\'pjRevCnt\')" placeholder="지금 겪은 것을 한 줄로 — 촬영 전에도 · 촬영 중에도">'
+         + '<span class="rvcnt" id="pjRevCnt">0/300</span>'
+         + '<button type="button" class="rvpic" id="pjRevPic" title="사진·파일을 여러 개 고릅니다">📷 사진</button>'
+         + '<button type="button" id="pjRevAdd" data-own="">＋ 남기기</button></div>'
+         + pjRevPendHtml_() + pjRevAskBox_()
+         + pjRevMeRows_('team', L, '아직 없습니다 — 겪은 일을 한 줄로 남겨 주세요.') + '</div>';
+  }
+  /* 관리자·대표 화면에 더 붙는 칸 */
+  function pjRevMePanes_(){
+    var h = '';
+    if(PJ_REV_OWNABLE){
+      h += '<div class="rvpane own"><div class="rvhd">📮 대표에게 온 것<span class="fn">적은 사람과 대표님만 봅니다</span></div>'
+         + pjRevMeRows_('ask', PJ_REV_ME.ask || [], '아직 없습니다.') + '</div>';
+    }
+    h += '<div class="rvpane team"><div class="rvhd">🙋 팀원이 적은 것<span class="fn">팀원끼리는 서로 못 봅니다. 고칠 일은 관리자 칸으로 옮깁니다.</span></div>'
+       + pjRevMeRows_('team', PJ_REV_ME.team || [], '아직 없습니다.') + '</div>';
+    return h;
+  }
+  function pjRevMineAsk_(){
+    if(PJ_REV_OWNABLE || !(PJ_REV_ME.ask || []).length) return '';
+    return '<div class="rvpane own"><div class="rvhd">🔒 내가 대표에게 보낸 것<span class="fn">나와 대표님만 봅니다</span></div>'
+         + pjRevMeRows_('ask', PJ_REV_ME.ask, '') + '</div>';
+  }
+  function pjRevMeAdd_(tab, t, pend){
+    pjRevMeSend_(tab, 'add', '&text=' + encodeURIComponent(t), tab === 'ask' ? '대표님께만 보냈습니다' : '남겼습니다', function(d){
+      if(!pend) return;
+      PJ_REV_PEND = null;
+      pjRevPendPaint_();
+      pjRevFilesGo_(pend.files, pend.proj, t, [], 0, { tab: tab, lid: d.lid });
+    });
+  }
+  function pjRevMeClick_(v){
+    var a = String(v).split(':'), act = a[0], tab = a[1], lid = a[2], x = pjRevMeFind_(tab, lid), key = tab + ':' + lid;
+    if(act === 'ph'){ PJ_REV_ME_PICK = (PJ_REV_ME_PICK === key) ? '' : key; pjRevDrawKeep_(); return; }
+    if(act === 'pv'){ PJ_REV_ME_PICK = ''; pjRevMeSend_(tab, 'phase', '&lid=' + lid + '&val=' + a[3], '시기를 바꿨습니다'); return; }
+    if(act === 'ed'){ PJ_REV_ME_ED = key; pjRevDrawKeep_(); var e0 = document.getElementById('pjRevMeEd'); if(e0) e0.focus(); return; }
+    if(act === 'edx'){ PJ_REV_ME_ED = ''; pjRevDrawKeep_(); return; }
+    if(act === 'edok'){
+      var ed = document.getElementById('pjRevMeEd'), nv = ed ? String(ed.value || '').trim() : '';
+      if(!nv){ pjRevMsg('내용이 비었습니다 — 지우시려면 ✕ 를 눌러주세요', 1); return; }
+      PJ_REV_ME_ED = '';
+      pjRevMeSend_(tab, 'edit', '&lid=' + lid + '&text=' + encodeURIComponent(nv), '고쳤습니다');
+      return;
+    }
+    if(act === 'del'){
+      if(!confirm('이 줄을 지웁니다. 되돌릴 수 없습니다.')) return;
+      pjRevMeSend_(tab, 'del', '&lid=' + lid, '지웠습니다');
+      return;
+    }
+    if(act === 'att'){
+      if(PJ_REVFILE_BUSY){ pjRevMsg('⏳ 지금 올리는 중입니다 — 끝난 뒤에 다시 눌러 주세요', 1); return; }
+      if(x && (x.f || []).length >= PJ_REV_PER){ pjRevMsg('🔴 한 줄에 ' + PJ_REV_PER + '개까지 올릴 수 있습니다', 1); return; }
+      PJ_REVFILE_IDX = -3; PJ_REVFILE_ST = { tab: tab, lid: lid }; PJ_REVFILE_PROJ = PJ_REV_PROJ; PJ_REVFILE_LT = '';
+      var el = pjRevFileInput_(); el.value = ''; el.click();
+      return;
+    }
+    if(act === 'open'){
+      var f = ((x && x.f) || []).filter(function(q){ return q.id === a[3]; })[0];
+      if(f) pjRevOpenF_(f);
+      return;
+    }
+    if(act === 'fdel'){
+      if(!confirm('이 파일을 지울까요?')) return;
+      pjRevMeSend_(tab, 'filedel', '&lid=' + lid + '&fid=' + encodeURIComponent(a[3]), '지웠습니다');
+      return;
+    }
+    if(act === 'move'){
+      pjRevSend({ rev: 'move', lid: lid }, '관리자 칸으로 옮겼습니다', false, function(){
+        if(x) x.moved = 1;
+        pjRevDrawKeep_();
+      });
+    }
+  }
   /* 🔒 `own` = 대표 칸에 적는 중인가. 칸마다 «자기 입력칸»이 있어 id 가 갈린다. */
   function pjRevAdd(own){
     var el = document.getElementById(own ? 'pjRevTxOwn' : 'pjRevTx');
@@ -9170,11 +9399,19 @@
     var pend = (!own && PJ_REV_PEND && PJ_REV_PEND.proj === PJ_REV_PROJ) ? PJ_REV_PEND : null;
     if(!t && pend) t = '📷 사진';
     if(!t){ pjRevMsg('내용을 적어주세요', 1); el.focus(); return; }
+    var _ask = document.getElementById('pjRevAsk'), toAsk = !own && !!(_ask && _ask.checked);
     if(pend){
       if(PJ_REVFILE_BUSY){ pjRevMsg('⏳ 지금 올리는 중입니다 — 끝난 뒤에 다시 눌러 주세요', 1); return; }
       if(!canApp()){ pjRevMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
     }
     el.value = '';
+    pjRevCntUpd_(el, own ? 'pjRevCntOwn' : 'pjRevCnt');
+    /* 📝 2026-11-05 — 팀원 줄과 「대표에게만」 줄은 관리자 칸이 아니라 별도 파일로 간다 */
+    if(toAsk || !PJ_REV_CAN){
+      if(_ask){ _ask.checked = false; window.pjRevAskNote_(_ask); }
+      pjRevMeAdd_(toAsk ? 'ask' : 'team', t, pend);
+      return;
+    }
     pjRevSend({ rev: 'add', text: t }, '남겼습니다', own, pend ? function(){
       PJ_REV_PEND = null;
       pjRevPendPaint_();
@@ -9189,6 +9426,7 @@
         if(el.id === 'pjRevPic'){ kind = 'pic'; hit = '1'; break; }
         hit = el.getAttribute('data-pjrevpendx'); if(hit !== null){ kind = 'pendx'; break; }
         hit = el.getAttribute('data-pjrevopen');  if(hit !== null){ kind = 'open'; break; }
+        hit = el.getAttribute('data-pjrevme');    if(hit !== null){ kind = 'me'; break; }
         hit = el.getAttribute('data-pjrevph');    if(hit !== null){ kind = 'phopen'; break; }
         hit = el.getAttribute('data-pjrevphv');
         if(hit !== null){ kind = 'phase'; PJ_REV_KTMP = el.getAttribute('data-k') || ''; break; }
@@ -9222,6 +9460,7 @@
     e.preventDefault();
     if(kind === 'add')  return pjRevAdd(own);
     if(kind === 'pic')  return pjRevPicAsk();
+    if(kind === 'me')   return pjRevMeClick_(hit);
     if(kind === 'open'){ var _op = String(hit).split(':'); return pjRevOpen_(parseInt(_op[0], 10), parseInt(_op[1], 10)); }
     if(kind === 'pendx'){ PJ_REV_PEND = null; pjRevPendPaint_(); return; }
     /* 🕘 시기 딱지 — 누르면 셋이 펼쳐지고, 고르면 저장한다 */
