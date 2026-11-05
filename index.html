@@ -1092,6 +1092,9 @@
     .rvthumb a.noimg .nm{display:inline-block}
     .rvline .kds{flex-wrap:wrap}
     .rvline .kds .kd{white-space:nowrap}
+    .rvzoom{position:fixed; inset:0; z-index:100000; background:rgba(15,20,30,.82); display:flex; align-items:center;
+      justify-content:center; padding:16px; cursor:zoom-out}
+    .rvzoom img{max-width:100%; max-height:100%; border-radius:8px; background:#fff}
     .rvthumb .tkfdel{position:absolute; top:-6px; right:-6px; width:18px; height:18px; line-height:18px; padding:0;
       text-align:center; border-radius:50%; background:#1c2330; color:#fff; font-size:10px; cursor:pointer}
     .rvthumb a.noimg + .tkfdel{position:static; display:inline-block; background:none; color:#8a93a3}
@@ -8752,6 +8755,7 @@
     h += '</div>';
     h += '</div>';
     box.innerHTML = h;
+    pjRevThumbs_();
   }
   function pjRevMsg(t, err){
     var el = document.getElementById('pjRevMsg');
@@ -8835,18 +8839,82 @@
     var F = (x && x.f && x.f.length) ? x.f : [];
     if(!F.length) return '';
     return '<span class="rvfiles">' + F.map(function(f, k){
-      var u = String(f.u || '');
-      if(u.indexOf('https://') !== 0) u = '#';            /* 🔴 http(s) 가 아닌 주소는 열지 않는다 */
       var del = '<span class="tkfdel" data-pjrevfdel="' + i + ':' + k + '" title="지웁니다(드라이브 휴지통으로)">✕</span>';
-      var id = String(f.id || ''), nm = String(f.n || '파일');
-      /* 🔴 미리보기를 못 불러오면 그 자리에 파일 이름 링크가 나온다 — 빈 네모로 남기지 않는다 */
-      return '<span class="rvthumb"><a href="' + pjEsc(u) + '" target="_blank" rel="noopener" title="' + pjEsc(nm) + '"'
-           + (PJ_REV_IMG.test(nm) && /^[-\w]{20,}$/.test(id) ? '' : ' class="noimg"') + '>'
-           + (PJ_REV_IMG.test(nm) && /^[-\w]{20,}$/.test(id)
-               ? '<img src="https://drive.google.com/thumbnail?id=' + id + '&sz=w240" alt="" loading="lazy"'
-                 + ' onerror="this.parentNode.className=\'noimg\';this.style.display=\'none\'">' : '')
+      var id = String(f.id || ''), nm = String(f.n || '파일'), img = PJ_REV_IMG.test(nm) && /^[-\w]{20,}$/.test(id);
+      /* 📷 폴더는 대표만 연다 — 드라이브 링크 대신 앱이 사진을 받아 보여 준다(pjRevThumbs_).
+         🔴 미리보기를 못 받으면 그 자리에 파일 이름이 나온다 — 빈 네모로 남기지 않는다 */
+      return '<span class="rvthumb"><a href="#" data-pjrevopen="' + i + ':' + k + '" title="' + pjEsc(nm) + '"'
+           + (img ? '' : ' class="noimg"') + '>'
+           + (img ? '<img data-pjrevfid="' + id + '" alt="">' : '')
            + '<span class="nm">📄 ' + pjEsc(nm) + '</span></a>' + del + '</span>';
     }).join('') + '</span>';
+  }
+  /* 📷 서버에 사진을 묻는다. 올리기와 같은 문(POST) — 큰 값이 오가서 주소창에 못 담는다 */
+  function pjRevImgAsk_(proj, fid, full, cb){
+    var body = { rep: 'revimg', name: proj, fid: fid, full: full ? '1' : '' };
+    var tok = appTokObj(); if(tok.s) body.s = tok.s; if(tok.t) body.t = tok.t;
+    fetch(FIELD_APP, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+      .then(function(res){ return res.json(); })
+      .then(function(d){ cb(d || {}); })
+      .catch(function(e){ cb({ ok: false, error: String(e) }); });
+  }
+  /* 미리보기는 두 개씩만 받는다. 방금 올린 사진은 구글이 아직 미리보기를 못 만들었을 수 있어 몇 번 더 묻는다 */
+  var PJ_REV_IMGC = {}, PJ_REV_IMGT = {}, PJ_REV_IMGQ = [], PJ_REV_IMGN = 0;
+  function pjRevThumbPaint_(fid){
+    var src = PJ_REV_IMGC[fid];
+    Array.prototype.forEach.call(document.querySelectorAll('#pjRev img[data-pjrevfid="' + fid + '"]'), function(el){
+      if(src){ el.src = src; return; }
+      if(src === 0){ el.style.display = 'none'; el.parentNode.className = 'noimg'; }
+    });
+  }
+  function pjRevThumbPump_(){
+    while(PJ_REV_IMGN < 2 && PJ_REV_IMGQ.length){
+      (function(q){
+        PJ_REV_IMGN++;
+        pjRevImgAsk_(q.proj, q.fid, false, function(d){
+          PJ_REV_IMGN--;
+          if(d.ok && d.data){ PJ_REV_IMGC[q.fid] = 'data:' + d.mime + ';base64,' + d.data; pjRevThumbPaint_(q.fid); }
+          else if((PJ_REV_IMGT[q.fid] = (PJ_REV_IMGT[q.fid] || 0) + 1) < 3){
+            setTimeout(function(){ PJ_REV_IMGQ.push(q); pjRevThumbPump_(); }, 4000);
+          }else{ PJ_REV_IMGC[q.fid] = 0; pjRevThumbPaint_(q.fid); }
+          pjRevThumbPump_();
+        });
+      })(PJ_REV_IMGQ.shift());
+    }
+  }
+  function pjRevThumbs_(){
+    Array.prototype.forEach.call(document.querySelectorAll('#pjRev img[data-pjrevfid]'), function(el){
+      var fid = el.getAttribute('data-pjrevfid');
+      if(PJ_REV_IMGC[fid] !== undefined){ pjRevThumbPaint_(fid); return; }
+      if(PJ_REV_IMGT[fid] === undefined){ PJ_REV_IMGT[fid] = 0; PJ_REV_IMGQ.push({ proj: PJ_REV_PROJ, fid: fid }); }
+    });
+    pjRevThumbPump_();
+  }
+  /* 누르면 크게 본다. 브라우저가 못 여는 것(문서·HEIC)은 내려받는다 */
+  function pjRevOpen_(i, k){
+    var x = (PJ_REV.lines || [])[i], f = x && x.f && x.f[k];
+    if(!f) return;
+    var nm = String(f.n || '파일'), show = /\.(jpe?g|png|gif|webp)$/i.test(nm), zm = null;
+    if(show){
+      zm = document.createElement('div'); zm.className = 'rvzoom';
+      zm.innerHTML = '<img alt="">';
+      if(PJ_REV_IMGC[f.id]) zm.firstChild.src = PJ_REV_IMGC[f.id];
+      zm.onclick = function(){ zm.remove(); };
+      document.body.appendChild(zm);
+    }
+    pjRevMsg('⏳ 불러오는 중… ' + nm);
+    pjRevImgAsk_(PJ_REV_PROJ, String(f.id || ''), true, function(d){
+      if(!d.ok || !d.data){
+        if(zm) zm.remove();
+        pjRevMsg('🔴 못 불러왔습니다 — ' + (d.error || '응답이 없습니다'), 1);
+        return;
+      }
+      pjRevMsg('');
+      var url = 'data:' + d.mime + ';base64,' + d.data;
+      if(zm){ zm.firstChild.src = url; return; }
+      var a = document.createElement('a'); a.href = url; a.download = nm;
+      document.body.appendChild(a); a.click(); a.remove();
+    });
   }
   function pjRevPendHtml_(){
     var n = (PJ_REV_PEND && PJ_REV_PEND.proj === PJ_REV_PROJ) ? PJ_REV_PEND.files.length : 0;
@@ -8901,11 +8969,6 @@
     });
     return { ok: ok, bad: bad };
   }
-  /* 🔒 올릴 «때마다» 확인한다 — 이 폴더는 링크를 아는 사람이 누구나 본다(「확인할 것」과 같은 기준) */
-  function pjRevFilesAsk_(n){
-    return confirm('📎 ' + n + '개를 올릴까요?\n\n⚠️ 팀공유 폴더는 «링크를 아는 사람은 누구나» 볼 수 있습니다.\n'
-                 + '견적 금액·통장·신분증·주민번호가 들어 있지 않은지 확인하셨습니까?');
-  }
   function pjRevFilesPicked(list){
     var proj = PJ_REVFILE_PROJ, i = PJ_REVFILE_IDX;
     if(!list.length || !proj) return;
@@ -8924,7 +8987,6 @@
     var room = PJ_REV_PER - ((x && x.f) ? x.f.length : 0);
     if(c.ok.length > room){ pjRevMsg('🔴 이 줄에는 ' + room + '개만 더 올릴 수 있습니다 — ' + c.ok.length + '개를 고르셨습니다', 1); return; }
     if(!canApp()){ pjRevMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
-    if(!pjRevFilesAsk_(c.ok.length)){ pjRevMsg('올리지 않았습니다'); return; }
     pjRevFilesGo_(c.ok, proj, PJ_REVFILE_LT, c.bad, i);
   }
   /* 5MB 넘는 사진만 화면에서 줄인다 — 그 밑은 원본 그대로 올린다.
@@ -9028,7 +9090,7 @@
   function pjRevFileDel(i, k){
     var x = (PJ_REV.lines || [])[i], f = x && x.f && x.f[k];
     if(!f) return;
-    if(!confirm('지울까요?\n\n「' + String(f.n || '') + '」\n\n드라이브 팀공유 폴더에서도 휴지통으로 갑니다.')) return;
+    if(!confirm('지울까요?\n\n「' + String(f.n || '') + '」\n\n드라이브 회고사진 폴더에서도 휴지통으로 갑니다.')) return;
     var proj = PJ_REV_PROJ;
     pjRevMsg('저장 중…');
     /* 🔴 [«파일 id»로 지운다 — 위치(k번째)가 아니다] 그 사이 다른 분이 먼저 지워 목록이 밀렸을 때 엉뚱한 파일이 지워지지 않게 */
@@ -9111,7 +9173,6 @@
     if(pend){
       if(PJ_REVFILE_BUSY){ pjRevMsg('⏳ 지금 올리는 중입니다 — 끝난 뒤에 다시 눌러 주세요', 1); return; }
       if(!canApp()){ pjRevMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
-      if(!pjRevFilesAsk_(pend.files.length)){ pjRevMsg('올리지 않았습니다'); return; }
     }
     el.value = '';
     pjRevSend({ rev: 'add', text: t }, '남겼습니다', own, pend ? function(){
@@ -9127,6 +9188,7 @@
         if(el.id === 'pjRevAdd' || el.id === 'pjRevAddOwn'){ kind = 'add'; hit = '1'; break; }
         if(el.id === 'pjRevPic'){ kind = 'pic'; hit = '1'; break; }
         hit = el.getAttribute('data-pjrevpendx'); if(hit !== null){ kind = 'pendx'; break; }
+        hit = el.getAttribute('data-pjrevopen');  if(hit !== null){ kind = 'open'; break; }
         hit = el.getAttribute('data-pjrevph');    if(hit !== null){ kind = 'phopen'; break; }
         hit = el.getAttribute('data-pjrevphv');
         if(hit !== null){ kind = 'phase'; PJ_REV_KTMP = el.getAttribute('data-k') || ''; break; }
@@ -9160,6 +9222,7 @@
     e.preventDefault();
     if(kind === 'add')  return pjRevAdd(own);
     if(kind === 'pic')  return pjRevPicAsk();
+    if(kind === 'open'){ var _op = String(hit).split(':'); return pjRevOpen_(parseInt(_op[0], 10), parseInt(_op[1], 10)); }
     if(kind === 'pendx'){ PJ_REV_PEND = null; pjRevPendPaint_(); return; }
     /* 🕘 시기 딱지 — 누르면 셋이 펼쳐지고, 고르면 저장한다 */
     if(kind === 'phopen'){
