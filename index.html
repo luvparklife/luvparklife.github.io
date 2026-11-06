@@ -1402,7 +1402,13 @@
     #vTeam select.tpneed{font:inherit;font-size:12px;padding:1px 2px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
     #vTeam .tpbd{font-size:10.5px;padding:0 5px;border-radius:8px;background:#fde8c8;color:#92400e;font-weight:800}
     #vTeam .tpbd.ok{background:#d9f2e0;color:#1f6b3a}
-    #vTeam .tppast{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 8px;padding:6px 10px;background:#fff4e5;border:1px solid #f3d3a4;border-radius:10px}
+    #vTeam .tppast{margin:0 0 8px;padding:6px 10px;background:#fff4e5;border:1px solid #f3d3a4;border-radius:10px}
+    #vTeam .tppast .tph{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:#92400e}
+    #vTeam .tppast .tpr{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+    #vTeam .tppast .tpch{display:inline-flex;gap:2px;max-width:100%}
+    #vTeam .tppast button.z{background:#fde8c8;color:#92400e}
+    #vTeam .tppast button.m{font-size:11.5px;padding:1px 8px}
+    #vTeam .tppast button:disabled{opacity:.45;cursor:default}
     #vTeam .tppast .tplb{color:#92400e}
     #vTeam .tppast button{border:1px solid #e0a95e;background:var(--card);color:var(--ink);border-radius:999px;padding:2px 10px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;max-width:100%;overflow-wrap:anywhere}
     #vTeam .tppast small{color:var(--sub);font-weight:700}
@@ -13240,6 +13246,7 @@
   function tpD(iso){ var m = String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? new Date(+m[1], +m[2]-1, +m[3]) : null; }
   function tpIso(d){ function z(n){ return (n<10?'0':'')+n; } return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); }
   function tpAdd(iso, n){ var d = tpD(iso); if(!d) return iso; d.setDate(d.getDate()+n); return tpIso(d); }
+  function tpAddM(iso, n){ var d = tpD(iso); if(!d) return iso; var day = d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+n); d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth()+1, 0).getDate())); return tpIso(d); }
   function tpMD(iso){ var d = tpD(iso); return d ? (d.getMonth()+1)+'/'+d.getDate() : iso; }
   function tpWin(){ var a = [], f = TPS.from || TPS.today; for(var i=0;i<TP_DAYS;i++) a.push(tpAdd(f,i)); return a; }
   /* 👥 2026-10-28 대표 지적 «레이아웃이 안 바뀐 것 같은데» — 이름으로 색을 뽑으면 COACH·N사처럼 «비슷한 청록»이 겹쳤다.
@@ -13273,7 +13280,7 @@
     TPS.roster = (d.roster||[]).slice(); TPS.crew = d.crew || []; TPS.db = d.db || []; TPS.note = d.note || '';
     tpIngestRows(d.rows); TPS.need = d.need || {}; TPS.bz = d.busy || {}; TPS.no = d.no || {};
     /* 👥 2026-10-21 대표 지시 «지난 촬영은 필요없어» — 마지막 촬영일이 오늘 «전»이면 뺀다. 서버는 그대로 보내고 «보이는 쪽»에서 거른다
-       👥 2026-11-06 대표 지시 «날짜가 지나도 인원 배치가 다 안된건 그대로 띄워줘. 배치 다 되면 없애도 돼» — 관리 이상은 덜 찬 날이 남은 촬영을 남긴다(부족을 재야 해서 자료를 받은 «뒤»에 거른다) */
+       👥 2026-11-06 대표 지시 «날짜가 지나도 인원 배치가 다 안된건 그대로 띄워줘. 배치 다 되면 없애도 돼» — 관리 이상은 덜 찬 날·인원 미정인 날이 남은 촬영을 남긴다(부족을 재야 해서 자료를 받은 «뒤»에 거른다) */
     TPS.projects = (d.projects || []).filter(function(P){ return !P.dates || !P.dates.length || P.dates[P.dates.length-1] >= (d.today || TPS.today || '') || (d.edit && tpPastLack(P).length > 0); });
     TPS.colorIx = {}; TPS.projects.slice().sort(tpByDate).forEach(function(P, i){ TPS.colorIx[P.name] = i; });
     if(!TPS.from) TPS.from = TPS.today;
@@ -13310,11 +13317,12 @@
       Object.keys(o).forEach(function(n){ if(tpRoleOf(n) !== r) return; var e = o[n]; if(e.off.indexOf(d) < 0 && tpDayConf(e, d)) c++; });
       any += c; by[r] = { c:c, n:nd }; tot += nd; fill += Math.min(c, nd); if(nd > c) lack.push({ r:r, k:nd - c });
     });
-    return { tot:tot, fill:fill, lack:lack, by:by, any:any, st: !tot ? 'unset' : (!lack.length ? 'full' : (fill === 0 ? 'none' : 'part')) };
+    /* 👥 2026-11-06 대표 «혼자 나가는 촬영은 0명으로» — 그날 값을 0으로 «정한» 날은 안 정한 날이 아니라 다 찬 날이다 */
+    return { tot:tot, fill:fill, lack:lack, by:by, any:any, st: !tot ? (tpNeedOv(pk, d) ? 'full' : 'unset') : (!lack.length ? 'full' : (fill === 0 ? 'none' : 'part')) };
   }
-  /* 👥 2026-11-06 필요 인원이 덜 찬 날 — 인원을 안 정한 날(unset)은 «덜 찼다»고 볼 기준이 없어 안 센다 */
-  function tpPastLack(P){ return P.dates.filter(function(d){ var st = tpDayCov(P.name, d).st; return st === 'part' || st === 'none'; }); }
-  function tpPastList(){ return TPS.projects.filter(function(P){ return P.dates[P.dates.length-1] < TPS.today && tpPastLack(P).length; }).sort(tpByDate); }
+  /* 👥 2026-11-06 배치가 안 끝난 날 = 덜 찬 날 + 인원을 안 정한 날(혼자 나가면 0명으로 정해야 끝난다) */
+  function tpPastLack(P){ return P.dates.filter(function(d){ return tpDayCov(P.name, d).st !== 'full'; }); }
+  function tpZeroOn(pk){ var P = tpProj(pk); return !!P && P.dates.every(function(d){ return !tpDayCov(pk, d).tot && tpNeedOv(pk, d); }); }
   function tpFreeBack(pk, d, roles){ var o = TPS.S[pk] || {}, k = 0; Object.keys(o).forEach(function(n){ if((!roles || roles.indexOf(tpRoleOf(n)) >= 0) && tpInProj(pk, n, d) && !tpDayConf(o[n], d) && !tpConfOn(n, d)) k++; }); return k; }   /* 모자란 역할의 백업만 센다 */
   function tpLackSum(cv){ return cv.lack.reduce(function(a, x){ return a + x.k; }, 0); }
   function tpLackTxt(cv){ return cv.lack.map(function(x){ return x.r + ' −' + x.k; }).join(' · '); }
@@ -13516,12 +13524,23 @@
   /* 필요 인원 */
   function tpSetNeed(pk, r, v){
     v = parseInt(v, 10); if(!isFinite(v) || v < 0) v = 0; if(v > 30) v = 30;
+    if(v > 0 && tpZeroOn(pk)) tpSetZero(pk, false);                               /* 0명이던 촬영에 숫자를 고르면 0명을 푼다(날짜 값이 기본값을 이긴다) */
     var o = (TPS.need[pk] = TPS.need[pk] || {});
     if((o[r]||0) === v) return;
     if(v > 0) o[r] = v; else delete o[r];
     if(!Object.keys(o).length) delete TPS.need[pk];
     tpRender();
     tpEnqueue({ act:'need', proj:pk, r:r, n:v }, tpShort(pk) + ' ' + r + ' 필요 ' + v + '명');
+  }
+  /* 👥 2026-11-06 «0명(혼자)» — 프로젝트 기본값은 0을 못 담아 날마다 0으로 적는다(서버 act=need 의 날짜 값은 0을 저장한다) */
+  function tpSetZero(pk, on){
+    var P = tpProj(pk); if(!P) return;
+    P.dates.forEach(function(d){
+      if(on){ if(tpDayCov(pk, d).st === 'unset') tpSetNeedDay(pk, d, 'PA', 0); return; }
+      var od = ((TPS.need[pk]||{})._d||{})[d]; if(!od || tpDayCov(pk, d).tot) return;
+      Object.keys(od).forEach(function(r){ tpSetNeedDay(pk, d, r, ''); });
+    });
+    tpRender();
   }
   function tpSetNeedDay(pk, d, r, v){
     var o = (TPS.need[pk] = TPS.need[pk] || {}), clr = (v === '' || v == null);
@@ -13727,6 +13746,30 @@
   function tpSegHtml(pk, k, f){
     return '<span class="seg ' + (k === '확정' ? 'k' : 'b') + (f && pk !== f ? ' dim' : '') + '" style="--pc:' + tpColor(pk) + '"><span class="nm">' + tpEsc(tpTiny(pk)) + '</span><span class="mk">' + (k === '확정' ? '✓' : '백업') + '</span></span>';
   }
+  /* 👥 2026-11-06 대표 지시 «인원 안되거나 그런것들은 모아서 볼 수 있게» · «1달까지 보이고 그 전거로 가려면 달 이동» — 달력은 오늘부터라 지난 촬영은 여기서 찾아 들어간다 */
+  function tpTodoChip(P){
+    var ls = tpPastLack(P), k = 0, un = 0;
+    ls.forEach(function(d){ var cv = tpDayCov(P.name, d); if(cv.st === 'unset') un++; else k += tpLackSum(cv); });
+    var tx = [k ? k + '명 부족' : '', un ? '인원 미정' : ''].filter(Boolean).join(' · ');
+    return '<span class="tpch"><button type="button" data-tp="past" data-p="' + tpEsc(P.name) + '" title="' + tpEsc(P.name) + ' — 누르면 그 날로 이동">' + tpEsc(tpShort(P.name)) + ' <small>' + ls.map(tpMD).join(', ') + '</small> <b>' + tx + '</b></button>' +
+           (un ? '<button type="button" class="z" data-tp="zero" data-on="1" data-p="' + tpEsc(P.name) + '" title="혼자 나가는 촬영이면 눌러서 필요 인원을 0명으로 정합니다">0명</button>' : '') + '</span>';
+  }
+  function tpTodoHtml(){
+    var T = TPS.today, all = TPS.projects.filter(function(P){ return tpPastLack(P).length; }).sort(tpByDate);
+    if(!all.length){ TPS.pm = 0; return ''; }
+    function end(P){ return P.dates[P.dates.length-1]; }
+    var h = '<div class="tppast"><div class="tph"><b>📋 배치 덜 된 촬영 ' + all.length + '건</b><button type="button" data-tp="todo">' + (TPS.todoOff ? '펼치기' : '접기') + '</button></div>';
+    if(TPS.todoOff) return h + '</div>';
+    var soon = all.filter(function(P){ return end(P) >= T; }), past = all.filter(function(P){ return end(P) < T; });
+    if(soon.length) h += '<div class="tpr"><span class="tplb">🔜 앞으로</span>' + soon.map(tpTodoChip).join('') + '</div>';
+    if(past.length){
+      var k = TPS.pm || 0, to = k ? tpAddM(T, -k) : T, fr = tpAddM(T, -(k+1));
+      var cur = past.filter(function(P){ return end(P) >= fr && end(P) < to; }), old = past.filter(function(P){ return end(P) < fr; }).length;
+      h += '<div class="tpr"><span class="tplb">⏰ 지난</span><button type="button" class="m" data-tp="pm" data-n="1"' + (old ? '' : ' disabled') + '>◀ 이전 달' + (old ? ' (' + old + '건 더)' : '') + '</button><span class="tplb">' + (fr.slice(0,4) !== T.slice(0,4) ? fr.slice(0,4) + '년 ' : '') + tpMD(fr) + '~' + tpMD(tpAdd(to, -1)) + '</span><button type="button" class="m" data-tp="pm" data-n="-1"' + (k ? '' : ' disabled') + '>다음 달 ▶</button>' +
+           (cur.length ? cur.map(tpTodoChip).join('') : '<span class="tplb">이 기간엔 없습니다</span>') + '</div>';
+    }
+    return h + '</div>';
+  }
   function tpCellHtml(n, d, adm, f){
     var c = tpCell(n, d), wd = tpD(d).getDay();
     var cls = 'tpac' + ((wd===0||wd===6) ? ' we' : '') + (d === TPS.today ? ' today' : ''), st = '', txt = '', tip = n + ' · ' + tpMD(d);
@@ -13774,7 +13817,7 @@
            '④ 위 <b>칩</b> = 전체 ↔ 프로젝트 하나(나머지 흐리게 · 흐린 칸도 눌러서 고칠 수 있습니다).<br>' +
            '⑤ <b>충원 줄 칸</b>을 누르면 그날 <b>비는 사람</b>이 뜨고 눌러서 바로 확정 · <b>이름</b>을 누르면 그 프로젝트 <b>전체 날 한 번에</b>.<br>' +
            '⑥ 확정하면 프로젝트 정보 「PA팀」에 들어갑니다(백업은 안 들어감).<br>' +
-           '⑦ 날짜가 지나도 필요 인원이 덜 찬 촬영은 <b>⏰ 줄</b>에 남습니다 — 눌러서 그 날로 가 채우면 사라집니다(필요 인원을 안 정한 촬영은 날짜가 지나면 빠집니다).</div></details>';
+           '⑦ <b>📋 배치 덜 된 촬영</b> = 인원이 모자라거나 필요 인원을 안 정한 촬영을 모아 보여 줍니다. 눌러서 그 날로 가 채우면 사라집니다. 혼자 나가는 촬영은 <b>0명</b>을 누르세요. 지난 것은 최근 1달만 보이고 그 전은 <b>◀ 이전 달</b>로 봅니다.</div></details>';
     } else {
       h += '<div class="tphow">🔒 <b>내가 확정된 프로젝트</b>만 보입니다. 남의 일정·섭외 현황은 「관리」 이상만 봅니다.' +
            (TPS.note ? '<br>ℹ️ ' + tpEsc(TPS.note) : (!TPS.projects.length ? '<br>ℹ️ 아직 확정된 프로젝트가 없습니다 — 확정되면 여기에 나타납니다.' : '')) + '</div>';
@@ -13789,27 +13832,19 @@
       h += '<button type="button" class="tppj' + (f === P.name ? ' on' : '') + '" data-tp="focus" data-p="' + tpEsc(P.name) + '" title="' + tpEsc(P.name) + ' — 누르면 이 프로젝트만 진하게"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + ' <small>' + tpMD(P.dates[0]) + (P.dates.length > 1 ? '~' + tpMD(P.dates[P.dates.length-1]) : '') + '</small>' + badge + '</button>';
     });
     if(!vis.length) h += '<span class="tplb">이 기간에 촬영이 잡힌 프로젝트가 없습니다 →</span>';
-    h += '<span style="flex:1"></span><button type="button" class="tpnav" data-tp="nav" data-n="-7">◀ 7일</button><button type="button" class="tpnav" data-tp="nav" data-n="0">오늘</button><button type="button" class="tpnav" data-tp="nav" data-n="7">7일 ▶</button><button type="button" class="tpnav" data-tp="reload" title="최신으로 다시 받기">🔄</button></div>';
-    /* 👥 2026-11-06 지난 촬영 중 덜 찬 것 — 달력은 오늘부터라 여기 없으면 안 보인다. 다 채우면 이 줄에서 바로 빠진다 */
-    var past = adm ? tpPastList() : [];
-    if(past.length){
-      h += '<div class="tppast"><span class="tplb">⏰ 날짜 지났는데 배치가 덜 됨</span>';
-      past.forEach(function(P){
-        var ls = tpPastLack(P), k = ls.reduce(function(a, d){ return a + tpLackSum(tpDayCov(P.name, d)); }, 0);
-        h += '<button type="button" data-tp="past" data-p="' + tpEsc(P.name) + '" title="' + tpEsc(P.name) + ' — 누르면 덜 찬 날로 이동">' + tpEsc(tpShort(P.name)) + ' <small>' + ls.map(tpMD).join(', ') + '</small> <b>' + k + '명 부족</b></button>';
-      });
-      h += '</div>';
-    }
+    h += '<span style="flex:1"></span><button type="button" class="tpnav" data-tp="navm" data-n="-1">◀ 달</button><button type="button" class="tpnav" data-tp="nav" data-n="-7">◀ 7일</button><button type="button" class="tpnav" data-tp="nav" data-n="0">오늘</button><button type="button" class="tpnav" data-tp="nav" data-n="7">7일 ▶</button><button type="button" class="tpnav" data-tp="navm" data-n="1">달 ▶</button><button type="button" class="tpnav" data-tp="reload" title="최신으로 다시 받기">🔄</button></div>';
+    if(adm) h += tpTodoHtml();
 
     if(adm){
       /* ── 필요 인원 · PA팀 확정자 (접어 둔다 — 안 정한 프로젝트가 있으면 펼쳐 둔다) ── */
-      var showP = P0 ? [P0] : vis, unset = showP.some(function(P){ return !tpNeedTot(P.name); });
+      var showP = P0 ? [P0] : vis, unset = showP.some(function(P){ return P.dates.some(function(d){ return tpDayCov(P.name, d).st === 'unset'; }); });
       if(showP.length){
         h += '<details class="tpneedbox"' + (unset && !TPS.nbSeen ? ' open' : '') + '><summary>👥 필요 인원 · PA팀 확정자' + (unset ? ' <span class="lack">— 필요 인원을 안 정한 프로젝트가 있습니다</span>' : '') + '</summary><div class="hint" style="font-size:11.5px;color:var(--sub);margin:2px 0 4px">여기는 프로젝트 «기본» 숫자입니다 · 날마다 다르면 아래 «충원» 칸을 눌러 «이날 필요 인원»을 고르세요</div>';
         showP.forEach(function(P){
           var cn = tpConfNames(P.name), arm = TPS.armed === 'proj:' + P.name;
           h += '<div class="tpnb"><span class="pj"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + '</span>' +
                TP_ROLES.map(function(r){ return '<span>' + r + ' ' + tpNeedSel(P.name, r, (TPS.need[P.name]||{})[r] || 0) + '</span>'; }).join('') +
+               (TP_ROLES.some(function(r){ return (TPS.need[P.name]||{})[r] > 0; }) ? '' : '<button type="button" class="tpclr" data-tp="zero" data-on="' + (tpZeroOn(P.name) ? '' : '1') + '" data-p="' + tpEsc(P.name) + '">' + (tpZeroOn(P.name) ? '✓ 0명 · 풀기' : '0명 (혼자)') + '</button>') +
                '<span class="cf" title="프로젝트 정보 「PA팀」에 들어갈 확정자(견적서 금액은 안 바뀜)">PA팀 확정 ' + cn.length + '명' + (cn.length ? ': ' + cn.map(function(n){ return tpEsc(n) + tpDaysTxt(P.name, n); }).join(' · ') : '') + '</span>' +
                '<button type="button" class="tpclr' + (arm ? ' armed' : '') + '" data-tp="clearproj" data-p="' + tpEsc(P.name) + '">' + (arm ? '⚠ 한 번 더 = 비움' : '🧹 비우기') + '</button></div>';
         });
@@ -13926,6 +13961,10 @@
       var b = e.target.closest ? e.target.closest('[data-tp]') : null; if(!b) return;
       var a = b.getAttribute('data-tp');
       if(a === 'focus'){ tpClosePop(); TPS.focus = b.getAttribute('data-p') || ''; tpRender(); return; }
+      if(a === 'navm'){ tpClosePop(); TPS.from = tpAddM(TPS.from || TPS.today, +b.getAttribute('data-n')); tpRender(); return; }
+      if(a === 'pm'){ TPS.pm = Math.max(0, (TPS.pm || 0) + (+b.getAttribute('data-n'))); tpRender(); return; }
+      if(a === 'todo'){ TPS.todoOff = !TPS.todoOff; tpRender(); return; }
+      if(a === 'zero'){ tpClosePop(); tpSetZero(b.getAttribute('data-p'), b.getAttribute('data-on') === '1'); return; }
       if(a === 'past'){ tpClosePop(); var Pp = tpProj(b.getAttribute('data-p')), pl = Pp ? tpPastLack(Pp) : []; if(pl.length){ TPS.focus = Pp.name; TPS.from = tpAdd(pl[0], -3); } tpRender(); return; }
       if(a === 'nav'){ tpClosePop(); var n = +b.getAttribute('data-n'); TPS.from = n === 0 ? TPS.today : tpAdd(TPS.from || TPS.today, n); tpRender(); return; }
       if(a === 'reload'){ e.preventDefault(); tpClosePop(); tpLoad(true, true); return; }
