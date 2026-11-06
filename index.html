@@ -1635,6 +1635,7 @@
     #vTeam .tpnb{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:6px 0;border-top:1px solid var(--line2)}
     #vTeam .tpnb .pj{font-weight:800;min-width:120px}
     #vTeam .tpnb .cf{color:var(--sub);flex:1;min-width:200px}
+    #vTeam .tpnb .dn{font-weight:700}
     #vTeam .tpac .bks{display:flex;align-items:center;gap:2px;margin-top:1px;font-size:9px;font-weight:800;line-height:1}
     #vTeam .tpac .bks i{display:inline-block;width:6px;height:6px;border-radius:50%;border:1px solid #fff}
     #vTeam .tpac.k .bks b{color:#fff} #vTeam .tpac.b .bks b{color:var(--pc)}
@@ -13337,6 +13338,14 @@
   /* 👥 2026-10-29 촬영일마다 필요 인원이 다를 수 있다 — 그날만 정한 값이 있으면 그것, 없으면 프로젝트 기본값 */
   function tpNeedOn(pk, d, r){ var o = TPS.need[pk] || {}, od = o._d && o._d[d]; return (od && od[r] != null) ? od[r] : (o[r] || 0); }
   function tpNeedOv(pk, d){ var o = TPS.need[pk] || {}; return !!(o._d && o._d[d] && Object.keys(o._d[d]).length); }
+  /* 👥 2026-11-07 대표 «캘린더에서 조정하는 인원과 떠있는것과 맞지 않아» — 위 상자가 기본값만 보여 날짜별로 정한 프로젝트가 «안 정함»으로 보였다 */
+  function tpNeedAllDays(P){ var b = TPS.need[P.name] || {}; return !TP_ROLES.some(function(r){ return b[r] > 0; }) && P.dates.length > 0 && P.dates.every(function(d){ return tpNeedOv(P.name, d); }) && !tpZeroOn(P.name); }
+  function tpNeedDayTxt(P){
+    if(tpZeroOn(P.name)) return '';
+    var ds = P.dates.filter(function(d){ return tpNeedOv(P.name, d); });
+    var t = ds.slice(0, 4).map(function(d){ var cv = tpDayCov(P.name, d), rs = TP_ROLES.filter(function(r){ return cv.by[r].n > 0; }); return tpMD(d) + ' 필요 ' + cv.tot + '명' + (rs.length ? ' (' + rs.map(function(r){ return r + ' ' + cv.by[r].n; }).join(' · ') + ')' : ''); }).join(' · ');
+    return t + (ds.length > 4 ? ' 외 ' + (ds.length - 4) + '일' : '');
+  }
   /* «날짜마다» 충원 현황 — 역할별 «그 날 확정된 사람 수» 대 «필요 인원» */
   function tpDayCov(pk, d){
     var o = TPS.S[pk] || {}, tot = 0, fill = 0, lack = [], by = {}, any = 0;
@@ -13957,12 +13966,12 @@
       /* ── 필요 인원 · PA팀 확정자 (접어 둔다 — 안 정한 프로젝트가 있으면 펼쳐 둔다) ── */
       var showP = P0 ? [P0] : vis, unset = showP.some(function(P){ return !P.done && P.dates.some(function(d){ return tpDayCov(P.name, d).st === 'unset'; }); });
       if(showP.length){
-        h += '<details class="tpneedbox"' + (unset && !TPS.nbSeen ? ' open' : '') + '><summary>👥 필요 인원 · PA팀 확정자' + (unset ? ' <span class="lack">— 필요 인원을 안 정한 프로젝트가 있습니다</span>' : '') + '</summary><div class="hint" style="font-size:11.5px;color:var(--sub);margin:2px 0 4px">여기는 프로젝트 «기본» 숫자입니다 · 날마다 다르면 아래 «충원» 칸을 눌러 «이날 필요 인원»을 고르세요</div>';
+        h += '<details class="tpneedbox"' + (unset && !TPS.nbSeen ? ' open' : '') + '><summary>👥 필요 인원 · PA팀 확정자' + (unset ? ' <span class="lack">— 필요 인원을 안 정한 프로젝트가 있습니다</span>' : '') + '</summary><div class="hint" style="font-size:11.5px;color:var(--sub);margin:2px 0 4px">여기는 프로젝트 «기본» 숫자입니다 · 날마다 다르면 아래 «충원» 칸을 눌러 «이날 필요 인원»을 고르세요 · 날짜별로 정한 프로젝트는 그날 숫자가 보입니다</div>';
         showP.forEach(function(P){
-          var cn = tpConfNames(P.name), arm = TPS.armed === 'proj:' + P.name;
+          var cn = tpConfNames(P.name), arm = TPS.armed === 'proj:' + P.name, allD = tpNeedAllDays(P), dTxt = tpNeedDayTxt(P);
           h += '<div class="tpnb"><span class="pj"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + '</span>' +
-               TP_ROLES.map(function(r){ return '<span>' + r + ' ' + tpNeedSel(P.name, r, (TPS.need[P.name]||{})[r] || 0) + '</span>'; }).join('') +
-               (TP_ROLES.some(function(r){ return (TPS.need[P.name]||{})[r] > 0; }) ? '' : '<button type="button" class="tpclr" data-tp="zero" data-on="' + (tpZeroOn(P.name) ? '' : '1') + '" data-p="' + tpEsc(P.name) + '">' + (tpZeroOn(P.name) ? '✓ 0명 · 풀기' : '0명 (혼자)') + '</button>') +
+               (allD ? '<span class="dn">' + tpEsc(dTxt) + '</span>' : TP_ROLES.map(function(r){ return '<span>' + r + ' ' + tpNeedSel(P.name, r, (TPS.need[P.name]||{})[r] || 0) + '</span>'; }).join('') + (dTxt ? '<span class="dn">따로 정한 날: ' + tpEsc(dTxt) + '</span>' : '')) +
+               (allD || TP_ROLES.some(function(r){ return (TPS.need[P.name]||{})[r] > 0; }) ? '' : '<button type="button" class="tpclr" data-tp="zero" data-on="' + (tpZeroOn(P.name) ? '' : '1') + '" data-p="' + tpEsc(P.name) + '">' + (tpZeroOn(P.name) ? '✓ 0명 · 풀기' : '0명 (혼자)') + '</button>') +
                '<span class="cf" title="프로젝트 정보 「PA팀」에 들어갈 확정자(견적서 금액은 안 바뀜)">PA팀 확정 ' + cn.length + '명' + (cn.length ? ': ' + cn.map(function(n){ return tpEsc(n) + tpDaysTxt(P.name, n); }).join(' · ') : '') + '</span>' +
                '<button type="button" class="tpclr' + (arm ? ' armed' : '') + '" data-tp="clearproj" data-p="' + tpEsc(P.name) + '">' + (arm ? '⚠ 한 번 더 = 비움' : '🧹 비우기') + '</button></div>';
         });
