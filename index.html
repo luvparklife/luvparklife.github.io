@@ -1402,6 +1402,11 @@
     #vTeam select.tpneed{font:inherit;font-size:12px;padding:1px 2px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
     #vTeam .tpbd{font-size:10.5px;padding:0 5px;border-radius:8px;background:#fde8c8;color:#92400e;font-weight:800}
     #vTeam .tpbd.ok{background:#d9f2e0;color:#1f6b3a}
+    #vTeam .tppast{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 8px;padding:6px 10px;background:#fff4e5;border:1px solid #f3d3a4;border-radius:10px}
+    #vTeam .tppast .tplb{color:#92400e}
+    #vTeam .tppast button{border:1px solid #e0a95e;background:var(--card);color:var(--ink);border-radius:999px;padding:2px 10px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;max-width:100%;overflow-wrap:anywhere}
+    #vTeam .tppast small{color:var(--sub);font-weight:700}
+    #vTeam .tppast b{color:#b3261e}
     #vTeam .tpmv{display:inline-flex;gap:2px;margin-left:4px}
     #vTeam .tpmv button{border:1px solid var(--line);background:var(--card);border-radius:5px;font-size:9px;line-height:1;padding:2px 4px;cursor:pointer;color:var(--sub)}
     #vTeam .tpmv button:disabled{opacity:.25;cursor:default}
@@ -13265,10 +13270,11 @@
   }
   function tpIngest(d){
     TPS.d = d; TPS.edit = !!d.edit; TPS.me = d.me || ''; TPS.today = d.today || TPS.today;
-    /* 👥 2026-10-21 대표 지시 «지난 촬영은 필요없어» — 마지막 촬영일이 오늘 «전»이면 뺀다. 서버는 그대로 보내고 «보이는 쪽»에서 거른다 */
-    TPS.projects = (d.projects || []).filter(function(P){ return !P.dates || !P.dates.length || P.dates[P.dates.length-1] >= (d.today || TPS.today || ''); });
     TPS.roster = (d.roster||[]).slice(); TPS.crew = d.crew || []; TPS.db = d.db || []; TPS.note = d.note || '';
     tpIngestRows(d.rows); TPS.need = d.need || {}; TPS.bz = d.busy || {}; TPS.no = d.no || {};
+    /* 👥 2026-10-21 대표 지시 «지난 촬영은 필요없어» — 마지막 촬영일이 오늘 «전»이면 뺀다. 서버는 그대로 보내고 «보이는 쪽»에서 거른다
+       👥 2026-11-06 대표 지시 «날짜가 지나도 인원 배치가 다 안된건 그대로 띄워줘. 배치 다 되면 없애도 돼» — 관리 이상은 덜 찬 날이 남은 촬영을 남긴다(부족을 재야 해서 자료를 받은 «뒤»에 거른다) */
+    TPS.projects = (d.projects || []).filter(function(P){ return !P.dates || !P.dates.length || P.dates[P.dates.length-1] >= (d.today || TPS.today || '') || (d.edit && tpPastLack(P).length > 0); });
     TPS.colorIx = {}; TPS.projects.slice().sort(tpByDate).forEach(function(P, i){ TPS.colorIx[P.name] = i; });
     if(!TPS.from) TPS.from = TPS.today;
     TPS.loaded = true;
@@ -13306,6 +13312,9 @@
     });
     return { tot:tot, fill:fill, lack:lack, by:by, any:any, st: !tot ? 'unset' : (!lack.length ? 'full' : (fill === 0 ? 'none' : 'part')) };
   }
+  /* 👥 2026-11-06 필요 인원이 덜 찬 날 — 인원을 안 정한 날(unset)은 «덜 찼다»고 볼 기준이 없어 안 센다 */
+  function tpPastLack(P){ return P.dates.filter(function(d){ var st = tpDayCov(P.name, d).st; return st === 'part' || st === 'none'; }); }
+  function tpPastList(){ return TPS.projects.filter(function(P){ return P.dates[P.dates.length-1] < TPS.today && tpPastLack(P).length; }).sort(tpByDate); }
   function tpFreeBack(pk, d, roles){ var o = TPS.S[pk] || {}, k = 0; Object.keys(o).forEach(function(n){ if((!roles || roles.indexOf(tpRoleOf(n)) >= 0) && tpInProj(pk, n, d) && !tpDayConf(o[n], d) && !tpConfOn(n, d)) k++; }); return k; }   /* 모자란 역할의 백업만 센다 */
   function tpLackSum(cv){ return cv.lack.reduce(function(a, x){ return a + x.k; }, 0); }
   function tpLackTxt(cv){ return cv.lack.map(function(x){ return x.r + ' −' + x.k; }).join(' · '); }
@@ -13764,7 +13773,8 @@
            '③ <b>확정은 하루에 한 곳</b> — 다른 프로젝트에 확정하면 그쪽으로 옮겨집니다. <b>백업은 겹쳐 걸 수 있습니다</b>(확정자를 다른 프로젝트 백업으로). 확정자를 옮길 때 원래 프로젝트에 그날 백업이 있으면 «백업을 확정으로 올릴까요?»를 묻습니다.<br>' +
            '④ 위 <b>칩</b> = 전체 ↔ 프로젝트 하나(나머지 흐리게 · 흐린 칸도 눌러서 고칠 수 있습니다).<br>' +
            '⑤ <b>충원 줄 칸</b>을 누르면 그날 <b>비는 사람</b>이 뜨고 눌러서 바로 확정 · <b>이름</b>을 누르면 그 프로젝트 <b>전체 날 한 번에</b>.<br>' +
-           '⑥ 확정하면 프로젝트 정보 「PA팀」에 들어갑니다(백업은 안 들어감).</div></details>';
+           '⑥ 확정하면 프로젝트 정보 「PA팀」에 들어갑니다(백업은 안 들어감).<br>' +
+           '⑦ 날짜가 지나도 필요 인원이 덜 찬 촬영은 <b>⏰ 줄</b>에 남습니다 — 눌러서 그 날로 가 채우면 사라집니다(필요 인원을 안 정한 촬영은 날짜가 지나면 빠집니다).</div></details>';
     } else {
       h += '<div class="tphow">🔒 <b>내가 확정된 프로젝트</b>만 보입니다. 남의 일정·섭외 현황은 「관리」 이상만 봅니다.' +
            (TPS.note ? '<br>ℹ️ ' + tpEsc(TPS.note) : (!TPS.projects.length ? '<br>ℹ️ 아직 확정된 프로젝트가 없습니다 — 확정되면 여기에 나타납니다.' : '')) + '</div>';
@@ -13780,6 +13790,16 @@
     });
     if(!vis.length) h += '<span class="tplb">이 기간에 촬영이 잡힌 프로젝트가 없습니다 →</span>';
     h += '<span style="flex:1"></span><button type="button" class="tpnav" data-tp="nav" data-n="-7">◀ 7일</button><button type="button" class="tpnav" data-tp="nav" data-n="0">오늘</button><button type="button" class="tpnav" data-tp="nav" data-n="7">7일 ▶</button><button type="button" class="tpnav" data-tp="reload" title="최신으로 다시 받기">🔄</button></div>';
+    /* 👥 2026-11-06 지난 촬영 중 덜 찬 것 — 달력은 오늘부터라 여기 없으면 안 보인다. 다 채우면 이 줄에서 바로 빠진다 */
+    var past = adm ? tpPastList() : [];
+    if(past.length){
+      h += '<div class="tppast"><span class="tplb">⏰ 날짜 지났는데 배치가 덜 됨</span>';
+      past.forEach(function(P){
+        var ls = tpPastLack(P), k = ls.reduce(function(a, d){ return a + tpLackSum(tpDayCov(P.name, d)); }, 0);
+        h += '<button type="button" data-tp="past" data-p="' + tpEsc(P.name) + '" title="' + tpEsc(P.name) + ' — 누르면 덜 찬 날로 이동">' + tpEsc(tpShort(P.name)) + ' <small>' + ls.map(tpMD).join(', ') + '</small> <b>' + k + '명 부족</b></button>';
+      });
+      h += '</div>';
+    }
 
     if(adm){
       /* ── 필요 인원 · PA팀 확정자 (접어 둔다 — 안 정한 프로젝트가 있으면 펼쳐 둔다) ── */
@@ -13906,6 +13926,7 @@
       var b = e.target.closest ? e.target.closest('[data-tp]') : null; if(!b) return;
       var a = b.getAttribute('data-tp');
       if(a === 'focus'){ tpClosePop(); TPS.focus = b.getAttribute('data-p') || ''; tpRender(); return; }
+      if(a === 'past'){ tpClosePop(); var Pp = tpProj(b.getAttribute('data-p')), pl = Pp ? tpPastLack(Pp) : []; if(pl.length){ TPS.focus = Pp.name; TPS.from = tpAdd(pl[0], -3); } tpRender(); return; }
       if(a === 'nav'){ tpClosePop(); var n = +b.getAttribute('data-n'); TPS.from = n === 0 ? TPS.today : tpAdd(TPS.from || TPS.today, n); tpRender(); return; }
       if(a === 'reload'){ e.preventDefault(); tpClosePop(); tpLoad(true, true); return; }
       if(!TPS.edit && a !== 'undo') return;
