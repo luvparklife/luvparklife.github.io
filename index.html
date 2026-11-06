@@ -1406,6 +1406,10 @@
     #vTeam .tpqc small{color:var(--sub);font-weight:600}
     #vTeam .tpqn{color:#1e4fa3;font-weight:800}
     #vTeam .tpac.tpother{opacity:.4}
+    #vTeam .tppop .tprl{display:flex;align-items:center;gap:4px;margin:4px 0 8px}
+    #vTeam .tppop .tprl small{flex:none;color:#6b7280;font-size:12px;margin-right:2px}
+    #vTeam .tppop .tprl button{flex:1;width:auto;margin:0;padding:5px 4px;font-size:12.5px;text-align:center;background:#fff;color:#374151;border:1px solid #d6d9df;border-radius:6px}
+    #vTeam .tppop .tprl button.cur{background:#1f2937;border-color:#1f2937;color:#fff;font-weight:800}
     #vTeam .tpcv .ov{display:block;font-size:10.5px;font-weight:800;color:#92400e}
     #vTeam .tppast{margin:0 0 8px;padding:6px 10px;background:#fff4e5;border:1px solid #f3d3a4;border-radius:10px}
     #vTeam .tppast .tph{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:#92400e}
@@ -13245,7 +13249,10 @@
      🔴 [이름 앞에 tp] 허브에 이미 .pj .stat .gc 가 있어 전부 tp 를 붙였다(충돌하면 조용히 서로 덮는다).
      되돌리기 = "허브 팀 일정 빼줘" (카드 · #vTeam · 이 블록 · 라우터 한 줄) · 서버만 끄려면 TeamPlan.js TP_ON=false */
   var TP_ROLES = ['PA','조명','DIT'];
-  var TP_LANES = TP_ROLES.concat(['지원']);   /* 👥 2026-11-06 「지원」(알바·인턴) = 기록만 — 필요 인원·PA팀 줄·견적서에 안 들어간다 */
+  /* 👥 2026-11-06 대표 «지원,알바,DIT 모두 PA 안에 속해» — 명단 구역은 PA·조명 둘. DIT·지원은 PA 구역 사람이 «촬영마다» 고르는 역할이다
+     「지원」(알바·인턴) = 기록만 — 필요 인원·PA팀 줄·견적서에 안 들어간다 */
+  var TP_SHOW = ['PA','조명'];
+  var TP_PA_ROLES = ['PA','DIT','지원'];
   var TP_DAYS = 21;
   var TP_COLORS = ['#0f766e','#d97706','#2563eb','#db2777','#7c3aed','#0891b2','#65a30d','#dc2626'];
   var TP_WN = ['일','월','화','수','목','금','토'];
@@ -13276,7 +13283,12 @@
   /* 👥 2026-11-06 대표 확정 — 같은 사람이 두 구역(PA·DIT)에 있을 수 있다. 한 촬영에서는 줄의 역할 하나로 센다 */
   function tpHasLane(n, r){ return TPS.roster.some(function(x){ return x.n === n && x.r === r; }); }
   function tpDupLane(n){ return TPS.roster.filter(function(x){ return x.n === n; }).length > 1; }
-  function tpRowRole(pk, n){ var e = (TPS.S[pk]||{})[n], r = e && e.r; return (r && tpHasLane(n, r)) ? r : tpRoleOf(n); }
+  function tpLaneOf(r){ return r === '조명' ? '조명' : 'PA'; }
+  /* 구역을 눌러 온 값(PA·조명)은 그 구역 안의 역할을 안 건드린다 · DIT·지원은 고른 것이라 그대로 */
+  function tpRoleAfter(cur, r){ if(!r) return cur; if(r === 'DIT' || r === '지원') return r; return (cur && tpLaneOf(cur) === r) ? cur : r; }
+  function tpRowRole(pk, n){ var e = (TPS.S[pk]||{})[n], r = e && e.r; return (r && tpHasLane(n, tpLaneOf(r))) ? r : tpRoleOf(n); }
+  function tpRoleTag(pk, n){ var r = tpRowRole(pk, n); return (r === 'DIT' || r === '지원') ? r : ''; }
+  function tpRosterIn(l){ var seen = {}, out = []; (l||[]).forEach(function(x){ var r = tpLaneOf(x.r), k = x.n + '|' + r; if(seen[k]) return; seen[k] = 1; out.push({ n:x.n, r:r }); }); return out; }
 
   /* ── 상태 (프로젝트 → 이름 → {st, off, cf, bk}) · 사람 → ✕ 날(no) · 개인 일정(bz) ──
      👥 2026-10-27 대표 확정 «A안 — 사람×날짜 한 장» (연습장 1_장비시스템/261027_팀일정_개선안_연습장.html)
@@ -13292,7 +13304,7 @@
   }
   function tpIngest(d){
     TPS.d = d; TPS.edit = !!d.edit; TPS.me = d.me || ''; TPS.today = d.today || TPS.today;
-    TPS.roster = (d.roster||[]).slice(); TPS.crew = d.crew || []; TPS.db = d.db || []; TPS.note = d.note || '';
+    TPS.roster = tpRosterIn(d.roster); TPS.crew = d.crew || []; TPS.db = d.db || []; TPS.note = d.note || '';
     tpIngestRows(d.rows); TPS.need = d.need || {}; TPS.bz = d.busy || {}; TPS.no = d.no || {};
     /* 👥 2026-10-21 대표 지시 «지난 촬영은 필요없어» — 마지막 촬영일이 오늘 «전»이면 뺀다. 서버는 그대로 보내고 «보이는 쪽»에서 거른다
        👥 2026-11-06 대표 지시 «날짜가 지나도 인원 배치가 다 안된건 그대로 띄워줘. 배치 다 되면 없애도 돼» — 관리 이상은 덜 찬 날·인원 미정인 날이 남은 촬영을 남긴다(부족을 재야 해서 자료를 받은 «뒤»에 거른다) */
@@ -13398,7 +13410,7 @@
     var P2 = tpProj(v.pk), o2 = (TPS.S[v.pk] = TPS.S[v.pk] || {}), e2 = o2[n];
     if(!e2) e2 = o2[n] = { st:'섭외중', cf:[], bk:[], off:P2.dates.filter(function(x){ return x !== d; }) };
     else { tpUnpackE(e2, P2); var k = e2.off.indexOf(d); if(k >= 0) e2.off.splice(k, 1); }
-    if(v.r) e2.r = v.r;
+    if(v.r) e2.r = tpRoleAfter(e2.r, v.r);
     e2.cf = e2.cf.filter(function(x){ return x !== d; }); e2.bk = (e2.bk||[]).filter(function(x){ return x !== d; });
     if(confirm) e2.cf.push(d);
     tpNormE(e2, P2);
@@ -13453,7 +13465,7 @@
       }
       else if(!TPS.q.length && !TPS.drag && !(TPS.rd && TPS.rd.on) && d.rows){
         /* 대기가 비었을 때만 «서버가 아는 값»으로 맞춘다 — 다른 관리자가 동시에 바꾼 것도 이때 반영된다 */
-        tpIngestRows(d.rows); if(d.roster) TPS.roster = d.roster; if(d.need) TPS.need = d.need; if(d.busy) TPS.bz = d.busy; if(d.no) TPS.no = d.no; tpRender();
+        tpIngestRows(d.rows); if(d.roster) TPS.roster = tpRosterIn(d.roster); if(d.need) TPS.need = d.need; if(d.busy) TPS.bz = d.busy; if(d.no) TPS.no = d.no; tpRender();
       }
       if(!TPS.q.length){
         var bk = it.des ? (d.bk || '') : '';
@@ -13493,8 +13505,8 @@
   function tpKindName(v){ return !v ? '비움(가능)' : v.t === 'x' ? '✕ 안 되는 날' : v.t === 'bz' ? '개인 일정' : v.t === 'rm' ? tpShort(v.pk) + '에서 빼기' : tpShort(v.pk) + ' ' + v.k; }
   /* 칸 여러 개를 «한 가지»로 — 화면 먼저 바꾸고, 주소 길이·60칸씩 나눠 보낸다 */
   function tpChoose(cells, v){
+    if(v && v.t === 'as' && !v.r) v.r = tpPickR(cells[0].split('|')[0], v.pk);   /* 고른 역할 · 안 골랐으면 누른 구역 */
     tpClosePop();
-    if(v && v.t === 'as' && !v.r) v.r = TPS.lane || '';                /* 누른 구역 = 이 촬영에서 맡는 역할 */
     var done = [], prev = [];
     cells.forEach(function(c){
       var a = c.split('|'), before = tpConfOn(a[0], a[1]);
@@ -13541,6 +13553,20 @@
     });
     TPS.mut++; tpRender();
     tpEnqueue({ act:'setall', n:n, proj:pk, k:k, r:r || '' }, n + ' · ' + tpShort(pk) + ' 전체 날 → ' + (k || '빼기') + (sk ? ' (' + sk + '일은 ' + (k === '확정' ? '다른 데 확정·' : '') + '✕·개인이라 건너뜀)' : ''));
+  }
+  /* 👥 2026-11-06 촬영마다 역할 고르기 — 이미 들어간 촬영은 바로 바꾸고, 아직이면 기억했다가 확정·백업을 누를 때 쓴다 */
+  function tpPickR(n, pk){ var p = TPS.pick; return (p && p.n === n && p.pk === pk) ? p.r : (TPS.lane || ''); }
+  function tpSetRole(n, pk, r){
+    var e = (TPS.S[pk]||{})[n];
+    if(!e){ TPS.pick = { n:n, pk:pk, r:r }; return; }
+    if(tpRowRole(pk, n) === r) return;
+    e.r = r; TPS.mut++; tpRender();
+    tpEnqueue({ act:'role', proj:pk, n:n, r:r }, n + ' · ' + tpShort(pk) + ' 역할 → ' + r);
+  }
+  function tpRoleBtns(n, pk){
+    if(TPS.lane !== 'PA' || !tpHasLane(n, 'PA')) return '';
+    var e = (TPS.S[pk]||{})[n], p = TPS.pick, cur = e ? tpRowRole(pk, n) : ((p && p.n === n && p.pk === pk) ? p.r : 'PA');
+    return '<div class="tprl"><small>이 촬영 역할</small>' + TP_PA_ROLES.map(function(r){ return '<button type="button" data-tp="rolep" data-n="' + tpEsc(n) + '" data-p="' + tpEsc(pk) + '" data-r="' + r + '" class="' + (cur === r ? 'cur' : '') + '">' + r + '</button>'; }).join('') + '</div>';
   }
   /* 필요 인원 */
   function tpSetNeed(pk, r, v){
@@ -13611,7 +13637,7 @@
     name = String(name||'').replace(/[<>|,\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim();
     if(!name){ tpSay('bad', '⚠ 이름을 먼저 적거나 고르세요.'); return; }
     if(name.length > 30){ tpSay('bad', '⚠ 이름이 너무 깁니다(30자까지).'); return; }
-    if(tpHasLane(name, role)){ tpSay('bad', '⚠ ' + name + '은 이미 ' + role + ' 구역에 있습니다.'); return; }
+    if(tpHasLane(name, role)){ tpSay('bad', '⚠ ' + name + '은 이미 ' + role + ' 구역에 있습니다.' + (role === 'PA' ? ' DIT·지원은 이름을 눌러 촬영마다 고르세요.' : '')); return; }
     var inpEl = document.querySelector('#tpBody input.tpaddp[data-r="'+role+'"]'); if(inpEl) inpEl.value = '';   /* 🔴 다시 그릴 때 «쓰던 글자»를 되살리므로 먼저 비운다 */
     TPS.roster.push({ n:name, r:role });
     tpRender();
@@ -13626,7 +13652,7 @@
       /* 두 구역에 있는 사람은 이 구역에서만 뺀다 — 일정은 남고 역할만 남은 구역으로 */
       TPS.roster = TPS.roster.filter(function(x){ return !(x.n === n && x.r === lane); });
       var left = tpRoleOf(n);
-      Object.keys(TPS.S).forEach(function(pk){ var e = TPS.S[pk][n]; if(e && e.r === lane) e.r = left; });
+      Object.keys(TPS.S).forEach(function(pk){ var e = TPS.S[pk][n]; if(e && tpLaneOf(e.r) === lane) e.r = left; });
       tpRender();
       tpEnqueue({ act:'delp', n:n, r:lane }, n + ' — ' + lane + ' 구역에서 뺐습니다(일정은 그대로).');
       return;
@@ -13663,7 +13689,7 @@
   }
   function tpClosePop(){
     var el = document.getElementById('tpPop'); if(el){ el.hidden = true; el.innerHTML = ''; }
-    var had = !!TPS.pop; TPS.pop = null;
+    var had = !!TPS.pop; TPS.pop = null; TPS.pick = null;
     [].forEach.call(document.querySelectorAll('#vTeam .tpac.tpsel'), function(x){ x.classList.remove('tpsel'); });
     if(had && TPS.needRender){ TPS.needRender = false; tpRender(); }
   }
@@ -13704,13 +13730,14 @@
     var projs = TPS.projects.filter(function(P){ return days.some(function(d){ return P.dates.indexOf(d) >= 0; }); }).sort(tpByDate);
     projs.forEach(function(P){
       var lk = '';
-      if(one){ var cv = tpDayCov(P.name, d0), nd = tpNeedOn(P.name, d0, role); if(nd && cv.by[role].c < nd) lk = '<em>' + tpEsc(role) + ' 부족</em>'; }
+      if(one){ var lr = tpDayCov(P.name, d0).lack.filter(function(x){ return tpLaneOf(x.r) === tpLaneOf(role); }).map(function(x){ return x.r; }); if(lr.length) lk = '<em>' + tpEsc(lr.join('·')) + ' 부족</em>'; }
       var inP = one && tpInProj(P.name, n0, d0), isC = inP && tpDayConf(TPS.S[P.name][n0], d0);
       h += '<div class="grp"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + (inP ? ' <small>— 지금 ' + (isC ? '확정' : '백업') + '</small>' : '') + '</div><div class="row3">';
       h += tpOptBtn({ t:'as', pk:P.name, k:'확정' }, '확정', isC, lk);
       h += tpOptBtn({ t:'as', pk:P.name, k:'백업' }, '백업', inP && !isC);
       if(inP || !one) h += tpOptBtn({ t:'rm', pk:P.name }, '빼기', false);
       h += '</div>';
+      if(names.length === 1) h += tpRoleBtns(n0, P.name);
       if(one && P.dates.length > 1) h += '<button type="button" data-tp="setall" data-n="' + tpEsc(n0) + '" data-p="' + tpEsc(P.name) + '" data-k="확정">이 촬영 전체 ' + P.dates.length + '회 확정</button>';   /* 👥 2026-11-06 회차마다 누르지 않게 */
     });
     if(!projs.length) h += '<div class="grp" style="font-weight:600">이 날은 촬영이 없습니다</div>';
@@ -13719,7 +13746,7 @@
          tpOptBtn({ t:'x' }, '✕ 안 되는 날 <small>(모든 프로젝트)</small>', c0 && c0.t === 'x') +
          tpOptBtn({ t:'bz' }, '📌 개인 일정', c0 && c0.t === 'bz') +
          tpOptBtn(null, '그 날 전부 비우기 <small>(모든 프로젝트에서 빠짐)</small>', one && !c0);
-    el.innerHTML = h; TPS.pop = { cells:cells };
+    el.innerHTML = h; TPS.pop = { cells:cells, anc:anchor };
     tpPlacePop(el, anchor);
   }
   /* 편의 ① «충원 칸 → 그날 비는 사람» — 부족한 역할(필요 인원을 안 정했으면 모든 역할)의 사람을
@@ -13739,7 +13766,7 @@
     roles.forEach(function(r){
       var free = [], here = [], otherB = [], otherC = [];
       TPS.roster.forEach(function(x){
-        if(x.r !== r) return;
+        if(x.r !== tpLaneOf(r)) return;
         var c = tpCell(x.n, d), cf = tpConfOn(x.n, d);
         if(cf === pk) return;                                         /* 이미 여기 확정 */
         if(c && (c.t === 'x' || c.t === 'bz')) return;
@@ -13750,7 +13777,14 @@
       });
       var list = here.concat(free), rest = otherB.concat(otherC);
       h += '<div class="grp">' + r + (need[r] ? ' <small>' + cv.by[r].c + '/' + need[r] + '</small>' : '') + '</div>';
-      if(!list.length && !rest.length){ h += '<div class="hint">그날 부를 수 있는 ' + r + '가 없습니다 (모두 ✕·개인)</div>'; return; }
+      /* 👥 2026-11-06 «PA 많고 DIT 부족»이면 이미 확정된 사람의 역할만 바꾸면 끝난다 */
+      var sw = [];
+      if(need[r] && cv.by[r].c < need[r] && tpLaneOf(r) === 'PA') Object.keys(TPS.S[pk]||{}).forEach(function(n){
+        var e = TPS.S[pk][n], rr = tpRowRole(pk, n);
+        if(rr !== r && tpLaneOf(rr) === 'PA' && e.off.indexOf(d) < 0 && tpDayConf(e, d)) sw.push({ n:n, r:rr });
+      });
+      sw.forEach(function(x){ any = true; h += '<button type="button" data-tp="covrole" data-n="' + tpEsc(x.n) + '" data-r="' + tpEsc(r) + '" data-p="' + tpEsc(pk) + '" data-d="' + d + '">' + tpEsc(x.n) + ' <small>(지금 ' + tpEsc(x.r) + ')</small><em class="go">' + tpEsc(r) + '로 바꾸기 →</em></button>'; });
+      if(!list.length && !rest.length){ if(!sw.length) h += '<div class="hint">그날 부를 수 있는 ' + r + '가 없습니다 (모두 ✕·개인)</div>'; return; }
       any = true;
       /* 👥 2026-11-06 대표 지시 «전체 회차 인원 선택할 수 있게 … 하나씩 선택하기 귀찮아» — 옆 단추 = 이 프로젝트 전체 날 확정(이름 메뉴와 같은 setall · 남의 확정·✕·개인인 날은 건너뜀) */
       var nD = (tpProj(pk) || { dates:[] }).dates.length;
@@ -13758,7 +13792,7 @@
         var one = '<button type="button" data-tp="covpick" data-n="' + tpEsc(x.n) + '" data-r="' + tpEsc(r) + '" data-p="' + tpEsc(pk) + '" data-d="' + d + '">' + tpEsc(x.n) + ' <small>' + (x.t ? '(' + tpEsc(x.t) + ')' : '· 아직 안 적음') + '</small><em class="go">확정 →</em></button>';
         return nD > 1 ? '<div class="tpcvr">' + one + '<button type="button" class="all" data-tp="covall" data-n="' + tpEsc(x.n) + '" data-r="' + tpEsc(r) + '" data-p="' + tpEsc(pk) + '" data-d="' + d + '" title="' + tpEsc(x.n) + '을(를) 이 촬영 ' + nD + '회 전부 확정">전체 ' + nD + '회</button></div>' : one;
       }
-      if(!list.length) h += '<div class="hint">비어 있는 ' + r + '가 없습니다 — 아래 «다른 곳에 있는 사람»에서 옮길 수 있습니다</div>';
+      if(!list.length && !sw.length) h += '<div class="hint">비어 있는 ' + r + '가 없습니다 — 아래 «다른 곳에 있는 사람»에서 옮길 수 있습니다</div>';
       list.forEach(function(x){ h += pickBtn(x); });
       if(rest.length) h += '<details class="more"><summary>다른 곳에 있는 사람 ' + rest.length + '명 (백업 ' + otherB.length + ' · 확정 ' + otherC.length + ') ▸</summary>' + rest.map(pickBtn).join('') + '</details>';
     });
@@ -13776,14 +13810,14 @@
       var e = (TPS.S[P.name]||{})[n];
       h += '<div class="grp"><i style="background:' + tpColor(P.name) + '"></i>' + tpEsc(tpShort(P.name)) + ' <small>전체 ' + P.dates.length + '일 한 번에</small></div><div class="row3">' +
            ['확정','백업'].map(function(k){ return '<button type="button" data-tp="setall" data-n="' + tpEsc(n) + '" data-p="' + tpEsc(P.name) + '" data-k="' + k + '" style="--pc:' + tpColor(P.name) + '">' + k + '</button>'; }).join('') +
-           (e ? '<button type="button" data-tp="setall" data-n="' + tpEsc(n) + '" data-p="' + tpEsc(P.name) + '" data-k="">빼기</button>' : '') + '</div>';
+           (e ? '<button type="button" data-tp="setall" data-n="' + tpEsc(n) + '" data-p="' + tpEsc(P.name) + '" data-k="">빼기</button>' : '') + '</div>' + tpRoleBtns(n, P.name);
     });
     if(!projs.length) h += '<div class="hint">이 기간에 촬영이 잡힌 프로젝트가 없습니다</div>';
     var armed = TPS.armed === 'p:' + n;
     h += '<div class="grp">명단</div><div class="row3"><button type="button" data-tp="mvup" data-n="' + tpEsc(n) + '" title="이름을 잡고 위아래로 끌어도 됩니다">▲ 위로</button><button type="button" data-tp="mvdn" data-n="' + tpEsc(n) + '">▼ 아래로</button>' +
          '<button type="button" data-tp="delp" data-n="' + tpEsc(n) + '" class="' + (armed ? 'armed' : '') + '">' + (armed ? '⚠ 한 번 더 = 삭제' : (dup ? '🗑 ' + tpEsc(lane) + ' 구역에서 빼기' : '🗑 명단에서 삭제')) + '</button></div>' +
          '<div class="hint">확정 = 다른 곳에 확정된 날·✕·개인인 날은 건너뜀 · 백업 = 다른 곳 확정과 겹쳐 걸림 · 삭제해도 인적자원 DB는 그대로</div>';
-    el.innerHTML = h; TPS.pop = { name:n };
+    el.innerHTML = h; TPS.pop = { name:n, anc:anchor };
     tpPlacePop(el, anchor);
   }
 
@@ -13796,8 +13830,9 @@
   }
   /* 👥 2026-10-29 대표 지시 — ①빈 칸 기본 = «아직 안 적음»(아무것도 안 보임) · 대표가 확인한 것만 적는다
      ②«한 날에 두 프로젝트(확정·백업)»면 한 칸에 몰지 말고 «칸을 나눠» 어느 게 확정이고 어느 게 백업인지 보이게 */
-  function tpSegHtml(pk, k, f){
-    return '<span class="seg ' + (k === '확정' ? 'k' : 'b') + (f && pk !== f ? ' dim' : '') + '" style="--pc:' + tpColor(pk) + '"><span class="nm">' + tpEsc(tpTiny(pk)) + '</span><span class="mk">' + (k === '확정' ? '✓' : '백업') + '</span></span>';
+  function tpSegHtml(pk, k, f, n){
+    var tg = n ? tpRoleTag(pk, n) : '';
+    return '<span class="seg ' + (k === '확정' ? 'k' : 'b') + (f && pk !== f ? ' dim' : '') + '" style="--pc:' + tpColor(pk) + '"><span class="nm">' + tpEsc(tpTiny(pk)) + '</span><span class="mk">' + (tg ? tg + ' ' : '') + (k === '확정' ? '✓' : '백업') + '</span></span>';
   }
   /* 👥 2026-11-06 대표 지시 «견적앱에 몇명 있는지 포토 몇명 개퍼 몇명인지 해당 프로젝트 누르거나 그러면 보이게» — 프로젝트를 고를 때 서버에서 읽는다(act=qcrew · 역할별 수만) */
   function tpQcHtml(pk){
@@ -13854,19 +13889,19 @@
     var c = tpCell(n, d), wd = tpD(d).getDay();
     var cls = 'tpac' + ((wd===0||wd===6) ? ' we' : '') + (d === TPS.today ? ' today' : ''), st = '', txt = '', tip = n + ' · ' + tpMD(d);
     if(!adm && !(c && c.t === 'as' && c.k === '확정')) c = null;                  /* 팀은 확정만(서버도 그것만 보낸다) */
-    if(lane && c && c.t === 'as' && tpDupLane(n) && tpRowRole(c.pk, n) !== lane){ cls += ' tpother'; tip += ' · ' + tpRowRole(c.pk, n) + ' 자리로 들어감'; }
+    if(lane && c && c.t === 'as' && tpDupLane(n) && tpLaneOf(tpRowRole(c.pk, n)) !== lane){ cls += ' tpother'; tip += ' · ' + tpRowRole(c.pk, n) + ' 자리로 들어감'; }
     if(c && c.t === 'as'){
       var segs = [{ pk:c.pk, k:c.k }].concat(c.more || []);
       if(adm) (c.bk || []).forEach(function(x){ segs.push({ pk:x, k:'백업' }); });
-      tip += ' · ' + segs.map(function(s){ return tpShort(s.pk) + ' ' + s.k; }).join(' / ');
+      tip += ' · ' + segs.map(function(s){ var tg = tpRoleTag(s.pk, n); return tpShort(s.pk) + ' ' + s.k + (tg ? ' (' + tg + ')' : ''); }).join(' / ');
       if(c.more.length){ cls += ' bad'; tip += ' · ⚠ 같은 날 두 곳에 확정 — 눌러서 한 곳을 고르세요'; }
       if(segs.length === 1){
         cls += c.k === '확정' ? ' k' : ' b'; st = '--pc:' + tpColor(c.pk);
-        txt = '<span class="ln"><span class="nm">' + tpEsc(tpTiny(c.pk)) + '</span><span class="mk">' + (c.k === '확정' ? '✓' : '백업') + '</span></span>';
+        txt = '<span class="ln"><span class="nm">' + tpEsc(tpTiny(c.pk)) + '</span><span class="mk">' + (tpRoleTag(c.pk, n) ? tpRoleTag(c.pk, n) + ' ' : '') + (c.k === '확정' ? '✓' : '백업') + '</span></span>';
         if(f && c.pk !== f) cls += ' dim';
       } else {
         cls += ' multi';                                                        /* 두 칸 이상 — 위에서부터 확정 → 백업 */
-        txt = segs.map(function(s){ return tpSegHtml(s.pk, s.k, f); }).join('');
+        txt = segs.map(function(s){ return tpSegHtml(s.pk, s.k, f, n); }).join('');
         if(f && !segs.some(function(s){ return s.pk === f; })) cls += ' dim';
       }
     } else if(c && c.t === 'x'){ cls += ' x'; txt = '✕'; tip += ' · 안 되는 날(모든 프로젝트)'; }
@@ -13898,7 +13933,7 @@
            '④ 위 <b>칩</b> = 전체 ↔ 프로젝트 하나(나머지 흐리게 · 흐린 칸도 눌러서 고칠 수 있습니다). 프로젝트를 고르면 <b>견적서 인원</b>(포토·개퍼 몇 명)이 뜹니다.<br>' +
            '⑤ <b>충원 줄 칸</b>을 누르면 그날 <b>비는 사람</b>이 뜨고 눌러서 바로 확정(옆 <b>전체 N회</b> = 그 촬영 모든 회차 확정 · 창이 안 닫혀 여러 명을 연달아 넣습니다) · <b>이름</b>을 누르면 그 프로젝트 <b>전체 날 한 번에</b>.<br>' +
            '⑥ 확정하면 프로젝트 정보 「PA팀」에 들어갑니다(백업은 안 들어감).<br>' +
-           '⑦ <b>📋 배치 덜 된 촬영</b> = 인원이 모자라거나 필요 인원을 안 정한 촬영을 모아 보여 줍니다. 눌러서 그 날로 가 채우면 사라집니다. 혼자 나가는 촬영은 <b>0명</b>을 누르세요. 지난 것은 최근 1달만 보이고 그 전은 <b>◀ 이전 달</b>로 봅니다.<br>⑧ 지난 날짜로 가면(<b>◀ 달</b>) 그날 누가 나왔는지 보입니다. 완료된 촬영도 일정표에 사람이 적혀 있으면 나옵니다.<br>⑨ <b>겸직</b> — PA에 있는 사람을 DIT 칸에서도 추가할 수 있습니다. 어느 구역의 칸을 눌렀는지로 그 촬영의 역할이 정해집니다(다른 구역 칸은 흐리게).<br>⑩ <b>지원</b>(알바·인턴) = 기록만 남깁니다. 필요 인원·PA팀·견적서에 안 들어갑니다. 청구할 때만 견적서에서 «＋ 사람 추가».</div></details>';
+           '⑦ <b>📋 배치 덜 된 촬영</b> = 인원이 모자라거나 필요 인원을 안 정한 촬영을 모아 보여 줍니다. 눌러서 그 날로 가 채우면 사라집니다. 혼자 나가는 촬영은 <b>0명</b>을 누르세요. 지난 것은 최근 1달만 보이고 그 전은 <b>◀ 이전 달</b>로 봅니다.<br>⑧ 지난 날짜로 가면(<b>◀ 달</b>) 그날 누가 나왔는지 보입니다. 완료된 촬영도 일정표에 사람이 적혀 있으면 나옵니다.<br>⑨ <b>DIT·지원은 PA 구역 안에서</b> — 이름이나 칸을 누르면 프로젝트마다 <b>이 촬영 역할 PA · DIT · 지원</b>이 보입니다. 촬영마다 한 역할로 셉니다. 충원 칸에서 DIT가 모자라면 확정된 사람을 바로 DIT로 바꿀 수 있습니다.<br>⑩ <b>지원</b>(알바·인턴) = 기록만 남깁니다. 필요 인원·PA팀·견적서에 안 들어갑니다. 청구할 때만 견적서에서 «＋ 사람 추가».</div></details>';
     } else {
       h += '<div class="tphow">🔒 <b>내가 확정된 프로젝트</b>만 보입니다. 남의 일정·섭외 현황은 「관리」 이상만 봅니다.' +
            (TPS.note ? '<br>ℹ️ ' + tpEsc(TPS.note) : (!TPS.projects.length ? '<br>ℹ️ 아직 확정된 프로젝트가 없습니다 — 확정되면 여기에 나타납니다.' : '')) + '</div>';
@@ -13977,13 +14012,13 @@
       });
       g += '</div>';
     });
-    var roles = adm ? TP_LANES : (TPS.me && tpRoleOf(TPS.me) ? [tpRoleOf(TPS.me)] : []);
+    var roles = adm ? TP_SHOW : (TPS.me && tpRoleOf(TPS.me) ? [tpRoleOf(TPS.me)] : []);
     roles.forEach(function(r){
       if(adm){
-        /* 다른 구역 사람도 고를 수 있다(PA가 DIT 겸직 등) · 지원은 인적자원 전체 */
+        /* 다른 구역 사람도 고를 수 있다 · PA 구역은 알바·인턴까지 들어오므로 인적자원 전체 */
         var seenO = {}; TPS.roster.forEach(function(x){ if(x.r === r) seenO[x.n] = 1; });
-        var opts = TPS.roster.map(function(x){ return x.n; }).concat(TPS.db.filter(function(x){ return r === '지원' || x.r === r; }).map(function(x){ return x.n; })).filter(function(x){ if(seenO[x]) return false; seenO[x] = 1; return true; }).map(function(x){ return '<option value="' + tpEsc(x) + '">'; }).join('');
-        g += '<div class="tphead tpahd"><span class="tphw"><b>' + r + (r === '지원' ? ' <small>알바·인턴 · 기록만</small>' : '') + '</b><span class="tpaddw"><input class="tpaddp" data-r="' + r + '" list="tpdl-' + r + '" placeholder="＋ 사람 추가 — 목록에서 고르거나 직접 입력" autocomplete="off"><datalist id="tpdl-' + r + '">' + opts + '</datalist><button type="button" class="tpaddb" data-tp="addp" data-r="' + r + '">추가</button></span></span></div>';
+        var opts = TPS.roster.map(function(x){ return x.n; }).concat(TPS.db.filter(function(x){ return r === 'PA' || x.r === r; }).map(function(x){ return x.n; })).filter(function(x){ if(seenO[x]) return false; seenO[x] = 1; return true; }).map(function(x){ return '<option value="' + tpEsc(x) + '">'; }).join('');
+        g += '<div class="tphead tpahd"><span class="tphw"><b>' + r + (r === 'PA' ? ' <small>DIT·지원 포함</small>' : '') + '</b><span class="tpaddw"><input class="tpaddp" data-r="' + r + '" list="tpdl-' + r + '" placeholder="＋ 사람 추가 — 목록에서 고르거나 직접 입력" autocomplete="off"><datalist id="tpdl-' + r + '">' + opts + '</datalist><button type="button" class="tpaddb" data-tp="addp" data-r="' + r + '">추가</button></span></span></div>';
       }
       TPS.roster.filter(function(x){ return x.r === r && (adm || x.n === TPS.me); }).forEach(function(x){
         g += '<div class="tparow"' + (adm ? ' data-rn="' + tpEsc(x.n) + '" data-rr="' + tpEsc(r) + '"' : '') + '><div class="tpal">' + (adm ? '<button type="button" class="tpnm" data-tp="name" data-n="' + tpEsc(x.n) + '" title="누르면 전체 날 한 번에 · 순서 · 삭제 — 위아래로 끌면 순서 바꿈">' + tpEsc(x.n) + ' <span>▾</span></button>' : '<b>' + tpEsc(x.n) + '</b>') + '</div>';
@@ -14061,12 +14096,25 @@
         /* 눌러도 창을 안 닫는다 — 여러 명을 연달아 넣는다 */
         var cp2 = b.getAttribute('data-p'), cd2 = b.getAttribute('data-d'), ca = null;
         tpSetAll(b.getAttribute('data-n'), cp2, '확정', b.getAttribute('data-r') || '');
+        tpSetRole(b.getAttribute('data-n'), cp2, b.getAttribute('data-r') || '');
         [].forEach.call(root.querySelectorAll('[data-tp="cov"]'), function(x){ if(x.getAttribute('data-p') === cp2 && x.getAttribute('data-d') === cd2) ca = x; });
         tpOpenCov(cp2, cd2, ca); return;
       }
-      if(a === 'covpick'){ tpChoose([b.getAttribute('data-n') + '|' + b.getAttribute('data-d')], { t:'as', pk:b.getAttribute('data-p'), k:'확정', r:b.getAttribute('data-r') || '' }); return; }
+      if(a === 'covpick'){ tpChoose([b.getAttribute('data-n') + '|' + b.getAttribute('data-d')], { t:'as', pk:b.getAttribute('data-p'), k:'확정', r:b.getAttribute('data-r') || '' }); tpSetRole(b.getAttribute('data-n'), b.getAttribute('data-p'), b.getAttribute('data-r') || ''); return; }
+      if(a === 'covrole'){
+        var rp3 = b.getAttribute('data-p'), rd3 = b.getAttribute('data-d'), ra3 = null;
+        tpClosePop(); tpSetRole(b.getAttribute('data-n'), rp3, b.getAttribute('data-r') || '');
+        [].forEach.call(root.querySelectorAll('[data-tp="cov"]'), function(x){ if(x.getAttribute('data-p') === rp3 && x.getAttribute('data-d') === rd3) ra3 = x; });
+        tpOpenCov(rp3, rd3, ra3); return;
+      }
+      if(a === 'rolep'){
+        var pp3 = TPS.pop, rn3 = b.getAttribute('data-n');
+        tpSetRole(rn3, b.getAttribute('data-p'), b.getAttribute('data-r') || '');
+        if(pp3 && pp3.name) tpOpenName(rn3, pp3.anc); else if(pp3 && pp3.cells) tpOpenPop(pp3.cells, pp3.anc);
+        return;
+      }
       if(a === 'name'){ var wasN = TPS.pop && TPS.pop.name === b.getAttribute('data-n'), rwN = b.closest('[data-rr]'); TPS.lane = rwN ? rwN.getAttribute('data-rr') : ''; tpClosePop(); if(!wasN) tpOpenName(b.getAttribute('data-n'), b); return; }
-      if(a === 'setall'){ tpSetAll(b.getAttribute('data-n'), b.getAttribute('data-p'), b.getAttribute('data-k') || '', TPS.lane || ''); return; }
+      if(a === 'setall'){ tpSetAll(b.getAttribute('data-n'), b.getAttribute('data-p'), b.getAttribute('data-k') || '', tpPickR(b.getAttribute('data-n'), b.getAttribute('data-p'))); return; }
       if(a === 'mvup' || a === 'mvdn'){ tpMove(b.getAttribute('data-n'), a === 'mvup' ? -1 : 1); return; }
       if(a === 'delp'){
         var dn = b.getAttribute('data-n');
