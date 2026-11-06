@@ -1402,6 +1402,8 @@
     #vTeam select.tpneed{font:inherit;font-size:12px;padding:1px 2px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
     #vTeam .tpbd{font-size:10.5px;padding:0 5px;border-radius:8px;background:#fde8c8;color:#92400e;font-weight:800}
     #vTeam .tpbd.ok{background:#d9f2e0;color:#1f6b3a}
+    #vTeam .tpqc{font-size:13px;margin:0 0 8px;padding:6px 10px;background:#eef4ff;border:1px solid #c9d8f5;border-radius:10px;overflow-wrap:anywhere}
+    #vTeam .tpqc small{color:var(--sub);font-weight:600}
     #vTeam .tppast{margin:0 0 8px;padding:6px 10px;background:#fff4e5;border:1px solid #f3d3a4;border-radius:10px}
     #vTeam .tppast .tph{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:#92400e}
     #vTeam .tppast .tpr{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
@@ -13774,6 +13776,25 @@
   function tpSegHtml(pk, k, f){
     return '<span class="seg ' + (k === '확정' ? 'k' : 'b') + (f && pk !== f ? ' dim' : '') + '" style="--pc:' + tpColor(pk) + '"><span class="nm">' + tpEsc(tpTiny(pk)) + '</span><span class="mk">' + (k === '확정' ? '✓' : '백업') + '</span></span>';
   }
+  /* 👥 2026-11-06 대표 지시 «견적앱에 몇명 있는지 포토 몇명 개퍼 몇명인지 해당 프로젝트 누르거나 그러면 보이게» — 프로젝트를 고를 때 서버에서 읽는다(act=qcrew · 역할별 수만) */
+  function tpQcHtml(pk){
+    var q = (TPS.qc = TPS.qc || {})[pk];
+    if(!q){ q = TPS.qc[pk] = { busy:true }; tpQcLoad(pk); }
+    if(q.busy) return '⏳ 견적서 인원 읽는 중…';
+    if(q.err) return '⚠ 견적서 인원을 못 읽었습니다 — ' + tpEsc(q.err);
+    if(!q.quote) return '📋 견적서가 아직 없습니다';
+    if(!q.total) return '📋 견적서 인건비에 아직 사람이 없습니다';
+    return '📋 견적서 인원 <b>' + q.total + '명</b> — ' + q.groups.map(function(g){
+      var s = Object.keys(g.sub || {}).map(function(k){ return tpEsc(k) + ' ' + g.sub[k]; }).join(' · ');
+      return '<b>' + tpEsc(g.n) + ' ' + g.c + '</b>' + (s ? ' <small>(' + s + ')</small>' : '');
+    }).join(' · ');
+  }
+  function tpQcLoad(pk){
+    askCount(tpUrl({ act:'qcrew', proj:pk }), function(d, why){
+      TPS.qc[pk] = (d && d.ok) ? d : { err:(d && d.error) || (why === 'timeout' ? '25초 안에 답이 없음' : '서버에 닿지 못함') };
+      var el = document.getElementById('tpQc'); if(el && TPS.focus === pk) el.innerHTML = tpQcHtml(pk);
+    }, 25000);
+  }
   /* 👥 2026-11-06 대표 지시 «인원 안되거나 그런것들은 모아서 볼 수 있게» · «1달까지 보이고 그 전거로 가려면 달 이동» — 달력은 오늘부터라 지난 촬영은 여기서 찾아 들어간다 */
   function tpTodoChip(P){
     var ls = tpPastLack(P), k = 0, un = 0;
@@ -13842,7 +13863,7 @@
            '① <b>한 칸 = 한 사람의 그 날.</b> 칸을 누르면 «이 날 어디로?» — 프로젝트마다 <b>확정 · 백업 · 빼기</b>, <b>✕ 안 되는 날</b>(모든 프로젝트), <b>개인 일정</b>, <b>그 날 전부 비우기</b>.<br>' +
            '② <b>끌면 여러 칸</b>을 한 번에 고릅니다. <b>오른쪽 클릭</b> = 바로 ✕ ↔ 비움.<br>' +
            '③ <b>확정은 하루에 한 곳</b> — 다른 프로젝트에 확정하면 그쪽으로 옮겨집니다. <b>백업은 겹쳐 걸 수 있습니다</b>(확정자를 다른 프로젝트 백업으로). 확정자를 옮길 때 원래 프로젝트에 그날 백업이 있으면 «백업을 확정으로 올릴까요?»를 묻습니다.<br>' +
-           '④ 위 <b>칩</b> = 전체 ↔ 프로젝트 하나(나머지 흐리게 · 흐린 칸도 눌러서 고칠 수 있습니다).<br>' +
+           '④ 위 <b>칩</b> = 전체 ↔ 프로젝트 하나(나머지 흐리게 · 흐린 칸도 눌러서 고칠 수 있습니다). 프로젝트를 고르면 <b>견적서 인원</b>(포토·개퍼 몇 명)이 뜹니다.<br>' +
            '⑤ <b>충원 줄 칸</b>을 누르면 그날 <b>비는 사람</b>이 뜨고 눌러서 바로 확정(옆 <b>전체 N회</b> = 그 촬영 모든 회차 확정 · 창이 안 닫혀 여러 명을 연달아 넣습니다) · <b>이름</b>을 누르면 그 프로젝트 <b>전체 날 한 번에</b>.<br>' +
            '⑥ 확정하면 프로젝트 정보 「PA팀」에 들어갑니다(백업은 안 들어감).<br>' +
            '⑦ <b>📋 배치 덜 된 촬영</b> = 인원이 모자라거나 필요 인원을 안 정한 촬영을 모아 보여 줍니다. 눌러서 그 날로 가 채우면 사라집니다. 혼자 나가는 촬영은 <b>0명</b>을 누르세요. 지난 것은 최근 1달만 보이고 그 전은 <b>◀ 이전 달</b>로 봅니다.<br>⑧ 지난 날짜로 가면(<b>◀ 달</b>) 그날 누가 나왔는지 보입니다. 완료된 촬영도 일정표에 사람이 적혀 있으면 나옵니다.</div></details>';
@@ -13862,6 +13883,7 @@
     if(!vis.length) h += '<span class="tplb">이 기간에 촬영이 잡힌 프로젝트가 없습니다 →</span>';
     h += '<span style="flex:1"></span><button type="button" class="tpnav" data-tp="navm" data-n="-1">◀ 달</button><button type="button" class="tpnav" data-tp="nav" data-n="-7">◀ 7일</button><button type="button" class="tpnav" data-tp="nav" data-n="0">오늘</button><button type="button" class="tpnav" data-tp="nav" data-n="7">7일 ▶</button><button type="button" class="tpnav" data-tp="navm" data-n="1">달 ▶</button><button type="button" class="tpnav" data-tp="reload" title="최신으로 다시 받기">🔄</button></div>';
     if(adm) h += tpTodoHtml();
+    if(adm && f) h += '<div class="tpqc" id="tpQc">' + tpQcHtml(f) + '</div>';
 
     if(adm){
       /* ── 필요 인원 · PA팀 확정자 (접어 둔다 — 안 정한 프로젝트가 있으면 펼쳐 둔다) ── */
@@ -13961,7 +13983,7 @@
     TPS.shown = true; if(want) TPS.want = want;
     /* 🔴 다른 사람으로 로그인했거나 로그아웃했다면, 앞 사람의 데이터를 «잠깐이라도» 보여주지 않는다 */
     var tk = appTok();
-    if(TPS.tok !== tk){ TPS.loaded = false; TPS.d = null; TPS.S = {}; TPS.roster = []; TPS.projects = []; TPS.crew = []; TPS.db = []; TPS.q = []; TPS.msg = null; TPS.dirty = ''; TPS.need = {}; TPS.bz = {}; TPS.no = {}; TPS.focus = ''; TPS.promo = null; TPS.pop = null; TPS.nbSeen = false; TPS.from = ''; TPS.tok = tk; TPS.mut++; }
+    if(TPS.tok !== tk){ TPS.loaded = false; TPS.d = null; TPS.S = {}; TPS.roster = []; TPS.projects = []; TPS.crew = []; TPS.db = []; TPS.q = []; TPS.msg = null; TPS.dirty = ''; TPS.need = {}; TPS.bz = {}; TPS.no = {}; TPS.qc = {}; TPS.focus = ''; TPS.promo = null; TPS.pop = null; TPS.nbSeen = false; TPS.from = ''; TPS.tok = tk; TPS.mut++; }
     if(TPS.loaded){ tpRender(); tpLoad(true, true); } else tpLoad(false);
     clearInterval(TPS.timer);
     TPS.timer = setInterval(function(){
@@ -13988,12 +14010,12 @@
       if(TPS.rdSkip){ TPS.rdSkip = false; return; }
       var b = e.target.closest ? e.target.closest('[data-tp]') : null; if(!b) return;
       var a = b.getAttribute('data-tp');
-      if(a === 'focus'){ tpClosePop(); TPS.focus = b.getAttribute('data-p') || ''; tpRender(); return; }
+      if(a === 'focus'){ tpClosePop(); TPS.qc = {}; TPS.focus = b.getAttribute('data-p') || ''; tpRender(); return; }
       if(a === 'navm'){ tpClosePop(); TPS.from = tpAddM(TPS.from || TPS.today, +b.getAttribute('data-n')); tpRender(); return; }
       if(a === 'pm'){ TPS.pm = Math.max(0, (TPS.pm || 0) + (+b.getAttribute('data-n'))); tpRender(); return; }
       if(a === 'todo'){ TPS.todoOff = !TPS.todoOff; tpRender(); return; }
       if(a === 'zero'){ tpClosePop(); tpSetZero(b.getAttribute('data-p'), b.getAttribute('data-on') === '1'); return; }
-      if(a === 'past'){ tpClosePop(); var Pp = tpProj(b.getAttribute('data-p')), pl = Pp ? tpPastLack(Pp) : []; if(pl.length){ TPS.focus = Pp.name; TPS.from = tpAdd(pl[0], -3); } tpRender(); return; }
+      if(a === 'past'){ tpClosePop(); var Pp = tpProj(b.getAttribute('data-p')), pl = Pp ? tpPastLack(Pp) : []; if(pl.length){ TPS.qc = {}; TPS.focus = Pp.name; TPS.from = tpAdd(pl[0], -3); } tpRender(); return; }
       if(a === 'nav'){ tpClosePop(); var n = +b.getAttribute('data-n'); TPS.from = n === 0 ? TPS.today : tpAdd(TPS.from || TPS.today, n); tpRender(); return; }
       if(a === 'reload'){ e.preventDefault(); tpClosePop(); tpLoad(true, true); return; }
       if(!TPS.edit && a !== 'undo') return;
