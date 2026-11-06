@@ -1601,7 +1601,9 @@
     #vTeam .tplegend .k.bk{background:repeating-linear-gradient(135deg,#bfe0dc 0 4px,#fff 4px 8px);border:2px solid #0f766e}
     #vTeam .tplegend .k.v{background:#fff;border:2px dashed #0f766e}
     #vTeam .tplegend .k.xx{background:#fde7e5;border-color:#f3c3be}
-    #vTeam .tppop{position:fixed;z-index:60;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.2);padding:9px;width:268px;max-height:72vh;overflow:auto;font-size:13px}
+    #vTeam .tppop details.more{margin:6px 0 0;border-top:1px dashed var(--line);padding-top:4px}
+    #vTeam .tppop details.more summary{cursor:pointer;font-size:11.5px;color:var(--sub);font-weight:800;padding:3px 0}
+    #vTeam .tppop{position:fixed;z-index:85;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.2);padding:9px;width:268px;max-height:72vh;overflow:auto;font-size:13px}
     #vTeam .tppop h5{margin:0 0 6px;font-size:13px;font-weight:800}
     #vTeam .tppop h5 span{color:var(--sub);font-weight:600}
     #vTeam .tppop .grp{font-size:11.5px;color:var(--sub);font-weight:800;margin:8px 0 3px}
@@ -13640,11 +13642,25 @@
   }
   function tpPlacePop(el, anchor){
     el.hidden = false;
-    var b = anchor.getBoundingClientRect(), w = el.offsetWidth || 240, h = el.offsetHeight || 200;
+    el.style.maxHeight = ''; el.scrollTop = 0;
+    var b = anchor && anchor.isConnected ? anchor.getBoundingClientRect() : { left:el.offsetLeft, top:120, bottom:120 };
+    var w = el.offsetWidth || 240, h = el.offsetHeight || 200;
     var vw = document.documentElement.clientWidth, vh = window.innerHeight;
-    var left = Math.max(8, Math.min(b.left, vw - w - 8)), top = b.bottom + 4;
-    if(top + h > vh - 8) top = Math.max(8, b.top - h - 4);
-    el.style.left = left + 'px'; el.style.top = top + 'px';
+    /* 🔴 2026-10-30 대표 화면 — 맨 위 띠(.patop)가 창 윗부분(제목·이날 필요 인원)을 가렸다 → 띠 «아래»부터 쓴다 */
+    var bar = document.querySelector('.patop'), safe = 8;
+    if(bar){ var br = bar.getBoundingClientRect(); if(br.bottom > 0 && br.top <= 0 + 1) safe = Math.max(safe, br.bottom + 6); }
+    var below = vh - 8 - (b.bottom + 4), above = (b.top - 4) - safe;
+    var left = Math.max(8, Math.min(b.left, vw - w - 8)), top, room;
+    if(h <= below){ top = b.bottom + 4; room = below; }
+    else if(h <= above){ top = b.top - 4 - h; room = above; }
+    else {
+      /* 위아래 어느 쪽에도 다 안 들어가면 — 누른 칸 «옆»에 세로로 길게(화면 높이 전부) · 누른 칸은 안 가린다 */
+      room = vh - 8 - safe; el.style.maxHeight = 'none'; var hh = Math.min(el.offsetHeight || h, room);
+      top = Math.max(safe, Math.min(b.top - 40, vh - 8 - hh));
+      left = (b.right + 6 + w <= vw - 8) ? b.right + 6 : Math.max(8, b.left - 6 - w);
+    }
+    el.style.maxHeight = Math.max(160, Math.min(room, vh - 8 - Math.max(safe, top))) + 'px';
+    el.style.left = left + 'px'; el.style.top = Math.max(safe, top) + 'px';
   }
   function tpOptBtn(v, label, cur, extra){
     var enc = !v ? '' : (v.t === 'as' ? 'as|' + v.k + '|' + v.pk : v.t === 'rm' ? 'rm||' + v.pk : v.t);
@@ -13704,13 +13720,14 @@
         else if(c) otherB.push({ n:x.n, t:tpShort(c.pk) + ' 백업' });
         else free.push({ n:x.n, t:'' });
       });
-      var list = free.concat(here, otherB, otherC);
+      var list = here.concat(free), rest = otherB.concat(otherC);
       h += '<div class="grp">' + r + (need[r] ? ' <small>' + cv.by[r].c + '/' + need[r] + '</small>' : '') + '</div>';
-      if(!list.length){ h += '<div class="hint">그날 부를 수 있는 ' + r + '가 없습니다 (모두 ✕·개인)</div>'; return; }
+      if(!list.length && !rest.length){ h += '<div class="hint">그날 부를 수 있는 ' + r + '가 없습니다 (모두 ✕·개인)</div>'; return; }
       any = true;
-      list.forEach(function(x){
-        h += '<button type="button" data-tp="covpick" data-n="' + tpEsc(x.n) + '" data-p="' + tpEsc(pk) + '" data-d="' + d + '">' + tpEsc(x.n) + ' <small>' + (x.t ? '(' + tpEsc(x.t) + ')' : '· 아직 안 적음') + '</small><em class="go">확정 →</em></button>';
-      });
+      function pickBtn(x){ return '<button type="button" data-tp="covpick" data-n="' + tpEsc(x.n) + '" data-p="' + tpEsc(pk) + '" data-d="' + d + '">' + tpEsc(x.n) + ' <small>' + (x.t ? '(' + tpEsc(x.t) + ')' : '· 아직 안 적음') + '</small><em class="go">확정 →</em></button>'; }
+      if(!list.length) h += '<div class="hint">비어 있는 ' + r + '가 없습니다 — 아래 «다른 곳에 있는 사람»에서 옮길 수 있습니다</div>';
+      list.forEach(function(x){ h += pickBtn(x); });
+      if(rest.length) h += '<details class="more"><summary>다른 곳에 있는 사람 ' + rest.length + '명 (백업 ' + otherB.length + ' · 확정 ' + otherC.length + ') ▸</summary>' + rest.map(pickBtn).join('') + '</details>';
     });
     if(any) h += '<div class="hint">누르면 ' + tpEsc(tpShort(pk)) + ' ' + tpMD(d) + ' 확정 · 다른 곳 «확정»에서 오면 거기서는 빠지고, 그쪽 백업을 올릴지 묻습니다</div>';
     el.innerHTML = h; TPS.pop = { cov:pk + '|' + d, anc:anchor };
