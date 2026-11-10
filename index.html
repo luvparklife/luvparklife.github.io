@@ -1579,6 +1579,7 @@
     #vTeam .tpacov .tpcv .tprs em.ok{color:#14603a}
     #vTeam .tpacov .tpcv .tprs em.sh{color:#b3261e}
     #vTeam .tpacov .tpcv .tprs em.ov{color:#b45309}
+    #vTeam .tpacov .tpcv .tprs em.tot{font-size:11.5px;font-weight:900;border-bottom:1px solid currentColor;margin-bottom:1px}
     #vTeam .tpacov .tpcv:not(.off):hover{outline:2px solid #f5b400;outline-offset:-2px}
     #vTeam .tpac{border-left:1px solid var(--line2);min-height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:800;line-height:1.15;margin:2px;border-radius:6px;overflow:hidden;white-space:nowrap}
     #vTeam .tpac[data-cell]{cursor:pointer}
@@ -13369,7 +13370,9 @@
   function tpZeroOn(pk){ var P = tpProj(pk); return !!P && P.dates.every(function(d){ return !tpDayCov(pk, d).tot && tpNeedOv(pk, d); }); }
   function tpFreeBack(pk, d, roles){ var o = TPS.S[pk] || {}, k = 0; Object.keys(o).forEach(function(n){ if((!roles || roles.indexOf(tpRowRole(pk, n)) >= 0) && tpInProj(pk, n, d) && !tpDayConf(o[n], d) && !tpConfOn(n, d)) k++; }); return k; }   /* 모자란 역할의 백업만 센다 */
   function tpCovRoles(cv){
-    return '<span class="tprs">' + TP_ROLES.map(function(r){ var x = cv.by[r]; if(!x.n && !x.c) return '';
+    /* 👥 2026-11-10 대표 «총 명수도 카드에서» — 맨 위에 «총 확정/필요» */
+    var tc = cv.any < cv.tot ? 'sh' : (cv.any > cv.tot ? 'ov' : 'ok');
+    return '<span class="tprs"><em class="tot ' + tc + '">총 ' + cv.any + '/' + cv.tot + '명</em>' + TP_ROLES.map(function(r){ var x = cv.by[r]; if(!x.n && !x.c) return '';
       var c = x.c < x.n ? 'sh' : (x.c > x.n ? 'ov' : 'ok');
       return '<em class="' + c + '">' + r + ' ' + x.c + '/' + x.n + (x.c < x.n ? ' −' + (x.n - x.c) : x.c > x.n ? ' +' + (x.c - x.n) : '') + '</em>'; }).join('') + '</span>';
   }
