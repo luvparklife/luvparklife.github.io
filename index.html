@@ -7484,7 +7484,7 @@
   function pjResultModal_(ok, head, body, onClose){
     var m = pjBusyModalEnsure_();
     if(__pjBusyT){ clearInterval(__pjBusyT); __pjBusyT = null; }
-    m.wrap.style.display = 'flex'; m.box.classList.remove('leaving');
+    __pjBusyGen++; m.wrap.style.display = 'flex'; m.box.classList.remove('leaving');
     m.icon.className = 'pjmIcon'; m.icon.textContent = ok ? '✅' : '⚠';
     m.msg.textContent = head;
     pjBusyShowErr_(m, body);      /* 링크·번호도 복붙하실 수 있어야 하니 성공·실패 둘 다 이 글상자로 */
@@ -7492,7 +7492,7 @@
     var cb = document.createElement('button'); cb.className = 'btn d'; cb.textContent = '확인';
     cb.onclick = function(){
       m.box.classList.add('leaving');
-      setTimeout(function(){ m.wrap.style.display = 'none'; }, 220);
+      (function(g){ setTimeout(function(){ if(g === __pjBusyGen) m.wrap.style.display = 'none'; }, 220); })(__pjBusyGen);
       if(onClose) onClose();
     };
     m.btns.appendChild(cb);
@@ -11606,6 +11606,10 @@
      삭제 확인·이름 바꾸기 등)이 전부 이 모달을 자동으로 쓰게 된다. */
   var PJ_BUSY = false;
   var __pjBusyT = null, __pjBusyModal = null;
+  /* 🔴 2026-11-12 대표 신고 — 「확인」을 누르면 «새로고침하는 중» 창이 바로 사라져 된 건지 모름.
+     원인: 앞 단계 창의 «0.22초 뒤 닫기» 예약이 그 사이 새로 띄운 창까지 닫았다.
+     → 창을 띄울 때마다 번호를 올리고, 닫기 예약은 «자기 번호일 때만» 닫는다. */
+  var __pjBusyGen = 0;
   function pjBusyModalEnsure_(){
     if(__pjBusyModal) return __pjBusyModal;
     var wrap = document.createElement('div');
@@ -11676,7 +11680,7 @@
     if(on){
       if(__pjBusyT) clearInterval(__pjBusyT);
       m.box.classList.remove('leaving');
-      m.wrap.style.display = 'flex';
+      __pjBusyGen++; m.wrap.style.display = 'flex';
       m.icon.className = 'pjmIcon spin'; m.icon.textContent = '⏳';
       m.err.style.display = 'none'; m.err.innerHTML = '';
       m.btns.innerHTML = '';
@@ -11689,7 +11693,7 @@
     }else{
       if(__pjBusyT){ clearInterval(__pjBusyT); __pjBusyT = null; }
       m.box.classList.add('leaving');
-      setTimeout(function(){ m.wrap.style.display = 'none'; }, 220);
+      (function(g){ setTimeout(function(){ if(g === __pjBusyGen) m.wrap.style.display = 'none'; }, 220); })(__pjBusyGen);
     }
   }
   /* 🔴 이름 바꾸기처럼 «성공/실패까지» 모달이 말해주는 완결형(연습장 ②③번과 같은 모양).
@@ -11697,7 +11701,7 @@
   function pjBusyDone_(ok, msg, detail){
     var m = pjBusyModalEnsure_();
     if(__pjBusyT){ clearInterval(__pjBusyT); __pjBusyT = null; }
-    m.wrap.style.display = 'flex'; m.box.classList.remove('leaving');
+    __pjBusyGen++; m.wrap.style.display = 'flex'; m.box.classList.remove('leaving');
     m.btns.innerHTML = '';
     if(ok){
       m.icon.className = 'pjmIcon'; m.icon.textContent = '✅';
@@ -11713,7 +11717,7 @@
       }
       setTimeout(function(){
         m.box.classList.add('leaving');
-        setTimeout(function(){ m.wrap.style.display = 'none'; }, 220);
+        (function(g){ setTimeout(function(){ if(g === __pjBusyGen) m.wrap.style.display = 'none'; }, 220); })(__pjBusyGen);
       }, detail ? 2200 : 1400);
     } else {
       m.icon.className = 'pjmIcon'; m.icon.textContent = '⚠';
@@ -11722,7 +11726,7 @@
       var cb = document.createElement('button'); cb.className = 'btn d'; cb.textContent = '닫기';
       cb.onclick = function(){
         m.box.classList.add('leaving');
-        setTimeout(function(){ m.wrap.style.display = 'none'; }, 220);
+        (function(g){ setTimeout(function(){ if(g === __pjBusyGen) m.wrap.style.display = 'none'; }, 220); })(__pjBusyGen);
       };
       m.btns.appendChild(cb);
     }
