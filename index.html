@@ -6117,6 +6117,22 @@
              뭉쳐져 «둘 다 노션에 있어도» 등록 필요로 잘못 뜬다(실제 사고 2026-09-28).
              "외 N명"·"아직 지명 안 함 N명"·🔴 뒤 경고문구는 이름이 아니므로 먼저 걷어낸다. */
           var _raw = String(it.text);
+          /* 🔴 2026-11-12 대표 신고 — *"허선행 이미 노션등록되어있는데?"*. 서버 tpPaMerge_(TeamPlan.js)가
+             PA팀 줄 끝에 「📅 팀 일정 확정: 허선행(11/13만)」을 붙이는데, 그 꼬리말까지 이름 하나로 읽어
+             「김우람 📅 팀 일정 확정: …」를 노션에서 찾았다 → 「노션 등록 필요」 + 김우람 🔗 빠짐.
+             → 꼬리말을 떼어 따로 읽고, 그 안의 이름도 노션과 대조한다(날짜 괄호·「— 견적서…」는 이름이 아님). */
+          var _cal = null;
+          if (k === 'PA팀' && _raw.indexOf('📅') >= 0) {
+            var _ci = _raw.indexOf('📅'), _ct = _raw.slice(_ci);
+            _raw = _raw.slice(0, _ci);
+            var _cm = _ct.match(/^📅\s*팀 일정 확정:\s*([^—]*)(.*)$/);
+            if (_cm) {
+              _cal = { rest: _cm[2] || '', ppl: _cm[1].split('·').map(function(s){
+                s = s.trim(); var p = s.indexOf('(');
+                return { n: (p >= 0 ? s.slice(0, p) : s).trim(), d: (p >= 0 ? s.slice(p) : '') };
+              }).filter(function(o){ return !!o.n; }) };
+            } else { _cal = { raw: _ct }; }
+          }
           if (k === 'PA팀') {
             _raw = _raw.split('🔴')[0];
             _raw = _raw.replace(/\s*\(＋[^)]*\)/g, '');
@@ -6126,17 +6142,24 @@
           var names = _raw.split(/[,·]+/).map(function(x){ return x.trim(); })
                         .filter(function(x){ return !!x; });
           var miss = names.filter(function(x){ return !have[x.toLowerCase()]; });
+          if (_cal && _cal.ppl) _cal.ppl.forEach(function(o){ if(!have[o.n.toLowerCase()] && miss.indexOf(o.n) < 0) miss.push(o.n); });
           var vv = kv.querySelector('.v'); if(!vv) return;
           if(vv.getAttribute('data-nlink') === '1') return;  /* 두 번 안 붙인다 */
           /* 🔴 이름 «하나하나» 링크를 단다 — 쉼표로 여럿일 때 한 명만 눌리면 안 된다.
              🔴 노션에 없는 이름은 «글자 그대로» 둔다(죽은 링크를 만들지 않는다). */
-          var html = names.map(function(nm){
+          var _lk = function(nm){
             var id = have[nm.toLowerCase()];
             if(!id) return pjEsc(nm);
             return pjEsc(nm) + '<a class="nlk" target="_blank" rel="noopener" href="'
                  + 'https://app.notion.com/' + String(id).replace(/-/g,'') + '" title="'
                  + pjEsc(nm) + ' — 노션에서 열기 (함께한 작업들이 보입니다)">🔗</a>';
-          }).join(', ');
+          };
+          var html = names.map(_lk).join(', ');
+          if (_cal) {
+            html += (html ? '  ' : '') + (_cal.ppl
+              ? '📅 팀 일정 확정: ' + _cal.ppl.map(function(o){ return _lk(o.n) + pjEsc(o.d); }).join(' · ') + pjEsc(_cal.rest)
+              : pjEsc(_cal.raw));
+          }
           if(miss.length){
             html += ' <span class="nno" title="' + pjEsc(miss.join(', ')) + ' — 노션에 없습니다">'
                   + '🟠 노션 등록 필요' + (miss.length>1 ? ' ('+miss.length+')' : '') + '</span>';
