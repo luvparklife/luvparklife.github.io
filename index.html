@@ -8446,6 +8446,7 @@
       try { var _dk = pjRevDraftK_(id === 'pjRevCntOwn');
             if(pjRevDraftGet_(_dk)) pjRevDraftSet_(_dk, String((el && el.value) || '').trim()); } catch(eD){}
     }
+    if(id === 'pjRevEdCnt'){ try { pjRevDraftFollow_(el); } catch(eF){} }   /* ✎ 고치는 글상자 */
     var n = document.getElementById(id);
     if(!n) return;
     n.textContent = String((el && el.value) || '').length + '/300';
@@ -8667,16 +8668,19 @@
 
         /* ①🆕 ✎ 로 고치는 중인 줄 — 그 자리에서 글상자가 된다 */
         if(PJ_REV_EDIT === key){
+          /* 📝 2026-11-12 — 저장 못 했던 고친 글이 있으면 그것으로 연다 */
+          var _edk = pjRevEdDK_(own, x), _edd = pjRevDraftGet_(_edk), _edv = _edd || String((x && x.t) || '');
           return '<div class="rvline' + (kd ? ' k-' + kd : '') + '">'
                + '<span class="ph ' + (p || 'mid') + '">' + pjEsc(pn) + '</span>'
                + '<div class="rvedit">'
-               + '<textarea id="pjRevEd" maxlength="300" '
-               + 'oninput="pjRevCntUpd_(this,\'pjRevEdCnt\')">' + pjEsc(String((x && x.t) || '')) + '</textarea>'
-               + '<span class="rvcnt" id="pjRevEdCnt">' + String((x && x.t) || '').length + '/300</span>'
+               + '<textarea id="pjRevEd" maxlength="300" data-dk="' + pjEsc(_edk) + '" '
+               + 'oninput="pjRevCntUpd_(this,\'pjRevEdCnt\')">' + pjEsc(_edv) + '</textarea>'
+               + '<span class="rvcnt" id="pjRevEdCnt">' + _edv.length + '/300</span>'
                + '<div class="eb">'
                + '<button type="button" class="pri" data-pjreved="' + i + '"' + od + '>저장</button>'
                + '<button type="button" data-pjrevedx="1">취소</button>'
-               + '<span class="fn">' + pjEsc(String((x && x.w) || '—')) + ' · '
+               + '<span class="fn">' + (_edd ? '⚠ 저장 못 했던 고친 글을 되살렸습니다 — 「저장」을 눌러 주세요 · ' : '')
+               + pjEsc(String((x && x.w) || '—')) + ' · '
                + pjEsc(String((x && x.d) || '')) + ' 는 그대로 남습니다</span>'
                + '</div></div></div>';
         }
@@ -8797,6 +8801,21 @@
       localStorage.setItem(PJ_REV_DRAFT_KEY, JSON.stringify(o));
     } catch(e){}
   }
+  /* ✎ 고치기도 같은 원칙 (2026-11-12 대표 「고쳐」) — 「저장」을 눌러도 «저장된 뒤에야» 글상자를 닫는다.
+     실패하면 글상자가 열린 채 고친 글이 남고, 임시 글로도 적어 둔다(다시 ✎ 를 열면 되살아난다).
+     🔴 [어느 줄인가] 관리자·대표 칸 줄은 번호표가 없어 «원래 글»로, 팀 칸 줄은 번호표(lid)로 알아본다.
+     🔴 「취소」를 누르면 임시 글도 버린다 — 사람이 «안 고치겠다»고 한 것이다. */
+  function pjRevEdDK_(own, x){ return pjRevDraftK_(own) + '|ed|' + String((x && x.t) || ''); }
+  function pjRevMeEdDK_(key){ return String(PJ_REV_PROJ || '') + '|me|' + key; }
+  function pjRevDraftFollow_(el){
+    var dk = el && el.getAttribute ? el.getAttribute('data-dk') : '';
+    if(dk && pjRevDraftGet_(dk)) pjRevDraftSet_(dk, String(el.value || '').trim());
+  }
+  function pjRevEdFailNote_(d, moved){
+    if(moved) return;
+    var m = document.getElementById('pjRevMsg');
+    if(m && / err/.test(' ' + m.className)) m.textContent += ' — 고친 글은 칸에 그대로 있습니다. 다시 「저장」을 눌러 주세요';
+  }
   /* 저장이 «된» 줄만 글칸에서 뺀다 — 보내는 사이 뒤에 이어 쓴 글은 남긴다 */
   function pjRevAddClear_(own, sent){
     var el = document.getElementById(own ? 'pjRevTxOwn' : 'pjRevTx'); if(!el) return;
@@ -8810,11 +8829,17 @@
   function pjRevDraw(){
     var box = document.getElementById('pjRev');
     if(!box) return;
-    var same = box.getAttribute('data-rvproj') === String(PJ_REV_PROJ || ''), keep = {}, foc = '';
+    var same = box.getAttribute('data-rvproj') === String(PJ_REV_PROJ || ''), keep = {}, foc = '', edKeep = {};
     PJ_REV_TXIDS.forEach(function(a){
       var e = same ? document.getElementById(a[0]) : null; if(!e) return;
       keep[a[0]] = e.value || '';
       if(document.activeElement === e) foc = a[0];
+    });
+    /* ✎ 고치는 글상자도 — «같은 줄»의 글상자가 다시 생기면 치던 글을 돌려준다(data-dk 로 알아본다) */
+    ['pjRevEd', 'pjRevMeEd'].forEach(function(id){
+      var e = same ? document.getElementById(id) : null; if(!e) return;
+      edKeep[id] = { dk: e.getAttribute('data-dk') || '', v: e.value || '' };
+      if(document.activeElement === e) foc = id;
     });
     pjRevDraw0_();
     box.setAttribute('data-rvproj', String(PJ_REV_PROJ || ''));
@@ -8822,6 +8847,12 @@
       var e = document.getElementById(a[0]); if(!e || e.value) return;
       var v = keep[a[0]] || pjRevDraftGet_(pjRevDraftK_(a[1]));
       if(v){ e.value = v; pjRevCntUpd_(e, a[2]); }
+    });
+    ['pjRevEd', 'pjRevMeEd'].forEach(function(id){
+      var e = document.getElementById(id), k = edKeep[id]; if(!e || !k) return;
+      if((e.getAttribute('data-dk') || '') !== k.dk || e.value === k.v) return;
+      e.value = k.v;
+      if(id === 'pjRevEd') pjRevCntUpd_(e, 'pjRevEdCnt');
     });
     if(foc){
       var f = document.getElementById(foc);
@@ -8954,6 +8985,10 @@
     /* 📝 2026-11-12 — 「＋ 남기기」면 «어느 글칸·어느 임시 글»인지 보낼 때 정해 둔다(답이 올 때 프로젝트가 바뀌어 있을 수 있다) */
     var isAdd = String(body && body.rev || '') === 'add';
     var addK = isAdd ? pjRevDraftK_(toOwn) : '', addProj = PJ_REV_PROJ;
+    /* ✎ 고치기 — 어느 줄의 글상자·임시 글인지 보낼 때 정해 둔다 */
+    var isEd = String(body && body.rev || '') === 'edit';
+    var edKey = isEd ? pjRevKey_(!!own, parseInt(body.idx, 10)) : '';
+    var edTa = isEd ? document.getElementById('pjRevEd') : null, edDK = edTa ? (edTa.getAttribute('data-dk') || '') : '';
     PJ_REV_BUSY = true;
     pjRevMsg('저장 중…');
     var u = FIELD_APP + '?action=projAdmin&act=review&name='
@@ -8973,6 +9008,10 @@
       if(isAdd){
         pjRevDraftSet_(addK, '');
         if(addProj === PJ_REV_PROJ) pjRevAddClear_(toOwn, body.text);
+      }
+      if(isEd){
+        if(edDK) pjRevDraftSet_(edDK, '');
+        if(addProj === PJ_REV_PROJ && PJ_REV_EDIT === edKey) PJ_REV_EDIT = -1;   /* 저장됐으니 이제 닫는다 */
       }
       /* 🔴 [«보낸 쪽»을 갱신한다] 서버는 자기가 쓴 칸을 `review` 로 돌려준다 —
          이름이 같으므로 «어디로 보냈는지»는 우리가 기억하고 있어야 한다. */
@@ -9393,6 +9432,11 @@
     pjAdmin('revme', proj, '&tab=' + tab + '&rev=' + rev + (extra || ''), function(d){
       if(proj !== PJ_REV_PROJ){ if(fail) fail(d, true); return; }
       if(!d || !d.ok){ pjRevMsg('🔴 저장 못 했습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다'), 1); if(fail) fail(d); return; }
+      /* ✎ 2026-11-12 — 고치기는 «저장된 뒤에» 글상자를 닫는다(다시 그리기 «전에») */
+      if(rev === 'edit'){
+        var _lm = String(extra || '').match(/&lid=([^&]*)/);
+        if(_lm && PJ_REV_ME_ED === tab + ':' + _lm[1]) PJ_REV_ME_ED = '';
+      }
       PJ_REV_ME = { team: d.team || [], ask: d.ask || [] };
       pjRevDrawKeep_();
       pjRevMsg(d.warn ? '⚠ ' + d.warn : (okMsg || '저장됐습니다'), d.warn ? 1 : 0);
@@ -9423,9 +9467,14 @@
     h += '<button type="button" class="ph ' + (p || 'mid') + '"' + (canPh ? ' data-pjrevme="ph:' + tab + ':' + id + '"' : ' disabled')
        + ' title="눌러서 촬영 전·중·후를 바꿉니다">' + pjEsc(PJ_REV_PHN[p] || '—') + (canPh ? '<span class="cr">▾</span>' : '') + '</button>';
     if(PJ_REV_ME_ED === key){
-      h += '<div class="rvedit"><textarea id="pjRevMeEd" maxlength="300">' + pjEsc(x.t || '') + '</textarea><div class="eb">'
+      /* 📝 2026-11-12 — 저장 못 했던 고친 글이 있으면 그것으로 연다 */
+      var _mdk = pjRevMeEdDK_(key), _mdd = pjRevDraftGet_(_mdk);
+      h += '<div class="rvedit"><textarea id="pjRevMeEd" maxlength="300" data-dk="' + pjEsc(_mdk) + '" oninput="pjRevDraftFollow_(this)">'
+         + pjEsc(_mdd || x.t || '') + '</textarea><div class="eb">'
          + '<button type="button" class="pri" data-pjrevme="edok:' + tab + ':' + id + '">저장</button>'
-         + '<button type="button" data-pjrevme="edx:' + tab + ':' + id + '">취소</button></div></div></div>';
+         + '<button type="button" data-pjrevme="edx:' + tab + ':' + id + '">취소</button>'
+         + (_mdd ? '<span class="fn">⚠ 저장 못 했던 고친 글을 되살렸습니다 — 「저장」을 눌러 주세요</span>' : '')
+         + '</div></div></div>';
       return h;
     }
     h += '<span class="tx">' + pjEsc(x.t || '')
@@ -9506,12 +9555,15 @@
     if(act === 'ph'){ PJ_REV_ME_PICK = (PJ_REV_ME_PICK === key) ? '' : key; pjRevDrawKeep_(); return; }
     if(act === 'pv'){ PJ_REV_ME_PICK = ''; pjRevMeSend_(tab, 'phase', '&lid=' + lid + '&val=' + a[3], '시기를 바꿨습니다'); return; }
     if(act === 'ed'){ PJ_REV_ME_ED = key; pjRevDrawKeep_(); var e0 = document.getElementById('pjRevMeEd'); if(e0) e0.focus(); return; }
-    if(act === 'edx'){ PJ_REV_ME_ED = ''; pjRevDrawKeep_(); return; }
+    if(act === 'edx'){ pjRevDraftSet_(pjRevMeEdDK_(key), ''); PJ_REV_ME_ED = ''; pjRevDrawKeep_(); return; }
     if(act === 'edok'){
       var ed = document.getElementById('pjRevMeEd'), nv = ed ? String(ed.value || '').trim() : '';
       if(!nv){ pjRevMsg('내용이 비었습니다 — 지우시려면 ✕ 를 눌러주세요', 1); return; }
-      PJ_REV_ME_ED = '';
-      pjRevMeSend_(tab, 'edit', '&lid=' + lid + '&text=' + encodeURIComponent(nv), '고쳤습니다');
+      /* 📝 2026-11-12 — 글상자는 «저장된 뒤에» 닫는다(pjRevMeSend_ 의 rev:'edit'). 실패하면 그대로 남는다 */
+      var _mdk2 = pjRevMeEdDK_(key);
+      pjRevDraftSet_(_mdk2, nv);
+      pjRevMeSend_(tab, 'edit', '&lid=' + lid + '&text=' + encodeURIComponent(nv), '고쳤습니다',
+                   function(){ pjRevDraftSet_(_mdk2, ''); }, pjRevEdFailNote_);
       return;
     }
     if(act === 'del'){
@@ -9678,13 +9730,19 @@
       if(_ed){ _ed.focus(); try { _ed.setSelectionRange(_ed.value.length, _ed.value.length); } catch(e2){} }
       return;
     }
-    if(kind === 'edx'){ PJ_REV_EDIT = -1; pjRevDraw(); return; }
+    if(kind === 'edx'){
+      var _tx0 = document.getElementById('pjRevEd'), _dk0 = _tx0 ? _tx0.getAttribute('data-dk') : '';
+      if(_dk0) pjRevDraftSet_(_dk0, '');          /* 취소 = 안 고치겠다 → 임시 글도 버린다 */
+      PJ_REV_EDIT = -1; pjRevDraw(); return;
+    }
     if(kind === 'edok'){
       var _ta = document.getElementById('pjRevEd');
       var _nv = _ta ? String(_ta.value || '').trim() : '';
       if(!_nv){ pjRevMsg('내용이 비었습니다 — 지우시려면 ✕ 를 눌러주세요', 1); return; }
-      PJ_REV_EDIT = -1;
-      return pjRevSend({ rev: 'edit', idx: hit, text: _nv }, '고쳤습니다', own);
+      /* 📝 2026-11-12 — 글상자는 «저장된 뒤에» 닫는다(pjRevSend 의 rev:'edit'). 실패하면 그대로 남는다 */
+      var _dk1 = _ta ? (_ta.getAttribute('data-dk') || '') : '';
+      if(_dk1) pjRevDraftSet_(_dk1, _nv);
+      return pjRevSend({ rev: 'edit', idx: hit, text: _nv }, '고쳤습니다', own, null, pjRevEdFailNote_);
     }
     /* ② 딱지를 눌러 단추 셋을 펼친다 — 🔴 값은 «안» 건드린다 */
     if(kind === 'kopen'){
