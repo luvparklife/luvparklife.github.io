@@ -878,6 +878,10 @@
     .padw .it small{display:block; font-size:10px; color:#8593aa; margin-top:1px}
     .padw .it.now small{color:#5b6472}
     .padw .bgl{float:right; font-size:9.5px; opacity:.65; letter-spacing:-1px}
+    /* 📂 메뉴 안 묶음 (2026-11-12 「서비스 안내」) */
+    .padw .it.fold .fca{float:right; font-size:11px; color:#9fb4d6; margin-left:6px}
+    .padw .it.fold.open{background:rgba(255,255,255,.08)}
+    .padw .foldbox{margin:0 0 4px 12px; padding-left:6px; border-left:2px solid rgba(255,255,255,.14)}
     /* ↕ 2026-10-20 띠 순서 바꾸기 */
     .padw .ordl{float:right; font-size:11px; color:#9fb4d6; cursor:pointer; text-decoration:underline; padding:2px 4px}
     .padw .ordbar{margin:0 0 6px; padding:7px 8px; border-radius:8px; background:rgba(255,255,255,.08); font-size:11.5px; color:#cfd8dc; line-height:1.5}
@@ -2008,6 +2012,22 @@
             <div class="title">Service Guide — 영문</div>
             <div class="desc">해외팀 · 해외 거래처용 · 내용은 한글판과 같습니다</div>
             <div class="note">공개 링크 — 그대로 복사해 해외 피디에게 보내면 됩니다</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </a>
+
+      <!-- ↩️ 2026-11-12 신설 — 중도 반납 고객 안내(2026-10-04 확정 규칙 · 11-12 최신판으로 다시 발행).
+           대표 지시 *"이것도 허브 메뉴에 넣어줘. 서비스 안내 폴더 만들어서 거기에 관련된 페이지 다 넣어줘"*
+           🔴 이미 인터넷에 공개된 페이지다(자료/) — 카드를 감추는 것은 자물쇠가 아니다.
+           🔴 사이드바(PA_PAGES)에도 같은 턴에 넣었다 — `t:'중도 반납 안내'` 는 아래 title 과 앞 글자가 같아야 한다. -->
+      <a class="card" href="https://luvparklife.github.io/%EC%9E%90%EB%A3%8C/260928_%EC%A4%91%EB%8F%84%EB%B0%98%EB%82%A9_%EA%B3%A0%EA%B0%9D%EC%95%88%EB%82%B4.html" target="_blank" rel="noopener">
+        <div class="row">
+          <div class="icon">↩️</div>
+          <div class="body">
+            <div class="title">중도 반납 안내 — 거래처용</div>
+            <div class="desc">렌탈 중간에 장비 일부 반납 · 대상 조건 · 크레딧</div>
+            <div class="note">공개 링크 — 그대로 복사해 피디에게 보내면 됩니다</div>
           </div>
           <div class="arrow">›</div>
         </div>
@@ -8420,6 +8440,12 @@
   /* 🔢🆕 2026-10-09 — 회고 글자수 표시. maxlength 와 다른 숫자를 적으면 거짓말이 된다(§3-5 ⑤)
      → 서버(Project.js add/edit)와 같은 300을 그대로 쓴다. 꾸미지 않고 input 이벤트로만 갱신. */
   function pjRevCntUpd_(el, id){
+    /* 📝 2026-11-12 — 실패해서 남겨 둔 «임시 글이 있을 때만» 따라간다(지우면 같이 지우고, 고치면 같이 고친다).
+       🔴 임시 글이 없으면 아무것도 안 한다 — 칠 때마다 저장하지 않는다(한글 조합을 안 건드린다) */
+    if(id === 'pjRevCnt' || id === 'pjRevCntOwn'){
+      try { var _dk = pjRevDraftK_(id === 'pjRevCntOwn');
+            if(pjRevDraftGet_(_dk)) pjRevDraftSet_(_dk, String((el && el.value) || '').trim()); } catch(eD){}
+    }
     var n = document.getElementById(id);
     if(!n) return;
     n.textContent = String((el && el.value) || '').length + '/300';
@@ -8742,7 +8768,67 @@
     return h + '</div>';
   }
 
+  /* ═══ 📝 2026-11-12 대표 신고 — 회고 «적은 글»을 잃지 않게 ═══════════════════════════════
+     대표 원문: *"회고 저장하지 못했다면 그 전에 썻던 문장을 계속 살려놔야하는데 지우면 내가 어떻게 기억하냐"*
+     [무엇이 잘못돼 있었나] 「＋ 남기기」를 누르는 «순간» 글칸을 비우고 나서 서버에 보냈다.
+       그래서 저장이 실패하면(로그인 풀림·연결 끊김·서버 거절) 적은 글이 어디에도 안 남았다.
+       「🔒 대표에게만」 체크도 미리 풀어서, 다시 누르면 «관리자 칸»으로 갈 수 있었다.
+       또 화면을 다시 그릴 때마다(딱지 고르기 등) 치던 글이 지워졌다.
+     [고침] ①글칸·체크는 서버가 «저장됐다»고 답한 뒤에만 비운다 ②실패하면 그대로 두고 그렇다고 알린다
+       ③보내기 직전 이 기기에 «임시 글»로 적어 두고 성공하면 지운다 — 다시 로그인·새로고침해도 글칸에 되살아난다
+       ④화면을 다시 그려도 치던 글을 지키고 커서도 돌려준다(같은 프로젝트일 때만).
+     🔴 [임시 글은 «글칸에만» 되살린다 — 저절로 서버에 안 보낸다] 2026-09-29 시간표 사고(이 기기 안전망이
+        거짓 기록으로 서버를 덮음)를 되풀이하지 않는다. 보내는 것은 언제나 사람이 「＋ 남기기」를 누를 때뿐이다.
+     🔴 [칠 때마다 저장하지 않는다] 한글 조합이 끊기지 않게 — 임시 글은 «보낼 때»만 생긴다.
+     되돌리기 = "회고 글 살려두기 되돌려줘" (백업 ~/.claude/backups/hub_index_261112_서비스안내폴더전.html) */
+  var PJ_REV_DRAFT_KEY = 'pa_rev_draft_v1', PJ_REV_ADDING = 0;
+  var PJ_REV_TXIDS = [['pjRevTx', false, 'pjRevCnt'], ['pjRevTxOwn', true, 'pjRevCntOwn']];
+  function pjRevDraftK_(own){ return String(PJ_REV_PROJ || '') + '|' + (own ? 'own' : 'main'); }
+  function pjRevDraftAll_(){
+    try { var o = JSON.parse(localStorage.getItem(PJ_REV_DRAFT_KEY) || '{}'); return (o && typeof o === 'object') ? o : {}; }
+    catch(e){ return {}; }
+  }
+  function pjRevDraftGet_(k){ var o = pjRevDraftAll_()[k]; return (o && o.t) ? String(o.t) : ''; }
+  function pjRevDraftSet_(k, t){
+    try {
+      var o = pjRevDraftAll_(), now = Date.now();
+      if(t) o[k] = { t: String(t).slice(0, 300), at: now }; else delete o[k];
+      for(var q in o){ if(Object.prototype.hasOwnProperty.call(o, q) && !(o[q] && now - (o[q].at || 0) < 30 * 864e5)) delete o[q]; }
+      localStorage.setItem(PJ_REV_DRAFT_KEY, JSON.stringify(o));
+    } catch(e){}
+  }
+  /* 저장이 «된» 줄만 글칸에서 뺀다 — 보내는 사이 뒤에 이어 쓴 글은 남긴다 */
+  function pjRevAddClear_(own, sent){
+    var el = document.getElementById(own ? 'pjRevTxOwn' : 'pjRevTx'); if(!el) return;
+    var v = String(el.value || '').trim(), s = String(sent || '').trim();
+    if(!s || !v) return;
+    if(v === s) el.value = '';
+    else if(v.indexOf(s) === 0) el.value = v.slice(s.length).trim();
+    else return;
+    pjRevCntUpd_(el, own ? 'pjRevCntOwn' : 'pjRevCnt');
+  }
   function pjRevDraw(){
+    var box = document.getElementById('pjRev');
+    if(!box) return;
+    var same = box.getAttribute('data-rvproj') === String(PJ_REV_PROJ || ''), keep = {}, foc = '';
+    PJ_REV_TXIDS.forEach(function(a){
+      var e = same ? document.getElementById(a[0]) : null; if(!e) return;
+      keep[a[0]] = e.value || '';
+      if(document.activeElement === e) foc = a[0];
+    });
+    pjRevDraw0_();
+    box.setAttribute('data-rvproj', String(PJ_REV_PROJ || ''));
+    PJ_REV_TXIDS.forEach(function(a){
+      var e = document.getElementById(a[0]); if(!e || e.value) return;
+      var v = keep[a[0]] || pjRevDraftGet_(pjRevDraftK_(a[1]));
+      if(v){ e.value = v; pjRevCntUpd_(e, a[2]); }
+    });
+    if(foc){
+      var f = document.getElementById(foc);
+      if(f){ try { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } catch(e){} }
+    }
+  }
+  function pjRevDraw0_(){
     var box = document.getElementById('pjRev');
     if(!box) return;
     /* 📝 팀원은 내 줄만 — 관리자 칸·보고서·회고 끝 체크는 안 그린다 */
@@ -8859,12 +8945,15 @@
   var PJ_REV_PERTAB = { add:1, del:1, kind:1, edit:1, ltag:1, phase:1 };
   /* 🔒 `own` = 누른 단추가 「대표 칸 것」이었나(`data-own`). 🔴 «전역 상태»가 아니라
      «누른 그 단추»가 말해준다 — 두 칸이 한 화면에 있으므로 이것만이 정확하다. */
-  function pjRevSend(body, okMsg, own, after){
-    if(PJ_REV_BUSY){ pjRevMsg('잠시만요…'); return; }
+  function pjRevSend(body, okMsg, own, after, fail){
+    if(PJ_REV_BUSY){ pjRevMsg('잠시만요…'); if(fail) fail(); return; }
     PJ_REV_STICK = false;
-    if(!PJ_REV_PROJ){ pjRevMsg('프로젝트를 못 찾았습니다', 1); return; }
+    if(!PJ_REV_PROJ){ pjRevMsg('프로젝트를 못 찾았습니다', 1); if(fail) fail(); return; }
     /* 🔒 지금 이 저장이 «대표 칸»으로 가나 — 대표가 아니면 어떤 경우에도 안 간다 */
     var toOwn = !!(own && PJ_REV_OWNABLE && PJ_REV_PERTAB[String(body && body.rev || '')]);
+    /* 📝 2026-11-12 — 「＋ 남기기」면 «어느 글칸·어느 임시 글»인지 보낼 때 정해 둔다(답이 올 때 프로젝트가 바뀌어 있을 수 있다) */
+    var isAdd = String(body && body.rev || '') === 'add';
+    var addK = isAdd ? pjRevDraftK_(toOwn) : '', addProj = PJ_REV_PROJ;
     PJ_REV_BUSY = true;
     pjRevMsg('저장 중…');
     var u = FIELD_APP + '?action=projAdmin&act=review&name='
@@ -8877,7 +8966,13 @@
       PJ_REV_BUSY = false;
       if(!d || !d.ok){
         pjRevMsg('저장 못 했습니다' + (d && d.why ? ' (' + d.why + ')' : ''), 1);
+        if(fail) fail(d);
         return;
+      }
+      /* 📝 2026-11-12 — 저장이 «된 뒤에야» 글칸을 비우고 임시 글을 지운다(다시 그리기 «전에» — 안 그러면 되살아난다) */
+      if(isAdd){
+        pjRevDraftSet_(addK, '');
+        if(addProj === PJ_REV_PROJ) pjRevAddClear_(toOwn, body.text);
       }
       /* 🔴 [«보낸 쪽»을 갱신한다] 서버는 자기가 쓴 칸을 `review` 로 돌려준다 —
          이름이 같으므로 «어디로 보냈는지»는 우리가 기억하고 있어야 한다. */
@@ -9292,12 +9387,12 @@
     });
   }
   var PJ_REV_ME_LOADED = '';
-  function pjRevMeSend_(tab, rev, extra, okMsg, after){
+  function pjRevMeSend_(tab, rev, extra, okMsg, after, fail){
     var proj = PJ_REV_PROJ;
     pjRevMsg('저장 중…');
     pjAdmin('revme', proj, '&tab=' + tab + '&rev=' + rev + (extra || ''), function(d){
-      if(proj !== PJ_REV_PROJ) return;
-      if(!d || !d.ok){ pjRevMsg('🔴 저장 못 했습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다'), 1); return; }
+      if(proj !== PJ_REV_PROJ){ if(fail) fail(d, true); return; }
+      if(!d || !d.ok){ pjRevMsg('🔴 저장 못 했습니다 — ' + ((d && (d.error || d.why)) || '응답이 없습니다'), 1); if(fail) fail(d); return; }
       PJ_REV_ME = { team: d.team || [], ask: d.ask || [] };
       pjRevDrawKeep_();
       pjRevMsg(d.warn ? '⚠ ' + d.warn : (okMsg || '저장됐습니다'), d.warn ? 1 : 0);
@@ -9397,13 +9492,14 @@
     return '<div class="rvpane own"><div class="rvhd">🔒 내가 대표에게 보낸 것<span class="fn">나와 대표님만 봅니다</span></div>'
          + pjRevMeRows_('ask', PJ_REV_ME.ask, '') + '</div>';
   }
-  function pjRevMeAdd_(tab, t, pend){
+  function pjRevMeAdd_(tab, t, pend, ok, fail){
     pjRevMeSend_(tab, 'add', '&text=' + encodeURIComponent(t), tab === 'ask' ? '대표님께만 보냈습니다' : '남겼습니다', function(d){
+      if(ok) ok(d);
       if(!pend) return;
       PJ_REV_PEND = null;
       pjRevPendPaint_();
       pjRevFilesGo_(pend.files, pend.proj, t, [], 0, { tab: tab, lid: d.lid });
-    });
+    }, fail);
   }
   function pjRevMeClick_(v){
     var a = String(v).split(':'), act = a[0], tab = a[1], lid = a[2], x = pjRevMeFind_(tab, lid), key = tab + ':' + lid;
@@ -9451,6 +9547,8 @@
   function pjRevAdd(own){
     var el = document.getElementById(own ? 'pjRevTxOwn' : 'pjRevTx');
     if(!el) return;
+    /* 📝 2026-11-12 — 글칸을 «안» 비우고 보내므로, 보내는 중에 또 누르면 같은 줄이 두 번 간다 → 막는다 */
+    if(PJ_REV_ADDING && Date.now() - PJ_REV_ADDING < 25000){ pjRevMsg('⏳ 보내는 중입니다 — 잠시만요'); return; }
     var t = String(el.value || '').trim();
     /* 📷 골라 둔 사진이 있으면 글 없이도 남긴다 — "글을 못쓰니 이미지로라도" (2026-10-09) */
     var pend = (!own && PJ_REV_PEND && PJ_REV_PEND.proj === PJ_REV_PROJ) ? PJ_REV_PEND : null;
@@ -9461,19 +9559,38 @@
       if(PJ_REVFILE_BUSY){ pjRevMsg('⏳ 지금 올리는 중입니다 — 끝난 뒤에 다시 눌러 주세요', 1); return; }
       if(!canApp()){ pjRevMsg('🔴 로그인이 풀렸습니다 — 허브에서 다시 로그인한 뒤 올려 주세요', 1); return; }
     }
-    el.value = '';
-    pjRevCntUpd_(el, own ? 'pjRevCntOwn' : 'pjRevCnt');
+    /* 📝 2026-11-12 — 글칸은 여기서 «안» 비운다. 저장이 된 뒤에 비운다(위 「적은 글을 잃지 않게」).
+       보내기 직전 이 기기에 임시 글로 적어 둔다 — 실패한 채 새로고침·다시 로그인해도 글칸에 되살아난다. */
+    var typed = String(el.value || '').trim();
+    if(typed) pjRevDraftSet_(pjRevDraftK_(own), typed);
+    PJ_REV_ADDING = Date.now();
+    var failKeep = function(d, moved){
+      PJ_REV_ADDING = 0;
+      if(moved || !typed) return;
+      var m = document.getElementById('pjRevMsg');
+      if(m && / err/.test(' ' + m.className)) m.textContent += ' — 적으신 글은 칸에 그대로 있습니다. 다시 「＋ 남기기」를 눌러 주세요';
+    };
     /* 📝 2026-11-05 — 팀원 줄과 「대표에게만」 줄은 관리자 칸이 아니라 별도 파일로 간다 */
     if(toAsk || !PJ_REV_CAN){
-      if(_ask){ _ask.checked = false; window.pjRevAskNote_(_ask); }
-      pjRevMeAdd_(toAsk ? 'ask' : 'team', t, pend);
+      var dk2 = pjRevDraftK_(false), proj2 = PJ_REV_PROJ;
+      pjRevMeAdd_(toAsk ? 'ask' : 'team', t, pend, function(){
+        PJ_REV_ADDING = 0;
+        pjRevDraftSet_(dk2, '');
+        if(proj2 !== PJ_REV_PROJ) return;
+        pjRevAddClear_(false, typed);
+        /* 🔒 「대표에게만」 체크도 «보낸 뒤»에 푼다 — 실패했는데 풀려 있으면 다시 누를 때 관리자 칸으로 간다 */
+        var a2 = document.getElementById('pjRevAsk');
+        if(toAsk && a2){ a2.checked = false; window.pjRevAskNote_(a2); }
+      }, failKeep);
       return;
     }
-    pjRevSend({ rev: 'add', text: t }, '남겼습니다', own, pend ? function(){
+    pjRevSend({ rev: 'add', text: t }, '남겼습니다', own, function(){
+      PJ_REV_ADDING = 0;
+      if(!pend) return;
       PJ_REV_PEND = null;
       pjRevPendPaint_();
       pjRevFilesGo_(pend.files, pend.proj, t, [], 0);
-    } : null);
+    }, failKeep);
   }
   document.addEventListener('click', function(e){
     var el = e.target, n = 0, hit = null, kind = '', own = false;
@@ -14762,10 +14879,17 @@
        또 밟지 않으려고 같은 턴에 넣는다. `t:` 는 위 카드의 <div class="title">확인요청 · 회고 문제</div>
        와 한 글자도 같아야 한다. */
     { ico:'🙋', n:'확인요청 · 회고 문제',  s:'전체 프로젝트 가로질러',     t:'확인요청 · 회고 문제' },
-    { ico:'📋', n:'서비스 안내',           s:'거래처에 보낼 링크',        t:'서비스 안내' },
-    { ico:'🌐', n:'Service Guide — 영문', s:'해외팀 · 해외 거래처 링크',  t:'Service Guide' },
-    { ico:'💰', n:'단가 안내 PDF — 한글',  s:'🔒 보낼 땐 조심',           t:'단가 안내 PDF' },
-    { ico:'💵', n:'Price Guide — 영문',   s:'해외팀 · 해외 거래처',      t:'Price Guide' },
+    /* 📂 2026-11-12 대표 지시 — *"서비스 안내 폴더 만들어서 거기에 관련된 페이지 다 넣어줘"*
+       🔴 f:'svc' 가 붙은 줄은 메뉴에서 «📂 서비스 안내» 묶음 안으로 들어간다(PA_FOLDERS · paDrawerPaint).
+       🔴 누가 보나는 여기서 안 정한다 — 줄마다 «그 카드의 data-see»를 그대로 읽는다(paCan).
+          그래서 단가 PDF 두 줄은 전처럼 대표님만 보신다(2026-08-21 확정).
+       🔴 장비앱·정산앱 메뉴(AppNav.js)에는 이 묶음이 아직 없다 — 두 목록은 그 전부터 어긋나 있었다(navcheck 12↔16).
+       되돌리기 = "서비스 안내 폴더 되돌려줘" (백업 ~/.claude/backups/hub_index_261112_서비스안내폴더전.html) */
+    { ico:'📋', n:'서비스 안내 — 한글',    s:'회사 소개 · 작업 이력 · 문의 폼', t:'서비스 안내', f:'svc' },
+    { ico:'🌐', n:'Service Guide — 영문', s:'해외팀 · 해외 거래처 링크',  t:'Service Guide', f:'svc' },
+    { ico:'↩️', n:'중도 반납 안내',        s:'렌탈 중간 반납 · 크레딧',    t:'중도 반납 안내', f:'svc' },
+    { ico:'💰', n:'단가 안내 PDF — 한글',  s:'🔒 보낼 땐 조심',           t:'단가 안내 PDF', f:'svc' },
+    { ico:'💵', n:'Price Guide — 영문',   s:'해외팀 · 해외 거래처',      t:'Price Guide', f:'svc' },
     { ico:'🅰️', n:'업무 / 일정 관리',      s:'보고서 · 문서 수정 (맥에서만)', t:'업무 / 일정 관리' },
     { ico:'🔄', n:'일정 새로고침',         s:'캘린더 ↔ 노션 (맥에서만)',  t:'일정 새로고침' },
     /* 📍 2026-10-09 신설 — 홈 카드(①)와 같은 턴에 사이드바(②)도 같이 넣는다
@@ -14774,6 +14898,10 @@
     { ico:'📍', n:'로케이션 답사 지도',    s:'핀·사진 정리 · 스트리트뷰 (맥에서만)', t:'로케이션 답사 지도' },
     { ico:'📱', n:'앱 사용법',             s:'3분이면 됩니다',            t:'앱 사용법' }
   ];
+  /* 📂 메뉴 안의 «묶음» (2026-11-12) — 열림/닫힘은 이 기기에만 기억한다(못 읽어도 닫힌 채로 잘 그려진다). */
+  var PA_FOLDERS = { svc: { ico:'📂', n:'서비스 안내', s:'거래처·손님에게 보내는 안내' } };
+  var PA_FOLD_KEY = 'pa_fold_v1', PA_FOLD = {};
+  try { var _pf = JSON.parse(localStorage.getItem(PA_FOLD_KEY) || '{}'); if(_pf && typeof _pf === 'object') PA_FOLD = _pf; } catch(eFd){}
   function paCard(x){
     if(!x) return null;
     if(x.id){ return document.getElementById(x.id); }
@@ -14925,6 +15053,28 @@
   }
 
   /* ── 🏠 사이드바 ── */
+  function paPageItem_(x, i, cls){
+    var b = paBadge(paCard(x));
+    return '<button class="it' + (cls ? ' ' + cls : '') + '" type="button" data-pa="card" data-pai="' + i + '">'
+         + (b ? '<span class="bgl">' + b + '</span>' : '') + x.ico + ' ' + pjEsc(x.n)
+         + '<small>' + pjEsc(x.s) + '</small></button>';
+  }
+  /* 📂 묶음 한 줄 + (열려 있으면) 그 안의 줄들.
+     🔴 볼 수 있는 줄이 하나도 없으면 묶음도 안 그린다 — 눌러도 빈 묶음이면 «고장»으로 읽힌다. */
+  function paFolderHtml_(f){
+    var fo = PA_FOLDERS[f], kids = '', n = 0;
+    PA_PAGES.forEach(function(x, i){
+      if(x.f !== f) return;
+      var c = paCard(x); if(!paCan(c)) return;
+      n++; kids += paPageItem_(x, i, 'sub');
+    });
+    if(!n) return '';
+    var open = !!PA_FOLD[f];
+    return '<button class="it fold' + (open ? ' open' : '') + '" type="button" data-pa="fold" data-paf="' + f
+         + '" aria-expanded="' + open + '"><span class="fca">' + (open ? '▾' : '▸') + '</span>'
+         + fo.ico + ' ' + pjEsc(fo.n) + '<small>' + pjEsc(fo.s) + ' · ' + n + '개</small></button>'
+         + (open ? '<div class="foldbox" data-paf="' + f + '">' + kids + '</div>' : '');
+  }
   function paDrawerPaint(){
     var dw = document.getElementById('paDw');
     if(!dw) return;
@@ -14939,12 +15089,15 @@
          + x.k + '">' + paOrdBtns_(x) + (b ? '<span class="bgl">' + b + '</span>' : '') + x.ico + ' ' + pjEsc(x.n) + '</button>';
     });
     h += '<div class="gt">🗂 그 밖에 (프로젝트와 상관없이)</div>';
+    /* 📂 f: 가 붙은 줄은 그 묶음의 «첫 줄 자리»에 묶음 하나로 그린다 (2026-11-12) */
+    var foldDone = {};
     PA_PAGES.forEach(function(x, i){
+      if(x.f && PA_FOLDERS[x.f]){
+        if(!foldDone[x.f]){ foldDone[x.f] = 1; h += paFolderHtml_(x.f); }
+        return;
+      }
       var c = paCard(x); if(!paCan(c)) return;
-      var b = paBadge(c);
-      h += '<button class="it" type="button" data-pa="card" data-pai="' + i + '">'
-         + (b ? '<span class="bgl">' + b + '</span>' : '') + x.ico + ' ' + pjEsc(x.n)
-         + '<small>' + pjEsc(x.s) + '</small></button>';
+      h += paPageItem_(x, i, '');
     });
     /* 🔴 `pjNew` 카드를 찾지 않는다 — 그건 «목록 화면에만» 그려지는 버튼이라
        프로젝트 정보 화면에서는 DOM 에 없다(2026-09-10 실측으로 잡음).
@@ -15114,6 +15267,16 @@
     if(act === 'orddn')    { paOrdMove_(el.getAttribute('data-pak'), 1); return; }
     if(act === 'ordreset') { paOrdReset_(); return; }
     if(act === 'go')    { paGoApp(el.getAttribute('data-pak')); return; }
+    /* 📂 묶음 열기/접기 (2026-11-12) — 메뉴는 닫지 않고, 보던 자리(스크롤)도 그대로 둔다 */
+    if(act === 'fold')  {
+      var pf = el.getAttribute('data-paf') || '';
+      PA_FOLD[pf] = !PA_FOLD[pf];
+      try { localStorage.setItem(PA_FOLD_KEY, JSON.stringify(PA_FOLD)); } catch(e){}
+      var fdw = document.getElementById('paDw'), ftop = fdw ? fdw.scrollTop : 0;
+      paDrawerPaint();
+      if(fdw) fdw.scrollTop = ftop;
+      return;
+    }
     if(act === 'list')  { paPick(false); paDrawer(false); pjEditLeave(); location.hash = '#p'; return; }
     if(act === 'pj')    { paPick(false); pjEditLeave();
                           location.hash = '#p/' + encodeURIComponent(el.getAttribute('data-pan') || ''); return; }
