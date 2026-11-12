@@ -420,7 +420,7 @@
     .kvpop .dek{display:flex; flex-wrap:wrap; gap:5px; align-items:center; font-size:12.5px}
     .kvpop .dekn{min-width:74px; font-weight:700; color:#3d4757}
     .kvpop .dekn i{font-style:normal; font-weight:400; font-size:10.5px; color:#9aa3b2; margin-left:3px}
-    .kvpop .dek input[type=time]{width:96px}
+    .kvpop .dek input[type=time]{width:auto; min-width:118px} /* 🕘 2026-11-12 제보 R-0057 — 한국어 시간은 «오후 07:30»+시계라 96px 이면 «오후 07:» 로 잘렸다(크롬 실측). 글자만큼 늘린다 */
     .kvpop .dek input.el{flex:1; min-width:150px}
     .kvpop .ecp,.kvpop .ecall{border:1px solid var(--line2); background:#fff; border-radius:8px; padding:5px 9px;
                    font-size:11.5px; color:#5b6472; cursor:pointer; font-family:inherit; white-space:nowrap}
@@ -482,7 +482,7 @@
       border:1px solid var(--line2); border-radius:7px; padding:7px 8px; font:inherit;
       font-size:12.5px; line-height:1.6; color:var(--ink); background:#fff}
     /* 🔴 줄바꿈을 «살린다» — pre-wrap 이 아니면 대표가 나눠 적은 줄이 한 덩어리로 뭉친다 */
-    .pj2 .ntread{white-space:pre-wrap; font-size:12.5px; line-height:1.65; color:var(--ink)}
+    .pj2 .ntread{white-space:pre-wrap; overflow-wrap:anywhere; font-size:12.5px; line-height:1.65; color:var(--ink)}
     .pj2 .ntbar{display:flex; gap:8px; align-items:center; margin-top:6px}
     .pj2 .ntsv{border:1px solid var(--line); background:#fff; border-radius:7px; padding:4px 14px;
       font:inherit; font-size:12px; font-weight:700; color:var(--sub); cursor:pointer}
@@ -496,7 +496,8 @@
     .pj2 .tkic{flex:0 0 15px; font-size:11px}
     /* 🔴 2026-10-08 대표 지시 *"할일 입력할때 시프트+엔터 누르면 밑줄로"* — 줄바꿈이 저장될 수 있으니
        읽기 화면도 그 줄바꿈을 그대로 보여준다(white-space 기본값은 줄바꿈을 지운다) */
-    .pj2 .tktx{flex:1; min-width:110px; white-space:pre-wrap}
+    /* 📝 2026-11-12 제보 R-0042 — 띄어쓰기 없는 긴 글(주소·파일명)이 칸 밖으로 삐져나가던 것. 글자 사이 어디서든 다음 줄로 */
+    .pj2 .tktx{flex:1; min-width:110px; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word}
     .pj2 .tkwho{flex:0 0 auto; font-size:11px; color:var(--sub); background:#f4f5f7;
       border-radius:999px; padding:1px 8px}
     .pj2 .tkwho.none{color:var(--faint); background:transparent}
@@ -591,7 +592,7 @@
     .kvpop .pdplan .pr input[type=date]{flex:0 0 auto; border:1px solid #d3d9e3; border-radius:7px; padding:4px 6px; font:inherit; font-size:12.5px}
     .kvpop .pdplan .pr input[type=text]{flex:1 1 100%; min-width:110px; border:1px solid #d3d9e3; border-radius:7px; padding:4px 8px; font:inherit; font-size:12.5px}
     .kvpop .pdplan .ptm{display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#8a93a3}
-    .kvpop .pdplan .ptm input[type=time]{border:1px solid #d3d9e3; border-radius:7px; padding:4px 5px; font:inherit; font-size:12.5px; width:94px}
+    .kvpop .pdplan .ptm input[type=time]{border:1px solid #d3d9e3; border-radius:7px; padding:4px 5px; font:inherit; font-size:12.5px; width:auto; min-width:112px}
     .kvpop .pdlocs{display:flex; gap:5px; flex-wrap:wrap; margin:5px 0 0}
     .kvpop .pdlocs button{border:1px solid #d3d9e3; background:#f7f9fc; color:#4a5261; border-radius:999px; padding:2px 10px; font:inherit; font-size:11.5px; cursor:pointer}
     .kvpop .pdlocs button:hover{border-color:#a9c2f5; color:#1a56c4}
@@ -769,7 +770,7 @@
     .dayrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
     .dayrow .dn{font-weight:800;font-size:12.5px;min-width:44px;color:var(--sub,#5b6472)}
     .dayrow input[type=date]{width:132px}
-    .dayrow input[type=time]{width:96px}
+    .dayrow input[type=time]{width:auto; min-width:118px}
     .dayrow input[list]{flex:1;min-width:130px}
     .dayrow .dx{border:none;background:none;color:#b23b3b;font-size:17px;cursor:pointer;padding:0 4px}
     /* 📍 한 회차에 로케 여러 곳 (2026-09-01 대표 확정) */
@@ -783,7 +784,7 @@
     #dayBulk .dbkpick{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0 6px}
     #dayBulk .dbkin{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
     #dayBulk .dbkin label{display:inline-flex;align-items:center;gap:3px;font-size:13px}
-    #dayBulk .dbkin input[type=time]{width:96px}
+    #dayBulk .dbkin input[type=time]{width:auto; min-width:118px}
     #dayBulk .dbkin input.bd{width:64px}
     #dayBulk .dbkin .bl{flex:1;min-width:160px}
     #dayBulk .dbkin .bl input{flex:1;min-width:120px}
